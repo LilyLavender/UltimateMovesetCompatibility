@@ -1,0 +1,79 @@
+:root {
+  font-family: "Roboto Condensed", system-ui, Avenir, Helvetica, Arial, sans-serif;
+
+  color-scheme: dark;
+  
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+/* END root section */
+
+
+
+/* Title */
+.title-font {
+  font-family: DFHeiGB;
+  text-transform: uppercase;
+}
+
+.page-title {
+  font-size: 7em;
+}
+
+.display-above-hero {
+  position: relative;
+  z-index: 3;
+  margin-top: -140px;
+}
+
+
+
+/* Links */
+a.offsite {
+  position: relative;
+  padding-right: 1.2em;
+}
+
+a.offsite::after {
+  content: '\F03CC';
+  font-family: 'Material Design Icons';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.1em;
+  text-decoration: none;
+}
+
+a.unvisitable {
+  color: unset;
+}
+
+a.unvisitable:visited {
+  color: unset;
+}
+
+
+
+/* Misc */
+.no-select {
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* https://css-tricks.com/styling-code-in-and-out-of-blocks/ */
+code {
+  background: #2e2e2e;
+  word-wrap: break-word;
+  padding: .1rem .3rem .2rem;
+  margin: 0 .2rem;
+  border-radius: .2rem;
+}

@@ -1,0 +1,26 @@
+# Backend
+CustomCharInfo.server/bin/
+CustomCharInfo.server/obj/
+CustomCharInfo.server/Migrations/
+CustomCharInfo.server/publish/
+CustomCharInfo.server/appsettings.*
+CustomCharInfo.server/appsettings.json
+CustomCharInfo.server/appsettings.Development.json
+CustomCharInfo.server/wwwroot/
+
+# Frontend
+CustomCharInfo.client/node_modules/
+CustomCharInfo.client/logs
+CustomCharInfo.client/dist
+CustomCharInfo.client/.vscode/
+*.log
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Other
+Todo.md
+*.rb
+*.sql
