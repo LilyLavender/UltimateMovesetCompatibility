@@ -64,6 +64,9 @@ namespace CustomCharInfo.server
                     policy.WithOrigins("http://localhost:5173")
                           .AllowAnyHeader()
                           .AllowAnyMethod();
+                    policy.WithOrigins("https://lilylavender.github.io")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
                 });
             });
 
