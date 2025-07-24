@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHashHistory  } from 'vue-router';
 import api from '@/services/api'
 // Basic
 import HomePage from '@/views/HomePage.vue';
@@ -432,6 +432,6 @@ const routes = [
 ]
 
 export default createRouter({
-  history: createWebHistory('/UltimateMovesetCompatibility/'),
+  history: createWebHashHistory('/UltimateMovesetCompatibility/'),
   routes,
 });

@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      const repo = '/UltimateMovesetCompatibility';
+      const path = location.pathname.replace(repo, '');
+
+      const newUrl = `${repo}/#${path}${location.search}${location.hash}`;
+      location.replace(newUrl);
+    </script>
+  </head>
+  <body></body>
+</html>
