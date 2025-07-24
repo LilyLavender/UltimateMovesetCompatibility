@@ -3,9 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <script>
-      var redirectTo = window.location.pathname
-        .replace(/^\/UltimateMovesetCompatibility^\//, '') || '/';
-      window.location.replace('/UltimateMovesetCompatibility/' + redirectTo);
+      var redirectTo = window.location.pathname;
+      if (redirectTo.startsWith('/lilylavender.github.io/')) {
+	      redirectTo = redirectTo.replace('/lilylavender.github.io', '');
+      }
+      window.location.replace('/' + redirectTo);
     </script>
   </head>
   <body></body>
