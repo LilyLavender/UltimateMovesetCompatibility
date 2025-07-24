@@ -225,12 +225,16 @@ onMounted(async () => {
   try {
     const [movesetRes, userRes] = await Promise.all([
       api.get(`/movesets/${route.params.movesetId}`),
-      api.get('/auth/me')
     ])
     moveset.value = movesetRes.data
-    user.value = userRes.data
   } catch (err) {
     router.replace({ name: 'ErrorPage', query: { http: 404, reason: 'Moveset not found' } })
+  }
+  try {
+    api.get('/auth/me')
+    user.value = userRes.data
+  } catch (err) {
+    // 
   }
 })
 </script>

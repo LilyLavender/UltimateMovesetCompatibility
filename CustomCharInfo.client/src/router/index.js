@@ -51,31 +51,53 @@ const routes = [
     component: MovesetDetail,
     props: true,
     beforeEnter: async (to, from, next) => {
-      const res = await api.get('/logs', { params: { userId: null } });
       const movesetId = parseInt(to.params.movesetId);
-      const latestLog = res.data
-        .filter(log => log.itemType?.itemTypeId === 1 && log.item?.movesetId === movesetId)
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
       const blockedStates = [2, 4, 6];
-      const moveset = await api.get(`/movesets/${to.params.movesetId}`);
-      const modderIds = moveset.data.movesetModders.map(m => m.modderId);
-      const user = (await api.get('/auth/me')).data;
-
-      if (
-        latestLog && blockedStates.includes(latestLog.acceptanceState.acceptanceStateId)
-        && user.userTypeId != 3
-        && !modderIds.includes(user.modderId)
-      ) {
-        next({
+    
+      try {
+        const logsRes = await api.get('/logs', { params: { userId: null } });
+        const latestLog = logsRes.data
+          .filter(log => log.itemType?.itemTypeId === 1 && log.item?.movesetId === movesetId)
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+      
+        const moveset = await api.get(`/movesets/${movesetId}`);
+        const modderIds = moveset.data.movesetModders.map(m => m.modderId);
+      
+        let user = null;
+        try {
+          user = (await api.get('/auth/me')).data;
+        } catch (err) {
+          // Not logged in
+        }
+      
+        const isPrivate = latestLog && blockedStates.includes(latestLog.acceptanceState.acceptanceStateId);
+      
+        if (isPrivate) {
+          const isAdmin = user?.userTypeId === 3;
+          const isOwner = user && modderIds.includes(user.modderId);
+        
+          if (!isAdmin && !isOwner) {
+            return next({
+              name: 'ErrorPage',
+              query: {
+                httpCode: '403 Forbidden',
+                reason: 'This moveset is currently private.',
+                extra: 'Check back later, or try signing in.',
+              },
+            });
+          }
+        }
+      
+        return next();
+      } catch (err) {
+        return next({
           name: 'ErrorPage',
           query: {
-            httpCode: '403 Forbidden',
-            reason: 'This moveset is currently private.',
-            extra: 'Check back later, or try signing in.',
-          }
-        })
-      } else {
-        next();
+            httpCode: '500 Server Error',
+            reason: 'Could not load the moveset.',
+            extra: err.message || 'Please try again later.',
+          },
+        });
       }
     }
   },
@@ -201,11 +223,61 @@ const routes = [
     path: '/moveset/add',
     name: 'AddMoveset',
     component: AddMoveset,
+    beforeEnter: async (to, from, next) => {
+      try {
+        const user = (await api.get('/auth/me')).data;
+        if (user.userTypeId >= 2) {
+          next();
+        } else {
+          next({
+            name: 'ErrorPage',
+            query: {
+              httpCode: '403 Forbidden',
+              reason: 'You do not have permission to access this page.',
+            }
+          })
+        }
+      } catch (err) {
+        next({
+          name: 'ErrorPage',
+          query: {
+            httpCode: '401 Unauthorized',
+            reason: 'Authentication failed.',
+            extra: 'Try signing in or refreshing the page.',
+          }
+        })
+      }
+    }
   },
   {
     path: '/series/add',
     name: 'AddSeries',
     component: AddSeries,
+    beforeEnter: async (to, from, next) => {
+      try {
+        const user = (await api.get('/auth/me')).data;
+        if (user.userTypeId >= 2) {
+          next();
+        } else {
+          next({
+            name: 'ErrorPage',
+            query: {
+              httpCode: '403 Forbidden',
+              reason: 'You do not have permission to access this page.',
+            }
+          })
+        }
+      } catch (err) {
+        next({
+          name: 'ErrorPage',
+          query: {
+            httpCode: '401 Unauthorized',
+            reason: 'Authentication failed.',
+            extra: 'Try signing in or refreshing the page.',
+          }
+        })
+      }
+    }
   },
   {
     path: '/modder/:id',
@@ -213,35 +285,54 @@ const routes = [
     component: ModderDetail,
     props: true,
     beforeEnter: async (to, from, next) => {
-      const res = await api.get('/logs', { params: { userId: null } });
       const modderId = parseInt(to.params.id);
-      const latestLog = res.data
-        .filter(log => log.itemType?.itemTypeId === 2 && log.item?.modderId === modderId)
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
       const blockedStates = [2, 4, 6];
-      const user = (await api.get('/auth/me')).data;
-
-      const submitted = res.data.find(log =>
-        log.itemType?.itemTypeId === 2 &&
-        log.item?.modderId === parseInt(to.params.id)
-      );
-
-      if (
-        latestLog && blockedStates.includes(latestLog.acceptanceState.acceptanceStateId)
-        && user.userTypeId != 3
-        && user.modderId != parseInt(to.params.id)
-        && !submitted
-      ) {
-        next({
+    
+      try {
+        const res = await api.get('/logs', { params: { userId: null } });
+        const logs = res.data;
+      
+        const latestLog = logs
+          .filter(log => log.itemType?.itemTypeId === 2 && log.item?.modderId === modderId)
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+      
+        const submitted = logs.some(log =>
+          log.itemType?.itemTypeId === 2 &&
+          log.item?.modderId === modderId
+        );
+      
+        let user = null;
+        try {
+          user = (await api.get('/auth/me')).data;
+        } catch (err) {
+          // Unauthenticated
+        }
+      
+        const isPrivate = latestLog && blockedStates.includes(latestLog.acceptanceState.acceptanceStateId);
+        const isAdmin = user?.userTypeId === 3;
+        const isSelf = user?.modderId === modderId;
+      
+        if (isPrivate && !isAdmin && !isSelf && !submitted) {
+          return next({
+            name: 'ErrorPage',
+            query: {
+              httpCode: '403 Forbidden',
+              reason: 'This modder page is currently private.',
+              extra: 'Check back later, or try signing in.',
+            }
+          });
+        }
+      
+        return next();
+      } catch (err) {
+        return next({
           name: 'ErrorPage',
           query: {
-            httpCode: '403 Forbidden',
-            reason: 'This modder page is currently private.',
-            extra: 'Check back later, or try signing in.',
+            httpCode: '500 Server Error',
+            reason: 'Could not load the modder page.',
+            extra: err.message || 'Please try again later.',
           }
-        })
-      } else {
-        next();
+        });
       }
     }
   },
