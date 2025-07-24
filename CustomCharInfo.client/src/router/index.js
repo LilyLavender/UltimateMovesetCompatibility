@@ -344,7 +344,7 @@ const routes = [
     beforeEnter: async (to, from, next) => {
       try {
         const user = (await api.get('/auth/me')).data;
-        if (user.modderId === null) {
+        if ((!user.modderId || user.modderId === null)) {
           next();
         } else {
           next({
