@@ -3,15 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <script>
-      var path = location.pathname + location.search + location.hash;
-
+      var redirectPath = location.pathname + location.search + location.hash;
       var base = '/UltimateMovesetCompatibility';
-      if (path.startsWith(base)) {
-        path = path.slice(base.length);
-      }
 
-      var newUrl = base + '/index.html' + path;
-      location.replace(newUrl);
+      if (!location.pathname.startsWith(base)) {
+        location.replace(base + redirectPath);
+      }
     </script>
   </head>
   <body></body>
