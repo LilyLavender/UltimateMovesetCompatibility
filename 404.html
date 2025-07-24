@@ -3,11 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <script>
-      var redirectTo = window.location.pathname;
-      if (redirectTo.startsWith('/lilylavender.github.io/')) {
-	      redirectTo = redirectTo.replace('/lilylavender.github.io', '');
+      var path = location.pathname + location.search + location.hash;
+
+      var base = '/UltimateMovesetCompatibility';
+      if (path.startsWith(base)) {
+        path = path.slice(base.length);
       }
-      window.location.replace('lilylavender.github.io/' + redirectTo);
+
+      var newUrl = base + '/index.html' + path;
+      location.replace(newUrl);
     </script>
   </head>
   <body></body>
