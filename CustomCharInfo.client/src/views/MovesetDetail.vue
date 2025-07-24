@@ -223,15 +223,13 @@ const userIsModder = computed(() => {
 
 onMounted(async () => {
   try {
-    const [movesetRes, userRes] = await Promise.all([
-      api.get(`/movesets/${route.params.movesetId}`),
-    ])
+    const movesetRes = await api.get(`/movesets/${route.params.movesetId}`)
     moveset.value = movesetRes.data
   } catch (err) {
     router.replace({ name: 'ErrorPage', query: { http: 404, reason: 'Moveset not found' } })
   }
   try {
-    api.get('/auth/me')
+    const userRes = await api.get('/auth/me')
     user.value = userRes.data
   } catch (err) {
     // 

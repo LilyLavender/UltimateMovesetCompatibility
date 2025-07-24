@@ -108,7 +108,7 @@
                 <v-list-item v-bind="props" class="remove-bound-props">
                   <div class="filter-option">
                     <div>
-                      <v-img :src="`/src/assets/vanilla-stock-icons/chara_2_${item.raw.vanillaCharInternalName}.png`" class="stock-icon-small" />
+                      <v-img :src="`/UltimateMovesetCompatibility/vanilla-stock-icons/chara_2_${item.raw.vanillaCharInternalName}.png`" class="stock-icon-small" />
                     </div>
                     <v-list-item-title>{{ item.raw.displayName }}</v-list-item-title>
                   </div>
@@ -119,7 +119,7 @@
               <template #selection="{ item }">
                 <div class="filter-option d-flex align-center">
                   <v-avatar class="me-2" size="26">
-                    <v-img :src="`/src/assets/vanilla-stock-icons/chara_2_${item.raw.vanillaCharInternalName}.png`" />
+                    <v-img :src="`/UltimateMovesetCompatibility/vanilla-stock-icons/chara_2_${item.raw.vanillaCharInternalName}.png`" />
                   </v-avatar>
                   <span>{{ item.raw.displayName }}</span>
                 </div>
@@ -687,7 +687,7 @@ const uploadImage = async (event, type) => {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("type", type);
-  formData.append("charName", slottedId);
+  formData.append("itemName", slottedId);
 
   try {
     const res = await api.post("/upload/moveset-image", formData, {
