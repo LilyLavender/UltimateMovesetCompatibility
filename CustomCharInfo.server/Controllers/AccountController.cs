@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.ObjectPool;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -115,7 +116,7 @@ namespace CustomCharInfo.server.Controllers
 
             return Ok(result);
         }
-        
+
         [Authorize]
         [HttpPut("edit-username")]
         public async Task<IActionResult> EditUsername(EditUsernameDto dto)
@@ -132,7 +133,48 @@ namespace CustomCharInfo.server.Controllers
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
                 return BadRequest(result.Errors);
-        
+
+            // If user is linked to modder, update modder too
+            var modder = await _context.Modders.FindAsync(user.ModderId);
+            int? modderIdFuture = -1;
+            if (modder != null)
+            {
+                modder.Name = dto.NewUsername;
+                _context.Modders.Update(modder);
+            }
+            else
+            {
+                modderIdFuture = await _context.ActionLogs
+                    .Where(a => a.UserId == user.Id && a.ItemTypeId == 2)
+                    .OrderBy(a => a.CreatedAt)
+                    .Select(a => (int?)a.ItemId)
+                    .FirstOrDefaultAsync();
+
+                modder = await _context.Modders.FindAsync(modderIdFuture);
+            }
+            
+            var latestLog = await _context.ActionLogs
+                .Where(a => a.ItemTypeId == 2 && a.ItemId == modder.ModderId)
+                .OrderByDescending(a => a.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            int newState = (latestLog?.AcceptanceStateId == 2 || latestLog?.AcceptanceStateId == 4) ? 2 : 1;
+
+            if (modder?.ModderId != null)
+            {
+                _context.ActionLogs.Add(new ActionLog
+                {
+                    UserId = user.Id,
+                    ItemTypeId = 2,
+                    ItemId = modder.ModderId,
+                    AcceptanceStateId = newState,
+                    Notes = "", // todo allow notes
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
             return Ok(new { message = "Username updated successfully", newUsername = user.UserName });
         }
 
