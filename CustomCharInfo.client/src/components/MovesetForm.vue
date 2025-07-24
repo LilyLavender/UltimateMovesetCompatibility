@@ -729,7 +729,7 @@ const submit = async () => {
       await api.put(`/movesets/${props.movesetId}`, payload)
       router.push(`/moveset/${props.movesetId}`)
     } else {
-      const res = await api.post('/upload/moveset-image', payload)
+      const res = await api.post('/movesets', payload)
       const newId = res.data.movesetId
       router.push(`/moveset/${newId}`)
     }
