@@ -10,7 +10,7 @@
     <div
       class="background-column center-column icon-column"
       :style="{
-        backgroundImage: `url('${getFullImageUrl(moveset.series.seriesIconUrl)}')`
+        backgroundImage: `url('${getFullImageUrl(moveset.series.seriesIconUrl, '')}')`
       }"
     ></div>
     <div class="background-column side-column left-black"></div>
@@ -24,7 +24,7 @@
           <h1 class="title-font page-title no-select">{{ moveset.moddedCharName }}</h1>
         </div>
         <img
-          :src="getFullImageUrl(moveset.movesetHeroImageUrl)"
+          :src="getFullImageUrl(moveset.movesetHeroImageUrl, movesetHeroUnknown)"
           alt="Character UI"
           class="character-image"
         />
@@ -60,7 +60,7 @@
           </div>
           <!-- Series & IDs -->
           <div class="mb-2">
-            <p>Series: <strong>{{ moveset.series?.seriesName }} <img :src="getFullImageUrl(moveset.series.seriesIconUrl)" alt="series icon" class="inline-series" /></strong></p>
+            <p>Series: <strong>{{ moveset.series?.seriesName }} <img :src="getFullImageUrl(moveset.series.seriesIconUrl, seriesIconUnknown)" alt="series icon" class="inline-series" /></strong></p>
             <p v-if="moveset.slottedId === moveset.replacementId">
               Internal ID: <strong>{{ moveset.slottedId }}</strong>
             </p>
@@ -197,6 +197,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
 import movesetHeroUnknown from "@/assets/moveset_hero_unknown.png"
+import seriesIconUnknown from "@/assets/series_icon_unknown.png"
 import { GB_PAGE_URL, GB_WIP_URL, MODS_WIKI_URL } from '@/globals'
 
 const route = useRoute()
@@ -206,8 +207,8 @@ const user = ref(null)
 
 const apiUrl = import.meta.env.VITE_API_URL
 
-const getFullImageUrl = (path) => {
-  if (!path) return movesetHeroUnknown
+function getFullImageUrl (path, elsepath) {
+  if (!path) return elsepath
   return path.startsWith('/') ? `${apiUrl}${path}` : path
 }
 

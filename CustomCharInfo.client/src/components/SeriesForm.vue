@@ -114,13 +114,10 @@ const uploadImage = async (event, type) => {
 
       if (movesetsInSeries.length > 0) {
         // Check if user owns any movesets from this series
-        const allModderIds = new Set();
-        for (const m of movesetsInSeries) {
-          (m.movesetModders || []).forEach(modder => allModderIds.add(modder.modderId));
-        }
+        const allModderNames = movesetsInSeries.flatMap(m => m.modders ?? []);
 
-        if (!allModderIds.has(user.modderId)) {
-          alert("You do not own any moveset in this series, so you cannot upload an image for it.");
+        if (!allModderNames.includes(user.userName)) {
+          alert("You do not own any movesets in this series, so you cannot upload an image for it.");
           return;
         }
       } else {

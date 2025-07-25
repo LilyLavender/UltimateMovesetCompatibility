@@ -112,7 +112,7 @@ const routes = [
         const modderIds = moveset.data.movesetModders.map(m => m.modderId);
         const user = (await api.get('/auth/me')).data;
 
-        if (user.modderId === parseInt(to.params.id) || user.userTypeId === 3) {
+        if (modderIds.includes(user.modderId) || user.userTypeId === 3) {
           next();
         } else {
           next({
