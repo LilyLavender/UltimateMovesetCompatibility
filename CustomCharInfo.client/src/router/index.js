@@ -38,21 +38,25 @@ const routes = [
     path: '/movesets',
     name: 'Movesets',
     component: MovesetsPage,
+    meta: { title: 'Movesets' },
   },
   {
     path: '/moveset-table',
     name: 'MovesetsList',
     component: MovesetsListPage,
+    meta: { title: 'Movesets' },
   },
   {
     path: '/blog',
     name: 'Blog',
     component: BlogPage,
+    meta: { title: 'Blog' },
   },
   {
     path: '/series',
     name: 'Series',
     component: SeriesPage,
+    meta: { title: 'Series' },
   },
   {
     path: '/moveset/:movesetId',
@@ -232,6 +236,7 @@ const routes = [
     path: '/moveset/add',
     name: 'AddMoveset',
     component: AddMoveset,
+    meta: { title: 'Submit Moveset' },
     beforeEnter: async (to, from, next) => {
       try {
         const user = (await api.get('/auth/me')).data;
@@ -262,6 +267,7 @@ const routes = [
     path: '/series/add',
     name: 'AddSeries',
     component: AddSeries,
+    meta: { title: 'Submit Series' },
     beforeEnter: async (to, from, next) => {
       try {
         const user = (await api.get('/auth/me')).data;
@@ -380,6 +386,7 @@ const routes = [
     path: '/modder/edit/:id',
     name: 'EditModder',
     component: EditModder,
+    meta: { title: 'Editing Modder Page' },
     props: true,
     beforeEnter: async (to, from, next) => {
       try {
@@ -421,11 +428,13 @@ const routes = [
     path: '/user-actions',
     name: 'UserActions',
     component: AccountPage,
+    meta: { title: 'User Settings' },
   },
   {
     path: '/admin-portal',
     name: 'AdminPortal',
     component: AdminPortal,
+    meta: { title: 'Admin portal' },
     beforeEnter: async (to, from, next) => {
       try {
         const user = (await api.get('/auth/me')).data;
@@ -456,6 +465,7 @@ const routes = [
     path: '/super-secret-admin-area-no-one-should-access-but-the-admins',
     name: 'AdminAccepter',
     component: AdminAccepter,
+    meta: { title: 'Admin Accepter' },
     beforeEnter: async (to, from, next) => {
       try {
         const user = (await api.get('/auth/me')).data;
@@ -486,6 +496,7 @@ const routes = [
     path: '/add-blog-post',
     name: 'AddBlogPost',
     component: BlogPostForm,
+    meta: { title: 'Add Blog Post' },
     beforeEnter: async (to, from, next) => {
       try {
         const user = (await api.get('/auth/me')).data;
@@ -516,16 +527,19 @@ const routes = [
     path: '/user-list',
     name: 'UserList',
     component: UserList,
+    meta: { title: 'User List' },
   },
   {
     path: '/about',
     name: 'AboutPage',
     component: AboutPage,
+    meta: { title: 'About' },
   },
   {
     path: '/photo-submissions',
     name: 'PhotoSubmissions',
     component: PhotoSubmissionPage,
+    meta: { title: 'Photo Submissions' },
   },
   {
     path: '/error',

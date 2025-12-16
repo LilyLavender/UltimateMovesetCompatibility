@@ -89,6 +89,7 @@ onMounted(async () => {
       const res = await api.get(`/series/${props.seriesId}`)
       series.value = res.data
       Object.assign(form.value, res.data)
+      document.title = `UMC | Editing ${series.value?.seriesName}`; // sets page title
     } catch (err) {
       console.error(err)
       router.replace({ name: 'ErrorPage', query: { http: 404, reason: 'Series not found' } })

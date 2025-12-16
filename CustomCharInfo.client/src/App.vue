@@ -9,6 +9,21 @@
 <script setup>
 import Header from '@/components/SiteHeader.vue'
 import Footer from '@/components/SiteFooter.vue'
+
+import { watch } from 'vue';
+import { useRoute } from 'vue-router';
+
+const route = useRoute();
+
+watch(
+  () => route.fullPath,
+  () => {
+    document.title = route.meta.title
+      ? `UMC | ${route.meta.title}`
+      : 'UMC';
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>

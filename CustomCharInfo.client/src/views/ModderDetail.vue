@@ -1,4 +1,3 @@
-<!-- ModderPage.vue -->
 <template>
   <v-container>
     <v-row class="modder-section-1">
@@ -6,15 +5,21 @@
         <img v-if="modderPfpUrl" :src="modderPfpUrl" class="modder-pfp" alt="GameBanana PFP" />
         <div v-else class="modder-pfp-null"><v-icon size="128">mdi-account</v-icon></div>
         <a
-          :href="`${GB_MEMBER_URL}${modder?.gamebananaId}`"
+          v-if="modder?.gamebananaId"
+          :href="`${GB_MEMBER_URL}${modder.gamebananaId}`"
           class="offsite unvisitable"
           target="_blank" rel="noopener"
         >GameBanana</a>
       </v-col>
       <v-col cols="10">
-        <!-- <h1 class="page-title">{{ modder?.name }}</h1> -->
         <div class="title-container">
           <h1 class="page-title">{{ modder?.name }}</h1>
+          <v-icon 
+            v-if="modderIsAdmin"
+            class="admin-display"
+          >
+            mdi-shield-account
+          </v-icon>
         </div>
         <p class="bio">{{ modder?.bio }}</p>
       </v-col>
@@ -44,28 +49,40 @@ const modderId = route.params.id
 
 const modder = ref(null)
 const movesets = ref([])
-
 const modderPfpUrl = ref(null)
+const modderIsAdmin = ref(false)
 
 onMounted(async () => {
   // Fetch modder info
-  const { data } = await api.get(`/modders/${modderId}`)
-  modder.value = data
+  try {
+    const { data } = await api.get(`/modders/${modderId}`)
+    modder.value = data
+    document.title = `UMC | ${modder.value?.name}` // sets page title
 
-  // Fetch movesets
-  const movesetRes = await api.get(`movesets?modderId=${modderId}&page=1&pageSize=10`)
-  movesets.value = movesetRes.data.sort((a, b) => new Date(a.releaseDate) - new Date(b.releaseDate))
+    // Check if modder is admin
+    const adminRes = await api.get(`/modder-is-admin?modderId=${modderId}`)
+    modderIsAdmin.value = adminRes.data.isAdmin
 
-  // Fetch GameBanana pfp
-  if (modder.value.gamebananaId) {
-    try {
-      const res = await axios.get(
-        `https://api.gamebanana.com/Core/Item/Data?itemtype=Member&itemid=${modder.value.gamebananaId}&fields=Url().sHdAvatarUrl(),Url().sAvatarUrl()`
-      )
-      modderPfpUrl.value = res.data[0] ? res.data[0] : res.data[1];
-    } catch (err) {
-      console.warn('Could not fetch GameBanana avatar:', err)
+    // Fetch movesets
+    const movesetRes = await api.get(`movesets?modderId=${modderId}&page=1&pageSize=10`)
+    movesets.value = movesetRes.data.sort(
+      (a, b) => new Date(a.releaseDate) - new Date(b.releaseDate)
+    )
+
+    // Fetch GameBanana pfp
+    if (modder.value.gamebananaId) {
+      try {
+        const res = await axios.get(
+          `https://api.gamebanana.com/Core/Item/Data?itemtype=Member&itemid=${modder.value.gamebananaId}&fields=Url().sHdAvatarUrl(),Url().sAvatarUrl()`
+        )
+        modderPfpUrl.value = res.data[0] || res.data[1] || null
+      } catch (err) {
+        console.warn('Could not fetch GameBanana avatar:', err)
+        modderPfpUrl.value = null
+      }
     }
+  } catch (err) {
+    console.error('Failed to load modder page:', err)
   }
 })
 </script>
@@ -107,11 +124,19 @@ onMounted(async () => {
 }
 
 .page-title {
+  display: inline-block;
   position: relative;
   z-index: 10;
   font-size: 4.5em;
   margin: -16px 0.25em -16px -0.25em;
   filter: drop-shadow(5px 4px 3px #000000c0)
+}
+
+i.admin-display {
+  z-index: 10;
+  font-size: 32px;
+  margin-left: -0.5em;
+  margin-top: -0.5em;
 }
 
 .modder-section-1 {

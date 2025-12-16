@@ -441,6 +441,25 @@ namespace CustomCharInfo.server.Controllers
             return Ok(modder);
         }
 
+        [HttpGet("modder-is-admin")]
+        public async Task<ActionResult<object>> ModderIsAdmin(int modderId)
+        {
+            // Find the user associated with this modder
+            var user = await _context.Users
+                .Where(u => u.ModderId == modderId)
+                .Select(u => new { u.UserTypeId })
+                .FirstOrDefaultAsync();
+
+            // No user associated
+            if (user == null)
+            {
+                return Ok(new { isAdmin = false });
+            }
+
+            bool isAdmin = user.UserTypeId == 3;
+            return Ok(new { isAdmin });
+        }
+
         [Authorize]
         [HttpPost("modders")]
         public async Task<ActionResult<CreateModderDto>> CreateModder(CreateModderDto dto)

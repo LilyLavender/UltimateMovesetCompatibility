@@ -195,7 +195,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
 import movesetHeroUnknown from "@/assets/moveset_hero_unknown.png"
@@ -230,6 +230,7 @@ onMounted(async () => {
   try {
     const movesetRes = await api.get(`/movesets/${route.params.movesetId}`)
     moveset.value = movesetRes.data
+    document.title = `UMC | ${moveset.value?.moddedCharName} Moveset`; // sets page title
   } catch (err) {
     router.replace({ name: 'ErrorPage', query: { http: 404, reason: 'Moveset not found' } })
   }
@@ -391,11 +392,9 @@ const StatusIcon = defineComponent({
   top: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 1;
+  opacity: 0;
   transform: translateX(-300px);
 }
-
-
 
 .character-image.slide-in {
   animation: slideInLeft 0.75s ease-out forwards;
@@ -410,8 +409,9 @@ const StatusIcon = defineComponent({
     opacity: 1;
   }
 
-  100% {
+  to {
     transform: translateX(0);
+    opacity: 1;
   }
 }
 

@@ -617,6 +617,7 @@ onMounted(async () => {
       const res = await api.get(`/movesets/${props.movesetId}`)
       moveset.value = res.data
       Object.assign(form.value, res.data)
+      document.title = `UMC | Editing ${moveset.value?.moddedCharName}`; // sets page title
 
       showSeparateIds.value = form.value.slottedId !== form.value.replacementId
       slotRange.value = [form.value.slotsStart, form.value.slotsEnd]
