@@ -3,6 +3,8 @@ import api from '@/services/api'
 // Basic
 import HomePage from '@/views/HomePage.vue';
 import ErrorPage from '@/views/ErrorPage.vue';
+import AboutPage from '@/views/AboutPage.vue';
+import PhotoSubmissionPage from '@/views/PhotoSubmissionPage.vue';
 // Movesets
 import MovesetsPage from '@/views/MovesetsPage.vue';
 import MovesetDetail from '@/views/MovesetDetail.vue';
@@ -502,6 +504,16 @@ const routes = [
         })
       }
     }
+  },
+  {
+    path: '/about',
+    name: 'AboutPage',
+    component: AboutPage,
+  },
+  {
+    path: '/photo-submissions',
+    name: 'PhotoSubmissions',
+    component: PhotoSubmissionPage,
   },
   {
     path: '/error',

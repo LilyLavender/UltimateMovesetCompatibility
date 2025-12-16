@@ -1,9 +1,9 @@
 <template>
   <div class="hero-scroller no-select">
-    <div class="scroller-track">
+    <div class="scroller-track" :style="{ '--scroll-end': `-${scrollPercent}%` }">
       <div
         class="image-column"
-        v-for="(column, index) in duplicatedColumns"
+        v-for="(column, index) in finalColumns"
         :key="index"
       >
         <img
@@ -22,7 +22,7 @@
 <script setup>
 import { computed } from 'vue'
 // Get images
-const imageModules = import.meta.glob('@/assets/testimages/*.jpg', { eager: true })
+const imageModules = import.meta.glob('@/assets/scrolling-banner-images/*.{jpg,jpeg,png,JPG,JPEG,PNG}', { eager: true })
 const imagePaths = Object.values(imageModules).map(m => m.default)
 
 // Helper function to shuffle images
@@ -44,7 +44,27 @@ const columns = []
 for (let i = 0; i < workingPaths.length; i += 3) {
   columns.push([workingPaths[i], workingPaths[i + 1], workingPaths[i + 2]])
 }
-const duplicatedColumns = computed(() => [...columns, ...columns, ...columns])
+  
+const finalColNum = 5;
+
+// Append final extra columns
+const finalColumns = computed(() => {
+  const firstFew = workingPaths.slice(0, finalColNum * 3)
+
+  const extraColumns = []
+  for (let i = 0; i < firstFew.length; i += 3) {
+    extraColumns.push([firstFew[i], firstFew[i + 1], firstFew[i + 2]])
+  }
+
+  return [...columns, ...extraColumns]
+})
+
+// Calculate percentage to scroll
+const scrollPercent = computed(() => {
+  const base = columns.length
+  const total = base + finalColNum
+  return ((base / total) * 100).toFixed(2)
+})
 </script>
 
 <style scoped>
@@ -99,7 +119,7 @@ const duplicatedColumns = computed(() => [...columns, ...columns, ...columns])
 .scroller-track {
   display: flex;
   width: max-content;
-  animation: scroll-left linear infinite 240s;
+  animation: scroll-left linear infinite 180s;
 }
 
 .image-column {
@@ -119,7 +139,7 @@ const duplicatedColumns = computed(() => [...columns, ...columns, ...columns])
     transform: translateX(0%);
   }
   100% {
-    transform: translateX(-50%);
+    transform: translateX(var(--scroll-end));
   }
 }
 </style>

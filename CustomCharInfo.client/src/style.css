@@ -60,6 +60,10 @@ a.unvisitable:visited {
   color: unset;
 }
 
+a.question {
+  cursor: help;
+}
+
 
 
 /* Misc */

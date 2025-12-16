@@ -27,6 +27,8 @@
           :src="getFullImageUrl(moveset.movesetHeroImageUrl, movesetHeroUnknown)"
           alt="Character UI"
           class="character-image"
+          :class="{ 'slide-in': imageLoaded }"
+          @load="imageLoaded = true"
         />
       </div>
 
@@ -207,6 +209,8 @@ const user = ref(null)
 
 const apiUrl = import.meta.env.VITE_API_URL
 
+const imageLoaded = ref(false)
+
 function getFullImageUrl (path, elsepath) {
   if (!path) return elsepath
   return path.startsWith('/') ? `${apiUrl}${path}` : path
@@ -381,12 +385,34 @@ const StatusIcon = defineComponent({
 }
 
 .character-image {
-  max-width: 100%;
+  width: 70vw;
   position: fixed;
   left: 0;
   top: 0;
   z-index: 0;
   pointer-events: none;
+  opacity: 1;
+  transform: translateX(-300px);
+}
+
+
+
+.character-image.slide-in {
+  animation: slideInLeft 0.75s ease-out forwards;
+}
+
+@keyframes slideInLeft {
+  0% {
+    opacity: 0;
+  }
+
+  80% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateX(0);
+  }
 }
 
 .info-card {

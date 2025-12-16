@@ -355,6 +355,7 @@
 
       <!-- Articles -->
       <section>
+        <!-- Header -->
         <h2>
           Articles
           <v-btn
@@ -366,6 +367,14 @@
             @click="addArticleForm = !addArticleForm"
           />
         </h2>
+        <!-- learn more -->
+        <p class="subheader"><a
+            href="https://docs.google.com/spreadsheets/d/16SEU3MibrzTJHTjxJb7c5e7JzGgrfWY_c_hqNJtGvNY/"
+            target="_blank"
+            class="offsite unvisitable"
+          >
+            Learn more about articles
+        </a></p>
         <!-- Add Article -->
         <v-expand-transition>
           <div v-if="addArticleForm">
@@ -844,6 +853,13 @@ section h2 {
 }
 .left-merged-input :deep(.v-field) {
   border-top-right-radius: 0;
+}
+
+/* subheader helper class */
+.subheader {
+  margin-top: -1.5em;
+  margin-bottom: 0.5em;
+  font-size: 12px;
 }
 
 /* Toggle form button */
