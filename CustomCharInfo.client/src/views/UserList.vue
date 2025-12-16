@@ -99,36 +99,4 @@ section {
   padding: 1rem;
   border-radius: 10px;
 }
-
-:deep(.dark-table .v-data-table) {
-  background-color: #121212;
-  color: #eee;
-}
-
-:deep(.dark-table .v-data-table__th) {
-  background-color: #1e1e1e;
-  color: #ddd;
-}
-
-:deep(.dark-table .v-data-table__td) {
-  background-color: #1e1e1e;
-  color: #ccc;
-  max-width: 150px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: pointer;
-}
-
-:deep(.dark-table),
-:deep(.dark-table .v-data-table-footer),
-:deep(.dark-table .v-table__wrapper),
-:deep(.dark-table table),
-:deep(.dark-table thead),
-:deep(.dark-table tr),
-:deep(.dark-table tbody) {
-  background-color: #1e1e1e;
-  color: #ccc;
-}
-
 </style>

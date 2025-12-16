@@ -3,14 +3,22 @@
     <!-- Page title -->
     <h1 class="mb-1 title-font page-title no-select">All Movesets</h1>
 
-    <!-- Add moveset button -->
-    <div 
-      v-if="user && user.userTypeId >= 2"
-      class="mb-5 pb-5"
-    >
+    <!-- Actions -->
+    <div class="mb-5 pb-5 d-flex justify-center">
+      <!-- View table -->
       <router-link
-        :to="{ name: 'AddMoveset' }"
+        :to="{ name: 'MovesetsList' }"
         class="unvisitable text-decoration-none"
+      >
+        <i class="mdi mdi-arrow-right-bottom"></i>
+        View all movesets as a table
+      </router-link>
+
+      <!-- Add moveset -->
+      <router-link
+        v-if="user && user.userTypeId >= 2"
+        :to="{ name: 'AddMoveset' }"
+        class="unvisitable text-decoration-none ml-5"
       >
         <v-icon>mdi-plus</v-icon>
         Submit Moveset

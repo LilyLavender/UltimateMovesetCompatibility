@@ -624,6 +624,64 @@ namespace CustomCharInfo.server.Controllers
             return Ok(movesets);
         }
 
+        [HttpGet("moveset-report")]
+        public async Task<ActionResult<IEnumerable<object>>> GetMovesetsReport()
+        {
+            var movesets = await _context.Movesets
+                .AsNoTracking()
+                .Include(m => m.ReleaseState)
+                .Include(m => m.MovesetModders)
+                    .ThenInclude(mm => mm.Modder)
+                        .ThenInclude(md => md.User)
+                .Include(m => m.MovesetArticles)
+                    .ThenInclude(ma => ma.Article)
+                .Include(m => m.MovesetHooks)
+                    .ThenInclude(mh => mh.Hook)
+                .Where(m => !(bool)m.PrivateMoveset)
+                .OrderBy(m => m.ModdedCharName)
+                .Select(m => new
+                {
+                    // Modders
+                    Modders = string.Join(", ",
+                        m.MovesetModders
+                            .Select(mm => mm.Modder.User.UserName ?? mm.Modder.Name)
+                    ),
+
+                    // Main info
+                    ModdedCharName = m.ModdedCharName,
+                    VanillaCharName = m.VanillaCharInternalName,
+                    SlottedId = m.SlottedId,
+                    ReplacementId = m.ReplacementId,
+                    SlotsRange = $"c{m.SlotsStart:D3}-c{m.SlotsEnd:D3}",
+                    ReleaseState = m.ReleaseState.ReleaseStateName,
+
+                    // Flags
+                    HasGlobalOpff = m.HasGlobalOpff,
+                    HasCharacterOpff = m.HasCharacterOpff,
+                    HasAgentInit = m.HasAgentInit,
+                    HasGlobalOnLinePre = m.HasGlobalOnLinePre,
+                    HasGlobalOnLineEnd = m.HasGlobalOnLineEnd,
+
+                    // Articles
+                    Articles = m.MovesetArticles.Select(ma => new
+                    {
+                        Original = $"{ma.Article.VanillaCharInternalName}-{ma.Article.ArticleName}",
+                        Cloned = ma.ModdedName
+                    }),
+
+                    // Hooks
+                    Hooks = m.MovesetHooks.Select(mh => new
+                    {
+                        mh.Hook.Offset,
+                        mh.Hook.Description,
+                        Usage = mh.Description
+                    })
+                })
+                .ToListAsync();
+
+            return Ok(movesets);
+        }
+
         [HttpGet("movesets/{id}")]
         public async Task<ActionResult<Moveset>> GetMoveset(int id)
         {

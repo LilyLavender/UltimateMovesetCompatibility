@@ -7,6 +7,7 @@ import AboutPage from '@/views/AboutPage.vue';
 import PhotoSubmissionPage from '@/views/PhotoSubmissionPage.vue';
 // Movesets
 import MovesetsPage from '@/views/MovesetsPage.vue';
+import MovesetsListPage from '@/views/MovesetsListPage.vue';
 import MovesetDetail from '@/views/MovesetDetail.vue';
 import AddMoveset from '@/views/AddMoveset.vue';
 import EditMoveset from '@/views/EditMoveset.vue';
@@ -37,6 +38,11 @@ const routes = [
     path: '/movesets',
     name: 'Movesets',
     component: MovesetsPage,
+  },
+  {
+    path: '/moveset-table',
+    name: 'MovesetsList',
+    component: MovesetsListPage,
   },
   {
     path: '/blog',
