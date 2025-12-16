@@ -25,6 +25,7 @@ import BlogPostForm from '@/components/BlogPostForm.vue';
 import AccountPage from '@/views/AccountPage.vue';
 import AdminPortal from '@/views/AdminPortal.vue';
 import AdminAccepter from '@/views/AdminAccepter.vue';
+import UserList from '@/views/UserList.vue';
 
 const routes = [
   {
@@ -504,6 +505,11 @@ const routes = [
         })
       }
     }
+  },
+  {
+    path: '/user-list',
+    name: 'UserList',
+    component: UserList,
   },
   {
     path: '/about',
