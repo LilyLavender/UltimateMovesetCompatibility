@@ -403,42 +403,96 @@ namespace CustomCharInfo.server.Controllers
 
         #region Modders
 
+        [Authorize]
         [HttpGet("modders")]
         public async Task<ActionResult> GetModders()
         {
-            var modders = await _context.Modders
+            var userId = _userManager.GetUserId(User);
+            var userFromId = await _context.Users.FindAsync(userId);
+            if (userFromId == null || userFromId.UserTypeId < 2)
+                return Unauthorized();
+        
+            var blockedStates = new[] { 2, 4, 6 };
+        
+            var moddersQuery = _context.Modders
                 .Include(m => m.User)
                 .Select(m => new
                 {
-                    m.ModderId,
-                    Name = m.User != null ? m.User.UserName : m.Name,
-                    m.Bio,
-                    m.GamebananaId,
-                    m.DiscordUsername,
-                }).ToListAsync();
-
+                    Modder = m,
+                    LatestLog = _context.ActionLogs
+                        .Where(l => l.ItemTypeId == 2 && l.ItemId == m.ModderId)
+                        .OrderByDescending(l => l.CreatedAt)
+                        .FirstOrDefault()
+                });
+        
+            // Filter out blocked modders
+            if (userFromId.UserTypeId != 3)
+            {
+                moddersQuery = moddersQuery
+                    .Where(x => x.LatestLog == null || !blockedStates.Contains(x.LatestLog.AcceptanceStateId));
+            }
+        
+            var modders = await moddersQuery
+                .Select(x => new
+                {
+                    x.Modder.ModderId,
+                    Name = x.Modder.User != null ? x.Modder.User.UserName : x.Modder.Name,
+                    x.Modder.Bio,
+                    x.Modder.GamebananaId,
+                    x.Modder.DiscordUsername
+                })
+                .ToListAsync();
+        
             return Ok(modders);
         }
 
+        [Authorize]
         [HttpGet("modders/{id}")]
         public async Task<ActionResult> GetModder(int id)
         {
-            var modder = await _context.Modders
+            var userId = _userManager.GetUserId(User);
+            var userFromId = await _context.Users.FindAsync(userId);
+            if (userFromId == null || userFromId.UserTypeId < 2)
+                return Unauthorized();
+
+            var blockedStates = new[] { 2, 4, 6 };
+
+            var modderQuery = _context.Modders
                 .Include(m => m.User)
                 .Where(m => m.ModderId == id)
                 .Select(m => new
                 {
-                    m.ModderId,
-                    Name = m.User != null ? m.User.UserName : m.Name,
-                    m.Bio,
-                    m.GamebananaId,
-                    m.DiscordUsername,
-                }).FirstOrDefaultAsync();
+                    Modder = m,
+                    LatestLog = _context.ActionLogs
+                        .Where(l => l.ItemTypeId == 2 && l.ItemId == m.ModderId)
+                        .OrderByDescending(l => l.CreatedAt)
+                        .FirstOrDefault()
+                });
 
-            if (modder == null)
+            // Filter out blocked modders
+            if (userFromId.UserTypeId != 3)
+            {
+                modderQuery = modderQuery.Where(x =>
+                    x.LatestLog == null ||
+                    !blockedStates.Contains(x.LatestLog.AcceptanceStateId)
+                );
+            }
+
+            var result = await modderQuery
+                .Select(x => new
+                {
+                    x.Modder.ModderId,
+                    Name = x.Modder.User != null ? x.Modder.User.UserName : x.Modder.Name,
+                    x.Modder.Bio,
+                    x.Modder.GamebananaId,
+                    x.Modder.DiscordUsername
+                })
+                .FirstOrDefaultAsync();
+
+            if (result == null)
                 return NotFound();
 
-            return Ok(modder);
+            return Ok(result);
         }
 
         [HttpGet("modder-is-admin")]
@@ -596,6 +650,15 @@ namespace CustomCharInfo.server.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
         {
+            var userId = _userManager.GetUserId(User);
+            var user = userId != null
+                ? await _context.Users
+                    .Select(u => new { u.Id, u.UserTypeId, u.ModderId })
+                    .FirstOrDefaultAsync(u => u.Id == userId)
+                : null;
+
+            var blockedStates = new[] { 2, 4, 6 };
+
             var query = _context.Movesets
                 .AsNoTracking()
                 .Include(m => m.Series)
@@ -603,40 +666,61 @@ namespace CustomCharInfo.server.Controllers
                 .Include(m => m.MovesetModders)
                     .ThenInclude(mm => mm.Modder)
                         .ThenInclude(modder => modder.User)
+                .Select(m => new
+                {
+                    Moveset = m,
+
+                    LatestLog = _context.ActionLogs
+                        .Where(a => a.ItemTypeId == 1 && a.ItemId == m.MovesetId)
+                        .OrderByDescending(a => a.CreatedAt)
+                        .FirstOrDefault(),
+
+                    IsOwner = user != null && user.ModderId != null &&
+                        m.MovesetModders.Any(mm => mm.ModderId == user.ModderId)
+                })
                 .AsQueryable();
 
             if (seriesId.HasValue)
-                query = query.Where(m => m.SeriesId == seriesId);
+                query = query.Where(x => x.Moveset.SeriesId == seriesId);
 
             if (releaseStateId.HasValue)
-                query = query.Where(m => m.ReleaseStateId == releaseStateId);
+                query = query.Where(x => x.Moveset.ReleaseStateId == releaseStateId);
 
             if (modderId.HasValue)
-                query = query.Where(m =>
-                    m.MovesetModders.Any(mm => mm.Modder.ModderId == modderId.Value));
+                query = query.Where(x =>
+                    x.Moveset.MovesetModders.Any(mm => mm.ModderId == modderId.Value));
 
             if (!string.IsNullOrWhiteSpace(search))
-                query = query.Where(m => m.ModdedCharName.Contains(search));
+                query = query.Where(x => x.Moveset.ModdedCharName.Contains(search));
+
+            if (user == null || user.UserTypeId != 3)
+            {
+                query = query.Where(x =>
+                    x.LatestLog == null ||
+                    !blockedStates.Contains(x.LatestLog.AcceptanceStateId) ||
+                    x.IsOwner
+                );
+            }
 
             var movesets = await query
-                .OrderBy(m => m.ModdedCharName)
+                .OrderBy(x => x.Moveset.ModdedCharName)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(m => new
+                .Select(x => new
                 {
-                    m.MovesetId,
-                    m.ModdedCharName,
-                    SeriesIconUrl = m.Series.SeriesIconUrl,
-                    BackgroundColor = m.BackgroundColor,
-                    ThumbhImageUrl = m.ThumbhImageUrl,
-                    ReleaseState = m.ReleaseState.ReleaseStateName,
-                    Modders = m.MovesetModders
+                    x.Moveset.MovesetId,
+                    x.Moveset.ModdedCharName,
+                    SeriesIconUrl = x.Moveset.Series.SeriesIconUrl,
+                    BackgroundColor = x.Moveset.BackgroundColor,
+                    ThumbhImageUrl = x.Moveset.ThumbhImageUrl,
+                    ReleaseState = x.Moveset.ReleaseState.ReleaseStateName,
+                    Modders = x.Moveset.MovesetModders
                         .Select(mm => mm.Modder.User.UserName ?? mm.Modder.Name)
                         .ToList(),
-                    ReleaseDate = m.ReleaseDate,
-                    AdminPick = m.AdminPick,
-                    PrivateMoveset = m.PrivateMoveset,
-                    PrivateModder = m.PrivateModder,
+                    ReleaseDate = x.Moveset.ReleaseDate,
+                    AdminPick = x.Moveset.AdminPick,
+                    PrivateMoveset = x.Moveset.PrivateMoveset,
+                    PrivateModder = x.Moveset.PrivateModder,
                 })
                 .ToListAsync();
 
@@ -646,7 +730,16 @@ namespace CustomCharInfo.server.Controllers
         [HttpGet("moveset-report")]
         public async Task<ActionResult<IEnumerable<object>>> GetMovesetsReport()
         {
-            var movesets = await _context.Movesets
+            var userId = _userManager.GetUserId(User);
+            var user = userId != null
+                ? await _context.Users
+                    .Select(u => new { u.Id, u.UserTypeId, u.ModderId })
+                    .FirstOrDefaultAsync(u => u.Id == userId)
+                : null;
+
+            var blockedStates = new[] { 2, 4, 6 };
+
+            var query = _context.Movesets
                 .AsNoTracking()
                 .Include(m => m.ReleaseState)
                 .Include(m => m.MovesetModders)
@@ -657,39 +750,63 @@ namespace CustomCharInfo.server.Controllers
                 .Include(m => m.MovesetHooks)
                     .ThenInclude(mh => mh.Hook)
                 .Where(m => !(bool)m.PrivateMoveset)
-                .OrderBy(m => m.ModdedCharName)
                 .Select(m => new
+                {
+                    Moveset = m,
+
+                    LatestLog = _context.ActionLogs
+                        .Where(a => a.ItemTypeId == 1 && a.ItemId == m.MovesetId)
+                        .OrderByDescending(a => a.CreatedAt)
+                        .FirstOrDefault(),
+
+                    IsOwner = user != null && user.ModderId != null &&
+                        m.MovesetModders.Any(mm => mm.ModderId == user.ModderId)
+                })
+                .AsQueryable();
+
+            if (user == null || user.UserTypeId != 3)
+            {
+                query = query.Where(x =>
+                    x.LatestLog == null ||
+                    !blockedStates.Contains(x.LatestLog.AcceptanceStateId) ||
+                    x.IsOwner
+                );
+            }
+
+            var movesets = await query
+                .OrderBy(x => x.Moveset.ModdedCharName)
+                .Select(x => new
                 {
                     // Modders
                     Modders = string.Join(", ",
-                        m.MovesetModders
+                        x.Moveset.MovesetModders
                             .Select(mm => mm.Modder.User.UserName ?? mm.Modder.Name)
                     ),
 
                     // Main info
-                    ModdedCharName = m.ModdedCharName,
-                    VanillaCharName = m.VanillaCharInternalName,
-                    SlottedId = m.SlottedId,
-                    ReplacementId = m.ReplacementId,
-                    SlotsRange = $"c{m.SlotsStart:D3}-c{m.SlotsEnd:D3}",
-                    ReleaseState = m.ReleaseState.ReleaseStateName,
+                    ModdedCharName = x.Moveset.ModdedCharName,
+                    VanillaCharName = x.Moveset.VanillaCharInternalName,
+                    SlottedId = x.Moveset.SlottedId,
+                    ReplacementId = x.Moveset.ReplacementId,
+                    SlotsRange = $"c{x.Moveset.SlotsStart:D3}-c{x.Moveset.SlotsEnd:D3}",
+                    ReleaseState = x.Moveset.ReleaseState.ReleaseStateName,
 
                     // Flags
-                    HasGlobalOpff = m.HasGlobalOpff,
-                    HasCharacterOpff = m.HasCharacterOpff,
-                    HasAgentInit = m.HasAgentInit,
-                    HasGlobalOnLinePre = m.HasGlobalOnLinePre,
-                    HasGlobalOnLineEnd = m.HasGlobalOnLineEnd,
+                    HasGlobalOpff = x.Moveset.HasGlobalOpff,
+                    HasCharacterOpff = x.Moveset.HasCharacterOpff,
+                    HasAgentInit = x.Moveset.HasAgentInit,
+                    HasGlobalOnLinePre = x.Moveset.HasGlobalOnLinePre,
+                    HasGlobalOnLineEnd = x.Moveset.HasGlobalOnLineEnd,
 
                     // Articles
-                    Articles = m.MovesetArticles.Select(ma => new
+                    Articles = x.Moveset.MovesetArticles.Select(ma => new
                     {
                         Original = $"{ma.Article.VanillaCharInternalName}-{ma.Article.ArticleName}",
                         Cloned = ma.ModdedName
                     }),
 
                     // Hooks
-                    Hooks = m.MovesetHooks.Select(mh => new
+                    Hooks = x.Moveset.MovesetHooks.Select(mh => new
                     {
                         mh.Hook.Offset,
                         mh.Hook.Description,
@@ -704,6 +821,13 @@ namespace CustomCharInfo.server.Controllers
         [HttpGet("movesets/{id}")]
         public async Task<ActionResult<Moveset>> GetMoveset(int id)
         {
+            var userId = _userManager.GetUserId(User);
+            var user = userId != null
+                ? await _context.Users
+                    .Select(u => new { u.Id, u.UserTypeId, u.ModderId })
+                    .FirstOrDefaultAsync(u => u.Id == userId)
+                : null;
+
             var moveset = await _context.Movesets
                 .Include(m => m.Series)
                 .Include(m => m.ReleaseState)
@@ -717,12 +841,46 @@ namespace CustomCharInfo.server.Controllers
             if (moveset == null)
                 return NotFound();
 
+            // Find latest log
+            var latestLog = await _context.ActionLogs
+                .Where(a => a.ItemTypeId == 1 && a.ItemId == id)
+                .OrderByDescending(a => a.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            var blockedStates = new[] { 2, 4, 6 };
+
+            // Check ownership
+            bool isOwner =
+                user != null &&
+                user.ModderId != null &&
+                moveset.MovesetModders.Any(mm => mm.ModderId == user.ModderId);
+
+            // Enforce rules
+            if (user == null || user.UserTypeId != 3)
+            {
+                if (
+                    latestLog != null &&
+                    blockedStates.Contains(latestLog.AcceptanceStateId) &&
+                    !isOwner
+                )
+                {
+                    return Forbid();
+                }
+            }
+
             return Ok(moveset);
         }
 
         [HttpGet("movesets/by-internal-id/{slottedId}")]
         public async Task<ActionResult<Moveset>> GetMovesetBySlottedId(string slottedId)
         {
+            var userId = _userManager.GetUserId(User);
+            var user = userId != null
+                ? await _context.Users
+                    .Select(u => new { u.Id, u.UserTypeId, u.ModderId })
+                    .FirstOrDefaultAsync(u => u.Id == userId)
+                : null;
+
             var moveset = await _context.Movesets
                 .Include(m => m.Series)
                 .Include(m => m.ReleaseState)
@@ -735,6 +893,30 @@ namespace CustomCharInfo.server.Controllers
 
             if (moveset == null)
                 return NotFound();
+
+            // Find latest action log
+            var latestLog = await _context.ActionLogs
+                .Where(a => a.ItemTypeId == 1 && a.ItemId == moveset.MovesetId)
+                .OrderByDescending(a => a.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            var blockedStates = new[] { 2, 4, 6 };
+
+            // Check ownership
+            bool isOwner =
+                user?.ModderId != null &&
+                moveset.MovesetModders.Any(mm => mm.ModderId == user.ModderId);
+
+            // Enforce rules
+            if (
+                user?.UserTypeId != 3 &&
+                !isOwner &&
+                latestLog != null &&
+                blockedStates.Contains(latestLog.AcceptanceStateId)
+            )
+            {
+                return Forbid();
+            }
 
             return Ok(moveset);
         }
@@ -796,20 +978,18 @@ namespace CustomCharInfo.server.Controllers
             await _context.SaveChangesAsync();
 
             // Log action
-            var user = await _userManager.Users
-                .Where(u => u.Id == userId)
-                .Select(u => new { u.ModderId, u.UserTypeId })
-                .SingleOrDefaultAsync();
-            int newState = user?.UserTypeId == 3 ? 7 : 2;
+            int newState = userFromId.UserTypeId == 3 ? 7 : 2;
             _context.ActionLogs.Add(new ActionLog
             {
                 UserId = userId,
                 ItemTypeId = 1,
                 ItemId = moveset.MovesetId,
-                AcceptanceStateId = newState,
+                AcceptanceStateId = 2,
                 Notes = "", // todo allow notes
                 CreatedAt = DateTime.UtcNow
             });
+
+            await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetMoveset), new { id = moveset.MovesetId }, moveset);
         }

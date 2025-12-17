@@ -528,6 +528,31 @@ const routes = [
     name: 'UserList',
     component: UserList,
     meta: { title: 'User List' },
+    beforeEnter: async (to, from, next) => {
+      try {
+        const user = (await api.get('/auth/me')).data;
+        if (user.userTypeId === 3) {
+          next();
+        } else {
+          next({
+            name: 'ErrorPage',
+            query: {
+              httpCode: '403 Forbidden',
+              reason: 'You do not have permission to access this page.',
+            }
+          })
+        }
+      } catch (err) {
+        next({
+          name: 'ErrorPage',
+          query: {
+            httpCode: '401 Unauthorized',
+            reason: 'Authentication failed.',
+            extra: 'Try signing in or refreshing the page.',
+          }
+        })
+      }
+    },
   },
   {
     path: '/about',
