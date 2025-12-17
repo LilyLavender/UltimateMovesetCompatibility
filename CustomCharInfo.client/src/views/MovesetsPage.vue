@@ -14,6 +14,15 @@
         View all movesets as a table
       </router-link>
 
+      <!-- Series page -->
+      <router-link
+        :to="{ name: 'Series' }"
+        class="unvisitable text-decoration-none ml-5"
+      >
+        <i class="mdi mdi-rhombus-split"></i>
+        View all series
+      </router-link>
+
       <!-- Add moveset -->
       <router-link
         v-if="user && user.userTypeId >= 2"

@@ -9,7 +9,6 @@
 <script setup>
 import ScrollingHero from '@/components/ScrollingHero.vue'
 import MovesetList from '@/components/MovesetList.vue'
-import ActionLogList from '@/components/ActionLogList.vue'
 </script>
 
 <style scoped>

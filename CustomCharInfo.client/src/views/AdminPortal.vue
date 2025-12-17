@@ -8,7 +8,7 @@
         class="unvisitable ml-2 admin-link"
       >
         <v-icon left>mdi-shield-check</v-icon>
-        Admin Accepter
+        Action Log Manager
       </router-link>
 
       <router-link
@@ -28,6 +28,10 @@
       </router-link>
     </div>
 
+    <!-- Action Log Dashboard -->
+    <div class="d-flex mb--1 mt-5">
+      <h1>Action Log Dashboard</h1>
+    </div>
     <ActionLogList />
   </v-container>
 </template>
@@ -57,5 +61,9 @@ import ActionLogList from '@/components/ActionLogList.vue'
 
 .admin-link .v-icon {
   margin-top: -4px;
+}
+
+.mb--1 {
+  margin-bottom: -1em;
 }
 </style>

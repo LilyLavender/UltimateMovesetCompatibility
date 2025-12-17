@@ -120,6 +120,9 @@
     <!-- Signed-in (ANY) actions -->
     <div>
       <!-- Action Log -->
+      <div class="d-flex mb--1 ml-4">
+        <h2>Actions</h2>
+      </div>
       <ActionLogList :userId="user.id" />
     </div>
   </v-card>
@@ -257,5 +260,13 @@ onMounted(async () => {
 
 .rotate-toggle.rotated::before {
   transform: rotate(90deg);
+}
+
+.mb--1 {
+  margin-bottom: -1em;
+}
+
+.ml-4 {
+  margin-left: 4em !important;
 }
 </style>

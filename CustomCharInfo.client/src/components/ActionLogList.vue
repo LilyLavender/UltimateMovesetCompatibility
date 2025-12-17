@@ -1,16 +1,12 @@
 <template>
   <div>
     <v-container>
-      <!-- Header -->
-      <div class="d-flex">
-        <h2>Action Logs</h2>
-      </div>
-
       <!-- Checkbox -->
       <v-checkbox
         v-model="filterEnabled"
         label="Only show relevant"
         inset
+        hide-details
         color="primary"
       />
 

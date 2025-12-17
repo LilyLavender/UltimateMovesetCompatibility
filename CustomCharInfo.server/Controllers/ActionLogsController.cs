@@ -160,6 +160,112 @@ namespace CustomCharInfo.server.Controllers
             return Ok(logs);
         }
 
+        [HttpGet("{itemTypeId}-{itemId}")]
+        public async Task<ActionResult<IEnumerable<GetActionLogDto>>> GetActionLogsByItem(
+            int itemTypeId,
+            int itemId)
+        {
+            var logsRaw = await _context.ActionLogs
+                .Include(a => a.User)
+                .Include(a => a.ItemType)
+                .Include(a => a.AcceptanceState)
+                .Where(a => a.ItemTypeId == itemTypeId && a.ItemId == itemId)
+                .OrderByDescending(a => a.CreatedAt)
+                .ToListAsync();
+
+            if (!logsRaw.Any())
+                return Ok(Array.Empty<GetActionLogDto>());
+
+            var modderIds = logsRaw
+                .Where(l => l.ItemTypeId == 2)
+                .Select(l => l.ItemId)
+                .Distinct()
+                .ToList();
+
+            var movesetIds = logsRaw
+                .Where(l => l.ItemTypeId == 1)
+                .Select(l => l.ItemId)
+                .Distinct()
+                .ToList();
+
+            var seriesIds = logsRaw
+                .Where(l => l.ItemTypeId == 3)
+                .Select(l => l.ItemId)
+                .Distinct()
+                .ToList();
+
+            var modders = await _context.Modders
+                .Where(m => modderIds.Contains(m.ModderId))
+                .Select(m => new
+                {
+                    m.ModderId,
+                    UserName = m.User.UserName ?? m.Name
+                })
+                .ToDictionaryAsync(m => m.ModderId);
+
+            var movesets = await _context.Movesets
+                .Where(m => movesetIds.Contains(m.MovesetId))
+                .Select(m => new
+                {
+                    m.MovesetId,
+                    m.ModdedCharName
+                })
+                .ToDictionaryAsync(m => m.MovesetId);
+
+            var series = await _context.Series
+                .Where(s => seriesIds.Contains(s.SeriesId))
+                .Select(s => new
+                {
+                    s.SeriesId,
+                    s.SeriesName
+                })
+                .ToDictionaryAsync(s => s.SeriesId);
+
+            var logs = logsRaw.Select(a => new GetActionLogDto
+            {
+                ActionLogId = a.ActionLogId,
+                User = new UserSummaryDto
+                {
+                    Id = a.User.Id,
+                    UserName = a.User.UserName,
+                    Email = a.User.Email
+                },
+                ItemType = new ItemTypeDto
+                {
+                    ItemTypeId = a.ItemType.ItemTypeId,
+                    ItemTypeName = a.ItemType.ItemTypeName
+                },
+                Item = a.ItemTypeId switch
+                {
+                    1 when movesets.TryGetValue(a.ItemId, out var moveset) => new
+                    {
+                        MovesetId = moveset.MovesetId,
+                        ModdedCharName = moveset.ModdedCharName
+                    },
+                    2 when modders.TryGetValue(a.ItemId, out var modder) => new
+                    {
+                        ModderId = modder.ModderId,
+                        Name = modder.UserName
+                    },
+                    3 when series.TryGetValue(a.ItemId, out var s) => new
+                    {
+                        SeriesId = s.SeriesId,
+                        SeriesName = s.SeriesName
+                    },
+                    _ => null
+                },
+                AcceptanceState = new AcceptanceStateDto
+                {
+                    AcceptanceStateId = a.AcceptanceState.AcceptanceStateId,
+                    AcceptanceStateName = a.AcceptanceState.AcceptanceStateName
+                },
+                Notes = a.Notes,
+                CreatedAt = a.CreatedAt
+            }).ToList();
+
+            return Ok(logs);
+        }
+
         [HttpPost]
         [Authorize]
         public async Task<ActionResult<ActionLogDto>> CreateActionLog(ActionLogDto dto)

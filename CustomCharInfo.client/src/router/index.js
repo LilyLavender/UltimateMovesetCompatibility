@@ -462,7 +462,7 @@ const routes = [
     }
   },
   {
-    path: '/super-secret-admin-area-no-one-should-access-but-the-admins',
+    path: '/action-log-manager',
     name: 'AdminAccepter',
     component: AdminAccepter,
     meta: { title: 'Admin Accepter' },
