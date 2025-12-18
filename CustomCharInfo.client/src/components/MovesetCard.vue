@@ -1,10 +1,8 @@
 <template>
   <div class="moveset-card no-select">
     <component
-      :is="moveset.privateMoveset ? 'div' : 'router-link'"
-      v-bind="!moveset.privateMoveset
-        ? { to: { name: 'MovesetDetail', params: { movesetId: moveset.movesetId } } }
-        : {}"
+      :is="canView ? 'router-link' : 'div'"
+      :to="canView ? { name: 'MovesetDetail', params: { movesetId: moveset.movesetId } } : null"
       class="moveset-card__link"
     >
       <!-- Background gradient -->
@@ -35,13 +33,25 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import thumbhUnknown from "@/assets/thumb_h_unknown.png"
+import api from '@/services/api'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
 const props = defineProps({
   moveset: Object
+})
+
+// TODO this should be done in the list, NOT the card
+const user = ref(null)
+const canView = computed(() => {
+  if (!props.moveset.privateMoveset) return true
+  if (!user.value) return false
+  const isAdmin = user.value.userTypeId === 3
+  const isModder = user.value.modderId != null &&
+    props.moveset.modders.some(mm => mm.modderId === user.value.modderId)
+  return isAdmin || isModder
 })
 
 const getFullImageUrl = (path) => {
@@ -52,6 +62,18 @@ const getFullImageUrl = (path) => {
 const backgroundGradient = computed(() => {
   const color = props.moveset.backgroundColor || '000000'
   return `linear-gradient(55deg, #${color}00 40%, #${color}33 50%, #${color}ff 100%)`
+})
+
+// Fetch current user if moveset private
+onMounted(async () => {
+  if (props.moveset.privateMoveset) {
+    try {
+      const res = await api.get('/auth/me')
+      user.value = res.data
+    } catch (err) {
+      user.value = null
+    }
+  }
 })
 </script>
 
