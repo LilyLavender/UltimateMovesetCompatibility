@@ -1,8 +1,11 @@
 <template>
   <div class="moveset-card no-select">
-    <!-- Link tag -->
-    <router-link
-      :to="{ name: 'MovesetDetail', params: { movesetId: moveset.movesetId } }"
+    <component
+      :is="moveset.privateMoveset ? 'div' : 'router-link'"
+      v-bind="!moveset.privateMoveset
+        ? { to: { name: 'MovesetDetail', params: { movesetId: moveset.movesetId } } }
+        : {}"
+      class="moveset-card__link"
     >
       <!-- Background gradient -->
       <div
@@ -27,7 +30,7 @@
       <!-- Text -->
       <p class="moveset-card__charname">{{ moveset.moddedCharName }}</p>
       <p class="moveset-card__creator">{{ moveset.modders.join(', ') }}</p>
-    </router-link>
+    </component>
   </div>
 </template>
 
@@ -61,7 +64,7 @@ const backgroundGradient = computed(() => {
   flex: 0 1 33.333%;
 }
 
-a {
+.moveset-card__link {
   width: 100%;
   height: 100%;
   background-color: black;
@@ -73,11 +76,11 @@ a {
   overflow: hidden;
 }
 
-a:visited {
+.moveset-card__link:visited {
   color: white;
 }
 
-a::after {
+.moveset-card__link::after {
   content: "";
   display: block;
   width: 0;
@@ -91,7 +94,7 @@ a::after {
   z-index: 20;
 }
 
-a:hover::after {
+.moveset-card__link:hover::after {
   width: 340px;
 }
 

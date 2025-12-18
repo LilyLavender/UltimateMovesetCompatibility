@@ -659,6 +659,9 @@ namespace CustomCharInfo.server.Controllers
 
             var blockedStates = new[] { 2, 4, 6 };
 
+            bool isAdmin = user?.UserTypeId == 3;
+            int? currentModderId = user?.ModderId;
+
             var query = _context.Movesets
                 .AsNoTracking()
                 .Include(m => m.Series)
@@ -675,8 +678,8 @@ namespace CustomCharInfo.server.Controllers
                         .OrderByDescending(a => a.CreatedAt)
                         .FirstOrDefault(),
 
-                    IsOwner = user != null && user.ModderId != null &&
-                        m.MovesetModders.Any(mm => mm.ModderId == user.ModderId)
+                    IsOwner = currentModderId != null &&
+                        m.MovesetModders.Any(mm => mm.ModderId == currentModderId)
                 })
                 .AsQueryable();
 
@@ -709,18 +712,36 @@ namespace CustomCharInfo.server.Controllers
                 .Select(x => new
                 {
                     x.Moveset.MovesetId,
-                    x.Moveset.ModdedCharName,
-                    SeriesIconUrl = x.Moveset.Series.SeriesIconUrl,
+
+                    ModdedCharName =
+                        x.Moveset.PrivateMoveset == true && !(isAdmin || x.IsOwner)
+                            ? "???"
+                            : x.Moveset.ModdedCharName,
+
+                    SeriesIconUrl =
+                        x.Moveset.PrivateMoveset == true && !(isAdmin || x.IsOwner)
+                            ? null
+                            : x.Moveset.Series.SeriesIconUrl,
+
                     BackgroundColor = x.Moveset.BackgroundColor,
-                    ThumbhImageUrl = x.Moveset.ThumbhImageUrl,
+
+                    ThumbhImageUrl =
+                        x.Moveset.PrivateMoveset == true && !(isAdmin || x.IsOwner)
+                            ? null
+                            : x.Moveset.ThumbhImageUrl,
+
                     ReleaseState = x.Moveset.ReleaseState.ReleaseStateName,
-                    Modders = x.Moveset.MovesetModders
-                        .Select(mm => mm.Modder.User.UserName ?? mm.Modder.Name)
-                        .ToList(),
+
+                    Modders =
+                        x.Moveset.PrivateModder == true && !(isAdmin || x.IsOwner)
+                            ? new List<string> { "???" }
+                            : x.Moveset.MovesetModders
+                                .Select(mm => mm.Modder.User.UserName ?? mm.Modder.Name)
+                                .ToList(),
+
                     ReleaseDate = x.Moveset.ReleaseDate,
                     AdminPick = x.Moveset.AdminPick,
                     PrivateMoveset = x.Moveset.PrivateMoveset,
-                    PrivateModder = x.Moveset.PrivateModder,
                 })
                 .ToListAsync();
 
@@ -739,6 +760,9 @@ namespace CustomCharInfo.server.Controllers
 
             var blockedStates = new[] { 2, 4, 6 };
 
+            var isAdmin = user?.UserTypeId == 3;
+            var userModderId = user?.ModderId;
+
             var query = _context.Movesets
                 .AsNoTracking()
                 .Include(m => m.ReleaseState)
@@ -749,7 +773,6 @@ namespace CustomCharInfo.server.Controllers
                     .ThenInclude(ma => ma.Article)
                 .Include(m => m.MovesetHooks)
                     .ThenInclude(mh => mh.Hook)
-                .Where(m => !(bool)m.PrivateMoveset)
                 .Select(m => new
                 {
                     Moveset = m,
@@ -759,8 +782,8 @@ namespace CustomCharInfo.server.Controllers
                         .OrderByDescending(a => a.CreatedAt)
                         .FirstOrDefault(),
 
-                    IsOwner = user != null && user.ModderId != null &&
-                        m.MovesetModders.Any(mm => mm.ModderId == user.ModderId)
+                    IsOwner = userModderId != null &&
+                        m.MovesetModders.Any(mm => mm.ModderId == userModderId)
                 })
                 .AsQueryable();
 
@@ -778,16 +801,32 @@ namespace CustomCharInfo.server.Controllers
                 .Select(x => new
                 {
                     // Modders
-                    Modders = string.Join(", ",
-                        x.Moveset.MovesetModders
-                            .Select(mm => mm.Modder.User.UserName ?? mm.Modder.Name)
-                    ),
+                    Modders =
+                        x.Moveset.PrivateModder == true
+                            ? "???"
+                            : string.Join(", ",
+                                x.Moveset.MovesetModders
+                                    .Select(mm => mm.Modder.User.UserName ?? mm.Modder.Name)
+                            ),
 
                     // Main info
-                    ModdedCharName = x.Moveset.ModdedCharName,
+                    ModdedCharName =
+                        x.Moveset.PrivateMoveset == true
+                            ? "???"
+                            : x.Moveset.ModdedCharName,
+
                     VanillaCharName = x.Moveset.VanillaCharInternalName,
-                    SlottedId = x.Moveset.SlottedId,
-                    ReplacementId = x.Moveset.ReplacementId,
+
+                    SlottedId =
+                        x.Moveset.PrivateMoveset == true
+                            ? "???"
+                            : x.Moveset.SlottedId,
+
+                    ReplacementId =
+                        x.Moveset.PrivateMoveset == true
+                            ? "???"
+                            : x.Moveset.ReplacementId,
+
                     SlotsRange = $"c{x.Moveset.SlotsStart:D3}-c{x.Moveset.SlotsEnd:D3}",
                     ReleaseState = x.Moveset.ReleaseState.ReleaseStateName,
 
@@ -841,6 +880,16 @@ namespace CustomCharInfo.server.Controllers
             if (moveset == null)
                 return NotFound();
 
+            // Check ownership
+            bool isOwner =
+                user != null &&
+                user.ModderId != null &&
+                moveset.MovesetModders.Any(mm => mm.ModderId == user.ModderId);
+
+            // Hide if private
+            if ((bool)moveset.PrivateMoveset && user?.UserTypeId != 3 && !isOwner)
+                return NotFound();
+
             // Find latest log
             var latestLog = await _context.ActionLogs
                 .Where(a => a.ItemTypeId == 1 && a.ItemId == id)
@@ -849,14 +898,8 @@ namespace CustomCharInfo.server.Controllers
 
             var blockedStates = new[] { 2, 4, 6 };
 
-            // Check ownership
-            bool isOwner =
-                user != null &&
-                user.ModderId != null &&
-                moveset.MovesetModders.Any(mm => mm.ModderId == user.ModderId);
-
             // Enforce rules
-            if (user == null || user.UserTypeId != 3)
+            if (user?.UserTypeId != 3)
             {
                 if (
                     latestLog != null &&
