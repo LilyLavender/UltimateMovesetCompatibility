@@ -131,7 +131,7 @@
             <v-text-field
               v-model.number="form.slotsStart"
               label="Start Slot"
-              type="number"
+              @input="digitsOnly('slotsStart')"
               :min="8"
               :max="255"
               prefix="c"
@@ -142,7 +142,7 @@
             <v-text-field
               v-model.number="form.slotsEnd"
               label="End Slot"
-              type="number"
+              @input="digitsOnly('slotsEnd')"
               :min="8"
               :max="255"
               prefix="c"
@@ -288,7 +288,7 @@
               v-model="form.gamebananaPageId"
               label="GameBanana Page"
               :prefix="GB_PAGE_URL"
-              type="number"
+              @input="digitsOnly('gamebananaPageId')"
             />
           </v-col>
           <!-- GameBanana WIP -->
@@ -297,7 +297,7 @@
               v-model="form.gamebananaWipId"
               label="GameBanana WIP"
               :prefix="GB_WIP_URL"
-              type="number"
+              @input="digitsOnly('gamebananaWipId')"
             />
           </v-col>
           <!-- Mods Wiki -->
@@ -591,6 +591,11 @@ const articles = ref([]);
 const hooks = ref([]);
 
 const showSeparateIds = ref(false)
+
+const digitsOnly = (field) => {
+  if (form.value[field] == null) return
+  form.value[field] = String(form.value[field]).replace(/\D+/g, '')
+}
 
 onMounted(async () => {
   const [vanillaCharsRes, seriesRes, releaseStatesRes, moddersRes, dependenciesRes, articlesRes, hooksRes] = await Promise.all([

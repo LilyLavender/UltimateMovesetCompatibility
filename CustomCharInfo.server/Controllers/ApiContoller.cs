@@ -206,6 +206,8 @@ namespace CustomCharInfo.server.Controllers
                 CreatedAt = DateTime.UtcNow
             });
 
+            await _context.SaveChangesAsync();
+
             return CreatedAtAction(nameof(GetSeries), new { id = series.SeriesId }, series);
         }
 
@@ -648,7 +650,7 @@ namespace CustomCharInfo.server.Controllers
             [FromQuery] int? modderId,
             [FromQuery] string? search,
             [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10)
+            [FromQuery] int pageSize = 2147483647)
         {
             var userId = _userManager.GetUserId(User);
             var user = userId != null

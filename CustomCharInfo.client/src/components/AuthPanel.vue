@@ -1,6 +1,6 @@
 <template>
   <v-card class="pa-4" max-width="420px">
-    <!-- Signed in/out/up -->
+    <!-- Sign in/out/up -->
     <div>
       <!-- Sign in/up -->
       <div v-if="!token">
@@ -58,13 +58,13 @@
     </div>
 
     <!-- Signed-in -->
-    <div v-if="user"> 
+    <div v-if="user" class="user-links">
       <!-- Signed-in (USER) actions -->
       <div v-if="!user?.modderId && !pendingApproval">
         <!-- apply for modder -->
         <router-link
           :to="{ name: 'ApplyModder' }"
-          class="unvisitable"
+          class="unvisitable user-link"
         >
           <v-icon>mdi-account-plus</v-icon>
           Apply for modder
@@ -84,19 +84,16 @@
         <!-- View profile -->
         <router-link
           :to="{ name: 'ModderDetail', params: { id: user.modderId } }"
-          class="unvisitable"
+          class="unvisitable user-link"
         >
           <v-icon>mdi-account-eye</v-icon>
           View my profile
         </router-link>
 
-        <!-- TODO -->
-        <br>
-
         <!-- Edit profile -->
         <router-link
           :to="{ name: 'EditModder', params: { id: user.modderId } }"
-          class="unvisitable"
+          class="unvisitable user-link"
         >
           <v-icon>mdi-account-edit</v-icon>
           Edit my profile
@@ -108,7 +105,7 @@
         <!-- Admin Portal -->
         <router-link
           :to="{ name: 'AdminPortal' }"
-          class="unvisitable"
+          class="unvisitable user-link"
         >
           <v-icon>mdi-shield-account</v-icon>
           Admin Portal
@@ -290,5 +287,27 @@ onMounted(async () => {
 
 .ml-4 {
   margin-left: 4em !important;
+}
+
+.user-links {
+  margin: 0 auto;
+  width: fit-content;
+}
+
+.user-links > * {
+  display: flex;
+  justify-content: center;
+}
+
+.user-links .user-link {
+  background-color: #151515;
+  padding: 0.4em 0.75em;
+  margin: 0.25em 1em;
+  border-radius: 6px;
+  text-decoration: none;
+}
+
+.user-link .v-icon {
+  margin-top: -4px;
 }
 </style>

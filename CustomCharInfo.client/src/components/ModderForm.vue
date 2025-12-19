@@ -33,7 +33,7 @@
             <v-text-field
               v-model.number="modder.gamebananaId"
               label="GameBanana ID"
-              type="number"
+              @input="digitsOnly('gamebananaId')"
               :prefix="GB_MEMBER_URL"
             />
           </v-col>
@@ -129,6 +129,11 @@ const fetchUserAndModder = async () => {
 }
 
 onMounted(fetchUserAndModder)
+
+const digitsOnly = (field) => {
+  if (form[field] == null) return
+  form[field] = String(form[field]).replace(/\D+/g, '')
+}
 
 const submit = async () => {
   try {
