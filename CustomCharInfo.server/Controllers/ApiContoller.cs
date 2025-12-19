@@ -1038,6 +1038,34 @@ namespace CustomCharInfo.server.Controllers
         }
 
         [Authorize]
+        [HttpPost("movesets/set-admin-picks")]
+        public async Task<IActionResult> SetAdminPicks([FromBody] List<int> adminPickIds)
+        {
+            // Make sure user is admin
+            var userId = _userManager.GetUserId(User);
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null || user.UserTypeId != 3)
+                return Forbid();
+
+            adminPickIds ??= new List<int>();
+
+            // Fetch all movesets
+            var movesets = await _context.Movesets.ToListAsync();
+            foreach (var moveset in movesets)
+            {
+                moveset.AdminPick = adminPickIds.Contains(moveset.MovesetId);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Admin picks updated successfully",
+                adminPickIds
+            });
+        }
+
+        [Authorize]
         [HttpPut("movesets/{id}")]
         public async Task<IActionResult> PutMoveset(int id, CreateMovesetDto dto)
         {

@@ -12,6 +12,14 @@
       </router-link>
 
       <router-link
+        :to="{ name: 'AdminPicks' }"
+        class="unvisitable ml-2 admin-link"
+      >
+        <v-icon left>mdi-account-check</v-icon>
+        Admin Picks
+      </router-link>
+
+      <router-link
         :to="{ name: 'AddBlogPost' }"
         class="unvisitable ml-2 admin-link"
       >
