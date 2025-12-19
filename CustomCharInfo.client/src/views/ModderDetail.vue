@@ -2,14 +2,24 @@
   <v-container>
     <v-row class="modder-section-1">
       <v-col cols="2" class="text-center">
+        <!-- Pfp -->
         <img v-if="modderPfpUrl" :src="modderPfpUrl" class="modder-pfp" alt="GameBanana PFP" />
         <div v-else class="modder-pfp-null"><v-icon size="128">mdi-account</v-icon></div>
+        <!-- GameBanana -->
         <a
           v-if="modder?.gamebananaId"
           :href="`${GB_MEMBER_URL}${modder.gamebananaId}`"
           class="offsite unvisitable"
           target="_blank" rel="noopener"
         >GameBanana</a>
+        <!-- Discord -->
+        <span
+          v-if="modder?.discordUsername"
+        >
+          <br>
+          <img class="discord-icon" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66e278299a53f5bf88615e90_Symbol.svg" alt="Discord icon" />
+          @{{ modder.discordUsername }}
+        </span>
       </v-col>
       <v-col cols="10">
         <div class="title-container">
@@ -137,6 +147,12 @@ i.admin-display {
   font-size: 32px;
   margin-left: -0.5em;
   margin-top: -0.5em;
+}
+
+.discord-icon {
+  height: 1em;
+  margin-bottom: -3px;
+  filter: brightness(0.87);
 }
 
 .modder-section-1 {
