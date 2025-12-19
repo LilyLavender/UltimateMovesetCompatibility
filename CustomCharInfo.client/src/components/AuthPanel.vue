@@ -149,11 +149,7 @@ const register = async () => {
     alert('Registered! You can now log in.')
   } catch (err) {
     console.error("Register Failed:", err)
-    if (err.response?.data) {
-      errorMsgs.value = err.response.data.map(e => e.description)
-    } else {
-      errorMsgs.value = ["Registration failed."]
-    }
+    errorMsgs.value = extractErrorMessages(err)
   }
 }
 
@@ -167,7 +163,7 @@ const login = async () => {
     getCurrentUserDetails()
   } catch (err) {
     console.error("Login Failed:", err)
-    errorMsgs.value = ["Invalid login credentials."]
+    errorMsgs.value = extractErrorMessages(err)
   }
 }
 
@@ -192,6 +188,32 @@ const logout = () => {
   user.value = null
   localStorage.removeItem('token')
   delete api.defaults.headers.common['Authorization']
+}
+
+function extractErrorMessages(err) {
+  // ASP.NET Identity validation errors (array)
+  if (Array.isArray(err.response?.data)) {
+    return err.response.data.map(e => e.description || e.message || String(e))
+  }
+
+  // ASP.NET ProblemDetails / custom object
+  if (typeof err.response?.data === 'object' && err.response?.data !== null) {
+    if (err.response.data.message) {
+      return [err.response.data.message]
+    }
+
+    if (err.response.data.title) {
+      return [err.response.data.title]
+    }
+  }
+
+  // Axios error
+  if (err.message) {
+    return [err.message]
+  }
+
+  // Fallback
+  return ['An error occurred.']
 }
 
 function isTokenExpired(token) {

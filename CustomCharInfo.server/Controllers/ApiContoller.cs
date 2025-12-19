@@ -1111,6 +1111,11 @@ namespace CustomCharInfo.server.Controllers
                 return BadRequest("DependencyIds, Hooks, and Articles must be present (even if empty).");
             }
 
+            bool keyDetailsChanged =
+                moveset.ModdedCharName != dto.ModdedCharName ||
+                moveset.SlottedId != dto.SlottedId ||
+                moveset.ReplacementId != dto.ReplacementId;
+
             moveset.ModdedCharName = dto.ModdedCharName;
             moveset.VanillaCharInternalName = dto.VanillaCharInternalName;
             moveset.SeriesId = dto.SeriesId;
@@ -1172,11 +1177,11 @@ namespace CustomCharInfo.server.Controllers
                 .ToList();
 
             // Log action
-            int newState = user?.UserTypeId == 3
-            ? 7
-            : latestLog != null
-            ? 2
-            : (latestLog?.AcceptanceStateId == 2 || latestLog?.AcceptanceStateId == 4) ? 2 : 1;
+            int newState = user?.UserTypeId == 3 // if admin
+            ? 7 // auto-accept
+            : latestLog != null || keyDetailsChanged // No latest log exists or key details were changed
+            ? 2 // pending admin hard
+            : (latestLog?.AcceptanceStateId == 2 || latestLog?.AcceptanceStateId == 4) ? 2 : 1; // if latest log hard, admin hard. else admin soft
             _context.ActionLogs.Add(new ActionLog
             {
                 UserId = userId,

@@ -52,7 +52,8 @@ const getFullImageUrl = (path) => {
   margin-bottom: 0.4em;
 }
 .blog-image {
-  width: 60%;
   margin: 1em auto;
+  max-height: 33vh;
+  max-width: 80%;
 }
 </style>

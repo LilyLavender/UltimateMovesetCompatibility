@@ -19,7 +19,7 @@
     <!-- Main content -->
     <div class="moveset-columns">
       <!-- Column 1 (left) -->
-      <div class="column-1">
+      <div class="column-left">
         <div class="title-container">
           <h1 class="title-font page-title no-select">{{ moveset.moddedCharName }}</h1>
         </div>
@@ -32,162 +32,173 @@
         />
       </div>
 
-      <!-- Column 2 (middle) -->
-      <div class="column-2">
-        <!-- Basic Info -->
-        <div class="info-card">
-          <!-- Header -->
-          <h1>
-            Basic Info 
-            <router-link
-              :to="{ name: 'EditMoveset', params: { movesetId: route.params.movesetId } }"
-              class="edit-link unvisitable"
-            >
-              <v-icon v-if="userIsModder">mdi-pencil</v-icon>
-            </router-link>
-          </h1>
-          <!-- Creator(s) -->
-          <div class="align-center" v-if="moveset.movesetModders?.length">
-            <p class="d-inline mr-2">Creator<span v-if="moveset.movesetModders.length > 1">s</span>:</p>
-            <strong>
-              <template v-for="(mm, index) in moveset.movesetModders" :key="mm.modderId">
+      <!-- Column 2 (right) -->
+      <div class="column-right">
+        <!-- Row 1 -->
+        <v-row dense class="row-1">
+          <!-- Basic Info -->
+          <v-col cols="12" md="5">
+            <div class="info-card">
+              <!-- Header -->
+              <h1>
+                Basic Info 
                 <router-link
-                  :to="{ name: 'ModderDetail', params: { id: mm.modderId } }"
-                  class="unvisitable"
+                  :to="{ name: 'EditMoveset', params: { movesetId: route.params.movesetId } }"
+                  class="edit-link unvisitable"
                 >
-                  {{ mm.modder.name }}
-                </router-link><span v-if="index < moveset.movesetModders.length - 1">, </span>
-              </template>
-            </strong>
-          </div>
-          <!-- Series & IDs -->
-          <div class="mb-2">
-            <p>Series: <strong>{{ moveset.series?.seriesName }} <img :src="getFullImageUrl(moveset.series.seriesIconUrl, seriesIconUnknown)" alt="series icon" class="inline-series" /></strong></p>
-            <p v-if="moveset.slottedId === moveset.replacementId">
-              Internal ID: <strong>{{ moveset.slottedId }}</strong>
-            </p>
-            <template v-else>
-              <p>Slotted ID: <strong>{{ moveset.slottedId }}</strong></p>
-              <p>Replacement ID: <strong>{{ moveset.replacementId }}</strong></p>
-            </template>
-            <p v-if="moveset.slotsStart && moveset.slotsEnd">Slots: <strong>{{ moveset.vanillaChar?.displayName }} c{{ moveset.slotsStart }}-c{{ moveset.slotsEnd }}</strong></p>
-            <p v-else>Slots: <strong>{{ moveset.vanillaChar?.displayName }} c???</strong></p>
-            <!-- Availability -->
-            <p>
-              Availability:
-              <strong>
-                <template v-if="moveset.releaseState?.releaseStateName === 'Released' && !moveset.gamebananaPageId && !moveset.releaseDate">
-                  Released
-                </template>
-                <template v-else-if="moveset.releaseState?.releaseStateName === 'Released' && moveset.gamebananaPageId && !moveset.releaseDate">
-                  <a
-                    :href="`${GB_PAGE_URL}${moveset.gamebananaPageId}`"
-                    target="_blank"
-                    class="offsite unvisitable"
-                  >
-                    Released
-                  </a>
-                </template>
-                <template v-else-if="moveset.modpackName">
-                  This moveset is exclusive to {{ moveset.modpackName }}
-                </template>
-                <template v-else-if="moveset.releaseState?.releaseStateName === 'Released'">
-                  <a
-                    :href="`${GB_PAGE_URL}${moveset.gamebananaPageId}`"
-                    target="_blank"
-                    class="offsite unvisitable"
-                  >
-                    Released {{ new Date(moveset.releaseDate).toLocaleDateString() }}
-                  </a>
-                </template>
-                <template v-else-if="moveset.releaseState?.releaseStateName === 'Unreleased' && moveset.gamebananaWipId">
-                  <a
-                    :href="`${GB_PAGE_URL}${moveset.gamebananaPageId}`"
-                    target="_blank"
-                    class="offsite unvisitable"
-                  >
-                    Released {{ new Date(moveset.releaseDate).toLocaleDateString() }}
-                  </a>
-                </template>
-                <template v-else-if="moveset.releaseState?.releaseStateName === 'Pending Update'">
-                  <a
-                    :href="`${GB_PAGE_URL}${moveset.gamebananaPageId}`"
-                    target="_blank"
-                    class="offsite unvisitable"
-                  >
-                    Originally Released {{ new Date(moveset.releaseDate).toLocaleDateString() }}
-                  </a>, {{ moveset.releaseState?.releaseStateName }}
-                </template>
+                  <v-icon v-if="userIsModder">mdi-pencil</v-icon>
+                </router-link>
+              </h1>
+
+              <!-- Creator(s) -->
+              <div class="align-center" v-if="moveset.movesetModders?.length">
+                <p class="d-inline mr-2">Creator<span v-if="moveset.movesetModders.length > 1">s</span>:</p>
+                <strong>
+                  <template v-for="(mm, index) in moveset.movesetModders" :key="mm.modderId">
+                    <router-link
+                      :to="{ name: 'ModderDetail', params: { id: mm.modderId } }"
+                      class="unvisitable"
+                    >
+                      {{ mm.modder.name }}
+                    </router-link><span v-if="index < moveset.movesetModders.length - 1">, </span>
+                  </template>
+                </strong>
+              </div>
+
+              <!-- Series & IDs -->
+              <div class="mb-2">
+                <p>Series: <strong>{{ moveset.series?.seriesName }} <img :src="getFullImageUrl(moveset.series.seriesIconUrl, seriesIconUnknown)" alt="series icon" class="inline-series" /></strong></p>
+                <p v-if="moveset.slottedId === moveset.replacementId">
+                  Internal ID: <strong>{{ moveset.slottedId }}</strong>
+                </p>
                 <template v-else>
-                  {{ moveset.releaseState?.releaseStateName }}
+                  <p>Slotted ID: <strong>{{ moveset.slottedId }}</strong></p>
+                  <p>Replacement ID: <strong>{{ moveset.replacementId }}</strong></p>
                 </template>
-              </strong>
-            </p>
-            
-            <!-- External Links -->
-            <p v-if="moveset.modsWikiLink">
-              <a
-                :href="`${MODS_WIKI_URL}${moveset.modsWikiLink}`"
-                target="_blank"
-                class="offsite unvisitable"
-              >
-                View {{ moveset.moddedCharName }} on SSBU Mods Wiki
-              </a>
-            </p>
-            <p v-if="moveset.sourceCodeUrl">
-              <a :href="moveset.sourceCodeUrl" target="_blank" class="offsite unvisitable">Source Code</a>
-            </p>
-          </div>
-        </div>
+                <p v-if="moveset.slotsStart && moveset.slotsEnd">Slots: <strong>{{ moveset.vanillaChar?.displayName }} c{{ moveset.slotsStart }}-c{{ moveset.slotsEnd }}</strong></p>
+                <p v-else>Slots: <strong>{{ moveset.vanillaChar?.displayName }} c???</strong></p>
 
-        <!-- Articles -->
-        <div class="mb-4 info-card">
-          <h1>Articles</h1>
-          <ul v-if="moveset.movesetArticles.length > 0">
-            <li v-for="ma in moveset.movesetArticles" :key="ma.articleId">
-              <strong>{{ ma.description }}</strong>: {{ ma.article.vanillaCharInternalName }}_{{ ma.article.articleName }} ({{ ma.moddedName }})
-            </li>
-          </ul>
-          <p v-else>This moveset does not clone any articles!</p>
-        </div>
+                <!-- Availability -->
+                <p>
+                  Availability:
+                  <strong>
+                    <template v-if="moveset.releaseState?.releaseStateName === 'Released' && !moveset.gamebananaPageId && !moveset.releaseDate">
+                      Released
+                    </template>
+                    <template v-else-if="moveset.releaseState?.releaseStateName === 'Released' && moveset.gamebananaPageId && !moveset.releaseDate">
+                      <a :href="`${GB_PAGE_URL}${moveset.gamebananaPageId}`" target="_blank" class="offsite unvisitable">
+                        Released
+                      </a>
+                    </template>
+                    <template v-else-if="moveset.modpackName">
+                      This moveset is exclusive to {{ moveset.modpackName }}
+                    </template>
+                    <template v-else-if="moveset.releaseState?.releaseStateName === 'Released'">
+                      <a :href="`${GB_PAGE_URL}${moveset.gamebananaPageId}`" target="_blank" class="offsite unvisitable">
+                        Released {{ new Date(moveset.releaseDate).toLocaleDateString() }}
+                      </a>
+                    </template>
+                    <template v-else-if="moveset.releaseState?.releaseStateName === 'Unreleased' && moveset.gamebananaWipId">
+                      <a :href="`${GB_PAGE_URL}${moveset.gamebananaPageId}`" target="_blank" class="offsite unvisitable">
+                        Released {{ new Date(moveset.releaseDate).toLocaleDateString() }}
+                      </a>
+                    </template>
+                    <template v-else-if="moveset.releaseState?.releaseStateName === 'Pending Update'">
+                      <a :href="`${GB_PAGE_URL}${moveset.gamebananaPageId}`" target="_blank" class="offsite unvisitable">
+                        Originally Released {{ new Date(moveset.releaseDate).toLocaleDateString() }}
+                      </a>, {{ moveset.releaseState?.releaseStateName }}
+                    </template>
+                    <template v-else>
+                      {{ moveset.releaseState?.releaseStateName }}
+                    </template>
+                  </strong>
+                </p>
 
-        <!-- Hooks -->
-        <div class="info-card">
-          <h1>Hooks</h1>
-          <ul v-if="moveset.movesetHooks.length > 0">
-            <li v-for="mh in moveset.movesetHooks" :key="mh.hookId">
-              <strong :title="mh.hook.description" class="hastooltip">0x{{ mh.hook.offset }}</strong>
-              <em v-if="mh.description">{{ mh.description }}</em><em v-else>(unknown usage)</em>
-            </li>
-          </ul>
-          <p v-else>This moveset does not use any hooks!</p>
-        </div>
-      </div>
+                <!-- External Links -->
+                <p v-if="moveset.modsWikiLink">
+                  <a :href="`${MODS_WIKI_URL}${moveset.modsWikiLink}`" target="_blank" class="offsite unvisitable">
+                    View {{ moveset.moddedCharName }} on SSBU Mods Wiki
+                  </a>
+                </p>
+                <p v-if="moveset.sourceCodeUrl">
+                  <a :href="moveset.sourceCodeUrl" target="_blank" class="offsite unvisitable">Source Code</a>
+                </p>
+              </div>
+            </div>
+          </v-col>
 
-      <!-- Column 3 (right) -->
-      <div class="column-3">
-        <!-- Dependencies -->
-        <div class="mb-4 info-card">
-          <h1>Dependencies</h1>
-          <ul v-if="moveset.movesetDependencies.length > 0">
-            <li v-for="md in moveset.movesetDependencies" :key="md.dependencyId">
-              • <a :href="md.dependency.downloadLink" target="_blank" class="offsite unvisitable dependency-link">{{ md.dependency.name }}</a>
-            </li>
-          </ul>
-          <p v-else>No dependencies set!</p>
-        </div>
+          <!-- Function usage -->
+          <v-col cols="12" md="3">
+            <div class="mb-4 info-card">
+              <h1>Functions</h1>
+              <ul class="functions-list">
+                <li>Global OPFF: <StatusIcon :value="moveset.hasGlobalOpff" /></li>
+                <li>Character OPFF: <StatusIcon :value="moveset.hasCharacterOpff" /></li>
+                <li>agent_init: <StatusIcon :value="moveset.hasAgentInit" /></li>
+                <li>on_line pre: <StatusIcon :value="moveset.hasGlobalOnLinePre" /></li>
+                <li>on_line end: <StatusIcon :value="moveset.hasGlobalOnLineEnd" /></li>
+              </ul>
+            </div>
+          </v-col>
 
-        <!-- Function usage -->
-        <div class="mb-4 info-card">
-          <h1>Functions</h1>
-          <ul class="functions-list">
-            <li>Global OPFF: <StatusIcon :value="moveset.hasGlobalOpff" /></li>
-            <li>Character OPFF: <StatusIcon :value="moveset.hasCharacterOpff" /></li>
-            <li>agent_init: <StatusIcon :value="moveset.hasAgentInit" /></li>
-            <li>on_line pre: <StatusIcon :value="moveset.hasGlobalOnLinePre" /></li>
-            <li>on_line end: <StatusIcon :value="moveset.hasGlobalOnLineEnd" /></li>
-          </ul>
-        </div>
+          <!-- Dependencies -->
+          <v-col cols="12" md="4">
+            <div class="mb-4 info-card">
+              <h1>Dependencies</h1>
+              <ul v-if="moveset.movesetDependencies.length > 0">
+                <li v-for="md in moveset.movesetDependencies" :key="md.dependencyId">
+                  • <a :href="md.dependency.downloadLink" target="_blank" class="offsite unvisitable dependency-link">
+                    {{ md.dependency.name }}
+                  </a>
+                </li>
+              </ul>
+              <p v-else>No dependencies set!</p>
+            </div>
+          </v-col>
+        </v-row>
+
+        <!-- Row 2 -->
+        <v-row dense class="row-2">
+          <!-- Articles -->
+          <v-col cols="12" md="6">
+            <div class="mb-4 info-card">
+              <h1>Articles</h1>
+              <ul v-if="moveset.movesetArticles.length > 0">
+                <li v-for="ma in moveset.movesetArticles" :key="ma.articleId" class="d-flex justify-space-between">
+                  <div>
+                    <strong>{{ ma.description }}</strong>&nbsp;
+                    <span>({{ ma.moddedName }})</span>
+                  </div>
+                  <div>
+                    <span>{{ ma.article.vanillaCharInternalName }}_{{ ma.article.articleName }}</span>
+                  </div>
+                </li>
+              </ul>
+              <p v-else>This moveset does not clone any articles!</p>
+            </div>
+          </v-col>
+
+          <!-- Hooks -->
+          <v-col cols="12" md="6">
+            <div class="info-card">
+              <h1>Hooks</h1>
+              <ul v-if="moveset.movesetHooks.length > 0">
+                <li v-for="mh in moveset.movesetHooks" :key="mh.hookId" class="d-flex justify-space-between">
+                  <div>
+                    <strong :title="mh.hook.description" class="hastooltip">
+                      0x{{ mh.hook.offset }}
+                    </strong>
+                  </div>
+                  <div>
+                    <em v-if="mh.description">{{ mh.description }}</em>
+                    <em v-else>(unknown usage)</em>
+                  </div>
+                </li>
+              </ul>
+              <p v-else>This moveset does not use any hooks!</p>
+            </div>
+          </v-col>
+        </v-row>
       </div>
     </div>
 
@@ -311,13 +322,13 @@ const StatusIcon = defineComponent({
 }
 
 .left-black {
-  left: -8%;
+  left: -11%;
   width: 20%;
 }
 
 .right-black {
-  right: -16%;
-  width: 63%;
+  right: -8%;
+  width: 70%;
 }
 
 .moveset-columns {
@@ -327,20 +338,13 @@ const StatusIcon = defineComponent({
   min-height: 100vh;
 }
 
-.column-1 {
+.column-left {
   flex: 7;
 }
 
-.column-2, .column-3 {
+.column-right {
+  flex: 9;
   margin-top: 40px;
-}
-
-.column-2 {
-  flex: 3;
-}
-
-.column-3 {
-  flex: 2;
 }
 
 .title-container {
@@ -397,7 +401,7 @@ const StatusIcon = defineComponent({
 }
 
 .character-image.slide-in {
-  animation: slideInLeft 0.75s ease-out forwards;
+  animation: slideInLeft 0.6s ease-out forwards;
 }
 
 @keyframes slideInLeft {
@@ -416,13 +420,15 @@ const StatusIcon = defineComponent({
 }
 
 .info-card {
-  background-color: #00000080;
+  background-color: #12121280;
   padding: 0.5em 1em 0.5em 1em;
   margin: 1em 0.5em;
-  border-radius: 10px;
+  border-radius: 3px;
   position: relative;
   z-index: 20;
-  filter: drop-shadow(0px 0px 5px #000000c0);
+  backdrop-filter: blur(2px) 
+                   saturate(0.8) 
+                   brightness(0.9);
 }
 
 .inline-series {
@@ -449,6 +455,15 @@ strong {
 
 ul.functions-list > li {
   margin-bottom: -12px;
+}
+
+.row-1 > *:nth-child(2) li,
+.row-1 > *:nth-child(3) li {
+  font-size: 15px;
+}
+
+.row-2 li {
+  font-size: 14px;
 }
 
 .edit-link {
