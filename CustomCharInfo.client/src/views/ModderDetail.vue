@@ -70,7 +70,7 @@ onMounted(async () => {
     document.title = `UMC | ${modder.value?.name}` // sets page title
 
     // Check if modder is admin
-    const adminRes = await api.get(`/modder-is-admin?modderId=${modderId}`)
+    const adminRes = await api.get(`/modders/is-admin?modderId=${modderId}`)
     modderIsAdmin.value = adminRes.data.isAdmin
 
     // Fetch movesets

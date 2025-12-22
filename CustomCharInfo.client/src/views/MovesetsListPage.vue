@@ -219,7 +219,7 @@ const articleEndIndex = computed(() =>
 );
 
 onMounted(async () => {
-  const res = await api.get("/moveset-report");
+  const res = await api.get("/movesets/report");
   movesets.value = res.data;
 });
 

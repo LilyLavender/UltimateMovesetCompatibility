@@ -13,8 +13,8 @@ using Microsoft.AspNetCore.Authorization;
 namespace CustomCharInfo.server.Controllers
 {
 
-    [Route("api/logs")]
     [ApiController]
+    [Route("api/logs")]
     public class ActionLogsController : ControllerBase
     {
         private readonly AppDbContext _context;
