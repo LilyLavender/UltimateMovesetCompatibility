@@ -466,7 +466,7 @@ const routes = [
     path: '/action-log-manager',
     name: 'AdminAccepter',
     component: AdminAccepter,
-    meta: { title: 'Admin Accepter' },
+    meta: { title: 'Action Log Manager' },
     beforeEnter: async (to, from, next) => {
       try {
         const user = (await api.get('/auth/me')).data;

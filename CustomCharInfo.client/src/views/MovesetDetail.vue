@@ -82,35 +82,23 @@
                 <p>
                   Availability:
                   <strong>
-                    <template v-if="moveset.releaseState?.releaseStateName === 'Released' && !moveset.gamebananaPageId && !moveset.releaseDate">
-                      Released
-                    </template>
-                    <template v-else-if="moveset.releaseState?.releaseStateName === 'Released' && moveset.gamebananaPageId && !moveset.releaseDate">
-                      <a :href="`${GB_PAGE_URL}${moveset.gamebananaPageId}`" target="_blank" class="offsite unvisitable">
-                        Released
-                      </a>
-                    </template>
-                    <template v-else-if="moveset.modpackName">
-                      This moveset is exclusive to {{ moveset.modpackName }}
-                    </template>
-                    <template v-else-if="moveset.releaseState?.releaseStateName === 'Released'">
-                      <a :href="`${GB_PAGE_URL}${moveset.gamebananaPageId}`" target="_blank" class="offsite unvisitable">
-                        Released {{ new Date(moveset.releaseDate).toLocaleDateString() }}
-                      </a>
-                    </template>
-                    <template v-else-if="moveset.releaseState?.releaseStateName === 'Unreleased' && moveset.gamebananaWipId">
-                      <a :href="`${GB_PAGE_URL}${moveset.gamebananaPageId}`" target="_blank" class="offsite unvisitable">
-                        Released {{ new Date(moveset.releaseDate).toLocaleDateString() }}
-                      </a>
-                    </template>
-                    <template v-else-if="moveset.releaseState?.releaseStateName === 'Pending Update'">
-                      <a :href="`${GB_PAGE_URL}${moveset.gamebananaPageId}`" target="_blank" class="offsite unvisitable">
-                        Originally Released {{ new Date(moveset.releaseDate).toLocaleDateString() }}
-                      </a>, {{ moveset.releaseState?.releaseStateName }}
-                    </template>
-                    <template v-else>
+                    <span v-if="releaseDisplay">
+                      <template v-if="releaseDisplay.url">
+                        <a
+                          :href="releaseDisplay.url"
+                          target="_blank"
+                          class="offsite unvisitable"
+                        >
+                          {{ releaseDisplay.text }}
+                        </a>
+                      </template>
+                      <template v-else>
+                        {{ releaseDisplay.text }}
+                      </template>
+                    </span>
+                    <span v-else>
                       {{ moveset.releaseState?.releaseStateName }}
-                    </template>
+                    </span>
                   </strong>
                 </p>
 
@@ -120,8 +108,8 @@
                     View {{ moveset.moddedCharName }} on SSBU Mods Wiki
                   </a>
                 </p>
-                <p v-if="moveset.sourceCodeUrl">
-                  <a :href="moveset.sourceCodeUrl" target="_blank" class="offsite unvisitable">Source Code</a>
+                <p v-if="moveset.sourceCode && !moveset.modpackName">
+                  <a :href="moveset.sourceCode" target="_blank" class="offsite unvisitable">Source Code</a>
                 </p>
               </div>
             </div>
@@ -237,6 +225,94 @@ const userIsModder = computed(() => {
   return moveset.value.movesetModders.some(mm => mm.modderId === user.value.modderId)
 })
 
+// Calculate the releaseState to display
+const releaseDisplay = computed(() => {
+  if (!moveset.value) return null
+
+  const {
+    modpackName,
+    sourceCode,
+    releaseState,
+    gamebananaPageId,
+    gamebananaWipId,
+    releaseDate
+  } = moveset.value
+
+  const state = releaseState?.releaseStateName
+  const pageUrl = gamebananaPageId ? `${GB_PAGE_URL}${gamebananaPageId}` : null
+  const wipUrl = gamebananaWipId ? `${GB_PAGE_URL}${gamebananaWipId}` : null
+  const url = pageUrl || wipUrl
+
+  const hasDate = !!releaseDate
+  const date = hasDate ? new Date(releaseDate) : null
+  const today = new Date()
+  const isPast = date && date <= today
+
+  const formatDate = (d) => d.toLocaleDateString()
+
+  // Modpack
+  if (modpackName) {
+    return {
+      text: `Exclusive to ${modpackName}`,
+      url: sourceCode || null
+    }
+  }
+
+  // Depreciated
+  if (state === 'Depreciated') {
+    return { text: 'Depreciated', url }
+  }
+
+  // Beta testing
+  if (state === 'Open for Beta Testing') {
+    let text = 'Open for Beta Testing'
+    if (hasDate) {
+      text += isPast
+        ? ` (Released ${formatDate(date)})`
+        : ` (Releases ${formatDate(date)})`
+    }
+
+    return { text, url }
+  }
+
+  // Pending Update
+  if (state === 'Pending Update') {
+    if (!hasDate) {
+      return { text: 'Pending Update', url }
+    }
+
+    return {
+      text: isPast
+        ? `Originally Released ${formatDate(date)}`
+        : `Update Releases ${formatDate(date)}`,
+      url
+    }
+  }
+
+  // Released
+  if (state === 'Released') {
+    let text = 'Released'
+    if (hasDate) {
+      text += ` ${formatDate(date)}`
+    }
+
+    return { text, url }
+  }
+
+  // Unreleased
+  if (state === 'Unreleased') {
+    let text = 'Upcoming'
+    if (hasDate) {
+      text += ` ${formatDate(date)}`
+    }
+
+    return { text, url }
+  }
+
+  return null
+})
+
+// Mounted
 onMounted(async () => {
   try {
     const movesetRes = await api.get(`/movesets/${route.params.movesetId}`)
@@ -344,7 +420,7 @@ const StatusIcon = defineComponent({
 
 .column-right {
   flex: 9;
-  margin-top: 40px;
+  margin-top: 5em;
 }
 
 .title-container {

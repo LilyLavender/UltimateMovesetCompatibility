@@ -1097,7 +1097,7 @@ namespace CustomCharInfo.server.Controllers
 
             // Find latest log; Don't allow editing if last acceptance state isn't what's expected.
             var latestLog = await _context.ActionLogs
-                .Where(a => a.ItemTypeId == 2 && a.ItemId == id)
+                .Where(a => a.ItemTypeId == 1 && a.ItemId == id)
                 .OrderByDescending(a => a.CreatedAt)
                 .FirstOrDefaultAsync();
             if (latestLog?.AcceptanceStateId == 6)

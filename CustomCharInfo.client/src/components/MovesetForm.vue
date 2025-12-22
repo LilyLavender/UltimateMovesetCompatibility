@@ -220,9 +220,16 @@
             />
             <v-img
               :src="getFullImageUrl(form.thumbhImageUrl) || thumbhUnknown"
-
               class="mt-2 preview-image"
             />
+            <!-- Download -->
+            <a
+              :href="thumbhUnknown"
+              download
+              class="unvisitable text-caption"
+            >
+              Download placeholder image
+            </a>
           </v-col>
           <!-- Hero Upload -->
           <v-col cols="12" sm="6">
@@ -238,6 +245,14 @@
               class="mt-2 preview-image"
               cover
             />
+            <!-- Download -->
+            <a
+              :href="movesetHeroUnknown"
+              download
+              class="unvisitable text-caption"
+            >
+              Download placeholder image
+            </a>
           </v-col>
           <!-- Background Color -->
           <v-col cols="12" sm="4">
@@ -866,6 +881,13 @@ section h2 {
   margin-top: -1.5em;
   margin-bottom: 0.5em;
   font-size: 12px;
+}
+
+/* Img download caption link helper */
+.text-caption {
+  font-family: unset;
+  margin-top: 0;
+  display: block;
 }
 
 /* Toggle form button */
