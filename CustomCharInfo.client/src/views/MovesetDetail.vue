@@ -65,9 +65,13 @@
                 </strong>
               </div>
 
-              <!-- Series & IDs -->
-              <div class="mb-2">
+              <!-- Series -->
+              <div>
                 <p>Series: <strong>{{ moveset.series?.seriesName }} <img :src="getFullImageUrl(moveset.series.seriesIconUrl, seriesIconUnknown)" alt="series icon" class="inline-series" /></strong></p>
+              </div>
+
+              <!-- IDs -->
+              <div>
                 <p v-if="moveset.slottedId === moveset.replacementId">
                   Internal ID: <strong>{{ moveset.slottedId }}</strong>
                 </p>
@@ -75,43 +79,47 @@
                   <p>Slotted ID: <strong>{{ moveset.slottedId }}</strong></p>
                   <p>Replacement ID: <strong>{{ moveset.replacementId }}</strong></p>
                 </template>
+              </div>
+
+              <!-- Slots -->
+              <div>
                 <p v-if="moveset.slotsStart && moveset.slotsEnd">Slots: <strong>{{ moveset.vanillaChar?.displayName }} c{{ moveset.slotsStart }}-c{{ moveset.slotsEnd }}</strong></p>
                 <p v-else>Slots: <strong>{{ moveset.vanillaChar?.displayName }} c???</strong></p>
-
-                <!-- Availability -->
-                <p>
-                  Availability:
-                  <strong>
-                    <span v-if="releaseDisplay">
-                      <template v-if="releaseDisplay.url">
-                        <a
-                          :href="releaseDisplay.url"
-                          target="_blank"
-                          class="offsite unvisitable"
-                        >
-                          {{ releaseDisplay.text }}
-                        </a>
-                      </template>
-                      <template v-else>
-                        {{ releaseDisplay.text }}
-                      </template>
-                    </span>
-                    <span v-else>
-                      {{ moveset.releaseState?.releaseStateName }}
-                    </span>
-                  </strong>
-                </p>
-
-                <!-- External Links -->
-                <p v-if="moveset.modsWikiLink">
-                  <a :href="`${MODS_WIKI_URL}${moveset.modsWikiLink}`" target="_blank" class="offsite unvisitable">
-                    View {{ moveset.moddedCharName }} on SSBU Mods Wiki
-                  </a>
-                </p>
-                <p v-if="moveset.sourceCode && !moveset.modpackName">
-                  <a :href="moveset.sourceCode" target="_blank" class="offsite unvisitable">Source Code</a>
-                </p>
               </div>
+
+              <!-- Availability -->
+              <p>
+                Availability:
+                <strong>
+                  <span v-if="releaseDisplay">
+                    <template v-if="releaseDisplay.url">
+                      <a
+                        :href="releaseDisplay.url"
+                        target="_blank"
+                        class="offsite unvisitable"
+                      >
+                        {{ releaseDisplay.text }}
+                      </a>
+                    </template>
+                    <template v-else>
+                      {{ releaseDisplay.text }}
+                    </template>
+                  </span>
+                  <span v-else>
+                    {{ moveset.releaseState?.releaseStateName }}
+                  </span>
+                </strong>
+              </p>
+
+              <!-- External Links -->
+              <p v-if="moveset.modsWikiLink">
+                <a :href="`${MODS_WIKI_URL}${moveset.modsWikiLink}`" target="_blank" class="offsite unvisitable">
+                  View {{ moveset.moddedCharName }} on SSBU Mods Wiki
+                </a>
+              </p>
+              <p v-if="moveset.sourceCode && !moveset.modpackName">
+                <a :href="moveset.sourceCode" target="_blank" class="offsite unvisitable">Source Code</a>
+              </p>
             </div>
           </v-col>
 
@@ -240,7 +248,7 @@ const releaseDisplay = computed(() => {
 
   const state = releaseState?.releaseStateName
   const pageUrl = gamebananaPageId ? `${GB_PAGE_URL}${gamebananaPageId}` : null
-  const wipUrl = gamebananaWipId ? `${GB_PAGE_URL}${gamebananaWipId}` : null
+  const wipUrl = gamebananaWipId ? `${GB_WIP_URL}${gamebananaWipId}` : null
   const url = pageUrl || wipUrl
 
   const hasDate = !!releaseDate
