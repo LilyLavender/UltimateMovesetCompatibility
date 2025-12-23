@@ -5,8 +5,7 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": false,
-      "applicationUrlOLD": "http://localhost:5191",
-      "applicationUrl": "https://umc-backend-gtgweed4fsexdmb4.centralus-01.azurewebsites.net/api",
+      "applicationUrl": "http://localhost:5191",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

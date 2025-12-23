@@ -585,11 +585,14 @@ namespace CustomCharInfo.server.Controllers
                 .ToList();
 
             // Log action
-            int newState = user?.UserTypeId == 3 // if admin
-            ? 7 // auto-accept
-            : latestLog != null || keyDetailsChanged // No latest log exists or key details were changed
-            ? 2 // pending admin hard
-            : (latestLog?.AcceptanceStateId == 2 || latestLog?.AcceptanceStateId == 4) ? 2 : 1; // if latest log hard, admin hard. else admin soft
+            int newState =
+            user?.UserTypeId == 3
+                ? 7 // admin auto-accept
+                : keyDetailsChanged
+                    ? 2 // hard admin
+                    : (latestLog?.AcceptanceStateId == 2 || latestLog?.AcceptanceStateId == 4)
+                        ? 2 // stay hard
+                        : 1; // soft admin
             _context.ActionLogs.Add(new ActionLog
             {
                 UserId = userId,
