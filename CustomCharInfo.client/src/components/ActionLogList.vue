@@ -1,14 +1,61 @@
 <template>
   <div>
     <v-container>
-      <!-- Checkbox -->
-      <v-checkbox
-        v-model="filterEnabled"
-        label="Only show relevant"
-        inset
-        hide-details
-        color="primary"
-      />
+      <!-- Header -->
+      <v-row class="mb--1">
+        <!-- Title -->
+        <v-col cols="12" sm="4">
+          <div class="d-flex align-center flex-column">
+            <h1>Notification Dashboard</h1>
+
+            <div class="d-flex ga-2">
+              <v-btn
+                size="small"
+                variant="tonal"
+                @click="selectAllFilters"
+              >
+                Enable All
+              </v-btn>
+
+              <v-btn
+                size="small"
+                variant="tonal"
+                @click="selectOnlyRelevant"
+              >
+                Only Relevant
+              </v-btn>
+            </div>
+          </div>
+        </v-col>
+
+        <!-- Acceptance States -->
+        <v-col cols="12" sm="5">
+          <v-select
+            v-model="selectedAcceptanceStates"
+            :items="acceptanceStateOptions"
+            item-title="name"
+            item-value="id"
+            label="Acceptance States"
+            multiple
+            chips
+            clearable
+          />
+        </v-col>
+
+        <!-- Item Types -->
+        <v-col cols="12" sm="3">
+          <v-select
+            v-model="selectedItemTypes"
+            :items="itemTypeOptions"
+            item-title="name"
+            item-value="id"
+            label="Item Types"
+            multiple
+            chips
+            clearable
+          />
+        </v-col>
+      </v-row>
 
       <!-- Logs -->
       <v-row v-if="filteredLogs.length">
@@ -31,9 +78,9 @@ import api from '@/services/api'
 import ActionLogItem from '@/components/ActionLogItem.vue'
 
 const props = defineProps({
-  userId: {
-    type: String,
-    default: null
+  viewAll: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -42,6 +89,25 @@ const filteredLogs = ref([])
 const user = ref(null)
 const isAdmin = ref(false)
 const filterEnabled = ref(true)
+
+const selectedAcceptanceStates = ref([1, 2, 3, 4])
+const selectedItemTypes = ref([1, 2, 3])
+
+const acceptanceStateOptions = [
+  { id: 1, name: 'Pending Admin (Soft)' },
+  { id: 2, name: 'Pending Admin (Hard)' },
+  { id: 3, name: 'Pending User (Soft)' },
+  { id: 4, name: 'Pending User (Hard)' },
+  { id: 5, name: 'Accepted' },
+  { id: 6, name: 'Rejected' },
+  { id: 7, name: 'Auto-Accepted' }
+]
+
+const itemTypeOptions = [
+  { id: 1, name: 'Movesets' },
+  { id: 2, name: 'User' },
+  { id: 3, name: 'Series' }
+]
 
 const fetchUser = async () => {
   try {
@@ -55,9 +121,18 @@ const fetchUser = async () => {
 
 const fetchLogs = async () => {
   try {
-    const res = await api.get('/logs', {
-      params: props.userId ? { userId: props.userId } : {}
-    })
+    const params = {
+      acceptanceStates: selectedAcceptanceStates.value,
+      itemTypes: selectedItemTypes.value
+    }
+
+    if (!props.viewAll) {
+      params.userId = user.value?.id
+    } else {
+      params.viewAll = true
+    }
+
+    const res = await api.get('/logs', { params })
     logs.value = res.data
     filterLogs()
   } catch (err) {
@@ -66,8 +141,13 @@ const fetchLogs = async () => {
 }
 
 const filterLogs = () => {
+  const enabledStates = selectedAcceptanceStates.value
+  const enabledItemTypes = selectedItemTypes.value
+
   const latestMap = new Map()
   for (const log of logs.value) {
+    if (!enabledItemTypes.includes(log.itemType.itemTypeId)) continue
+
     const key = `${log.itemType.itemTypeId}-${log.item?.movesetId ?? log.item?.modderId ?? log.item?.seriesId ?? log.itemId}`
     const existing = latestMap.get(key)
     if (!existing || new Date(log.createdAt) > new Date(existing.createdAt)) {
@@ -77,12 +157,28 @@ const filterLogs = () => {
 
   const latestLogs = Array.from(latestMap.values())
   filteredLogs.value = filterEnabled.value
-    ? latestLogs.filter(log => [1, 2, 3, 4].includes(log.acceptanceState.acceptanceStateId))
+    ? latestLogs.filter(log =>
+        enabledStates.includes(log.acceptanceState.acceptanceStateId)
+      )
     : latestLogs
 }
 
-watch(filterEnabled, filterLogs)
+// Filter helpers
+const selectAllFilters = () => {
+  selectedAcceptanceStates.value = acceptanceStateOptions.map(s => s.id)
+  selectedItemTypes.value = itemTypeOptions.map(t => t.id)
+}
+const selectOnlyRelevant = () => {
+  selectedAcceptanceStates.value = [1, 2, 3, 4]
+  selectedItemTypes.value = [1, 2, 3]
+}
+
 watch(() => props.userId, fetchLogs)
+watch(
+  [selectedAcceptanceStates, selectedItemTypes],
+  fetchLogs,
+  { deep: true }
+)
 
 onMounted(async () => {
   await fetchUser()
@@ -97,5 +193,9 @@ onMounted(async () => {
   height: 32px;
   margin-top: 3px;
   border-radius: 4px;
+}
+
+.mb--1 {
+  margin-bottom: -2em;
 }
 </style>

@@ -19,36 +19,56 @@ namespace CustomCharInfo.server.Controllers
     {
         private readonly AppDbContext _context;
 
-        public ActionLogsController(AppDbContext context)
+        private readonly UserManager<ApplicationUser> _userManager;
+
+        public ActionLogsController(AppDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<GetActionLogDto>>> GetActionLogs(
-            string? userId = null,
+            [FromQuery] bool viewAll = false,
             int page = 1,
-            int pageSize = 2147483647)
-        {
+            int pageSize = int.MaxValue,
+            [FromQuery] int[]? acceptanceStates = null,
+            [FromQuery] int[]? itemTypes = null
+        ) {
             if (page <= 0 || pageSize <= 0)
                 return BadRequest("Page and pageSize must be greater than 0.");
-        
+
+            var userId = _userManager.GetUserId(User);
+            if (userId == null)
+                return Forbid();
+
+            var user = await _context.Users
+                .Select(u => new { u.Id, u.UserTypeId, u.ModderId })
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+                return Forbid();
+
+            bool isAdmin = user.UserTypeId == 3;
+
+            // Only admins may view all logs
+            if (viewAll && !isAdmin)
+                return Forbid();
+
             var query = _context.ActionLogs
                 .Include(a => a.User)
                 .Include(a => a.ItemType)
                 .Include(a => a.AcceptanceState)
                 .OrderByDescending(a => a.CreatedAt)
                 .AsQueryable();
-        
-            if (!string.IsNullOrEmpty(userId))
+
+            // If not viewing all, restrict to the current user's scope
+            if (!viewAll)
             {
-                var user = await _context.Users.FindAsync(userId);
-                if (user == null)
-                    return NotFound("User not found");
-        
                 var modderId = user.ModderId;
                 var extraModderItemIds = new List<int>();
-        
+
                 if (modderId == null)
                 {
                     extraModderItemIds = await _context.ActionLogs
@@ -57,7 +77,7 @@ namespace CustomCharInfo.server.Controllers
                         .Distinct()
                         .ToListAsync();
                 }
-        
+
                 if (modderId != null)
                 {
                     // Get movesetIds user is a modder for
@@ -65,14 +85,14 @@ namespace CustomCharInfo.server.Controllers
                         .Where(mm => mm.ModderId == modderId)
                         .Select(mm => mm.MovesetId)
                         .ToListAsync();
-                
+
                     // Get seriesIds from movesets
                     var seriesIdsFromMovesets = await _context.Movesets
                         .Where(m => userMovesetIds.Contains(m.MovesetId))
                         .Select(m => m.SeriesId)
                         .Distinct()
                         .ToListAsync();
-                
+
                     query = query.Where(a =>
                         (a.ItemTypeId == 2 && a.ItemId == modderId) ||
                         (a.ItemTypeId == 1 && userMovesetIds.Contains(a.ItemId)) ||
@@ -86,16 +106,28 @@ namespace CustomCharInfo.server.Controllers
                     );
                 }
             }
-        
+
+            // AcceptanceState filter
+            if (acceptanceStates != null && acceptanceStates.Any())
+            {
+                query = query.Where(a => acceptanceStates.Contains(a.AcceptanceStateId));
+            }
+
+            // ItemType filter
+            if (itemTypes != null && itemTypes.Any())
+            {
+                query = query.Where(a => itemTypes.Contains(a.ItemTypeId));
+            }
+
             var logsRaw = await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
-        
+
             var modderIds = logsRaw.Where(l => l.ItemTypeId == 2).Select(l => l.ItemId).Distinct().ToList();
             var movesetIds = logsRaw.Where(l => l.ItemTypeId == 1).Select(l => l.ItemId).Distinct().ToList();
             var seriesIds = logsRaw.Where(l => l.ItemTypeId == 3).Select(l => l.ItemId).Distinct().ToList();
-        
+
             var modders = await _context.Modders
                 .Where(m => modderIds.Contains(m.ModderId))
                 .Select(m => new
@@ -104,17 +136,17 @@ namespace CustomCharInfo.server.Controllers
                     UserName = m.User.UserName ?? m.Name
                 })
                 .ToDictionaryAsync(m => m.ModderId, m => m);
-        
+
             var movesets = await _context.Movesets
                 .Where(m => movesetIds.Contains(m.MovesetId))
                 .Select(m => new { m.MovesetId, m.ModdedCharName })
                 .ToDictionaryAsync(m => m.MovesetId, m => m);
-        
+
             var series = await _context.Series
                 .Where(s => seriesIds.Contains(s.SeriesId))
                 .Select(s => new { s.SeriesId, s.SeriesName })
                 .ToDictionaryAsync(s => s.SeriesId, s => s);
-        
+
             var logs = logsRaw.Select(a => new GetActionLogDto
             {
                 ActionLogId = a.ActionLogId,
@@ -156,7 +188,7 @@ namespace CustomCharInfo.server.Controllers
                 Notes = a.Notes,
                 CreatedAt = a.CreatedAt
             }).ToList();
-        
+
             return Ok(logs);
         }
 
