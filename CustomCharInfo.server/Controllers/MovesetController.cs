@@ -119,6 +119,7 @@ namespace CustomCharInfo.server.Controllers
                         x.Moveset.PrivateModder == true && !(isAdmin || x.IsOwner)
                             ? new List<string> { "???" }
                             : x.Moveset.MovesetModders
+                                .OrderBy(mm => mm.SortOrder)
                                 .Select(mm => mm.Modder.User.UserName ?? mm.Modder.Name)
                                 .ToList(),
 
@@ -180,7 +181,20 @@ namespace CustomCharInfo.server.Controllers
             }
 
             var movesets = await query
-                .OrderBy(x => x.Moveset.ModdedCharName)
+                // Privacy
+                .OrderBy(x => x.Moveset.PrivateModder == true)
+                .ThenBy(x =>
+                    x.Moveset.PrivateModder == true
+                        ? null
+                        : x.Moveset.MovesetModders
+                            .OrderBy(mm => mm.SortOrder)
+                            .Select(mm => mm.Modder.Name)
+                            .FirstOrDefault()
+                )
+                // Release date
+                .ThenBy(x => x.Moveset.ReleaseDate == null)
+                .ThenBy(x => x.Moveset.ReleaseDate)
+                // Select
                 .Select(x => new
                 {
                     // Modders
@@ -189,7 +203,8 @@ namespace CustomCharInfo.server.Controllers
                             ? "???"
                             : string.Join(", ",
                                 x.Moveset.MovesetModders
-                                    .Select(mm => mm.Modder.User.UserName ?? mm.Modder.Name)
+                                    .OrderBy(mm => mm.SortOrder)
+                                    .Select(mm => mm.Modder.Name)
                             ),
 
                     // Main info
@@ -224,7 +239,7 @@ namespace CustomCharInfo.server.Controllers
                     Articles = x.Moveset.MovesetArticles.Select(ma => new
                     {
                         Original = $"{ma.Article.VanillaCharInternalName}-{ma.Article.ArticleName}",
-                        Cloned = ma.ModdedName
+                        Cloned = x.Moveset.PrivateMoveset == true ? "???" : ma.ModdedName
                     }),
 
                     // Hooks
@@ -232,7 +247,7 @@ namespace CustomCharInfo.server.Controllers
                     {
                         mh.Hook.Offset,
                         mh.Hook.Description,
-                        Usage = mh.Description
+                        Usage = x.Moveset.PrivateMoveset == true ? "???" : mh.Description
                     })
                 })
                 .ToListAsync();
@@ -262,6 +277,11 @@ namespace CustomCharInfo.server.Controllers
 
             if (moveset == null)
                 return NotFound();
+
+            // Sort MovesetModders
+            moveset.MovesetModders = moveset.MovesetModders
+                .OrderBy(mm => mm.SortOrder)
+                .ToList();
 
             // Check ownership
             bool isOwner =
@@ -527,8 +547,13 @@ namespace CustomCharInfo.server.Controllers
             // Sync (i know that guy!!) Modders
             _context.MovesetModders.RemoveRange(moveset.MovesetModders);
             moveset.MovesetModders = dto.ModderIds
-                .Select(mid => new MovesetModder { MovesetId = id, ModderId = mid })
-                .ToList();
+            .Select((mid, index) => new MovesetModder 
+            { 
+                MovesetId = id, 
+                ModderId = mid, 
+                SortOrder = index 
+            })
+            .ToList();
 
             // Sync Dependencies
             _context.MovesetDependencies.RemoveRange(moveset.MovesetDependencies);

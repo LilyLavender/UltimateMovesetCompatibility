@@ -193,6 +193,11 @@ const normalizedMovesets = computed(() =>
   movesets.value.map(m => {
     const row = { ...m };
 
+    row.slotReplacementId =
+      m.slottedId === m.replacementId
+        ? String(m.slottedId)
+        : `${m.slottedId}-${m.replacementId}`;
+
     m.articles.forEach(a => {
       row[`article:${a.original}`] = a.cloned;
     });

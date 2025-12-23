@@ -11,5 +11,7 @@ namespace CustomCharInfo.server.Models
         [Required]
         public int ModderId { get; set; }
         public Modder Modder { get; set; }
+
+        public int SortOrder { get; set; }
     }
 }

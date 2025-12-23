@@ -65,9 +65,27 @@ namespace CustomCharInfo.server.Controllers
                     s.SeriesId,
                     s.SeriesName,
                     s.SeriesIconUrl,
-                    MovesetCount = _context.Movesets.Count(m => m.SeriesId == s.SeriesId),
+
+                    // Count only non-private movesets
+                    MovesetCount = _context.Movesets.Count(m =>
+                        m.SeriesId == s.SeriesId &&
+                        m.PrivateMoveset != true
+                    ),
+
+                    // Filtering
+                    TotalMovesets = _context.Movesets.Count(m =>
+                        m.SeriesId == s.SeriesId
+                    ),
+
                     CanEdit = editableSeriesIds.Contains(s.SeriesId)
                 })
+
+                // Hide all added series where all movesets are private
+                /*.Where(s =>
+                    s.SeriesId <= 41 || 
+                    s.TotalMovesets == 0 ||
+                    s.MovesetCount > 0
+                )*/
                 .ToListAsync();
 
             return Ok(seriesList);
