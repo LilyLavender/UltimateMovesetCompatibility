@@ -19,6 +19,10 @@ import EditModder from '@/views/EditModder.vue';
 import SeriesPage from '@/views/SeriesPage.vue';
 import AddSeries from '@/views/AddSeries.vue';
 import EditSeries from '@/views/EditSeries.vue';
+// Hooks
+import HooksPage from '@/views/HooksPage.vue';
+import AddHook from '@/views/AddHook.vue';
+import EditHook from '@/views/EditHook.vue';
 // Blog
 import BlogPage from '@/views/BlogPage.vue';
 import BlogPostForm from '@/components/BlogPostForm.vue';
@@ -424,6 +428,74 @@ const routes = [
         })
       }
     },
+  },
+  {
+    path: '/hooks',
+    name: 'Hooks',
+    component: HooksPage,
+    meta: { title: 'Hooks' },
+  },
+  {
+    path: '/hooks/add',
+    name: 'AddHook',
+    component: AddHook,
+    meta: { title: 'Submit Hook' },
+    beforeEnter: async (to, from, next) => {
+      try {
+        const user = (await api.get('/auth/me')).data;
+        if (user.userTypeId >= 2) {
+          next();
+        } else {
+          next({
+            name: 'ErrorPage',
+            query: {
+              httpCode: '403 Forbidden',
+              reason: 'You do not have permission to access this page.',
+            }
+          })
+        }
+      } catch (err) {
+        next({
+          name: 'ErrorPage',
+          query: {
+            httpCode: '401 Unauthorized',
+            reason: 'Authentication failed.',
+            extra: 'Try signing in or refreshing the page.',
+          }
+        })
+      }
+    }
+  },
+  {
+    path: '/hooks/edit/:hookId',
+    name: 'EditHook',
+    component: EditHook,
+    props: true,
+    beforeEnter: async (to, from, next) => {
+      try {
+        const user = (await api.get('/auth/me')).data;
+        if (user.userTypeId >= 2) {
+          next();
+        } else {
+          next({
+            name: 'ErrorPage',
+            query: {
+              httpCode: '403 Forbidden',
+              reason: 'You do not have permission to access this page.',
+            }
+          })
+        }
+      } catch (err) {
+        next({
+          name: 'ErrorPage',
+          query: {
+            httpCode: '401 Unauthorized',
+            reason: 'Authentication failed.',
+            extra: 'Try signing in or refreshing the page.',
+          }
+        })
+      }
+    }
   },
   {
     path: '/user-actions',

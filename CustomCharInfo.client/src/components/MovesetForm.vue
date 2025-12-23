@@ -451,6 +451,14 @@
             @click="addHookForm = !addHookForm"
           />
         </h2>
+        <!-- Hint -->
+        <p class="subheader"><router-link
+            to="/hooks/add"
+            class="unvisitable"
+            target="_blank"
+          >
+            Don't see your hook?
+        </router-link></p>
         <!-- Add Hook -->
         <v-expand-transition>
           <div v-if="addHookForm">
