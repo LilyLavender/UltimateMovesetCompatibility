@@ -50,7 +50,7 @@ const canView = computed(() => {
   if (!user.value) return false
   const isAdmin = user.value.userTypeId === 3
   const isModder = user.value.modderId != null &&
-    props.moveset.modders.some(mm => mm.modderId === user.value.modderId)
+    props.moveset.modders.some(m => m === user.value.userName) // This should absolutely not be done by username but there's security on the moveset itself so it's whatever lol
   return isAdmin || isModder
 })
 
