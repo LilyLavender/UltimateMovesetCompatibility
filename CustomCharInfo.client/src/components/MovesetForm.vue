@@ -162,6 +162,7 @@
                   v-model="formattedReleaseDate"
                   label="Release Date"
                   readonly
+                  clearable
                   v-bind="props"
                 />
               </template>
@@ -683,6 +684,11 @@ const formattedReleaseDate = computed({
     return date.toLocaleDateString()
   },
   set(newVal) {
+    if (!newVal) {
+      form.value.releaseDate = null
+      return
+    }
+
     const parsed = new Date(newVal)
     if (!isNaN(parsed)) {
       form.value.releaseDate = parsed.toISOString().split('T')[0]
