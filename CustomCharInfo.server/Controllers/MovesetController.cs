@@ -29,9 +29,15 @@ namespace CustomCharInfo.server.Controllers
             [FromQuery] int? seriesId,
             [FromQuery] int? releaseStateId,
             [FromQuery] int? modderId,
-            [FromQuery] string? search,
+            [FromQuery] string? sort,
+            [FromQuery] bool? privateOnly,
+            [FromQuery] bool? adminPickOnly,
+            [FromQuery] bool? upcomingOnly,
+            [FromQuery] bool? recentOnly,
+            [FromQuery] bool? betaOnly,
             [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 2147483647)
+            [FromQuery] int pageSize = int.MaxValue
+        )
         {
             var userId = _userManager.GetUserId(User);
             var user = userId != null
@@ -66,6 +72,7 @@ namespace CustomCharInfo.server.Controllers
                 })
                 .AsQueryable();
 
+            // Filters
             if (seriesId.HasValue)
                 query = query.Where(x => x.Moveset.SeriesId == seriesId);
 
@@ -74,12 +81,25 @@ namespace CustomCharInfo.server.Controllers
 
             if (modderId.HasValue)
                 query = query.Where(x =>
-                    x.Moveset.MovesetModders.Any(mm => mm.ModderId == modderId.Value));
+                    x.Moveset.MovesetModders.Any(mm => mm.ModderId == modderId));
 
-            if (!string.IsNullOrWhiteSpace(search))
-                query = query.Where(x => x.Moveset.ModdedCharName.Contains(search));
+            if (privateOnly.HasValue)
+                query = query.Where(x => x.Moveset.PrivateMoveset == privateOnly.Value);
 
-            if (user == null || user.UserTypeId != 3)
+            if (adminPickOnly == true)
+                query = query.Where(x => (bool)x.Moveset.AdminPick);
+
+            if (betaOnly == true)
+                query = query.Where(x => x.Moveset.ReleaseStateId == 4);
+
+            if (upcomingOnly == true)
+                query = query.Where(x => x.Moveset.ReleaseDate > DateTime.UtcNow);
+
+            if (recentOnly == true)
+                query = query.Where(x => x.Moveset.ReleaseDate <= DateTime.UtcNow);
+
+            // Visibility
+            if (!isAdmin)
             {
                 query = query.Where(x =>
                     x.LatestLog == null ||
@@ -88,8 +108,26 @@ namespace CustomCharInfo.server.Controllers
                 );
             }
 
+            // Sort
+            query = sort switch
+            {
+                "releaseDate" => query
+                    .OrderBy(x => x.Moveset.PrivateMoveset)
+                    .ThenBy(x => x.Moveset.ReleaseDate == null)
+                    .ThenByDescending(x => x.Moveset.ReleaseDate),
+
+                "releaseDateAsc" => query
+                    .OrderBy(x => x.Moveset.PrivateMoveset)
+                    .ThenBy(x => x.Moveset.ReleaseDate == null)
+                    .ThenBy(x => x.Moveset.ReleaseDate),
+
+                _ => query
+                    .OrderBy(x => x.Moveset.PrivateMoveset)
+                    .ThenBy(x => x.Moveset.ModdedCharName)
+            };
+
+            // Projection
             var movesets = await query
-                .OrderBy(x => x.Moveset.ModdedCharName)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(x => new
@@ -123,9 +161,9 @@ namespace CustomCharInfo.server.Controllers
                                 .Select(mm => mm.Modder.User.UserName ?? mm.Modder.Name)
                                 .ToList(),
 
-                    ReleaseDate = x.Moveset.ReleaseDate,
-                    AdminPick = x.Moveset.AdminPick,
-                    PrivateMoveset = x.Moveset.PrivateMoveset,
+                    x.Moveset.ReleaseDate,
+                    x.Moveset.AdminPick,
+                    x.Moveset.PrivateMoveset,
                 })
                 .ToListAsync();
 

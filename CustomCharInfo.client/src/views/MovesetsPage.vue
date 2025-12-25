@@ -35,7 +35,7 @@
     </div>
 
     <!-- Moveset List -->
-    <MovesetList />
+    <MovesetList showControls />
   </div>
 </template>
 

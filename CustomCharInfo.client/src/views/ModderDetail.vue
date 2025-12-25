@@ -74,10 +74,11 @@ onMounted(async () => {
     modderIsAdmin.value = adminRes.data.isAdmin
 
     // Fetch movesets
-    const movesetRes = await api.get(`movesets?modderId=${modderId}&page=1&pageSize=10`)
+    const movesetRes = await api.get(`movesets?modderId=${modderId}&page=1&sort=releaseDateAsc`)
     movesets.value = movesetRes.data.sort(
       (a, b) => new Date(a.releaseDate) - new Date(b.releaseDate)
     )
+    console.log(movesets.value)
 
     // Fetch GameBanana pfp
     if (modder.value.gamebananaId) {

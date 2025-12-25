@@ -9,13 +9,13 @@
       <div
         class="moveset-card__background"
         :style="{ background: backgroundGradient }"
-      >
-      </div>
+      />
+
       <!-- Character image -->
       <div
         class="moveset-card__img"
         :style="{ backgroundImage: `url(${getFullImageUrl(moveset.thumbhImageUrl)})` }"
-      ></div>
+      />
 
       <!-- Series icon -->
       <div v-if="moveset.seriesIconUrl" class="moveset-card__series">
@@ -25,33 +25,34 @@
         />
       </div>
 
-      <!-- Text -->
-      <p class="moveset-card__charname">{{ moveset.moddedCharName }}</p>
-      <p class="moveset-card__creator">{{ moveset.modders.join(', ') }}</p>
+      <!-- Character name -->
+      <p class="moveset-card__charname">
+        {{ moveset.moddedCharName }}
+      </p>
+
+      <!-- Creator(s) -->
+      <p class="moveset-card__creator">
+        {{ moveset.modders.join(', ') }}
+      </p>
     </component>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import thumbhUnknown from "@/assets/thumb_h_unknown.png"
-import api from '@/services/api'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
 const props = defineProps({
-  moveset: Object
-})
-
-// TODO this should be done in the list, NOT the card
-const user = ref(null)
-const canView = computed(() => {
-  if (!props.moveset.privateMoveset) return true
-  if (!user.value) return false
-  const isAdmin = user.value.userTypeId === 3
-  const isModder = user.value.modderId != null &&
-    props.moveset.modders.some(m => m === user.value.userName) // This should absolutely not be done by username but there's security on the moveset itself so it's whatever lol
-  return isAdmin || isModder
+  moveset: {
+    type: Object,
+    required: true,
+  },
+  canView: {
+    type: Boolean,
+    default: true,
+  },
 })
 
 const getFullImageUrl = (path) => {
@@ -62,18 +63,6 @@ const getFullImageUrl = (path) => {
 const backgroundGradient = computed(() => {
   const color = props.moveset.backgroundColor || '000000'
   return `linear-gradient(55deg, #${color}00 40%, #${color}33 50%, #${color}ff 100%)`
-})
-
-// Fetch current user if moveset private
-onMounted(async () => {
-  if (props.moveset.privateMoveset) {
-    try {
-      const res = await api.get('/auth/me')
-      user.value = res.data
-    } catch (err) {
-      user.value = null
-    }
-  }
 })
 </script>
 
