@@ -145,8 +145,22 @@ namespace CustomCharInfo.server.Controllers
                 .Select(u => new { u.ModderId, u.UserTypeId, u.UserName })
                 .SingleOrDefaultAsync();
 
-            if (user == null || user.ModderId != null)
+            if (user == null)
                 return Unauthorized();
+
+            // Already modder
+            if (user.ModderId != null)
+                return BadRequest("User is already a modder.");
+
+            // Check for existing modder application
+            var hasPendingApplication = await _context.ActionLogs.AnyAsync(a =>
+                a.UserId == userId &&
+                a.ItemTypeId == 2 &&
+                (a.AcceptanceStateId == 2 || a.AcceptanceStateId == 4)
+            );
+
+            if (hasPendingApplication)
+                return Conflict("User already has a pending modder application.");
 
             var modder = new Modder
             {

@@ -71,28 +71,46 @@ const routes = [
     beforeEnter: async (to, from, next) => {
       const movesetId = parseInt(to.params.movesetId);
       const blockedStates = [2, 4, 6];
-    
+      
+      let latestLog = null
+      let moveset = null
+      let user = null
+
       try {
-        const logsRes = await api.get('/logs', { params: { userId: null } });
-        const latestLog = logsRes.data
-          .filter(log => log.itemType?.itemTypeId === 1 && log.item?.movesetId === movesetId)
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-      
-        const moveset = await api.get(`/movesets/${movesetId}`);
-        const modderIds = moveset.data.movesetModders.map(m => m.modderId);
-      
-        let user = null;
+        // Logs
         try {
-          user = (await api.get('/auth/me')).data;
-        } catch (err) {
-          // Not logged in
+          const logsRes = await api.get('/logs')
+          latestLog = logsRes.data
+            .filter(log =>
+              log.itemType?.itemTypeId === 1 &&
+              log.item?.movesetId === movesetId
+            )
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]
+        } catch {
+          // Logged-out users don't see logs
+          latestLog = null
         }
       
-        const isPrivate = latestLog && blockedStates.includes(latestLog.acceptanceState.acceptanceStateId);
+        // Moveset public
+        const movesetRes = await api.get(`/movesets/${movesetId}`)
+        moveset = movesetRes.data
+      
+        const modderIds = moveset.movesetModders.map(m => m.modderId)
+      
+        // Auth
+        try {
+          user = (await api.get('/auth/me')).data
+        } catch {
+          user = null
+        }
+      
+        const isPrivate =
+          latestLog &&
+          blockedStates.includes(latestLog.acceptanceState.acceptanceStateId)
       
         if (isPrivate) {
-          const isAdmin = user?.userTypeId === 3;
-          const isOwner = user && modderIds.includes(user.modderId);
+          const isAdmin = user?.userTypeId === 3
+          const isOwner = user && modderIds.includes(user.modderId)
         
           if (!isAdmin && !isOwner) {
             return next({
@@ -101,12 +119,12 @@ const routes = [
                 httpCode: '403 Forbidden',
                 reason: 'This moveset is currently private.',
                 extra: 'Check back later, or try signing in.',
-              },
-            });
+              }
+            })
           }
         }
       
-        return next();
+        return next()
       } catch (err) {
         return next({
           name: 'ErrorPage',
@@ -114,8 +132,8 @@ const routes = [
             httpCode: '500 Server Error',
             reason: 'Could not load the moveset.',
             extra: err.message || 'Please try again later.',
-          },
-        });
+          }
+        })
       }
     }
   },
