@@ -31,7 +31,7 @@
           hide-details
           :items="releaseStates"
           item-title="releaseStateName"
-          item-value="releaseStateId"
+          item-value="releaseStateName"
         />
       </v-col>
 
@@ -109,7 +109,7 @@ const processedMovesets = computed(() => {
 
   // Filter
   if (filterReleaseState.value != null) {
-    list = list.filter(m => m.releaseStateId === filterReleaseState.value)
+    list = list.filter(m => m.releaseState === filterReleaseState.value)
   }
 
   if (filterPrivate.value != null) {

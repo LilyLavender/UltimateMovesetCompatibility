@@ -124,6 +124,14 @@ namespace CustomCharInfo.server.Controllers
             if (string.IsNullOrWhiteSpace(dto.SeriesName))
                 return BadRequest("Series name is required.");
 
+            var normalizedName = dto.SeriesName.Trim();
+
+            var existingSeries = await _context.Series
+                .AnyAsync(s => s.SeriesName.ToLower() == normalizedName.ToLower());
+
+            if (existingSeries)
+                return Conflict("A series with this name already exists.");
+
             var series = new Series
             {
                 SeriesName = dto.SeriesName,
@@ -181,7 +189,17 @@ namespace CustomCharInfo.server.Controllers
             if (string.IsNullOrWhiteSpace(dto.SeriesName))
                 return BadRequest("SeriesName is required.");
 
-            existingSeries.SeriesName = dto.SeriesName;
+            var normalizedName = dto.SeriesName.Trim();
+
+            var duplicateSeries = await _context.Series
+                .AnyAsync(s =>
+                    s.SeriesId != id &&
+                    s.SeriesName.ToLower() == normalizedName.ToLower());
+
+            if (duplicateSeries)
+                return Conflict("A series with this name already exists.");
+
+            existingSeries.SeriesName = normalizedName;
             existingSeries.SeriesIconUrl = dto.SeriesIconUrl;
 
             // Calculate new acceptance state

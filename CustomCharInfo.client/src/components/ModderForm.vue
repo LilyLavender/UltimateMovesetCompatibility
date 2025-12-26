@@ -148,7 +148,6 @@ const submit = async () => {
 
 const save = async () => {
   try {
-    console.log(modder.value.discordUsername);
     await api.put(`/modders/${modderId.value}`, {
       bio: modder.value.bio,
       gamebananaId: modder.value.gamebananaId,

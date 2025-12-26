@@ -1,6 +1,6 @@
 <template>
   <ScrollingHero />
-  <div class="p-6 mx-auto display-above-hero">
+  <v-container max-width="1080px" class="p-6 mx-auto display-above-hero">
 
     <!-- Header -->
     <h1 class="mb-4 title-font page-title no-select text-center">Custom Movesets</h1>
@@ -19,14 +19,14 @@
     <div v-if="latestBlogPost" class="mb-10">
       <h1>Latest from the Blog</h1>
       <v-container>
-      <BlogPost :post="latestBlogPost" />
-      <router-link
-        to="/blog"
-        class="unvisitable text-decoration-none router-link"
-      >
-        <i class="mdi mdi-arrow-right-bottom"></i>
-        View Blog
-      </router-link>
+        <BlogPost :post="latestBlogPost" />
+        <router-link
+          to="/blog"
+          class="unvisitable text-decoration-none router-link mini"
+        >
+          <i class="mdi mdi-arrow-right-bottom"></i>
+          View Blog
+        </router-link>
       </v-container>
     </div>
 
@@ -37,10 +37,17 @@
 
     <div>
       <h1>Featured</h1>
+      <router-link
+        to="/movesets"
+        class="unvisitable text-decoration-none router-link"
+      >
+        <i class="mdi mdi-arrow-right-bottom"></i>
+        View All Movesets
+      </router-link>
       <MovesetList :movesets="adminPicks" />
     </div>
 
-  </div>
+  </v-container>
 </template>
 
 <script setup>
@@ -112,8 +119,14 @@ onMounted(async () => {
 
 <style scoped>
 .router-link {
-  margin-top: -1em;
+  margin-top: -0.5em;
+  margin-bottom: 0.5em;
   margin-left: 1em;
   display: block;
+}
+
+.router-link.mini {
+  margin-top: -1em;
+  margin-bottom: 0;
 }
 </style>

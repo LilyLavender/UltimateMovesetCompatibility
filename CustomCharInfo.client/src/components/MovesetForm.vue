@@ -496,7 +496,7 @@
             :key="i"
           >
             <v-list-item-title class="d-inline">
-              0x{{ entry.offset }} ({{ entry.description }}) - {{ entry.usage }}
+              0x{{ entry.offset }} ({{ entry.hookDescription }}) – {{ entry.description }}
             </v-list-item-title>
             <v-icon @click="form.hooks.splice(i, 1)" class="d-inline delete-icon">
               mdi-delete
@@ -552,19 +552,29 @@ const getVanillaCharDisplayName = (internalName) => {
 const getArticleName = (id) => {
   const article = articles.value.find(a => a.articleId === id);
   return article ? `${article.vanillaCharInternalName}_${article.articleName}` : 'Unknown';
-};
+}
 
 const addArticle = () => {
   if (!newArticle.value.articleId) return;
   form.value.articles.push({ ...newArticle.value });
   newArticle.value = { articleId: null, moddedName: "", description: "" };
-};
+}
 
 const addHook = () => {
-  if (!newHook.value.hookId) return;
-  form.value.hooks.push({ ...newHook.value });
-  newHook.value = { hookId: null, description: "" };
-};
+  if (!newHook.value.hookId) return
+
+  const hook = hooks.value.find(h => h.hookId === newHook.value.hookId)
+  if (!hook) return
+
+  form.value.hooks.push({
+    hookId: hook.hookId,
+    offset: hook.offset,
+    hookDescription: hook.description,
+    description: newHook.value.description
+  })
+
+  newHook.value = { hookId: null, description: '' }
+}
 
 const moveset = ref(null)
 const form = ref({
@@ -659,9 +669,9 @@ onMounted(async () => {
       })) || []
       form.value.hooks = res.data.movesetHooks?.map(h => ({
         hookId: h.hookId,
-        usage: h.description,
         offset: h.hook.offset,
-        description: h.hook.description
+        hookDescription: h.hook.description,
+        description: h.description
       })) || []
     } catch (err) {
       console.error(err)

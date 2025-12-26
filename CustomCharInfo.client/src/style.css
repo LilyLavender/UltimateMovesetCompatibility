@@ -31,7 +31,7 @@ body {
 .display-above-hero {
   position: relative;
   z-index: 3;
-  margin-top: -140px;
+  margin-top: -180px;
 }
 
 

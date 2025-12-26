@@ -19,7 +19,12 @@
         <v-row>
           <!-- Series Name -->
           <v-col cols="12" sm="4">
-            <v-text-field v-model="form.seriesName" label="Series Name" />
+            <v-text-field
+              v-model="form.seriesName"
+              label="Series Name"
+              :error="!!nameError"
+              :error-messages="nameError"
+            />
           </v-col>
 
           <!-- Image Upload -->
@@ -81,14 +86,25 @@ const form = ref({
 })
 
 const showSeparateIds = ref(false)
+const nameError = ref('')
+const allSeries = ref([])
+const originalName = ref('')
 
 onMounted(async () => {
+  try {
+    const res = await api.get('/series')
+    allSeries.value = res.data
+  } catch (err) {
+    console.error('Failed to load series list:', err)
+  }
+
   // Only load series if editing
   if (props.mode === 'edit' && props.seriesId) {
     try {
       const res = await api.get(`/series/${props.seriesId}`)
       series.value = res.data
       Object.assign(form.value, res.data)
+      originalName.value = res.data.seriesName
       document.title = `UMC | Editing ${series.value?.seriesName}`; // sets page title
     } catch (err) {
       console.error(err)
@@ -96,6 +112,23 @@ onMounted(async () => {
     }
   }
 })
+
+const validateSeriesName = () => {
+  nameError.value = ''
+
+  const name = form.value.seriesName?.trim()
+  if (!name) return
+
+  if (isEditMode.value && name === originalName.value) return
+
+  const conflict = allSeries.value.find(s =>
+    s.seriesName.toLowerCase() === name.toLowerCase()
+  )
+
+  if (conflict) {
+    nameError.value = 'A series with this name already exists.'
+  }
+}
 
 const uploadImage = async (event, type) => {
   const file = event?.target?.files?.[0];
@@ -152,24 +185,36 @@ const uploadImage = async (event, type) => {
     console.error("Image upload failed:", err.response?.data || err.message);
     alert("Failed to upload image. Please ensure it meets size requirements.");
   }
-};
+}
 
 const submit = async () => {
+  // Validation
+  validateSeriesName()
+  if (nameError.value) {
+    return
+  }
+
   const payload = { ...form.value }
 
+  // API
   try {
     if (props.mode == 'edit' && props.seriesId) {
       await api.put(`/series/${props.seriesId}`, payload)
-      router.push(`/series`)
     } else {
       await api.post('/series', payload)
-      router.push(`/series`)
     }
+
+    router.push('/series')
   } catch (err) {
     console.error("Submit failed:", err.response?.data || err.message)
     alert("Failed to save series. Please check the form and try again.")
   }
 }
+
+watch(
+  () => form.value.seriesName,
+  validateSeriesName
+)
 </script>
 
 <style scoped>

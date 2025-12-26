@@ -78,7 +78,6 @@ onMounted(async () => {
     movesets.value = movesetRes.data.sort(
       (a, b) => new Date(a.releaseDate) - new Date(b.releaseDate)
     )
-    console.log(movesets.value)
 
     // Fetch GameBanana pfp
     if (modder.value.gamebananaId) {
