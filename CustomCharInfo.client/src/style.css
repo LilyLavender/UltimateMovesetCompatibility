@@ -45,12 +45,12 @@ a.offsite {
 a.offsite::after {
   content: '\F03CC';
   font-family: 'Material Design Icons';
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 1.1em;
+  position: relative;
+  display: inline-block;
+  font-size: 0.9em;
   text-decoration: none;
+  right: -2px;
+  top: -2px;
 }
 
 a.unvisitable {

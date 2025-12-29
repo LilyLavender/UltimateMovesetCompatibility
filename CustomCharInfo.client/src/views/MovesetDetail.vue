@@ -185,7 +185,7 @@
                       0x{{ mh.hook.offset }}
                     </strong>
                   </div>
-                  <div>
+                  <div class="hook-usage">
                     <em v-if="mh.description">{{ mh.description }}</em>
                     <em v-else>(unknown usage)</em>
                   </div>
@@ -548,6 +548,16 @@ ul.functions-list > li {
 
 .row-2 li {
   font-size: 14px;
+}
+
+.hook-usage {
+  text-align: end;
+  width: 100%;
+}
+
+.hook-usage > em {
+  width: 90%;
+  display: inline-block;
 }
 
 .edit-link {
