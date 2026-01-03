@@ -92,7 +92,15 @@ onMounted(async () => {
       }
     }
   } catch (err) {
-    console.error('Failed to load modder page:', err)
+    if (err.response?.status === 404) {
+      router.replace({
+        name: 'ErrorPage',
+        query: {
+          httpCode: '404 Not Found',
+          reason: 'This modder page is not available.',
+        }
+      })
+    }
   }
 })
 </script>

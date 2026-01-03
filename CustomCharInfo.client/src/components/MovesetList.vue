@@ -126,7 +126,10 @@ const processedMovesets = computed(() => {
   } else if (!props.movesets) {
     list.sort((a, b) => {
       if (a.privateMoveset !== b.privateMoveset) return a.privateMoveset ? 1 : -1
-      return a.moddedCharName.localeCompare(b.moddedCharName)
+      if (!a.privateMoveset) return a.moddedCharName.localeCompare(b.moddedCharName)
+      const modderA = (a.modders[0] || '').toLowerCase()
+      const modderB = (b.modders[0] || '').toLowerCase()
+      return modderA.localeCompare(modderB)
     })
   }
 

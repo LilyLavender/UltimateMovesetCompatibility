@@ -322,57 +322,7 @@ const routes = [
     name: 'ModderDetail',
     component: ModderDetail,
     props: true,
-    beforeEnter: async (to, from, next) => {
-      const modderId = parseInt(to.params.id);
-      const blockedStates = [2, 4, 6];
-    
-      try {
-        const res = await api.get('/logs', { params: { userId: null } });
-        const logs = res.data;
-      
-        const latestLog = logs
-          .filter(log => log.itemType?.itemTypeId === 2 && log.item?.modderId === modderId)
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-      
-        const submitted = logs.some(log =>
-          log.itemType?.itemTypeId === 2 &&
-          log.item?.modderId === modderId
-        );
-      
-        let user = null;
-        try {
-          user = (await api.get('/auth/me')).data;
-        } catch (err) {
-          // Unauthenticated
-        }
-      
-        const isPrivate = latestLog && blockedStates.includes(latestLog.acceptanceState.acceptanceStateId);
-        const isAdmin = user?.userTypeId === 3;
-        const isSelf = user?.modderId === modderId;
-      
-        if (isPrivate && !isAdmin && !isSelf && !submitted) {
-          return next({
-            name: 'ErrorPage',
-            query: {
-              httpCode: '403 Forbidden',
-              reason: 'This modder page is currently private.',
-              extra: 'Check back later, or try signing in.',
-            }
-          });
-        }
-      
-        return next();
-      } catch (err) {
-        return next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '500 Server Error',
-            reason: 'Could not load the modder page.',
-            extra: err.message || 'Please try again later.',
-          }
-        });
-      }
-    }
+    // Todo: remove beforeEnter for every page? fixes some issues
   },
   {
     path: '/modder/apply',

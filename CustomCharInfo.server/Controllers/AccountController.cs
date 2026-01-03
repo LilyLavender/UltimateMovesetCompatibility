@@ -123,45 +123,62 @@ namespace CustomCharInfo.server.Controllers
         {
             if (string.IsNullOrWhiteSpace(dto.NewUsername))
                 return BadRequest("Username cannot be empty");
-        
+
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
                 return Unauthorized("User not found");
-        
+
             user.UserName = dto.NewUsername;
-        
+
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
                 return BadRequest(result.Errors);
 
             // If user is linked to modder, update modder too
-            var modder = await _context.Modders.FindAsync(user.ModderId);
-            int? modderIdFuture = -1;
-            if (modder != null)
+            Modder? modder = null;
+
+            // Accepted modder
+            if (user.ModderId.HasValue)
             {
-                modder.Name = dto.NewUsername;
-                _context.Modders.Update(modder);
+                modder = await _context.Modders.FindAsync(user.ModderId.Value);
             }
-            else
+
+            // Pending / rejected
+            if (modder == null)
             {
-                modderIdFuture = await _context.ActionLogs
-                    .Where(a => a.UserId == user.Id && a.ItemTypeId == 2)
+                var modderIdFromLogs = await _context.ActionLogs
+                    .Where(a =>
+                        a.UserId == user.Id &&
+                        a.ItemTypeId == 2
+                    )
                     .OrderBy(a => a.CreatedAt)
                     .Select(a => (int?)a.ItemId)
                     .FirstOrDefaultAsync();
 
-                modder = await _context.Modders.FindAsync(modderIdFuture);
+                if (modderIdFromLogs.HasValue)
+                    modder = await _context.Modders.FindAsync(modderIdFromLogs.Value);
             }
-            
-            var latestLog = await _context.ActionLogs
-                .Where(a => a.ItemTypeId == 2 && a.ItemId == modder.ModderId)
-                .OrderByDescending(a => a.CreatedAt)
-                .FirstOrDefaultAsync();
 
-            int newState = (latestLog?.AcceptanceStateId == 2 || latestLog?.AcceptanceStateId == 4) ? 2 : 1;
-
-            if (modder?.ModderId != null)
+            // Update
+            if (modder != null)
             {
+                modder.Name = dto.NewUsername;
+                _context.Modders.Update(modder);
+
+                // Preserve acceptance state
+                var latestLog = await _context.ActionLogs
+                    .Where(a =>
+                        a.ItemTypeId == 2 &&
+                        a.ItemId == modder.ModderId
+                    )
+                    .OrderByDescending(a => a.CreatedAt)
+                    .FirstOrDefaultAsync();
+
+                int newState =
+                    latestLog?.AcceptanceStateId is 2 or 4
+                        ? latestLog.AcceptanceStateId
+                        : 1;
+
                 _context.ActionLogs.Add(new ActionLog
                 {
                     UserId = user.Id,

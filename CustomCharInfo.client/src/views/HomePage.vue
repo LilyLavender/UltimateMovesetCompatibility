@@ -118,15 +118,5 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.router-link {
-  margin-top: -0.5em;
-  margin-bottom: 0.5em;
-  margin-left: 1em;
-  display: block;
-}
 
-.router-link.mini {
-  margin-top: -1em;
-  margin-bottom: 0;
-}
 </style>

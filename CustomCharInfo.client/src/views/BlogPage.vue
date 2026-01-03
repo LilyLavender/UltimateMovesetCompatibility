@@ -4,7 +4,14 @@
 
     <v-alert v-if="error" type="error" class="mb-4">{{ error }}</v-alert>
 
-    <BlogPost v-for="post in blogPosts" :key="post.blogPostId" :post="post" />
+    <div v-else>
+      <p class="router-link">
+        <i class="mdi mdi-arrow-right-bottom"></i>
+        Want to add to the blog? Contact Lily
+      </p>
+
+      <BlogPost v-for="post in blogPosts" :key="post.blogPostId" :post="post" />
+    </div>
   </v-container>
 </template>
 
@@ -33,5 +40,10 @@ onMounted(async () => {
 .page-title {
   font-size: 5em;
   margin-top: 0.5em;
+}
+
+.router-link {
+  margin-top: -1.75em;
+  margin-bottom: 1em;
 }
 </style>

@@ -67,14 +67,13 @@ namespace CustomCharInfo.server.Controllers
             return Ok(modders);
         }
 
-        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult> GetModder(int id)
         {
             var userId = _userManager.GetUserId(User);
-            var userFromId = await _context.Users.FindAsync(userId);
-            if (userFromId == null || userFromId.UserTypeId < 2)
-                return Unauthorized();
+            var userFromId = userId != null
+                ? await _context.Users.FindAsync(userId)
+                : null;
 
             var blockedStates = new[] { 2, 4, 6 };
 
@@ -91,7 +90,7 @@ namespace CustomCharInfo.server.Controllers
                 });
 
             // Filter out blocked modders
-            if (userFromId.UserTypeId != 3)
+            if (userFromId?.UserTypeId != 3)
             {
                 modderQuery = modderQuery.Where(x =>
                     x.LatestLog == null ||

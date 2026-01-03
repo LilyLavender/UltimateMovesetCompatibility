@@ -408,12 +408,14 @@
                 <v-text-field
                   v-model="newArticle.moddedName"
                   label="Modded Internal Name"
+                  placeholder="eg. shortaxe"
                 />
               </v-col>
               <v-col cols="12" sm="3">
                 <v-text-field
                   v-model="newArticle.description"
                   label="Display Name"
+                  placeholder="eg. Short Axe"
                 />
               </v-col>
               <v-col cols="12" sm="2">
@@ -477,7 +479,7 @@
                     <v-text-field
                       v-model="newHook.description"
                       label="Hook Usage"
-                      :placeholder="`What does ${form.moddedCharName} use this for?`"
+                      :placeholder="`What does ${form.moddedCharName || 'the character'} use this for?`"
                     />
                   </v-col>
                   <v-col cols="12" sm="2">
@@ -764,8 +766,12 @@ const uploadImage = async (event, type) => {
 
 const submit = async () => {
   // Validate slots
-  if (form.value.slotsStart < 8 || form.value.slotsEnd > 255 || form.value.slotsEnd < form.value.slotsStart) {
-    alert('Please ensure slotsStart and slotsEnd are between 8 and 255, and slotsEnd is greater than or equal to slotsStart.')
+  if (parseInt(form.value.slotsStart) < 8 || parseInt(form.value.slotsEnd > 255)) {
+    alert('Please ensure Start Slot and End Slot are between 8 and 255.')
+    return
+  }
+  if (parseInt(form.value.slotsStart) > parseInt(form.value.slotsEnd)) {
+    alert('Please ensure End Slot is greater than Start Slot.')
     return
   }
 

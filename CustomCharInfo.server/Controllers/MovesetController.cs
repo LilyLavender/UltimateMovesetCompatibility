@@ -102,9 +102,10 @@ namespace CustomCharInfo.server.Controllers
             if (!isAdmin)
             {
                 query = query.Where(x =>
-                    x.LatestLog == null ||
-                    !blockedStates.Contains(x.LatestLog.AcceptanceStateId) ||
-                    x.IsOwner
+                    x.LatestLog == null
+                    || !blockedStates.Contains(x.LatestLog.AcceptanceStateId)
+                    || x.IsOwner
+                    || (modderId.HasValue && x.Moveset.MovesetModders.Any(mm => mm.ModderId == modderId))
                 );
             }
 
@@ -120,6 +121,15 @@ namespace CustomCharInfo.server.Controllers
                     .OrderBy(x => x.Moveset.PrivateMoveset)
                     .ThenBy(x => x.Moveset.ReleaseDate == null)
                     .ThenBy(x => x.Moveset.ReleaseDate),
+
+                "alpha" => query
+                    .OrderBy(x => x.Moveset.PrivateMoveset)
+                    .ThenBy(x => x.Moveset.PrivateMoveset == true
+                        ? x.Moveset.MovesetModders
+                            .OrderBy(mm => mm.SortOrder)
+                            .Select(mm => mm.Modder.User.UserName ?? mm.Modder.Name)
+                            .FirstOrDefault()
+                        : x.Moveset.ModdedCharName),
 
                 _ => query
                     .OrderBy(x => x.Moveset.PrivateMoveset)
@@ -366,6 +376,8 @@ namespace CustomCharInfo.server.Controllers
                 : null;
 
             var moveset = await _context.Movesets
+                .AsNoTracking()
+                .AsSplitQuery()
                 .Include(m => m.Series)
                 .Include(m => m.ReleaseState)
                 .Include(m => m.VanillaChar)
