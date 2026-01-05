@@ -54,9 +54,9 @@
               <div class="align-center" v-if="moveset.movesetModders?.length">
                 <p class="d-inline mr-2">Creator<span v-if="moveset.movesetModders.length > 1">s</span>:</p>
                 <strong>
-                  <template v-for="(mm, index) in moveset.movesetModders" :key="mm.modderId">
+                  <template v-for="(mm, index) in moveset.movesetModders" :key="mm.modder.modderId">
                     <router-link
-                      :to="{ name: 'ModderDetail', params: { id: mm.modderId } }"
+                      :to="{ name: 'ModderDetail', params: { id: mm.modder.modderId } }"
                       class="unvisitable"
                     >
                       {{ mm.modder.name }}
@@ -83,7 +83,7 @@
 
               <!-- Slots -->
               <div>
-                <p v-if="moveset.slotsStart && moveset.slotsEnd">Slots: <strong>{{ moveset.vanillaChar?.displayName }} c{{ moveset.slotsStart }}-c{{ moveset.slotsEnd }}</strong></p>
+                <p v-if="moveset.slotsStart && moveset.slotsEnd">Slots: <strong>{{ moveset.vanillaChar?.displayName }} c{{ String(moveset.slotsStart).padStart(2, '0') }}-c{{ String(moveset.slotsEnd).padStart(2, '0') }}</strong></p>
                 <p v-else>Slots: <strong>{{ moveset.vanillaChar?.displayName }} c???</strong></p>
               </div>
 
@@ -230,7 +230,7 @@ const backgroundColor = computed(() => {
 
 const userIsModder = computed(() => {
   if (!user.value || !moveset.value?.movesetModders) return false
-  return moveset.value.movesetModders.some(mm => mm.modderId === user.value.modderId)
+  return moveset.value.movesetModders.some(mm => mm.modder.modderId === user.value.modderId)
 })
 
 // Calculate the releaseState to display

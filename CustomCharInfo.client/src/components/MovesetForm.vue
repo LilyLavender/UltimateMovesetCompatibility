@@ -662,15 +662,15 @@ onMounted(async () => {
 
       showSeparateIds.value = form.value.slottedId !== form.value.replacementId
       slotRange.value = [form.value.slotsStart, form.value.slotsEnd]
-      form.value.modderIds = res.data.movesetModders?.map(m => m.modderId) || []
-      form.value.dependencyIds = res.data.movesetDependencies?.map(d => d.dependencyId) || []
+      form.value.modderIds = res.data.movesetModders?.map(m => m.modder.modderId) || []
+      form.value.dependencyIds = res.data.movesetDependencies?.map(d => d.dependency.dependencyId) || []
       form.value.articles = res.data.movesetArticles?.map(a => ({
-        articleId: a.articleId,
+        articleId: a.article.articleId,
         moddedName: a.moddedName,
         description: a.description
       })) || []
       form.value.hooks = res.data.movesetHooks?.map(h => ({
-        hookId: h.hookId,
+        hookId: h.hook.hookId,
         offset: h.hook.offset,
         hookDescription: h.hook.description,
         description: h.description
@@ -719,12 +719,12 @@ const uploadImage = async (event, type) => {
 
   try {
     // Check if a moveset with this slottedId already exists
-    const existingRes = await api.get(`/movesets/by-internal-id/${slottedId}`);
+    const existingRes = await api.get(`/movesets/${slottedId}`);
     const existingMoveset = existingRes.data;
 
     if (existingMoveset) {
       const user = await api.get('/auth/me');
-      const modderIds = existingMoveset.movesetModders?.map(m => m.modderId) || [];
+      const modderIds = existingMoveset.movesetModders?.map(m => m.modder.modderId) || [];
 
       if (!modderIds.includes(user.data.modderId)) {
         alert(`You do not own the moveset using ID '${slottedId}', so you cannot upload an image for it.`);
@@ -795,7 +795,8 @@ const submit = async () => {
     }
   } catch (err) {
     console.error("Submit failed:", err.response?.data || err.message)
-    alert("Failed to save moveset. Please check the form and try again.")
+    alert("Failed to save moveset. Please check the form and try again.\n\n" + err.response?.data || err.message)
+    // TODO permanent solution
   }
 }
 </script>

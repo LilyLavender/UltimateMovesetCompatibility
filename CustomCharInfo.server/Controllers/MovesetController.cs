@@ -303,8 +303,8 @@ namespace CustomCharInfo.server.Controllers
             return Ok(movesets);
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Moveset>> GetMoveset(int id)
+        [HttpGet("{idOrSlottedId}")]
+        public async Task<ActionResult<MovesetDetailDto>> GetMoveset(string idOrSlottedId)
         {
             var userId = _userManager.GetUserId(User);
             var user = userId != null
@@ -313,15 +313,120 @@ namespace CustomCharInfo.server.Controllers
                     .FirstOrDefaultAsync(u => u.Id == userId)
                 : null;
 
+            bool isNumericId = int.TryParse(idOrSlottedId, out int movesetId);
+
             var moveset = await _context.Movesets
-                .Include(m => m.Series)
-                .Include(m => m.ReleaseState)
-                .Include(m => m.VanillaChar)
-                .Include(m => m.MovesetDependencies).ThenInclude(md => md.Dependency)
-                .Include(m => m.MovesetModders).ThenInclude(mm => mm.Modder).ThenInclude(modder => modder.User)
-                .Include(m => m.MovesetArticles).ThenInclude(ma => ma.Article)
-                .Include(m => m.MovesetHooks).ThenInclude(mh => mh.Hook).ThenInclude(h => h.HookableStatus)
-                .FirstOrDefaultAsync(m => m.MovesetId == id);
+                        .Where(m =>
+                           isNumericId
+                               ? m.MovesetId == movesetId
+                               : m.SlottedId == idOrSlottedId
+                        )
+                .Select(m => new MovesetDetailDto
+                {
+                    MovesetId = m.MovesetId,
+                    ModdedCharName = m.ModdedCharName,
+                    VanillaCharInternalName = m.VanillaCharInternalName,
+                    SeriesId = m.SeriesId,
+                    SlottedId = m.SlottedId,
+                    ReplacementId = m.ReplacementId,
+                    SlotsStart = m.SlotsStart,
+                    SlotsEnd = m.SlotsEnd,
+                    ReleaseStateId = m.ReleaseStateId,
+
+                    HasGlobalOpff = m.HasGlobalOpff,
+                    HasCharacterOpff = m.HasCharacterOpff,
+                    HasAgentInit = m.HasAgentInit,
+                    HasGlobalOnLinePre = m.HasGlobalOnLinePre,
+                    HasGlobalOnLineEnd = m.HasGlobalOnLineEnd,
+
+                    GamebananaPageId = m.GamebananaPageId,
+                    GamebananaWipId = m.GamebananaWipId,
+                    BackgroundColor = m.BackgroundColor,
+                    ModsWikiLink = m.ModsWikiLink,
+                    ReleaseDate = m.ReleaseDate,
+                    ModpackName = m.ModpackName,
+                    SourceCode = m.SourceCode,
+
+                    AdminPick = m.AdminPick,
+                    PrivateMoveset = m.PrivateMoveset,
+                    PrivateModder = m.PrivateModder,
+
+                    ThumbhImageUrl = m.ThumbhImageUrl,
+                    MovesetHeroImageUrl = m.MovesetHeroImageUrl,
+
+                    VanillaChar = m.VanillaChar == null ? null : new VanillaCharDto2
+                    {
+                        VanillaCharInternalName = m.VanillaChar.VanillaCharInternalName,
+                        DisplayName = m.VanillaChar.DisplayName
+                    },
+
+                    ReleaseState = m.ReleaseState == null ? null : new ReleaseStateDto2
+                    {
+                        ReleaseStateId = m.ReleaseState.ReleaseStateId,
+                        ReleaseStateName = m.ReleaseState.ReleaseStateName
+                    },
+
+                    Series = m.Series == null ? null : new SeriesDto2
+                    {
+                        SeriesId = m.Series.SeriesId,
+                        SeriesName = m.Series.SeriesName,
+                        SeriesIconUrl = m.Series.SeriesIconUrl
+                    },
+
+                    MovesetDependencies = m.MovesetDependencies
+                        .Select(md => new MovesetDependencyDto2
+                        {
+                            Dependency = new DependencyDto2
+                            {
+                                DependencyId = md.Dependency.DependencyId,
+                                Name = md.Dependency.Name,
+                                DownloadLink = md.Dependency.DownloadLink
+                            }
+                        }).ToList(),
+
+                    MovesetModders = m.MovesetModders
+                        .OrderBy(mm => mm.SortOrder)
+                        .Select(mm => new MovesetModderDto2
+                        {
+                            SortOrder = mm.SortOrder,
+                            Modder = new ModderDto2
+                            {
+                                ModderId = mm.Modder.ModderId,
+                                Name = mm.Modder.Name,
+                                Bio = mm.Modder.Bio,
+                                GamebananaId = mm.Modder.GamebananaId,
+                                DiscordUsername = mm.Modder.DiscordUsername,
+                                UserId = mm.Modder.UserId
+                            }
+                        }).ToList(),
+
+                    MovesetArticles = m.MovesetArticles
+                        .Select(ma => new MovesetArticleDto2
+                        {
+                            ModdedName = ma.ModdedName,
+                            Description = ma.Description,
+                            Article = new ArticleDto2
+                            {
+                                ArticleId = ma.Article.ArticleId,
+                                VanillaCharInternalName = ma.Article.VanillaCharInternalName,
+                                ArticleName = ma.Article.ArticleName
+                            }
+                        }).ToList(),
+
+                    MovesetHooks = m.MovesetHooks
+                        .Select(mh => new MovesetHookDto2
+                        {
+                            Description = mh.Description,
+                            Hook = new HookDto2
+                            {
+                                HookId = mh.Hook.HookId,
+                                Offset = mh.Hook.Offset,
+                                Description = mh.Hook.Description,
+                                HookableStatusId = mh.Hook.HookableStatusId
+                            }
+                        }).ToList()
+                })
+                .FirstOrDefaultAsync();
 
             if (moveset == null)
                 return NotFound();
@@ -333,9 +438,9 @@ namespace CustomCharInfo.server.Controllers
 
             // Check ownership
             bool isOwner =
-                user != null &&
-                user.ModderId != null &&
-                moveset.MovesetModders.Any(mm => mm.ModderId == user.ModderId);
+                user != null
+                && user.ModderId != null
+                && moveset.MovesetModders.Any(mm => mm.Modder.ModderId == user.ModderId);
 
             // Hide if private
             if ((bool)moveset.PrivateMoveset && user?.UserTypeId != 3 && !isOwner)
@@ -343,7 +448,7 @@ namespace CustomCharInfo.server.Controllers
 
             // Find latest log
             var latestLog = await _context.ActionLogs
-                .Where(a => a.ItemTypeId == 1 && a.ItemId == id)
+                .Where(a => a.ItemTypeId == 1 && a.ItemId == moveset.MovesetId)
                 .OrderByDescending(a => a.CreatedAt)
                 .FirstOrDefaultAsync();
 
@@ -353,65 +458,13 @@ namespace CustomCharInfo.server.Controllers
             if (user?.UserTypeId != 3)
             {
                 if (
-                    latestLog != null &&
-                    blockedStates.Contains(latestLog.AcceptanceStateId) &&
-                    !isOwner
+                    latestLog != null
+                    && blockedStates.Contains(latestLog.AcceptanceStateId)
+                    && !isOwner
                 )
                 {
                     return Forbid();
                 }
-            }
-
-            return Ok(moveset);
-        }
-
-        [HttpGet("by-internal-id/{slottedId}")]
-        public async Task<ActionResult<Moveset>> GetMovesetBySlottedId(string slottedId)
-        {
-            var userId = _userManager.GetUserId(User);
-            var user = userId != null
-                ? await _context.Users
-                    .Select(u => new { u.Id, u.UserTypeId, u.ModderId })
-                    .FirstOrDefaultAsync(u => u.Id == userId)
-                : null;
-
-            var moveset = await _context.Movesets
-                .AsNoTracking()
-                .AsSplitQuery()
-                .Include(m => m.Series)
-                .Include(m => m.ReleaseState)
-                .Include(m => m.VanillaChar)
-                .Include(m => m.MovesetDependencies).ThenInclude(md => md.Dependency)
-                .Include(m => m.MovesetModders).ThenInclude(mm => mm.Modder).ThenInclude(modder => modder.User)
-                .Include(m => m.MovesetArticles).ThenInclude(ma => ma.Article)
-                .Include(m => m.MovesetHooks).ThenInclude(mh => mh.Hook).ThenInclude(h => h.HookableStatus)
-                .FirstOrDefaultAsync(m => m.SlottedId == slottedId);
-
-            if (moveset == null)
-                return NotFound();
-
-            // Find latest action log
-            var latestLog = await _context.ActionLogs
-                .Where(a => a.ItemTypeId == 1 && a.ItemId == moveset.MovesetId)
-                .OrderByDescending(a => a.CreatedAt)
-                .FirstOrDefaultAsync();
-
-            var blockedStates = new[] { 2, 4, 6 };
-
-            // Check ownership
-            bool isOwner =
-                user?.ModderId != null &&
-                moveset.MovesetModders.Any(mm => mm.ModderId == user.ModderId);
-
-            // Enforce rules
-            if (
-                user?.UserTypeId != 3 &&
-                !isOwner &&
-                latestLog != null &&
-                blockedStates.Contains(latestLog.AcceptanceStateId)
-            )
-            {
-                return Forbid();
             }
 
             return Ok(moveset);

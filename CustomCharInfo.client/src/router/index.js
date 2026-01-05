@@ -95,7 +95,7 @@ const routes = [
         const movesetRes = await api.get(`/movesets/${movesetId}`)
         moveset = movesetRes.data
       
-        const modderIds = moveset.movesetModders.map(m => m.modderId)
+        const modderIds = moveset.movesetModders.map(m => m.modder.modderId)
       
         // Auth
         try {
@@ -145,7 +145,7 @@ const routes = [
     beforeEnter: async (to, from, next) => {
       try {
         const moveset = await api.get(`/movesets/${to.params.movesetId}`);
-        const modderIds = moveset.data.movesetModders.map(m => m.modderId);
+        const modderIds = moveset.data.movesetModders.map(m => m.modder.modderId);
         const user = (await api.get('/auth/me')).data;
 
         if (modderIds.includes(user.modderId) || user.userTypeId === 3) {
