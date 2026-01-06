@@ -12,6 +12,14 @@
       </router-link>
 
       <router-link
+        :to="{ name: 'NotificationSimulator' }"
+        class="unvisitable ml-2 admin-link"
+      >
+        <v-icon left>mdi-bell-cog</v-icon>
+        Notification Simulator
+      </router-link>
+
+      <router-link
         :to="{ name: 'AdminPicks' }"
         class="unvisitable ml-2 admin-link"
       >

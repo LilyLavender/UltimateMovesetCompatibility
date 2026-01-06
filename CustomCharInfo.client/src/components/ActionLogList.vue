@@ -81,6 +81,10 @@ const props = defineProps({
   viewAll: {
     type: Boolean,
     default: false
+  },
+  userId: {
+    type: String,
+    default: null
   }
 })
 
@@ -126,10 +130,18 @@ const fetchLogs = async () => {
       itemTypes: selectedItemTypes.value
     }
 
-    if (!props.viewAll) {
-      params.userId = user.value?.id
-    } else {
+    // Admin viewing user
+    if (props.userId) {
+      params.targetUserId = props.userId
+      params.viewAll = false
+    }
+    // Admin viewing all
+    else if (props.viewAll) {
       params.viewAll = true
+    }
+    // Normal user
+    else {
+      params.viewAll = false
     }
 
     const res = await api.get('/logs', { params })
@@ -173,7 +185,12 @@ const selectOnlyRelevant = () => {
   selectedItemTypes.value = [1, 2, 3]
 }
 
-watch(() => props.userId, fetchLogs)
+watch(
+  () => props.userId,
+  () => {
+    if (props.userId) fetchLogs()
+  }
+)
 watch(
   [selectedAcceptanceStates, selectedItemTypes],
   fetchLogs,

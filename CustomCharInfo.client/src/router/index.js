@@ -30,6 +30,7 @@ import BlogPostForm from '@/components/BlogPostForm.vue';
 import AccountPage from '@/views/AccountPage.vue';
 import AdminPortal from '@/views/AdminPortal.vue';
 import AdminAccepter from '@/views/AdminAccepter.vue';
+import NotificationSimulator from '@/views/NotificationSimulator.vue';
 import AdminPicks from '@/views/AdminPicks.vue';
 import UserList from '@/views/UserList.vue';
 
@@ -507,6 +508,37 @@ const routes = [
     name: 'AdminAccepter',
     component: AdminAccepter,
     meta: { title: 'Action Log Manager' },
+    beforeEnter: async (to, from, next) => {
+      try {
+        const user = (await api.get('/auth/me')).data;
+        if (user.userTypeId === 3) {
+          next();
+        } else {
+          next({
+            name: 'ErrorPage',
+            query: {
+              httpCode: '403 Forbidden',
+              reason: 'You do not have permission to access this page.',
+            }
+          })
+        }
+      } catch (err) {
+        next({
+          name: 'ErrorPage',
+          query: {
+            httpCode: '401 Unauthorized',
+            reason: 'Authentication failed.',
+            extra: 'Try signing in or refreshing the page.',
+          }
+        })
+      }
+    }
+  },
+  {
+    path: '/notification-simulator',
+    name: 'NotificationSimulator',
+    component: NotificationSimulator,
+    meta: { title: 'Notification Simulator' },
     beforeEnter: async (to, from, next) => {
       try {
         const user = (await api.get('/auth/me')).data;

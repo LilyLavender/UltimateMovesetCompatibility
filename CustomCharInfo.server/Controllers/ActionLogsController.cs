@@ -31,6 +31,7 @@ namespace CustomCharInfo.server.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<GetActionLogDto>>> GetActionLogs(
             [FromQuery] bool viewAll = false,
+            [FromQuery] string? targetUserId = null,
             int page = 1,
             int pageSize = int.MaxValue,
             [FromQuery] int[]? acceptanceStates = null,
@@ -39,22 +40,36 @@ namespace CustomCharInfo.server.Controllers
             if (page <= 0 || pageSize <= 0)
                 return BadRequest("Page and pageSize must be greater than 0.");
 
-            var userId = _userManager.GetUserId(User);
-            if (userId == null)
+            var requesterId = _userManager.GetUserId(User);
+            if (requesterId == null)
                 return Forbid();
 
-            var user = await _context.Users
+            var requester = await _context.Users
                 .Select(u => new { u.Id, u.UserTypeId, u.ModderId })
-                .FirstOrDefaultAsync(u => u.Id == userId);
+                .FirstOrDefaultAsync(u => u.Id == requesterId);
 
-            if (user == null)
+            if (requester == null)
                 return Forbid();
 
-            bool isAdmin = user.UserTypeId == 3;
+            bool isAdmin = requester.UserTypeId == 3;
 
             // Only admins may view all logs
             if (viewAll && !isAdmin)
                 return Forbid();
+
+            // Only admins may query another user's logs
+            if (targetUserId != null && !isAdmin)
+                return Forbid();
+
+            // Determine user being queried for
+            var effectiveUserId = targetUserId ?? requesterId;
+
+            var user = await _context.Users
+                .Select(u => new { u.Id, u.UserTypeId, u.ModderId })
+                .FirstOrDefaultAsync(u => u.Id == effectiveUserId);
+
+            if (user == null)
+                return NotFound("Target user not found.");
 
             var query = _context.ActionLogs
                 .Include(a => a.User)
@@ -63,7 +78,7 @@ namespace CustomCharInfo.server.Controllers
                 .OrderByDescending(a => a.CreatedAt)
                 .AsQueryable();
 
-            // If not viewing all, restrict to the current user's scope
+            // Restrict scope
             if (!viewAll)
             {
                 var modderId = user.ModderId;
@@ -72,7 +87,7 @@ namespace CustomCharInfo.server.Controllers
                 if (modderId == null)
                 {
                     extraModderItemIds = await _context.ActionLogs
-                        .Where(log => log.UserId == userId && log.ItemTypeId == 2)
+                        .Where(log => log.UserId == effectiveUserId && log.ItemTypeId == 2)
                         .Select(log => log.ItemId)
                         .Distinct()
                         .ToListAsync();
