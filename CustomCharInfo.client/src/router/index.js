@@ -5,6 +5,7 @@ import HomePage from '@/views/HomePage.vue';
 import ErrorPage from '@/views/ErrorPage.vue';
 import AboutPage from '@/views/AboutPage.vue';
 import PhotoSubmissionPage from '@/views/PhotoSubmissionPage.vue';
+import ForgotPasswordPage from '@/views/ForgotPasswordPage.vue';
 // Movesets
 import MovesetsPage from '@/views/MovesetsPage.vue';
 import MovesetsListPage from '@/views/MovesetsListPage.vue';
@@ -26,12 +27,15 @@ import EditHook from '@/views/EditHook.vue';
 // Blog
 import BlogPage from '@/views/BlogPage.vue';
 import BlogPostForm from '@/components/BlogPostForm.vue';
-// By user type
+// User
 import AccountPage from '@/views/AccountPage.vue';
+import ResetPasswordPage from '@/views/ResetPasswordPage.vue';
+// Admin
 import AdminPortal from '@/views/AdminPortal.vue';
 import AdminAccepter from '@/views/AdminAccepter.vue';
 import NotificationSimulator from '@/views/NotificationSimulator.vue';
 import AdminPicks from '@/views/AdminPicks.vue';
+import AdminPasswordResetter from '@/views/AdminPasswordResetter.vue';
 import UserList from '@/views/UserList.vue';
 
 const routes = [
@@ -597,6 +601,37 @@ const routes = [
     }
   },
   {
+    path: '/admin-password-resetter',
+    name: 'AdminPasswordResetter',
+    component: AdminPasswordResetter,
+    meta: { title: 'Password Resetter' },
+    beforeEnter: async (to, from, next) => {
+      try {
+        const user = (await api.get('/auth/me')).data;
+        if (user.userTypeId === 3) {
+          next();
+        } else {
+          next({
+            name: 'ErrorPage',
+            query: {
+              httpCode: '403 Forbidden',
+              reason: 'You do not have permission to access this page.',
+            }
+          })
+        }
+      } catch (err) {
+        next({
+          name: 'ErrorPage',
+          query: {
+            httpCode: '401 Unauthorized',
+            reason: 'Authentication failed.',
+            extra: 'Try signing in or refreshing the page.',
+          }
+        })
+      }
+    }
+  },
+  {
     path: '/add-blog-post',
     name: 'AddBlogPost',
     component: BlogPostForm,
@@ -665,10 +700,22 @@ const routes = [
     meta: { title: 'About' },
   },
   {
+    path: '/reset-password',
+    name: 'ResetPasswordPage',
+    component: ResetPasswordPage,
+    meta: { title: 'Reset Password' },
+  },
+  {
     path: '/photo-submissions',
     name: 'PhotoSubmissions',
     component: PhotoSubmissionPage,
     meta: { title: 'Photo Submissions' },
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPasswordPage',
+    component: ForgotPasswordPage,
+    meta: { title: 'Forgot Password?' },
   },
   {
     path: '/error',

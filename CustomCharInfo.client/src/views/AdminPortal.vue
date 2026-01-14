@@ -42,6 +42,14 @@
         <v-icon left>mdi-account-group</v-icon>
         All users
       </router-link>
+
+      <router-link
+        :to="{ name: 'AdminPasswordResetter' }"
+        class="unvisitable ml-2 admin-link"
+      >
+        <v-icon left>mdi-account-lock-open</v-icon>
+        Password Reset
+      </router-link>
     </div>
 
     <!-- Action Log Dashboard -->
@@ -62,14 +70,19 @@ import ActionLogList from '@/components/ActionLogList.vue'
 .admin-links {
   margin: 0 auto;
   width: fit-content;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.75em;
+  max-width: 75%;
 }
 
 .admin-links > * {
   background-color: #1e1e1e;
   padding: 0.5em 1em;
-  margin: 0 1em;
   border-radius: 6px;
   text-decoration: none;
+  text-wrap: nowrap;
 }
 
 .admin-link .v-icon {

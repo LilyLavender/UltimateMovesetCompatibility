@@ -10,6 +10,7 @@ using System.Text;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.ObjectPool;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -193,6 +194,48 @@ namespace CustomCharInfo.server.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Username updated successfully", newUsername = user.UserName });
+        }
+
+        [Authorize]
+        [HttpPost("generate-password-reset")]
+        public async Task<ActionResult> GeneratePasswordReset([FromBody] ForgotPasswordDto dto)
+        {
+            // Make sure user is admin
+            var signedInUserId = _userManager.GetUserId(User);
+            var user = await _context.Users.FindAsync(signedInUserId);
+            if (user == null || user.UserTypeId != 3)
+                return Forbid();
+
+            var userToReset = await _userManager.FindByIdAsync(dto.UserId);
+            if (userToReset == null)
+                return NotFound();
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(userToReset);
+
+            return Ok(new
+            {
+                userId = userToReset.Id,
+                token
+            });
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<ActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+        {
+            var user = await _userManager.FindByIdAsync(dto.UserId);
+            if (user == null)
+                return BadRequest("Invalid user");
+
+            var result = await _userManager.ResetPasswordAsync(
+                user,
+                dto.Token,
+                dto.NewPassword
+            );
+
+            if (!result.Succeeded)
+                return BadRequest(result.Errors);
+
+            return Ok();
         }
 
     }

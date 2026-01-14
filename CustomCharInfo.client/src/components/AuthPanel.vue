@@ -4,8 +4,16 @@
     <div>
       <!-- Sign in/up -->
       <div v-if="!token">
-        <v-text-field v-model="email" label="Email" />
-        <v-text-field v-model="password" label="Password" type="password" />
+        <v-text-field v-model="email" label="Email" variant="outlined" />
+        <v-text-field v-model="password" label="Password" type="password" variant="outlined">
+          <template #details>
+            <router-link 
+            to="/forgot-password"
+            class="offsite unvisitable"
+            target="_blank"
+            >Forgot Password?</router-link>
+          </template>
+        </v-text-field>
 
         <v-btn class="multibtn" @click="register">Register</v-btn>
         <v-btn class="multibtn" @click="login">Login</v-btn>
