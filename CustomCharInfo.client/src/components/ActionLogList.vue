@@ -31,6 +31,7 @@
         <!-- Acceptance States -->
         <v-col cols="12" sm="5">
           <v-select
+            variant="outlined"
             v-model="selectedAcceptanceStates"
             :items="acceptanceStateOptions"
             item-title="name"
@@ -45,6 +46,7 @@
         <!-- Item Types -->
         <v-col cols="12" sm="3">
           <v-select
+            variant="outlined"
             v-model="selectedItemTypes"
             :items="itemTypeOptions"
             item-title="name"
@@ -182,7 +184,7 @@ const selectAllFilters = () => {
 }
 const selectOnlyRelevant = () => {
   selectedAcceptanceStates.value = [1, 2, 3, 4]
-  selectedItemTypes.value = [1, 2, 3]
+  // selectedItemTypes.value = [1, 2, 3]
 }
 
 watch(

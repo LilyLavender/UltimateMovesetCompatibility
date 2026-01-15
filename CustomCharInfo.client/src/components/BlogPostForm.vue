@@ -6,9 +6,10 @@
     <!-- Blog Form -->
     <section>
       <v-row>
-      <!-- Blog Title -->
+        <!-- Blog Title -->
         <v-col cols="12">
           <v-text-field
+            variant="outlined"
             v-model="form.blogTitle"
             label="Post Title"
           />
@@ -17,6 +18,7 @@
         <!-- Blog Text -->
         <v-col cols="12">
           <v-textarea
+            variant="outlined"
             v-model="form.blogText"
             label="Post Content"
             auto-grow
@@ -27,6 +29,7 @@
         <!-- Blog Image Upload -->
         <v-col cols="12" sm="4">
           <v-file-input
+            variant="outlined"
             label="Post Image"
             accept="image/*"
             @change="uploadImage"

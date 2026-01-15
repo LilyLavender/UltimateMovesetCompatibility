@@ -32,7 +32,7 @@
         class="unvisitable ml-2 admin-link"
       >
         <v-icon left>mdi-post</v-icon>
-        Add Blog Post
+        Add blog post
       </router-link>
 
       <router-link
@@ -48,7 +48,7 @@
         class="unvisitable ml-2 admin-link"
       >
         <v-icon left>mdi-account-lock-open</v-icon>
-        Password Reset
+        Reset passwords
       </router-link>
     </div>
 

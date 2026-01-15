@@ -11,6 +11,7 @@
           <!-- Offset -->
           <v-col cols="12" sm="4">
             <v-text-field
+              variant="outlined"
               v-model="offsetInput"
               label="Offset (hex)"
               placeholder="123ABC"
@@ -21,6 +22,7 @@
           <!-- Hookable Status -->
           <v-col cols="12" sm="4">
             <v-select
+              variant="outlined"
               v-model="form.hookableStatusId"
               :items="hookableStatuses"
               item-title="name"
@@ -34,6 +36,7 @@
           <!-- Description -->
           <v-col cols="12">
             <v-textarea
+              variant="outlined"
               v-model="form.description"
               label="Description (what the hook normally handles)"
               auto-grow

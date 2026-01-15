@@ -18,6 +18,7 @@
             <!-- Item Type -->
             <v-col cols="12" md="4">
               <v-select
+                variant="outlined"
                 v-model="form.itemTypeId"
                 :items="itemTypes"
                 item-title="label"
@@ -32,6 +33,7 @@
             <!-- Item ID -->
             <v-col cols="12" md="4">
               <v-select
+                variant="outlined"
                 v-model="form.itemId"
                 :items="items"
                 item-title="name"
@@ -58,6 +60,7 @@
             <!-- Acceptance State -->
             <v-col cols="12" md="8">
               <v-select
+                variant="outlined"
                 v-model="form.acceptanceStateId"
                 :items="acceptanceStates"
                 item-title="name"
@@ -73,6 +76,7 @@
           <v-row>
             <v-col cols="12">
               <v-textarea
+                variant="outlined"
                 v-model="form.notes"
                 label="Notes"
                 rows="3"

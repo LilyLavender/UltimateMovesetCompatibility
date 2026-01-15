@@ -16,9 +16,10 @@
       <template #item.actions="{ item }">
         <v-btn
           size="small"
-          color="primary"
+          class="btn"
           @click="generate(item)"
         >
+          <v-icon class="mr-1">mdi-lock-reset</v-icon>
           Generate Reset
         </v-btn>
       </template>
@@ -30,13 +31,14 @@
         <v-card-title>Password Reset Token</v-card-title>
 
         <v-card-text>
-          <p>Send this link to the user:</p>
+          <p class="mb-2">Send this link to the user:</p>
 
           <v-text-field
-            readonly
             :model-value="resetLink"
+            variant="outlined"
             append-inner-icon="mdi-content-copy"
             @click:append-inner="copy"
+            hide-details readonly
           />
         </v-card-text>
 
@@ -100,5 +102,18 @@ const copy = async () => {
 .page-title {
   font-size: 4em;
   margin-top: 0.5em;
+}
+
+.v-card-text {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.btn {
+  text-transform: unset;
+  font-size: small;
+  background-color: #2e2e2e;
+  color: #e2e2e2;
+  box-shadow: none;
 }
 </style>

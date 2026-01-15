@@ -12,8 +12,8 @@
               v-model="user.userName"
               label="Username"
               variant="outlined"
+              class="disabled"
               readonly
-              outlined
             >
               <template #details>
                 Edit your username in your&nbsp;
@@ -31,6 +31,7 @@
           <!-- GameBanana ID -->
           <v-col cols="12" sm="5">
             <v-text-field
+              variant="outlined"
               v-model.number="modder.gamebananaId"
               label="GameBanana ID"
               @input="digitsOnly('gamebananaId')"
@@ -41,8 +42,9 @@
           <!-- Discord -->
           <v-col cols="12" sm="3">
             <v-text-field
+              variant="outlined"
               v-model="modder.discordUsername"
-              label="Discord username"
+              label="Discord Username"
               prefix="@"
             />
           </v-col>
@@ -50,10 +52,11 @@
           <!-- Bio -->
           <v-col cols="12">
             <v-textarea
+              variant="outlined"
               v-model="modder.bio"
               label="Bio"
               rows="3"
-              auto-grow
+              auto-grow hide-details
             />
           </v-col>
         </v-row>
@@ -61,8 +64,8 @@
         <!-- Submit -->
         <v-row>
           <v-col>
-            <v-btn color="primary" type="submit">
-              {{ isEditMode ? "Save" : "Apply for Modder" }}
+            <v-btn class="btn" type="submit">
+              {{ isEditMode ? "Save Profile" : "Apply for Modder" }}
             </v-btn>
           </v-col>
         </v-row>
@@ -163,6 +166,27 @@ const save = async () => {
 </script>
 
 <style scoped>
+h1 {
+  font-size: 3.25em;
+}
+
+section {
+  margin-bottom: 2rem;
+  background-color: #1e1e1e;
+  padding: 1em;
+  border-radius: 10px;
+}
+
+.btn {
+  text-transform: unset;
+  background-color: #2e2e2e;
+  color: #e2e2e2;
+}
+
+.disabled :deep(input) {
+  color: #484848;
+}
+
 :deep(.v-text-field__prefix__text) {
   color: #e4e4e4;
 }

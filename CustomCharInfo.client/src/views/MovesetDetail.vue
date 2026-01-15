@@ -83,8 +83,14 @@
 
               <!-- Slots -->
               <div>
-                <p v-if="moveset.slotsStart && moveset.slotsEnd">Slots: <strong>{{ moveset.vanillaChar?.displayName }} c{{ String(moveset.slotsStart).padStart(2, '0') }}-c{{ String(moveset.slotsEnd).padStart(2, '0') }}</strong></p>
-                <p v-else>Slots: <strong>{{ moveset.vanillaChar?.displayName }} c???</strong></p>
+                <p v-if="moveset.slotsStart && moveset.slotsEnd">
+                  {{ new Date().getMonth() == 3 && new Date().getDate() == 1 ? 'Schmeebulates:' : 'Slots:' }}
+                  <strong>{{ moveset.vanillaChar?.displayName }} c{{ String(moveset.slotsStart).padStart(2, '0') }}-c{{ String(moveset.slotsEnd).padStart(2, '0') }}</strong>
+                </p>
+                <p v-else>
+                  {{ new Date().getMonth() == 3 && new Date().getDate() == 1 ? 'Schmeebulates:' : 'Slots:' }}
+                  <strong>{{ moveset.vanillaChar?.displayName }} c???</strong>
+                </p>
               </div>
 
               <!-- Availability -->

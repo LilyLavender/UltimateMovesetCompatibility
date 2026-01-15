@@ -16,7 +16,7 @@
         </v-text-field>
 
         <v-btn class="multibtn" @click="register">Register</v-btn>
-        <v-btn class="multibtn" @click="login">Login</v-btn>
+        <v-btn class="multibtn" @click="login">Log in</v-btn>
 
         <!-- Errors -->
         <div v-if="errorMsgs.length" class="error">
@@ -25,54 +25,67 @@
         </div>
       </div>
 
-      <!-- Sign out -->
+      <!-- Username -->
       <div v-else-if="user">
-        <!-- Username -->
         <div class="d-flex mb-2">
           <p>You are logged in as <code>{{ user.userName }}</code></p>
-          <v-icon
-            class="rotate-toggle"
-            :class="{ rotated: editProfileForm }"
-            @click="editProfileForm = !editProfileForm"
-          >
-            mdi-cog
-          </v-icon>
         </div>
-
-        <!-- Edit username -->
-        <v-expand-transition>
-          <div v-show="editProfileForm">
-            <div class="d-flex mb-2">
-              <v-text-field 
-                v-model="editedUsername"
-                label="New Username"
-                class="mr-3 w-75"
-                variant="outlined"
-                hide-details
-              />
-              <v-btn 
-                @click="updateUsername"
-                class="ml-3 w-25 h-auto"
-              >
-                Update
-              </v-btn>
-            </div>
-          </div>
-        </v-expand-transition>
-
-        <!-- Logout button -->
-        <v-btn @click="logout" class="mb-2">Logout</v-btn>
       </div>
     </div>
 
     <!-- Signed-in -->
     <div v-if="user" class="user-links">
+      <!-- Signed-in (ANY) actions -->
+      <div>
+        <!-- Logout button -->
+        <v-btn @click="logout" class="user-link">
+          <v-icon>mdi-logout</v-icon>
+          Log out
+        </v-btn>
+
+        <!-- Change username -->
+        <v-btn @click="editProfileForm = !editProfileForm" class="user-link">
+          <v-icon
+            class="rotate-toggle"
+            :class="{ rotated: editProfileForm }"
+          >
+            mdi-cog
+          </v-icon>
+          Change username
+        </v-btn>
+      </div>
+
+      <!-- Change username form -->
+      <v-expand-transition class="no-user-link-styling">
+        <div v-show="editProfileForm">
+          <div class="d-flex mb-2 align-center">
+            <!-- Text -->
+            <v-text-field 
+              v-model="editedUsername"
+              label="New Username"
+              class="mr-3 w-75"
+              variant="outlined"
+              hide-details
+            />
+
+            <!-- Button -->
+            <v-btn 
+              @click="updateUsername"
+              class="user-link"
+            >
+              <v-icon>mdi-account-check</v-icon>
+              Update
+            </v-btn>
+          </div>
+        </div>
+      </v-expand-transition>
+
       <!-- Signed-in (USER) actions -->
       <div v-if="!user?.modderId && !pendingApproval">
         <!-- apply for modder -->
         <router-link
           :to="{ name: 'ApplyModder' }"
-          class="unvisitable user-link"
+          class="router-link unvisitable user-link"
         >
           <v-icon>mdi-account-plus</v-icon>
           Apply for modder
@@ -92,7 +105,7 @@
         <!-- View profile -->
         <router-link
           :to="{ name: 'ModderDetail', params: { id: user.modderId } }"
-          class="unvisitable user-link"
+          class="router-link unvisitable user-link"
         >
           <v-icon>mdi-account-eye</v-icon>
           View my profile
@@ -101,7 +114,7 @@
         <!-- Edit profile -->
         <router-link
           :to="{ name: 'EditModder', params: { id: user.modderId } }"
-          class="unvisitable user-link"
+          class="router-link unvisitable user-link"
         >
           <v-icon>mdi-account-edit</v-icon>
           Edit my profile
@@ -113,7 +126,7 @@
         <!-- Admin Portal -->
         <router-link
           :to="{ name: 'AdminPortal' }"
-          class="unvisitable user-link"
+          class="router-link unvisitable user-link"
         >
           <v-icon>mdi-shield-account</v-icon>
           Admin Portal
@@ -265,10 +278,6 @@ onMounted(async () => {
   color: #dedede;
 }
 
-.v-btn {
-  background-color: #2e2e2e;
-}
-
 .multibtn:not(:last-of-type) {
   margin-right: 1em;
 }
@@ -287,24 +296,44 @@ onMounted(async () => {
 }
 
 .user-links {
-  margin: 0 auto;
-  width: fit-content;
+  margin: 1.25em auto -0.5em auto;
+  width: 90%;
 }
 
-.user-links > * {
+.user-links > *:not(.no-user-link-styling) {
   display: flex;
   justify-content: center;
+  gap: 0.6em;
+  margin-bottom: 0.6em;
 }
 
 .user-links .user-link {
   background-color: #151515;
   padding: 0.4em 0.75em;
-  margin: 0.25em 1em;
+  margin: 0;
   border-radius: 6px;
   text-decoration: none;
+  text-transform: unset;
+  letter-spacing: 0.1px;
+  font-size: 15px;
+  box-shadow: none;
+
+  transition: background-color 200ms ease-in-out;
 }
 
-.user-link .v-icon {
+.user-links .user-link:hover {
+  background-color: #191919 !important;
+}
+
+.user-links .user-link > .v-btn__overlay {
+  background-color: unset;
+}
+
+.user-link.router-link .v-icon {
   margin-top: -4px;
+}
+
+.user-link:not(.router-link) .v-icon {
+  margin-right: 3px;
 }
 </style>

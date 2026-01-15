@@ -6,6 +6,7 @@
     <v-row>
       <v-col cols="12" sm="3">
         <v-select
+          variant="outlined"
           v-model="selectedUserId"
           :items="users"
           item-title="user.userName"

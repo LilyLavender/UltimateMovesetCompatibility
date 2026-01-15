@@ -7,6 +7,7 @@
       <!-- Select -->
       <v-col cols="12" sm="6">
         <v-select
+          variant="outlined"
           v-model="selectedMovesetId"
           :items="movesetsOptions"
           label="Select a moveset"

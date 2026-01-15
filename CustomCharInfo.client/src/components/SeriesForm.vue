@@ -20,6 +20,7 @@
           <!-- Series Name -->
           <v-col cols="12" sm="4">
             <v-text-field
+              variant="outlined"
               v-model="form.seriesName"
               label="Series Name"
               :error="!!nameError"
@@ -30,6 +31,7 @@
           <!-- Image Upload -->
           <v-col cols="8" sm="6">
             <v-file-input
+              variant="outlined"
               label="Series Icon (800x800)"
               accept="image/*"
               @change="event => uploadImage(event, 'series_icon')"

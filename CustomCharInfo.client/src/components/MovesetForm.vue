@@ -11,11 +11,16 @@
         <v-row>
           <!-- Moveset Name -->
           <v-col cols="12" sm="4">
-            <v-text-field v-model="form.moddedCharName" label="Modded Character Name" />
+            <v-text-field
+              variant="outlined"
+              v-model="form.moddedCharName"
+              label="Modded Character Name"
+            />
           </v-col>
           <!-- Modders -->
           <v-col cols="12" sm="4">
             <v-select
+              variant="outlined"
               v-model="form.modderIds"
               :items="modders"
               item-title="name"
@@ -29,6 +34,7 @@
           <!-- Series -->
           <v-col cols="12" sm="4">
             <v-select
+              variant="outlined"
               v-model="form.seriesId"
               :items="seriesList"
               item-title="seriesName"
@@ -76,6 +82,7 @@
           </v-col>
           <v-col cols="12" sm="4" v-if="!showSeparateIds">
             <v-text-field
+              variant="outlined"
               v-model="form.slottedId"
               label="Internal ID"
             />
@@ -83,12 +90,14 @@
           <v-col cols="12" sm="8" v-else class="two-of-them">
             <v-col cols="6">
               <v-text-field
+                variant="outlined"
                 v-model="form.slottedId"
                 label="Slotted ID"
               />
             </v-col>
             <v-col cols="6">
               <v-text-field
+                variant="outlined"
                 v-model="form.replacementId"
                 label="Replacement ID"
               />
@@ -97,6 +106,7 @@
           <!-- Vanilla Character -->
           <v-col cols="12" sm="4">
             <v-select
+              variant="outlined"
               v-model="form.vanillaCharInternalName"
               :items="vanillaChars"
               item-title="displayName"
@@ -129,6 +139,7 @@
           <!-- Slots -->
           <v-col cols="12" sm="2" class="left-merged-input-container">
             <v-text-field
+              variant="outlined"
               v-model.number="form.slotsStart"
               label="Start Slot"
               @input="digitsOnly('slotsStart')"
@@ -140,6 +151,7 @@
           </v-col>
           <v-col cols="12" sm="2" class="right-merged-input-container">
             <v-text-field
+              variant="outlined"
               v-model.number="form.slotsEnd"
               label="End Slot"
               @input="digitsOnly('slotsEnd')"
@@ -159,6 +171,7 @@
             >
               <template v-slot:activator="{ props }">
                 <v-text-field
+                  variant="outlined"
                   v-model="formattedReleaseDate"
                   label="Release Date"
                   readonly
@@ -166,6 +179,7 @@
                   v-bind="props"
                 />
               </template>
+              <!-- ??? can't get any props to work -->
               <v-date-picker
                 v-model="form.releaseDate"
                 title="Release Date"
@@ -176,6 +190,7 @@
           <!-- Release State -->
           <v-col cols="12" sm="4">
             <v-select
+              variant="outlined"
               v-model="form.releaseStateId"
               :items="releaseStates"
               item-title="releaseStateName"
@@ -186,6 +201,7 @@
           <!-- Modpack -->
           <v-col cols="12" sm="4">
             <v-text-field
+              variant="outlined"
               v-model="form.modpackName"
               label="Modpack"
               placeholder="(leave blank if not exclusive)"
@@ -194,6 +210,7 @@
           <!-- Dependencies -->
           <v-col>
             <v-select
+              variant="outlined"
               v-model="form.dependencyIds"
               :items="dependencies"
               item-title="name"
@@ -214,6 +231,7 @@
           <!-- ThumbH Upload -->
           <v-col cols="12" sm="6">
             <v-file-input
+              variant="outlined"
               label="Thumbnail (340x82)"
               accept="image/*"
               @change="event => uploadImage(event, 'thumb_h')"
@@ -235,6 +253,7 @@
           <!-- Hero Upload -->
           <v-col cols="12" sm="6">
             <v-file-input
+              variant="outlined"
               label="Render (1200x1200)"
               accept="image/*"
               @change="file => uploadImage(file, 'moveset_hero')"
@@ -258,6 +277,7 @@
           <!-- Background Color -->
           <v-col cols="12" sm="4">
             <v-text-field
+              variant="outlined"
               v-model="form.backgroundColor"
               label="Background Color (Hex)"
               maxlength="6"
@@ -301,6 +321,7 @@
           <!-- GameBanana Page -->
           <v-col cols="12" sm="6">
             <v-text-field
+              variant="outlined"
               v-model="form.gamebananaPageId"
               label="GameBanana Page"
               :prefix="GB_PAGE_URL"
@@ -310,6 +331,7 @@
           <!-- GameBanana WIP -->
           <v-col cols="12" sm="6">
             <v-text-field
+              variant="outlined"
               v-model="form.gamebananaWipId"
               label="GameBanana WIP"
               :prefix="GB_WIP_URL"
@@ -319,6 +341,7 @@
           <!-- Mods Wiki -->
           <v-col cols="12" sm="6">
             <v-text-field
+              variant="outlined"
               v-model="form.modsWikiLink"
               label="SSBU Mods Wiki"
               :prefix="MODS_WIKI_URL"
@@ -327,6 +350,7 @@
           <!-- Source Code -->
           <v-col cols="12" sm="6">
             <v-text-field
+              variant="outlined"
               v-model="form.sourceCode"
               label="Source Code URL"
               type="url"
@@ -338,28 +362,36 @@
       <!-- Function Usage -->
       <section class="flex-1">
         <h2>Function Usage</h2>
-        <v-row>
-          <v-col cols="12" sm="12">
+        <v-row class="functions">
+          <v-col cols="12" sm="4">
             <v-checkbox 
               v-model="form.hasGlobalOpff"
               label="Global OPFF"
               messages="Runs once every frame for all characters"
             />
+          </v-col>
+          <v-col cols="12" sm="4">
             <v-checkbox 
               v-model="form.hasCharacterOpff"
               label="Character OPFF"
               :messages="`Runs once every frame for ${getVanillaCharDisplayName(form.vanillaCharInternalName)}`"
             />
+          </v-col>
+          <v-col cols="12" sm="4">
             <v-checkbox 
               v-model="form.hasAgentInit"
               label="agent_init"
               messages="Runs once when a fighter is spawned in"
             />
+          </v-col>
+          <v-col cols="12" sm="4">
             <v-checkbox 
               v-model="form.hasGlobalOnLinePre"
               label="Global on_line pre"
               messages="Runs once every time a pre status script runs"
             />
+          </v-col>
+          <v-col cols="12" sm="4">
             <v-checkbox 
               v-model="form.hasGlobalOnLineEnd"
               label="Global on_line end"
@@ -395,8 +427,10 @@
         <v-expand-transition>
           <div v-if="addArticleForm">
             <v-row>
+              <!-- Vanilla internal name -->
               <v-col cols="12" sm="4">
                 <v-autocomplete
+                  variant="outlined"
                   v-model="newArticle.articleId"
                   :items="articles"
                   :item-title="item => `${item.vanillaCharInternalName}_${item.articleName}`"
@@ -404,21 +438,26 @@
                   label="Article"
                 />
               </v-col>
+              <!-- Modded internal name -->
               <v-col cols="12" sm="3">
                 <v-text-field
+                  variant="outlined"
                   v-model="newArticle.moddedName"
                   label="Modded Internal Name"
                   placeholder="eg. shortaxe"
                 />
               </v-col>
+              <!-- Display name -->
               <v-col cols="12" sm="3">
                 <v-text-field
+                  variant="outlined"
                   v-model="newArticle.description"
                   label="Display Name"
                   placeholder="eg. Short Axe"
                 />
               </v-col>
-              <v-col cols="12" sm="2">
+              <!-- Submit -->
+              <v-col cols="12" sm="2" class="justify-content-center">
                 <v-btn @click="addArticle" class="btn add-button">Add Article</v-btn>
               </v-col>
             </v-row>
@@ -466,26 +505,30 @@
         <v-expand-transition>
           <div v-if="addHookForm">
             <v-row>
+              <!-- Vanilla hook -->
               <v-col cols="12">
                 <v-autocomplete
+                  variant="outlined"
                   v-model="newHook.hookId"
                   :items="hooks"
                   :item-title="item => `0x${item.offset} (${item.description})`"
                   item-value="hookId"
-                  label="Add Hook"
+                  label="Hook Offset"
+                  hide-details
                 />
-                <v-row>
-                  <v-col cols="12" sm="10">
-                    <v-text-field
-                      v-model="newHook.description"
-                      label="Hook Usage"
-                      :placeholder="`What does ${form.moddedCharName || 'the character'} use this for?`"
-                    />
-                  </v-col>
-                  <v-col cols="12" sm="2">
-                    <v-btn @click="addHook" class="btn add-button">Add Hook</v-btn>
-                  </v-col>
-                </v-row>
+              </v-col>
+              <!-- Description -->
+              <v-col cols="12" sm="10">
+                <v-text-field
+                  variant="outlined"
+                  v-model="newHook.description"
+                  label="Hook Usage"
+                  :placeholder="`What does ${form.moddedCharName || 'the character'} use this for?`"
+                />
+              </v-col>
+              <!-- Button -->
+              <v-col cols="12" sm="2" class="justify-content-center">
+                <v-btn @click="addHook" class="btn add-button">Add Hook</v-btn>
               </v-col>
             </v-row>
           </div>
@@ -829,8 +872,8 @@ section h2 {
   color: #9b9b9b;
 }
 .preview-image {
-  border: 2px solid white;
-  border-radius: 5px;
+  border: 1px solid #686868;
+  border-radius: 3px;
 }
 .submit-button {
   background-color: #1e1e1e;
@@ -839,8 +882,9 @@ section h2 {
 .add-button {
   background-color: #2e2e2e;
   color: #e2e2e2;
-  height: 74%;
-  width: 100%;
+  margin-top: 10px;
+  margin-left: 10px;
+  box-shadow: none;
 }
 .btn {
   text-transform: unset;
@@ -902,9 +946,17 @@ section h2 {
 }
 .right-merged-input :deep(.v-field) {
   border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
 }
 .left-merged-input :deep(.v-field) {
   border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.right-merged-input :deep(.v-field__outline__start) {
+  border-left: none;
+}
+.left-merged-input :deep(.v-field__outline__end) {
+  border-right: none;
 }
 
 /* subheader helper class */
@@ -919,6 +971,20 @@ section h2 {
   font-family: unset;
   margin-top: 0;
   display: block;
+  width: fit-content;
+  color: #939393 !important;
+  transition: color 200ms ease-in-out;
+}
+.text-caption:hover {
+  color: #c8c8c8 !important;
+}
+
+/* Function usage section */
+.functions {
+  margin-bottom: 0.75em;
+}
+.functions > div {
+  padding: 0em 1.5em;
 }
 
 /* Toggle form button */

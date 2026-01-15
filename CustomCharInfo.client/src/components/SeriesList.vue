@@ -11,6 +11,7 @@
       </v-col>
       <v-col cols="12" sm="6">
         <v-select
+          variant="outlined"
           v-model="sortBy"
           :items="['Alphabetical', 'Most Movesets']"
           label="Sort by"
