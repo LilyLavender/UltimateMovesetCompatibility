@@ -4,6 +4,7 @@
     <div>
       <!-- Sign in/up -->
       <div v-if="!token">
+        <!-- Email/password -->
         <v-text-field v-model="email" label="Email" variant="outlined" />
         <v-text-field v-model="password" label="Password" type="password" variant="outlined">
           <template #details>
@@ -15,8 +16,17 @@
           </template>
         </v-text-field>
 
-        <v-btn class="multibtn" @click="register">Register</v-btn>
-        <v-btn class="multibtn" @click="login">Log in</v-btn>
+        <!-- Register/login buttons -->
+        <div>
+          <v-btn class="multibtn user-link" @click="register">
+            <v-icon>mdi-account-plus</v-icon>
+            Register
+          </v-btn>
+          <v-btn class="multibtn user-link" @click="login">
+            <v-icon>mdi-login</v-icon>
+            Log in
+          </v-btn>
+        </div>
 
         <!-- Errors -->
         <div v-if="errorMsgs.length" class="error">
@@ -307,7 +317,7 @@ onMounted(async () => {
   margin-bottom: 0.6em;
 }
 
-.user-links .user-link {
+.user-link {
   background-color: #151515;
   padding: 0.4em 0.75em;
   margin: 0;
@@ -321,11 +331,11 @@ onMounted(async () => {
   transition: background-color 200ms ease-in-out;
 }
 
-.user-links .user-link:hover {
+.user-link:hover {
   background-color: #191919 !important;
 }
 
-.user-links .user-link > .v-btn__overlay {
+.user-link > .v-btn__overlay {
   background-color: unset;
 }
 
