@@ -208,8 +208,8 @@ const submit = async () => {
 
     router.push('/series')
   } catch (err) {
-    console.error("Submit failed:", err.response?.data || err.message)
-    alert("Failed to save series. Please check the form and try again.")
+    console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
+    alert("Failed to save series. Please check the form and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
   }
 }
 

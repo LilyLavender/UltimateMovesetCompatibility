@@ -96,6 +96,11 @@ const uploadImage = async (event) => {
 }
 
 const submit = async () => {
+  if (!form.value.blogTitle?.trim() || !form.value.blogText?.trim()) {
+    alert("Blog Title and Blog Text are required.")
+    return
+  }
+
   try {
     await api.post("/blog", {
       blogTitle: form.value.blogTitle,
@@ -104,8 +109,8 @@ const submit = async () => {
     })
     router.push("/blog")
   } catch (err) {
-    console.error("Blog post failed:", err.response?.data || err.message)
-    alert("Failed to post blog.")
+    console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
+    alert("Failed to post blog.\n\n" + (JSON.stringify(err.response?.data) || err.message))
   }
 }
 </script>

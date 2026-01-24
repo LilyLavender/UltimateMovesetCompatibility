@@ -808,17 +808,42 @@ const uploadImage = async (event, type) => {
 };
 
 const submit = async () => {
+  const slotsStart = parseInt(form.value.slotsStart)
+  const slotsEnd = parseInt(form.value.slotsEnd)
+
   // Validate slots
-  if (parseInt(form.value.slotsStart) < 8 || parseInt(form.value.slotsEnd > 255)) {
+  if (isNaN(slotsStart) || isNaN(slotsEnd) || slotsStart < 8 || slotsEnd > 255) {
     alert('Please ensure Start Slot and End Slot are between 8 and 255.')
     return
   }
-  if (parseInt(form.value.slotsStart) > parseInt(form.value.slotsEnd)) {
+  if (slotsStart > slotsEnd) {
     alert('Please ensure End Slot is greater than Start Slot.')
     return
   }
 
-  // Validate slottedId and replacementId
+  // Validate modderId
+  if (!form.value.modderIds || !form.value.modderIds.length) {
+    alert('Please select at least one modder.')
+    return
+  }
+
+  // Validate other fields
+  const requiredFields = [
+    'moddedCharName',
+    'seriesId',
+    'slottedId',
+    'vanillaCharInternalName',
+    'releaseStateId'
+  ]
+
+  for (const field of requiredFields) {
+    if (!form.value[field] && form.value[field] !== 0) {
+      alert(`Field "${field}" is required.`)
+      return
+    }
+  }
+
+  // Ensure slottedId/replacementId fallback
   if (form.value.slottedId && !form.value.replacementId) {
     form.value.replacementId = form.value.slottedId
   } else if (!form.value.slottedId && form.value.replacementId) {
@@ -837,9 +862,8 @@ const submit = async () => {
       router.push(`/moveset/${newId}`)
     }
   } catch (err) {
-    console.error("Submit failed:", err.response?.data || err.message)
-    alert("Failed to save moveset. Please check the form and try again.\n\n" + err.response?.data || err.message)
-    // TODO permanent solution
+    console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
+    alert("Failed to save moveset. Please check the form and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
   }
 }
 </script>

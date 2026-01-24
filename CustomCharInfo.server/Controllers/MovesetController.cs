@@ -540,7 +540,7 @@ namespace CustomCharInfo.server.Controllers
 
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetMoveset), new { id = moveset.MovesetId }, moveset);
+            return CreatedAtAction(nameof(GetMoveset), new { idOrSlottedId = moveset.MovesetId }, moveset);
         }
 
         [Authorize]

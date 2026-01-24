@@ -127,8 +127,8 @@ const submit = async () => {
     }
     router.push('/hooks')
   } catch (err) {
-    console.error('Submit failed:', err.response?.data || err.message)
-    alert('Failed to save hook.')
+    console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
+    alert("Failed to save hook.\n\n" + (JSON.stringify(err.response?.data) || err.message))
   }
 }
 </script>
