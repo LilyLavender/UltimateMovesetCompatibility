@@ -112,9 +112,32 @@ watch(offsetInput, (val) => {
 })
 
 const submit = async () => {
+  // Validation
   if (!form.value.offset) {
     alert('Offset is required')
     return
+  }
+  if (!form.value.description) {
+    alert('Description is required')
+    return
+  }
+
+  // Check for duplicate offset
+  if (!isEditMode.value) {
+    try {
+      const res = await api.get('/hooks')
+      const existingHook = res.data.find(
+        h => h.offset.toString().toUpperCase() === form.value.offset.toUpperCase()
+      )
+      if (existingHook) {
+        alert(`A hook with offset 0x${form.value.offset} already exists.`)
+        return
+      }
+    } catch (err) {
+      console.error('Failed to fetch hooks for duplicate check', err)
+      alert('Could not verify offset uniqueness. Try again later.')
+      return
+    }
   }
 
   const payload = { ...form.value }
