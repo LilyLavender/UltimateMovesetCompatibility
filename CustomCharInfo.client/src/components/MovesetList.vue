@@ -119,9 +119,32 @@ const processedMovesets = computed(() => {
   // Sort
   if (sortMode.value === 'releaseDate') {
     list.sort((a, b) => {
-      const aTime = a.releaseDate ? new Date(a.releaseDate).getTime() : -Infinity
-      const bTime = b.releaseDate ? new Date(b.releaseDate).getTime() : -Infinity
-      return bTime - aTime // newest first
+      const aHasDate = !!a.releaseDate
+      const bHasDate = !!b.releaseDate
+
+      // Newest first
+      if (aHasDate && bHasDate) {
+        return new Date(b.releaseDate) - new Date(a.releaseDate)
+      }
+
+      // With date first
+      if (aHasDate) return -1
+      if (bHasDate) return 1
+
+      // Public first
+      if (a.privateMoveset !== b.privateMoveset) {
+        return a.privateMoveset ? 1 : -1
+      }
+
+      // Alphabetical fallback if public
+      if (!a.privateMoveset) {
+        return a.moddedCharName.localeCompare(b.moddedCharName)
+      }
+
+      // Modder name if private
+      const modderA = (a.modders[0] || '').toLowerCase()
+      const modderB = (b.modders[0] || '').toLowerCase()
+      return modderA.localeCompare(modderB)
     })
   } else if (!props.movesets) {
     list.sort((a, b) => {
