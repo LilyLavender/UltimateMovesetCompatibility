@@ -3,12 +3,15 @@
     <Header />
     <router-view />
     <Footer />
+
+    <MobileWarning />
   </v-app>
 </template>
 
 <script setup>
 import Header from '@/components/SiteHeader.vue'
 import Footer from '@/components/SiteFooter.vue'
+import MobileWarning from '@/components/MobileWarning.vue'
 
 import { watch } from 'vue';
 import { useRoute } from 'vue-router';
