@@ -235,7 +235,6 @@
               label="Thumbnail (340x82)"
               accept="image/*"
               @change="event => uploadImage(event, 'thumb_h')"
-              messages="WARNING: Images update automatically, unlike all other data."
             />
             <v-img
               :src="getFullImageUrl(form.thumbhImageUrl) || thumbhUnknown"
@@ -755,8 +754,8 @@ const uploadImage = async (event, type) => {
   const file = event?.target?.files?.[0];
   const slottedId = form.value.slottedId;
 
-  if (!file || !slottedId) {
-    alert("Please select a valid image and ensure slottedId is filled.");
+  if (!file) {
+    alert("Please select a valid image.");
     return;
   }
 
@@ -822,8 +821,9 @@ const submit = async () => {
   }
 
   // Validate modderId
-  if (!form.value.modderIds || !form.value.modderIds.length) {
-    alert('Please select at least one modder.')
+  const user = await api.get('/auth/me');
+  if (!form.value.modderIds.includes(user.data.modderId)) {
+    alert('You cannot save a moveset you do not own.')
     return
   }
 

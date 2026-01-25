@@ -70,7 +70,9 @@ namespace CustomCharInfo.server.Controllers
             }
             else
             {
-                fileName = $"{dto.Type}_{safeName}{Path.GetExtension(dto.File.FileName)}";
+                var guid = Guid.NewGuid();
+                var ext = Path.GetExtension(dto.File.FileName).ToLowerInvariant();
+                fileName = $"{dto.Type}_{guid}{ext}";
                 uploadDir = Path.Combine("wwwroot", "uploads", "moveset-ui");
             }
 
