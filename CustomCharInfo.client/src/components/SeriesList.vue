@@ -45,7 +45,9 @@ const sortBy = ref('Alphabetical')
 const apiUrl = import.meta.env.VITE_API_URL
 
 onMounted(async () => {
-  const res = await api.get('/series')
+  const res = await api.get('/series', {
+    params: { inSeriesList: true }
+  })
   series.value = res.data
 })
 

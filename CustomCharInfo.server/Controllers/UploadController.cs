@@ -34,8 +34,8 @@ namespace CustomCharInfo.server.Controllers
             if (user == null || user.UserTypeId < 2)
                 return Forbid();
 
-            if (dto.File == null || string.IsNullOrWhiteSpace(dto.Type) || string.IsNullOrWhiteSpace(dto.ItemName))
-                return BadRequest("Missing file, type, or itemName");
+            if (dto.File == null || string.IsNullOrWhiteSpace(dto.Type))
+                return BadRequest("Missing file or type");
 
             var allowedTypes = new Dictionary<string, (int width, int height)>
             {
@@ -52,29 +52,14 @@ namespace CustomCharInfo.server.Controllers
             if (image.Width != expectedSize.width || image.Height != expectedSize.height)
                 return BadRequest($"Invalid image dimensions. {dto.Type} must be {expectedSize.width}x{expectedSize.height}");
 
-            var rawName = Path.GetFileNameWithoutExtension(dto.ItemName);
-            var safeName = Regex.Replace(rawName, "[^a-zA-Z0-9]", "");
+            // Create GUID filename
+            var guid = Guid.NewGuid();
+            var ext = Path.GetExtension(dto.File.FileName).ToLowerInvariant();
+            var fileName = $"{dto.Type}_{guid}{ext}";
 
-            if (dto.Type != "series_icon")
-            {
-                safeName = safeName.ToLower();
-            }
-
-            string fileName;
-            string uploadDir;
-
-            if (dto.Type == "series_icon")
-            {
-                fileName = $"{safeName}SeriesIcon{Path.GetExtension(dto.File.FileName)}";
-                uploadDir = Path.Combine("wwwroot", "uploads", "series-icons");
-            }
-            else
-            {
-                var guid = Guid.NewGuid();
-                var ext = Path.GetExtension(dto.File.FileName).ToLowerInvariant();
-                fileName = $"{dto.Type}_{guid}{ext}";
-                uploadDir = Path.Combine("wwwroot", "uploads", "moveset-ui");
-            }
+            string uploadDir = dto.Type == "series_icon"
+                ? Path.Combine("wwwroot", "uploads", "series-icons")
+                : Path.Combine("wwwroot", "uploads", "moveset-ui");
 
             Directory.CreateDirectory(uploadDir);
             var filePath = Path.Combine(uploadDir, fileName);

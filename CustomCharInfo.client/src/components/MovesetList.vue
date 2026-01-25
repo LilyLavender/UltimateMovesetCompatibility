@@ -174,9 +174,6 @@ const fetchReleaseStates = async () => {
 }
 
 const fetchUser = async () => {
-  const hasPrivate = displayedMovesets.value?.some(m => m.privateMoveset)
-  if (!hasPrivate) return
-
   try {
     const res = await api.get('/auth/me')
     user.value = res.data

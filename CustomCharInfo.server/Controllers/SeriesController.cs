@@ -25,7 +25,9 @@ namespace CustomCharInfo.server.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetSeries()
+        public async Task<IActionResult> GetSeries(
+            [FromQuery] bool? inSeriesList = false
+        )
         {
             var userId = _userManager.GetUserId(User);
 
@@ -59,7 +61,7 @@ namespace CustomCharInfo.server.Controllers
                 .Select(log => log.ItemId)
                 .ToHashSet();
 
-            var seriesList = await _context.Series
+            var seriesQuery = _context.Series
                 .Select(s => new
                 {
                     s.SeriesId,
@@ -78,15 +80,19 @@ namespace CustomCharInfo.server.Controllers
                     ),
 
                     CanEdit = editableSeriesIds.Contains(s.SeriesId)
-                })
+                });
 
-                // Hide all added series where all movesets are private
-                /*.Where(s =>
-                    s.SeriesId <= 41 || 
+            // Hide all added series where movesets are private
+            if (inSeriesList == true)
+            {
+                seriesQuery = seriesQuery.Where(s =>
+                    s.SeriesId <= 41 ||
                     s.TotalMovesets == 0 ||
                     s.MovesetCount > 0
-                )*/
-                .ToListAsync();
+                );
+            }
+
+            var seriesList = await seriesQuery.ToListAsync();
 
             return Ok(seriesList);
         }
