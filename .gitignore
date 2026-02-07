@@ -24,3 +24,4 @@ CustomCharInfo.client/.vscode/
 Todo.md
 *.rb
 *.sql
+backups/
