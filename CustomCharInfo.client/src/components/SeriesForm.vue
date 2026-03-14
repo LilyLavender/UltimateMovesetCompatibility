@@ -25,6 +25,7 @@
               label="Series Name"
               :error="!!nameError"
               :error-messages="nameError"
+              :messages="isEditMode ? null : 'Please do not upload series that are meant to be private. Instead, set the series of your private moveset to &quot;Super Smash Bros.&quot;'"
             />
           </v-col>
 
