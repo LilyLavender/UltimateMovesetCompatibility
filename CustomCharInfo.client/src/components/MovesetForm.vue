@@ -177,6 +177,7 @@
                   readonly
                   clearable
                   v-bind="props"
+                  messages="There is currently an issue with selecting dates. While we fix this, please use Tab, Shift+Tab, and Spacebar to select a date."
                 />
               </template>
               <!-- ??? can't get any props to work -->
