@@ -100,6 +100,31 @@ namespace CustomCharInfo.server.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<ReturnSeriesDto>> GetOneSeries(int id)
         {
+            var userId = _userManager.GetUserId(User);
+            var user = userId != null
+                ? await _context.Users.FindAsync(userId)
+                : null;
+            var isAdmin = user?.UserTypeId == 3;
+            var modderId = user?.ModderId;
+
+            // Check if series exists
+            var seriesExists = await _context.Series.AnyAsync(s => s.SeriesId == id);
+            if (!seriesExists)
+                return NotFound();
+
+            // Check if series has any public movesets
+            var hasPublicMovesets = await _context.Movesets
+                .AnyAsync(m => m.SeriesId == id && m.PrivateMoveset != true);
+
+            // Check if user owns a moveset in the series
+            var userOwnsMoveset = modderId != null && await _context.MovesetModders
+                .AnyAsync(mm =>
+                    mm.ModderId == modderId &&
+                    mm.Moveset.SeriesId == id);
+
+            if (!hasPublicMovesets && !isAdmin && !userOwnsMoveset)
+                return Forbid();
+
             var series = await _context.Series
                 .Where(s => s.SeriesId == id)
                 .Select(s => new ReturnSeriesDto
@@ -107,12 +132,11 @@ namespace CustomCharInfo.server.Controllers
                     SeriesId = s.SeriesId,
                     SeriesName = s.SeriesName,
                     SeriesIconUrl = s.SeriesIconUrl,
-                    MovesetCount = _context.Movesets.Count(m => m.SeriesId == s.SeriesId)
+                    MovesetCount = _context.Movesets.Count(m =>
+                        m.SeriesId == s.SeriesId &&
+                        m.PrivateMoveset != true)
                 })
                 .FirstOrDefaultAsync();
-
-            if (series == null)
-                return NotFound();
 
             return Ok(series);
         }
