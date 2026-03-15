@@ -1,5 +1,13 @@
 <template>
   <ScrollingHero />
+
+  <!-- Disabled message -->
+  <div v-if="siteDisabled" class="text-center mb-5">
+    <blockquote class="twitter-tweet" data-theme="dark" data-dnt="true" align="center"><p lang="en" dir="ltr">UMC is currently down due to high site traffic. Please be patient as I come up with a solution.<br><br>This will most likely involve upgrading the service plan UMC is being hosted with.<br><br>Any donation to my Ko-Fi would be appreciated to help cover server costs &lt;3</p>&mdash; Lily Lambda (@LilyLambda) <a href="https://twitter.com/LilyLambda/status/2033029378116841947?ref_src=twsrc%5Etfw">March 15, 2026</a></blockquote>
+  </div>
+
+  <!-- Main site -->
+  <template v-else>
   <v-container max-width="1080px" class="p-6 mx-auto display-above-hero">
 
     <!-- Header -->
@@ -48,10 +56,11 @@
     </div>
 
   </v-container>
+  </template>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { getMovesets } from '@/services/movesetService'
 import api from '@/services/api'
 
@@ -61,6 +70,7 @@ import BlogPost from '@/components/BlogPost.vue'
 
 const allMovesets = ref([])
 const latestBlogPost = ref(null)
+const siteDisabled = ref(false)
 
 const adminPicks = computed(() =>
   allMovesets.value.filter(m => m.adminPick)
@@ -86,7 +96,7 @@ const upcomingReleases = computed(() => {
   
   const noDate = adminPicks.value
     .filter(m => !m.releaseDate && !m.privateMoveset)
-  
+
   return [...withDate, ...noDate].slice(0, 6)
 })
 
@@ -109,11 +119,28 @@ const fetchLatestBlogPost = async () => {
   }
 }
 
-onMounted(async () => {
-  const res = await getMovesets()
-  allMovesets.value = res.data
+function loadTwitterScript() {
+  if (!document.getElementById("twitter-wjs")) {
+    const script = document.createElement("script")
+    script.id = "twitter-wjs"
+    script.src = "https://platform.twitter.com/widgets.js"
+    script.async = true
+    document.body.appendChild(script)
+  } else if (window.twttr) {
+    window.twttr.widgets.load()
+  }
+}
 
-  await fetchLatestBlogPost()
+onMounted(async () => {
+  try {
+    const res = await getMovesets()
+    allMovesets.value = res.data
+    await fetchLatestBlogPost()
+  } catch (err) {
+    siteDisabled.value = true
+    await nextTick()
+    loadTwitterScript()
+  }
 })
 </script>
 
