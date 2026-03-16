@@ -5,6 +5,7 @@ import HomePage from '@/views/HomePage.vue';
 import ErrorPage from '@/views/ErrorPage.vue';
 import AboutPage from '@/views/AboutPage.vue';
 import PhotoSubmissionPage from '@/views/PhotoSubmissionPage.vue';
+import ImageHostingPage from '@/views/ImageHostingPage.vue';
 import ForgotPasswordPage from '@/views/ForgotPasswordPage.vue';
 // Movesets
 import MovesetsPage from '@/views/MovesetsPage.vue';
@@ -710,6 +711,12 @@ const routes = [
     name: 'PhotoSubmissions',
     component: PhotoSubmissionPage,
     meta: { title: 'Photo Submissions' },
+  },
+  {
+    path: '/image-hosting',
+    name: 'ImageHostingPage',
+    component: ImageHostingPage,
+    meta: { title: 'Image Hosting Info' },
   },
   {
     path: '/forgot-password',

@@ -163,11 +163,9 @@
           </v-col>
           <!-- Release Date -->
           <v-col cols="12" sm="4">
-            <v-menu 
-              :close-on-content-click="false" 
+            <v-menu
+              :close-on-content-click="false"
               transition="scale-transition"
-              activator="parent"
-              open-on-focus
             >
               <template v-slot:activator="{ props }">
                 <v-text-field
@@ -177,7 +175,6 @@
                   readonly
                   clearable
                   v-bind="props"
-                  messages="There is currently an issue with selecting dates. While we fix this, please use Tab, Shift+Tab, and Spacebar to select a date."
                 />
               </template>
               <!-- ??? can't get any props to work -->
@@ -228,14 +225,22 @@
       <!-- Display -->
       <section>
         <h2>Display</h2>
+        <p class="mb-3">
+          For information on image hosting in UMC, see <router-link 
+            to="/image-hosting"
+            class="unvisitable"
+            target="_blank"
+            >here</router-link>.
+        </p>
         <v-row>
-          <!-- ThumbH Upload -->
+          <!-- ThumbH URL -->
           <v-col cols="12" sm="6">
-            <v-file-input
+            <v-text-field
               variant="outlined"
+              v-model="form.thumbhImageUrl"
               label="Thumbnail (340x82)"
-              accept="image/*"
-              @change="event => uploadImage(event, 'thumb_h')"
+              placeholder="https://example.com/image.png"
+              messages="A thumbnail image displayed in moveset lists."
             />
             <v-img
               :src="getFullImageUrl(form.thumbhImageUrl) || thumbhUnknown"
@@ -250,13 +255,14 @@
               Download placeholder image
             </a>
           </v-col>
-          <!-- Hero Upload -->
+          <!-- Hero URL -->
           <v-col cols="12" sm="6">
-            <v-file-input
+            <v-text-field
               variant="outlined"
+              v-model="form.movesetHeroImageUrl"
               label="Render (1200x1200)"
-              accept="image/*"
-              @change="file => uploadImage(file, 'moveset_hero')"
+              placeholder="https://example.com/image.png"
+              messages="The render of the character cropped to fit."
             />
             <v-img
               :src="getFullImageUrl(form.movesetHeroImageUrl) || movesetHeroUnknown"
@@ -751,62 +757,6 @@ const formattedReleaseDate = computed({
   }
 })
 
-const uploadImage = async (event, type) => {
-  const file = event?.target?.files?.[0];
-  const slottedId = form.value.slottedId;
-
-  if (!file) {
-    alert("Please select a valid image.");
-    return;
-  }
-
-  try {
-    // Check if a moveset with this slottedId already exists
-    const existingRes = await api.get(`/movesets/${slottedId}`);
-    const existingMoveset = existingRes.data;
-
-    if (existingMoveset) {
-      const user = await api.get('/auth/me');
-      const modderIds = existingMoveset.movesetModders?.map(m => m.modder.modderId) || [];
-
-      if (!modderIds.includes(user.data.modderId)) {
-        alert(`You do not own the moveset using ID '${slottedId}', so you cannot upload an image for it.`);
-        return;
-      }
-    }
-  } catch (err) {
-    if (err.response?.status !== 404) {
-      console.error("Validation failed:", err.response?.data || err.message);
-      alert("Failed to validate slottedId.");
-      return;
-    }
-  }
-
-  // Proceed with image upload
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("type", type);
-  formData.append("itemName", slottedId);
-
-  try {
-    const res = await api.post("/upload/moveset-image", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-
-    const timestamp = new Date().getTime();
-    const imageUrlWithCacheBust = res.data.url + `?t=${timestamp}`;
-
-    if (type === "thumb_h") {
-      form.value.thumbhImageUrl = imageUrlWithCacheBust;
-    } else if (type === "moveset_hero") {
-      form.value.movesetHeroImageUrl = imageUrlWithCacheBust;
-    }
-  } catch (err) {
-    console.error("Image upload failed:", err.response?.data || err.message);
-    alert("Failed to upload image. Please ensure it meets size requirements.");
-  }
-};
-
 const submit = async () => {
   const slotsStart = parseInt(form.value.slotsStart)
   const slotsEnd = parseInt(form.value.slotsEnd)
@@ -960,6 +910,9 @@ section h2 {
 }
 .remove-bound-props :deep(.v-list-item-title:not(.filter-option .v-list-item-title)) {
   display: none;
+}
+.v-avatar {
+  background: transparent;
 }
 
 /* Merge two inputs */

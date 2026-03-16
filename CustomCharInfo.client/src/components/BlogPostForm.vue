@@ -26,17 +26,18 @@
           />
         </v-col>
 
-        <!-- Blog Image Upload -->
+        <!-- Blog Image URL -->
         <v-col cols="12" sm="4">
-          <v-file-input
+          <v-text-field
             variant="outlined"
-            label="Post Image"
-            accept="image/*"
-            @change="uploadImage"
+            v-model="form.blogImageUrl"
+            label="Post Image URL"
+            placeholder="https://example.com/image.png"
           />
         </v-col>
         <v-col cols="12" sm="8">
           <v-img
+            v-if="form.blogImageUrl"
             :src="getFullImageUrl(form.blogImageUrl)"
           />
         </v-col>
@@ -69,30 +70,6 @@ const form = ref({
 const getFullImageUrl = (path) => {
   if (!path) return null
   return path.startsWith('/') ? `${apiUrl}${path}` : path
-}
-
-const uploadImage = async (event) => {
-  const file = event?.target?.files?.[0]
-  if (!file) {
-    alert("Please select a valid image.")
-    return
-  }
-
-  const formData = new FormData()
-  formData.append("file", file)
-
-  try {
-    const res = await api.post("/upload/blog-image", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    })
-
-    const timestamp = new Date().getTime()
-    const imageUrlWithCacheBust = res.data.url + `?t=${timestamp}`
-    form.value.blogImageUrl = imageUrlWithCacheBust
-  } catch (err) {
-    console.error("Image upload failed:", err.response?.data || err.message)
-    alert("Failed to upload blog image.")
-  }
 }
 
 const submit = async () => {

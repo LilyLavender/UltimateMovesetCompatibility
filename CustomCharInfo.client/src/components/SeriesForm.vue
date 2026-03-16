@@ -9,11 +9,14 @@
       <section>
         <!-- Add mode intro para -->
         <p v-if="!isEditMode" class="mb-3">
-          Series icons should be #333333 on a 800x800 canvas with 100px of padding on each side.
+          Please do not upload series that are meant to be private. Instead, set the series of your private moveset to &quot;Super Smash Bros.&quot;
         </p>
-        <!-- Edit mode intro para -->
-        <p v-else class="mb-3">
-          Series icons should be #333333 on a 800x800 canvas with 100px of padding on each side.
+        <p class="mb-3">
+          For information on image hosting in UMC, see <router-link 
+            to="/image-hosting"
+            class="unvisitable"
+            target="_blank"
+            >here</router-link>.
         </p>
 
         <v-row>
@@ -25,18 +28,17 @@
               label="Series Name"
               :error="!!nameError"
               :error-messages="nameError"
-              :messages="isEditMode ? null : 'Please do not upload series that are meant to be private. Instead, set the series of your private moveset to &quot;Super Smash Bros.&quot;'"
             />
           </v-col>
 
-          <!-- Image Upload -->
+          <!-- Image URL -->
           <v-col cols="8" sm="6">
-            <v-file-input
+            <v-text-field
               variant="outlined"
-              label="Series Icon (800x800)"
-              accept="image/*"
-              @change="event => uploadImage(event, 'series_icon')"
-              messages="WARNING: Images update automatically, unlike all other data."
+              v-model="form.seriesIconUrl"
+              label="Series Icon URL"
+              placeholder="https://example.com/image.png"
+              messages="Series icons MUST be #333333 on a 800x800 canvas with 100px of padding on each side. See other series icons for reference."
             />
           </v-col>
           <v-col cols="4" sm="2">
@@ -130,63 +132,6 @@ const validateSeriesName = () => {
 
   if (conflict) {
     nameError.value = 'A series with this name already exists.'
-  }
-}
-
-const uploadImage = async (event, type) => {
-  const file = event?.target?.files?.[0];
-  const seriesName = form.value.seriesName;
-
-  if (!file || !seriesName) {
-    alert("Please select a valid image and ensure Series Name is filled.");
-    return;
-  }
-
-  if (isEditMode && props.seriesId != null) {
-    try {
-      const userRes = await api.get('/auth/me');
-      const user = userRes.data;
-
-      const movesetsInSeries = (await api.get(`/movesets?seriesId=${props.seriesId}`)).data;
-
-      if (movesetsInSeries.length > 0) {
-        // Check if user owns any movesets from this series
-        const allModderNames = movesetsInSeries.flatMap(m => m.modders ?? []);
-
-        if (!allModderNames.includes(user.userName)) {
-          alert("You do not own any movesets in this series, so you cannot upload an image for it.");
-          return;
-        }
-      } else {
-        // No movesets in series
-        if (user.userTypeId !== 2 && user.userTypeId !== 3) {
-          alert("Only admins or trusted users can add icons for new series.");
-          return;
-        }
-      }
-    } catch (err) {
-      console.error("Validation failed:", err.response?.data || err.message);
-      alert("Failed to validate series permissions.");
-      return;
-    }
-  }
-
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("type", type);
-  formData.append("itemName", seriesName);
-
-  try {
-    const res = await api.post("/upload/moveset-image", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-
-    const timestamp = new Date().getTime();
-    const imageUrlWithCacheBust = res.data.url + `?t=${timestamp}`;
-    form.value.seriesIconUrl = imageUrlWithCacheBust;
-  } catch (err) {
-    console.error("Image upload failed:", err.response?.data || err.message);
-    alert("Failed to upload image. Please ensure it meets size requirements.");
   }
 }
 
