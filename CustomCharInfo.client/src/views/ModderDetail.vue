@@ -14,7 +14,7 @@
         >GameBanana</a>
         <!-- Discord -->
         <span
-          v-if="modder?.discordUsername"
+          v-if="modder?.discordUsername && !modder?.problematic"
         >
           <br>
           <img class="discord-icon" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66e278299a53f5bf88615e90_Symbol.svg" alt="Discord icon" />
@@ -31,7 +31,11 @@
             mdi-shield-account
           </v-icon>
         </div>
-        <p class="bio">{{ modder?.bio }}</p>
+        <p v-if="modder?.problematic" class="problematic-warning">
+          <v-icon>mdi-alert</v-icon>
+          This user has been deemed problematic by the community. Please be careful when interacting with them and do your own research on their actions.
+        </p>
+        <p v-else class="bio">{{ modder?.bio }}</p>
       </v-col>
     </v-row>
 
@@ -186,6 +190,13 @@ i.admin-display {
   margin-top: 4em;
   margin-left: -2em;
   font-size: larger;
+}
+
+.problematic-warning {
+  margin-top: 4em;
+  margin-left: -2em;
+  font-size: larger;
+  color: #b00020;
 }
 
 .movesets-title {

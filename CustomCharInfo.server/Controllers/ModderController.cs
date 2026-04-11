@@ -60,7 +60,8 @@ namespace CustomCharInfo.server.Controllers
                     Name = x.Modder.User != null ? x.Modder.User.UserName : x.Modder.Name,
                     x.Modder.Bio,
                     x.Modder.GamebananaId,
-                    x.Modder.DiscordUsername
+                    x.Modder.DiscordUsername,
+                    Problematic = x.Modder.User != null && x.Modder.User.Problematic == true
                 })
                 .ToListAsync();
         
@@ -105,7 +106,8 @@ namespace CustomCharInfo.server.Controllers
                     Name = x.Modder.User != null ? x.Modder.User.UserName : x.Modder.Name,
                     x.Modder.Bio,
                     x.Modder.GamebananaId,
-                    x.Modder.DiscordUsername
+                    x.Modder.DiscordUsername,
+                    Problematic = x.Modder.User != null && x.Modder.User.Problematic == true
                 })
                 .FirstOrDefaultAsync();
 

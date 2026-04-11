@@ -167,6 +167,7 @@ namespace CustomCharInfo.server.Controllers
                         x.Moveset.PrivateModder == true && !(isAdmin || x.IsOwner)
                             ? new List<string> { "???" }
                             : x.Moveset.MovesetModders
+                                .Where(mm => mm.Modder.User == null || mm.Modder.User.Problematic != true)
                                 .OrderBy(mm => mm.SortOrder)
                                 .Select(mm => mm.Modder.User.UserName ?? mm.Modder.Name)
                                 .ToList(),

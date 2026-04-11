@@ -12,5 +12,8 @@ namespace CustomCharInfo.server.Models
         // User role
         public int UserTypeId { get; set; }
         public UserType UserType { get; set; }
+
+        // Moderation
+        public bool? Problematic { get; set; } = false;
     }
 }
