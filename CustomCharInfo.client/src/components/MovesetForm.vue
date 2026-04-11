@@ -4,6 +4,12 @@
       <!-- Header -->
       <h1 v-if="isEditMode">Edit {{ moveset.moddedCharName }}</h1>
       <h1 v-else>Submit Moveset</h1>
+      <div v-if="!isEditMode" class="submission-guide-hint">
+        <router-link to="/moveset-submission-guide" class="unvisitable" target="_blank">
+          <i class="mdi mdi-arrow-right-bottom"></i>
+          When should a moveset be submitted?
+        </router-link>
+      </div>
 
       <!-- Basic Info -->
       <section>
@@ -970,6 +976,14 @@ section h2 {
 }
 :deep(.rotate-toggle.rotated span > i::before) {
   transform: rotate(-45deg);
+}
+
+.submission-guide-hint {
+  text-align: left;
+  margin-top: -1em;
+  margin-bottom: 1em;
+  opacity: 0.5;
+  margin-left: 1em;
 }
 </style>
 
