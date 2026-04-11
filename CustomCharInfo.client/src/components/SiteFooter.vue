@@ -25,6 +25,14 @@
           Photo Submissions
         </router-link>
       </div>
+      <div>
+        <router-link
+          :to="{ name: 'PrivacyPolicyPage' }"
+          class="unvisitable"
+        >
+          Privacy Policy
+        </router-link>
+      </div>
     </div>
   </v-footer>
 </template>

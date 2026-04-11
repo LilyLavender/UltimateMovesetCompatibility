@@ -7,6 +7,7 @@ import AboutPage from '@/views/AboutPage.vue';
 import PhotoSubmissionPage from '@/views/PhotoSubmissionPage.vue';
 import ImageHostingPage from '@/views/ImageHostingPage.vue';
 import MovesetSubmissionGuide from '@/views/MovesetSubmissionGuide.vue';
+import PrivacyPolicyPage from '@/views/PrivacyPolicyPage.vue';
 import ForgotPasswordPage from '@/views/ForgotPasswordPage.vue';
 // Movesets
 import MovesetsPage from '@/views/MovesetsPage.vue';
@@ -723,6 +724,12 @@ const routes = [
     name: 'MovesetSubmissionGuide',
     component: MovesetSubmissionGuide,
     meta: { title: 'Moveset Submission Guide' },
+  },
+  {
+    path: '/privacy-policy',
+    name: 'PrivacyPolicyPage',
+    component: PrivacyPolicyPage,
+    meta: { title: 'Privacy Policy' },
   },
   {
     path: '/forgot-password',

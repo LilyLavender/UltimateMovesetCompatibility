@@ -17,7 +17,9 @@
           <li><a href="https://lensdump.com" class="unvisitable" target="_blank">lensdump.com</a> - Doesn't require sign-in, doesn't compress images.</li>
           <li><a href="https://postimage.io" class="unvisitable" target="_blank">postimage.io</a> - Doesn't require sign-in, doesn't compress images.</li>
           <li><a href="https://catbox.moe" class="unvisitable" target="_blank">catbox.moe</a> - Doesn't require sign-in, doesn't compress images.</li>
-          <li>GitHub Pages - Good for developers.</li>
+          <li><span class="underline">GameBanana Bitpit</span> - Works just as well as any other, but needs to be unlocked. Great option if already unlocked.</li>
+          <li><span class="underline">GitHub Pages</span> - Good for developers.</li>
+          <li><span class="underline">Google Drive</span> - Requires you to get the DIRECT link to the image (should contain "drive-viewer"), which can be hard to access. Also needs to be shared. If the image isn't embedding, one of these things is incorrect.</li>
         </ul>
         Image hosts to avoid:
         <ul>
@@ -40,5 +42,15 @@ ul {
   font-size: 16px;
   margin-left: 2em;
   color: grey;
+}
+code {
+  font-size: 13px;
+  background-color: #2a2a2a;
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: #d4d4d4;
+}
+.underline {
+  text-decoration: underline;
 }
 </style>
