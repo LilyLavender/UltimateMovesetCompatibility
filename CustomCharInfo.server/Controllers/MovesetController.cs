@@ -534,7 +534,7 @@ namespace CustomCharInfo.server.Controllers
                 ItemTypeId = 1,
                 ItemId = moveset.MovesetId,
                 AcceptanceStateId = 2,
-                Notes = "", // todo allow notes
+                Notes = "",
                 CreatedAt = DateTime.UtcNow
             });
 
@@ -702,7 +702,7 @@ namespace CustomCharInfo.server.Controllers
                 ItemTypeId = 1,
                 ItemId = id,
                 AcceptanceStateId = newState,
-                Notes = "", // todo allow notes
+                Notes = "",
                 CreatedAt = DateTime.UtcNow
             });
 

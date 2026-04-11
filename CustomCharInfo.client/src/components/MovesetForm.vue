@@ -827,7 +827,6 @@ section {
   padding: 1em;
   border-radius: 10px;
 }
-/* Todo grid form??? */
 /* .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

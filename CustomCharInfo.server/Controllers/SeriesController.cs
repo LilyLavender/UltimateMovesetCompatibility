@@ -183,7 +183,7 @@ namespace CustomCharInfo.server.Controllers
                 ItemTypeId = 3,
                 ItemId = series.SeriesId,
                 AcceptanceStateId = newState,
-                Notes = "", // todo allow notes
+                Notes = "",
                 CreatedAt = DateTime.UtcNow
             });
 
@@ -250,7 +250,7 @@ namespace CustomCharInfo.server.Controllers
                 ItemTypeId = 3,
                 ItemId = id,
                 AcceptanceStateId = newState,
-                Notes = "", // todo allow notes
+                Notes = "",
                 CreatedAt = DateTime.UtcNow
             });
 

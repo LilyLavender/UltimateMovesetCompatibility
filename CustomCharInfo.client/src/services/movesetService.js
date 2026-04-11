@@ -1,6 +1,6 @@
 import api from '@/services/api';
 
-// Currently unused. TODO incorporate
+// Currently unused.
 
 export const getMovesets = (params) => api.get('/movesets', { params });
 export const getMoveset = (id) => api.get(`/movesets/${id}`);

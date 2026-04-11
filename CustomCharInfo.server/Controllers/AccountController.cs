@@ -186,7 +186,7 @@ namespace CustomCharInfo.server.Controllers
                     ItemTypeId = 2,
                     ItemId = modder.ModderId,
                     AcceptanceStateId = newState,
-                    Notes = "", // todo allow notes
+                    Notes = "",
                     CreatedAt = DateTime.UtcNow
                 });
             }

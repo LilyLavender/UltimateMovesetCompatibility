@@ -328,7 +328,6 @@ const routes = [
     name: 'ModderDetail',
     component: ModderDetail,
     props: true,
-    // Todo: remove beforeEnter for every page? fixes some issues
   },
   {
     path: '/modder/apply',

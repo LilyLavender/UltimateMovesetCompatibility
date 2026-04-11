@@ -135,14 +135,12 @@ const form = ref({
   notes: ''
 })
 
-// Todo get from api
 const itemTypes = [
   { label: 'Moveset', value: 1 },
   { label: 'Modder', value: 2 },
   { label: 'Series', value: 3 },
 ]
 
-// Todo get from api (exclude 7, admins shouldn't have access to it)
 const acceptanceStates = [
   { id: 1, name: 'Pending Admin Action (Soft)' },
   { id: 2, name: 'Pending Admin Action (Hard)' },
@@ -185,7 +183,6 @@ const fetchItems = async () => {
   }
 }
 
-// TODO should reuse action log list for this and make action log list reusable
 const fetchItemLogs = async () => {
   if (!form.value.itemTypeId || !form.value.itemId) {
     itemLogs.value = []

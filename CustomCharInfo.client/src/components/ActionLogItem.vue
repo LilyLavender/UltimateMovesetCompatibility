@@ -44,7 +44,6 @@
           <h3>
             Series: 
             {{ log.item?.seriesName }}
-            <!-- todo v-if? -->
             <router-link
               v-if="true"
               :to="{ name: 'EditSeries', params: { seriesId: log.item?.seriesId } }"

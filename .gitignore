@@ -21,7 +21,9 @@ CustomCharInfo.client/.vscode/
 *.sw?
 
 # Other
-Todo.md
+/*.md
+!/README.md
+.claude/
 *.rb
 *.sql
 backups/
