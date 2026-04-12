@@ -16,6 +16,7 @@ import MovesetDetail from '@/views/MovesetDetail.vue';
 import AddMoveset from '@/views/AddMoveset.vue';
 import EditMoveset from '@/views/EditMoveset.vue';
 // Modders
+import ModdersPage from '@/views/ModdersPage.vue';
 import ModderDetail from '@/views/ModderDetail.vue';
 import ApplyModder from '@/views/ApplyModder.vue';
 import EditModder from '@/views/EditModder.vue';
@@ -331,6 +332,12 @@ const routes = [
         })
       }
     }
+  },
+  {
+    path: '/modders',
+    name: 'ModdersPage',
+    component: ModdersPage,
+    meta: { title: 'Modders' },
   },
   {
     path: '/modder/:id',

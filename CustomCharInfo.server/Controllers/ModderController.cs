@@ -24,6 +24,64 @@ namespace CustomCharInfo.server.Controllers
             _userManager = userManager;
         }
         
+        [HttpGet("public")]
+        public async Task<ActionResult> GetPublicModders()
+        {
+            var acceptedStates = new[] { 5, 7 };
+            var blockedStates = new[] { 2, 4, 6 };
+
+            var modders = await _context.Modders
+                .Where(m =>
+                    // Not problematic
+                    m.User.Problematic != true &&
+                    // Has been accepted at some point
+                    _context.ActionLogs.Any(a =>
+                        a.ItemTypeId == 2 && a.ItemId == m.ModderId &&
+                        acceptedStates.Contains(a.AcceptanceStateId)
+                    ) &&
+                    // Latest modder log is not blocked
+                    !blockedStates.Contains(
+                        _context.ActionLogs
+                            .Where(a => a.ItemTypeId == 2 && a.ItemId == m.ModderId)
+                            .OrderByDescending(a => a.CreatedAt)
+                            .Select(a => a.AcceptanceStateId)
+                            .FirstOrDefault()
+                    ) &&
+                    // Has at least one public, non-hardheld moveset
+                    m.MovesetModders.Any(mm =>
+                        mm.Moveset.PrivateMoveset != true &&
+                        !blockedStates.Contains(
+                            _context.ActionLogs
+                                .Where(a => a.ItemTypeId == 1 && a.ItemId == mm.Moveset.MovesetId)
+                                .OrderByDescending(a => a.CreatedAt)
+                                .Select(a => a.AcceptanceStateId)
+                                .FirstOrDefault()
+                        )
+                    )
+                )
+                .Select(m => new
+                {
+                    m.ModderId,
+                    Name = m.User != null ? m.User.UserName : m.Name,
+                    m.Bio,
+                    m.GamebananaId,
+                    MovesetCount = m.MovesetModders.Count(mm =>
+                        mm.Moveset.PrivateMoveset != true &&
+                        !blockedStates.Contains(
+                            _context.ActionLogs
+                                .Where(a => a.ItemTypeId == 1 && a.ItemId == mm.Moveset.MovesetId)
+                                .OrderByDescending(a => a.CreatedAt)
+                                .Select(a => a.AcceptanceStateId)
+                                .FirstOrDefault()
+                        )
+                    )
+                })
+                .OrderBy(m => m.Name)
+                .ToListAsync();
+
+            return Ok(modders);
+        }
+
         [Authorize]
         [HttpGet]
         public async Task<ActionResult> GetModders()
