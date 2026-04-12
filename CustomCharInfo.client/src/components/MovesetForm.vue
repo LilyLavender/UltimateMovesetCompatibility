@@ -21,7 +21,9 @@
               variant="outlined"
               v-model="form.moddedCharName"
               label="Modded Character Name"
-            />
+            >
+              <template #label>Modded Character Name <span class="required-asterisk">*</span></template>
+            </v-text-field>
           </v-col>
           <!-- Modders -->
           <v-col cols="12" sm="4">
@@ -35,7 +37,9 @@
               multiple
               chips
               clearable
-            />
+            >
+              <template #label>Modders <span class="required-asterisk">*</span></template>
+            </v-select>
           </v-col>
           <!-- Series -->
           <v-col cols="12" sm="4">
@@ -47,6 +51,7 @@
               item-value="seriesId"
               label="Series"
             >
+              <template #label>Series <span class="required-asterisk">*</span></template>
               <!-- List item -->
               <template #item="{ props, item }">
                 <v-list-item v-bind="props" class="remove-bound-props">
@@ -91,7 +96,9 @@
               variant="outlined"
               v-model="form.slottedId"
               label="Internal ID"
-            />
+            >
+              <template #label>Internal ID <span class="required-asterisk">*</span></template>
+            </v-text-field>
           </v-col>
           <v-col cols="12" sm="8" v-else class="two-of-them">
             <v-col cols="6">
@@ -99,7 +106,9 @@
                 variant="outlined"
                 v-model="form.slottedId"
                 label="Slotted ID"
-              />
+              >
+                <template #label>Slotted ID <span class="required-asterisk">*</span></template>
+              </v-text-field>
             </v-col>
             <v-col cols="6">
               <v-text-field
@@ -119,6 +128,7 @@
               item-value="vanillaCharInternalName"
               label="Vanilla Character"
             >
+              <template #label>Vanilla Character <span class="required-asterisk">*</span></template>
               <!-- List item -->
               <template #item="{ props, item }">
                 <v-list-item v-bind="props" class="remove-bound-props">
@@ -153,7 +163,9 @@
               :max="255"
               prefix="c"
               class="left-merged-input"
-            />
+            >
+              <template #label>Start Slot <span class="required-asterisk">*</span></template>
+            </v-text-field>
           </v-col>
           <v-col cols="12" sm="2" class="right-merged-input-container">
             <v-text-field
@@ -165,7 +177,9 @@
               :max="255"
               prefix="c"
               class="right-merged-input"
-            />
+            >
+              <template #label>End Slot <span class="required-asterisk">*</span></template>
+            </v-text-field>
           </v-col>
           <!-- Release Date -->
           <v-col cols="12" sm="4">
@@ -200,7 +214,9 @@
               item-title="releaseStateName"
               item-value="releaseStateId"
               label="Availability"
-            />
+            >
+              <template #label>Availability <span class="required-asterisk">*</span></template>
+            </v-select>
           </v-col>
           <!-- Modpack -->
           <v-col cols="12" sm="4">
@@ -573,8 +589,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import api from '@/services/api'
 import thumbhUnknown from "@/assets/thumb_h_unknown.png"
 import movesetHeroUnknown from "@/assets/moveset_hero_unknown.png"
@@ -593,6 +609,29 @@ const router = useRouter()
 
 const addArticleForm = ref(false)
 const addHookForm = ref(false)
+
+const isDirty = ref(false)
+let initialFormSnapshot = null
+
+onBeforeRouteLeave((to, from, next) => {
+  if (isDirty.value) {
+    const confirmed = window.confirm('You have unsaved changes. Are you sure you want to leave?')
+    next(confirmed)
+  } else {
+    next()
+  }
+})
+
+const handleBeforeUnload = (e) => {
+  if (isDirty.value) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+})
 
 const apiUrl = import.meta.env.VITE_API_URL
 
@@ -689,6 +728,8 @@ const digitsOnly = (field) => {
 }
 
 onMounted(async () => {
+  window.addEventListener('beforeunload', handleBeforeUnload)
+
   const [vanillaCharsRes, seriesRes, releaseStatesRes, moddersRes, dependenciesRes, articlesRes, hooksRes] = await Promise.all([
     api.get('/vanillachars'),
     api.get('/series'),
@@ -735,6 +776,11 @@ onMounted(async () => {
       router.replace({ name: 'ErrorPage', query: { http: 404, reason: 'Moveset not found' } })
     }
   }
+
+  initialFormSnapshot = JSON.stringify(form.value)
+  watch(form, () => {
+    isDirty.value = JSON.stringify(form.value) !== initialFormSnapshot
+  }, { deep: true })
 })
 
 const slotRange = ref([form.value.slotsStart || 8, form.value.slotsEnd || 8])
@@ -810,6 +856,7 @@ const submit = async () => {
   const payload = { ...form.value }
 
   try {
+    isDirty.value = false
     if (props.mode === 'edit' && props.movesetId) {
       await api.put(`/movesets/${props.movesetId}`, payload)
       router.push(`/moveset/${props.movesetId}`)
@@ -976,6 +1023,10 @@ section h2 {
 }
 :deep(.rotate-toggle.rotated span > i::before) {
   transform: rotate(-45deg);
+}
+
+.required-asterisk {
+  color: #cf6679;
 }
 
 .submission-guide-hint {

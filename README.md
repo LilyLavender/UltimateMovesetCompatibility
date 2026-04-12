@@ -10,15 +10,26 @@ Ultimate Moveset Compatibility, or UMC, is a Vue3 SPA + ASP.NET Core 9 API (Azur
 ## Building & publishing
 ### Building
 Run frontend
-  `npm run dev`
+```
+npm run dev
+```
+
 Run backend
-  `dotnet run`
+```
+dotnet run
+```
 
 ### Publishing
 Publish frontend
-  `npm run deploy`
+```
+npm run deploy
+```
+
 Publish backend
-  `dotnet build`
-  `dotnet publish -c Release -o ./publish`
-  `server/publish > right click > Deploy to Web App > umc-backend`
-  `DELETE server/publish`
+```
+dotnet build
+dotnet publish -c Release -o ./publish
+```
+Right click `server/publish` > `Deploy to Web App` > `umc-backend`.
+
+DELETE `server/publish`
