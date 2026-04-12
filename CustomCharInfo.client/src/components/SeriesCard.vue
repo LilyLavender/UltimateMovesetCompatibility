@@ -1,6 +1,9 @@
 <template>
   <v-card class="series-card d-flex align-center justify-space-between">
-    <div class="d-flex align-center">
+    <router-link
+      :to="{ name: 'SeriesDetail', params: { seriesId: series.seriesId } }"
+      class="series-link d-flex align-center flex-grow-1 unvisitable text-decoration-none"
+    >
       <v-img
         :src="getFullImageUrl(series.seriesIconUrl)"
         :alt="`${series.seriesName} Series Icon`"
@@ -13,7 +16,7 @@
           {{ series.movesetCount }} {{ series.movesetCount === 1 ? 'moveset' : 'movesets' }}
         </v-card-subtitle>
       </div>
-    </div>
+    </router-link>
 
     <router-link
       v-if="series.canEdit"
@@ -45,6 +48,10 @@ const getFullImageUrl = (path) =>
 .series-card {
   background-color: transparent;
   color: #dedede;
+}
+.series-link {
+  color: inherit;
+  min-width: 0;
 }
 
 .p-0 {

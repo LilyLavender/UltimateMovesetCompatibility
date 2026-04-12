@@ -21,6 +21,7 @@ import ApplyModder from '@/views/ApplyModder.vue';
 import EditModder from '@/views/EditModder.vue';
 // Series
 import SeriesPage from '@/views/SeriesPage.vue';
+import SeriesDetail from '@/views/SeriesDetail.vue';
 import AddSeries from '@/views/AddSeries.vue';
 import EditSeries from '@/views/EditSeries.vue';
 // Hooks
@@ -70,6 +71,12 @@ const routes = [
     name: 'Series',
     component: SeriesPage,
     meta: { title: 'Series' },
+  },
+  {
+    path: '/series/:seriesId',
+    name: 'SeriesDetail',
+    component: SeriesDetail,
+    props: true,
   },
   {
     path: '/moveset/:movesetId',

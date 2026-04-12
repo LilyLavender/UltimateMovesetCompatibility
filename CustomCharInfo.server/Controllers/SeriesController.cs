@@ -31,10 +31,14 @@ namespace CustomCharInfo.server.Controllers
         {
             var userId = _userManager.GetUserId(User);
 
-            var modderId = await _context.Users
+            var userInfo = await _context.Users
                 .Where(u => u.Id == userId)
-                .Select(u => u.ModderId)
+                .Select(u => new { u.ModderId, u.UserTypeId })
                 .FirstOrDefaultAsync();
+
+            var modderId = userInfo?.ModderId;
+            var isAdmin = userInfo?.UserTypeId == 3;
+            var blockedStates = new[] { 2, 4, 6 };
 
             // All series user has a moveset from
             var movesetSeriesIds = modderId != null
@@ -68,10 +72,17 @@ namespace CustomCharInfo.server.Controllers
                     s.SeriesName,
                     s.SeriesIconUrl,
 
-                    // Count only non-private movesets
+                    // Count only non-private, non-blocked movesets (blocked only visible to admins)
                     MovesetCount = _context.Movesets.Count(m =>
                         m.SeriesId == s.SeriesId &&
-                        m.PrivateMoveset != true
+                        m.PrivateMoveset != true &&
+                        (isAdmin || !blockedStates.Contains(
+                            _context.ActionLogs
+                                .Where(a => a.ItemTypeId == 1 && a.ItemId == m.MovesetId)
+                                .OrderByDescending(a => a.CreatedAt)
+                                .Select(a => a.AcceptanceStateId)
+                                .FirstOrDefault()
+                        ))
                     ),
 
                     // Filtering
@@ -106,6 +117,7 @@ namespace CustomCharInfo.server.Controllers
                 : null;
             var isAdmin = user?.UserTypeId == 3;
             var modderId = user?.ModderId;
+            var blockedStates = new[] { 2, 4, 6 };
 
             // Check if series exists
             var seriesExists = await _context.Series.AnyAsync(s => s.SeriesId == id);
@@ -134,7 +146,14 @@ namespace CustomCharInfo.server.Controllers
                     SeriesIconUrl = s.SeriesIconUrl,
                     MovesetCount = _context.Movesets.Count(m =>
                         m.SeriesId == s.SeriesId &&
-                        m.PrivateMoveset != true)
+                        m.PrivateMoveset != true &&
+                        (isAdmin || !blockedStates.Contains(
+                            _context.ActionLogs
+                                .Where(a => a.ItemTypeId == 1 && a.ItemId == m.MovesetId)
+                                .OrderByDescending(a => a.CreatedAt)
+                                .Select(a => a.AcceptanceStateId)
+                                .FirstOrDefault()
+                        )))
                 })
                 .FirstOrDefaultAsync();
 

@@ -74,7 +74,10 @@ namespace CustomCharInfo.server.Controllers
 
             // Filters
             if (seriesId.HasValue)
+            {
                 query = query.Where(x => x.Moveset.SeriesId == seriesId);
+                query = query.Where(x => x.Moveset.PrivateMoveset != true || x.IsOwner);
+            }
 
             if (releaseStateId.HasValue)
                 query = query.Where(x => x.Moveset.ReleaseStateId == releaseStateId);
