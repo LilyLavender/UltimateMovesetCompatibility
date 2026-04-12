@@ -22,7 +22,7 @@ namespace CustomCharInfo.server.Models.DTOs
         public bool? HasGlobalOnLinePre { get; set; }
         public bool? HasGlobalOnLineEnd { get; set; }
 
-        public int? GamebananaPageId { get; set; }
+        public string? ModPageUrl { get; set; }
         public int? GamebananaWipId { get; set; }
 
         public string BackgroundColor { get; set; }

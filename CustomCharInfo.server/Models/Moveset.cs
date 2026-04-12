@@ -33,7 +33,8 @@ namespace CustomCharInfo.server.Models
         public bool? HasGlobalOnLinePre { get; set; }
         public bool? HasGlobalOnLineEnd { get; set; }
 
-        public int? GamebananaPageId { get; set; }
+        [MaxLength(255)]
+        public string? ModPageUrl { get; set; }
         public int? GamebananaWipId { get; set; }
         [MaxLength(6)]
         public string? BackgroundColor { get; set; }

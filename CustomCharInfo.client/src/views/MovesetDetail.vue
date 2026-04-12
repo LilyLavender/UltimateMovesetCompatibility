@@ -213,7 +213,7 @@ import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
 import movesetHeroUnknown from "@/assets/moveset_hero_unknown.png"
 import seriesIconUnknown from "@/assets/series_icon_unknown.png"
-import { GB_PAGE_URL, GB_WIP_URL, MODS_WIKI_URL } from '@/globals'
+import { GB_WIP_URL, MODS_WIKI_URL } from '@/globals'
 
 const route = useRoute()
 const router = useRouter()
@@ -247,13 +247,13 @@ const releaseDisplay = computed(() => {
     modpackName,
     sourceCode,
     releaseState,
-    gamebananaPageId,
+    modPageUrl,
     gamebananaWipId,
     releaseDate
   } = moveset.value
 
   const state = releaseState?.releaseStateName
-  const pageUrl = gamebananaPageId ? `${GB_PAGE_URL}${gamebananaPageId}` : null
+  const pageUrl = modPageUrl || null
   const wipUrl = gamebananaWipId ? `${GB_WIP_URL}${gamebananaWipId}` : null
   const url = pageUrl || wipUrl
 
@@ -313,8 +313,8 @@ const releaseDisplay = computed(() => {
     return { text, url }
   }
 
-  // Unreleased
-  if (state === 'Unreleased') {
+  // Upcoming
+  if (state === 'Upcoming') {
     let text = 'Upcoming'
     if (hasDate) {
       text += ` ${formatDate(date)}`

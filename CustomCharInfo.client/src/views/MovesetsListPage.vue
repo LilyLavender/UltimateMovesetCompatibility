@@ -44,7 +44,7 @@
           class="release-pill"
           :class="{
             released: item.releaseState === 'Released',
-            unreleased: item.releaseState === 'Unreleased',
+            upcoming: item.releaseState === 'Upcoming',
             pending: item.releaseState === 'Pending Update',
             beta: item.releaseState === 'Open for Beta Testing',
             deprecated: item.releaseState === 'Deprecated'
@@ -344,7 +344,7 @@ function downloadCSV() {
   background-color: #2e7d32;
 }
 
-.release-pill.unreleased,
+.release-pill.upcoming,
 .release-pill.pending {
   background-color: #fbc02d;
   color: #000;

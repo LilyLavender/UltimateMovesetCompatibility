@@ -23,7 +23,7 @@ namespace CustomCharInfo.server.Models.DTOs
         public bool? HasAgentInit { get; set; }
         public bool? HasGlobalOnLinePre { get; set; }
         public bool? HasGlobalOnLineEnd { get; set; }
-        public int? GamebananaPageId { get; set; }
+        public string? ModPageUrl { get; set; }
         public int? GamebananaWipId { get; set; }
         public string? ThumbhImageUrl { get; set; }
         public string? MovesetHeroImageUrl { get; set; }

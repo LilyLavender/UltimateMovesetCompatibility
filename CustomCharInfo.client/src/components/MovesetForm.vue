@@ -330,14 +330,14 @@
       <section class="darker-preview-text">
         <h2>Links</h2>
         <v-row>
-          <!-- GameBanana Page -->
+          <!-- Mod Page -->
           <v-col cols="12" sm="6">
             <v-text-field
               variant="outlined"
-              v-model="form.gamebananaPageId"
-              label="GameBanana Page"
-              :prefix="GB_PAGE_URL"
-              @input="digitsOnly('gamebananaPageId')"
+              v-model="form.modPageUrl"
+              label="Mod Page"
+              type="url"
+              :placeholder="`${GB_PAGE_URL}12345`"
             />
           </v-col>
           <!-- GameBanana WIP -->
@@ -655,7 +655,7 @@ const form = ref({
   privateMoveset: false,
   privateModder: false,
   // Links
-  gamebananaPageId: null,
+  modPageUrl: '',
   gamebananaWipId: null,
   modsWikiLink: '',
   sourceCode: '',

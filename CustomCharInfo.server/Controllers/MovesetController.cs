@@ -340,7 +340,7 @@ namespace CustomCharInfo.server.Controllers
                     HasGlobalOnLinePre = m.HasGlobalOnLinePre,
                     HasGlobalOnLineEnd = m.HasGlobalOnLineEnd,
 
-                    GamebananaPageId = m.GamebananaPageId,
+                    ModPageUrl = m.ModPageUrl,
                     GamebananaWipId = m.GamebananaWipId,
                     BackgroundColor = m.BackgroundColor,
                     ModsWikiLink = m.ModsWikiLink,
@@ -498,7 +498,7 @@ namespace CustomCharInfo.server.Controllers
                 HasAgentInit = dto.HasAgentInit,
                 HasGlobalOnLinePre = dto.HasGlobalOnLinePre,
                 HasGlobalOnLineEnd = dto.HasGlobalOnLineEnd,
-                GamebananaPageId = dto.GamebananaPageId ?? 0,
+                ModPageUrl = dto.ModPageUrl,
                 GamebananaWipId = dto.GamebananaWipId ?? 0,
                 ThumbhImageUrl = dto.ThumbhImageUrl,
                 MovesetHeroImageUrl = dto.MovesetHeroImageUrl,
@@ -636,7 +636,7 @@ namespace CustomCharInfo.server.Controllers
             moveset.HasAgentInit = dto.HasAgentInit;
             moveset.HasGlobalOnLinePre = dto.HasGlobalOnLinePre;
             moveset.HasGlobalOnLineEnd = dto.HasGlobalOnLineEnd;
-            moveset.GamebananaPageId = dto.GamebananaPageId ?? 0;
+            moveset.ModPageUrl = dto.ModPageUrl;
             moveset.GamebananaWipId = dto.GamebananaWipId ?? 0;
             moveset.ThumbhImageUrl = dto.ThumbhImageUrl;
             moveset.MovesetHeroImageUrl = dto.MovesetHeroImageUrl;
