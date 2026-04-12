@@ -11,6 +11,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.ObjectPool;
 using Microsoft.AspNetCore.WebUtilities;
+using System.Security.Cryptography;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -53,8 +54,45 @@ namespace CustomCharInfo.server.Controllers
             if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
                 return Unauthorized();
 
-            var token = GenerateJwtToken(user);
-            return Ok(new { token });
+            var accessToken = GenerateJwtToken(user);
+            var refreshToken = CreateRefreshToken(user.Id);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { token = accessToken, refreshToken });
+        }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestDto dto)
+        {
+            var stored = await _context.RefreshTokens
+                .Include(r => r.User)
+                .FirstOrDefaultAsync(r => r.Token == dto.RefreshToken);
+
+            if (stored == null || stored.Revoked || stored.ExpiresAt <= DateTime.UtcNow)
+                return Unauthorized("Invalid or expired refresh token.");
+
+            // Rotate: revoke old, issue new
+            stored.Revoked = true;
+            var newAccessToken = GenerateJwtToken(stored.User);
+            var newRefreshToken = CreateRefreshToken(stored.UserId);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { token = newAccessToken, refreshToken = newRefreshToken });
+        }
+
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout([FromBody] RefreshTokenRequestDto dto)
+        {
+            var stored = await _context.RefreshTokens
+                .FirstOrDefaultAsync(r => r.Token == dto.RefreshToken);
+
+            if (stored != null && !stored.Revoked)
+            {
+                stored.Revoked = true;
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok();
         }
 
         private string GenerateJwtToken(ApplicationUser user)
@@ -69,9 +107,23 @@ namespace CustomCharInfo.server.Controllers
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var token = new JwtSecurityToken(claims: claims, expires: DateTime.UtcNow.AddDays(7), signingCredentials: creds);
+            var token = new JwtSecurityToken(claims: claims, expires: DateTime.UtcNow.AddHours(1), signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        private string CreateRefreshToken(string userId)
+        {
+            var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+            _context.RefreshTokens.Add(new RefreshToken
+            {
+                Token = token,
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddDays(90),
+                Revoked = false
+            });
+            return token;
         }
 
         [Authorize]

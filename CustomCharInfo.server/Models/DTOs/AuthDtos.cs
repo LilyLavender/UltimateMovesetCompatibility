@@ -13,4 +13,9 @@ namespace CustomCharInfo.server.Models.DTOs
         public string Email { get; set; }
         public string Password { get; set; }
     }
+
+    public class RefreshTokenRequestDto
+    {
+        public string RefreshToken { get; set; }
+    }
 }

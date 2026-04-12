@@ -154,7 +154,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import api from '@/services/api'
 import { jwtDecode } from "jwt-decode"
 import ActionLogList from '@/components/ActionLogList.vue'
@@ -184,6 +184,7 @@ const login = async () => {
     const res = await api.post('/auth/login', { email: email.value, password: password.value })
     token.value = res.data.token
     localStorage.setItem('token', token.value)
+    localStorage.setItem('refreshToken', res.data.refreshToken)
     api.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
     getCurrentUserDetails()
   } catch (err) {
@@ -206,12 +207,21 @@ const updateUsername = async () => {
   }
 }
 
-const logout = () => {
+const logout = async () => {
+  const storedRefreshToken = localStorage.getItem('refreshToken')
+  if (storedRefreshToken) {
+    try {
+      await api.post('/auth/logout', { refreshToken: storedRefreshToken })
+    } catch {
+      // Revocation is best-effort; proceed regardless
+    }
+  }
   token.value = null
   email.value = null
   password.value = null
   user.value = null
   localStorage.removeItem('token')
+  localStorage.removeItem('refreshToken')
   delete api.defaults.headers.common['Authorization']
 }
 
@@ -268,16 +278,27 @@ async function getCurrentUserDetails() {
   }
 }
 
+const handleAuthExpired = () => {
+  token.value = null
+  user.value = null
+}
+
 onMounted(async () => {
-  const token = localStorage.getItem('token')
-  if (token) {
-    if (isTokenExpired(token)) {
-      localStorage.removeItem('token')
-      delete api.defaults.headers.common['Authorization']
+  window.addEventListener('auth:expired', handleAuthExpired)
+
+  const storedToken = localStorage.getItem('token')
+  if (storedToken) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`
+    try {
+      await getCurrentUserDetails()
+    } catch {
+      // Interceptor will have cleared tokens if refresh also failed
     }
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-    getCurrentUserDetails()
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('auth:expired', handleAuthExpired)
 })
 </script>
 

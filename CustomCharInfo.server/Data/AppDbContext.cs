@@ -25,6 +25,7 @@ namespace CustomCharInfo.server.Data
 
         // Users
         public DbSet<ApplicationUser> Users { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         // Admin
         public DbSet<ActionLog> ActionLogs { get; set; }
