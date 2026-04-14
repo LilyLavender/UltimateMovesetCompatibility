@@ -38,6 +38,9 @@ api.interceptors.response.use(
 
     const refreshToken = localStorage.getItem('refreshToken')
     if (!refreshToken) {
+      localStorage.removeItem('token')
+      delete api.defaults.headers.common['Authorization']
+      window.dispatchEvent(new Event('auth:expired'))
       return Promise.reject(error)
     }
 
