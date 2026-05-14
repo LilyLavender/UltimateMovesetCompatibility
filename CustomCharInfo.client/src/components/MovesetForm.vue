@@ -449,7 +449,7 @@
             icon="mdi-plus"
             class="rotate-toggle"
             :class="{ rotated: addArticleForm }"
-            @click="addArticleForm = !addArticleForm"
+            @click="addArticleForm = !addArticleForm; if (!addArticleForm) { editingArticleIndex = null; newArticle = { articleId: null, moddedName: '', description: '' } }"
           />
         </h2>
         <!-- learn more -->
@@ -495,7 +495,9 @@
               </v-col>
               <!-- Submit -->
               <v-col cols="12" sm="2" class="justify-content-center">
-                <v-btn @click="addArticle" class="btn add-button">Add Article</v-btn>
+                <v-btn @click="addArticle" class="btn add-button">
+                  {{ editingArticleIndex !== null ? 'Update Article' : 'Add Article' }}
+                </v-btn>
               </v-col>
             </v-row>
           </div>
@@ -510,9 +512,8 @@
             <v-list-item-title class="d-inline">
               <strong>{{ entry.description }}</strong>: {{ getArticleName(entry.articleId) }} ({{ entry.moddedName }})
             </v-list-item-title>
-            <v-icon @click="form.articles.splice(i, 1)" class="d-inline delete-icon">
-              mdi-delete
-            </v-icon>
+            <v-icon @click="editArticle(i)" class="d-inline edit-icon">mdi-pencil</v-icon>
+            <v-icon @click="form.articles.splice(i, 1)" class="d-inline delete-icon">mdi-delete</v-icon>
           </v-list-item>
         </v-list>
       </section>
@@ -527,7 +528,7 @@
             icon="mdi-plus"
             class="rotate-toggle"
             :class="{ rotated: addHookForm }"
-            @click="addHookForm = !addHookForm"
+            @click="addHookForm = !addHookForm; if (!addHookForm) { editingHookIndex = null; newHook = { hookId: null, description: '' } }"
           />
         </h2>
         <!-- Hint -->
@@ -565,7 +566,9 @@
               </v-col>
               <!-- Button -->
               <v-col cols="12" sm="2" class="justify-content-center">
-                <v-btn @click="addHook" class="btn add-button">Add Hook</v-btn>
+                <v-btn @click="addHook" class="btn add-button">
+                  {{ editingHookIndex !== null ? 'Update Hook' : 'Add Hook' }}
+                </v-btn>
               </v-col>
             </v-row>
           </div>
@@ -580,9 +583,8 @@
             <v-list-item-title class="d-inline">
               0x{{ entry.offset }} ({{ entry.hookDescription }}) – {{ entry.description }}
             </v-list-item-title>
-            <v-icon @click="form.hooks.splice(i, 1)" class="d-inline delete-icon">
-              mdi-delete
-            </v-icon>
+            <v-icon @click="editHook(i)" class="d-inline edit-icon">mdi-pencil</v-icon>
+            <v-icon @click="form.hooks.splice(i, 1)" class="d-inline delete-icon">mdi-delete</v-icon>
           </v-list-item>
         </v-list>
       </section>
@@ -629,6 +631,8 @@ const router = useRouter()
 
 const addArticleForm = ref(false)
 const addHookForm = ref(false)
+const editingArticleIndex = ref(null)
+const editingHookIndex = ref(null)
 
 const isDirty = ref(false)
 let initialFormSnapshot = null
@@ -671,9 +675,21 @@ const getArticleName = (id) => {
 }
 
 const addArticle = () => {
-  if (!newArticle.value.articleId) return;
-  form.value.articles.push({ ...newArticle.value });
-  newArticle.value = { articleId: null, moddedName: "", description: "" };
+  if (!newArticle.value.articleId) return
+  if (editingArticleIndex.value !== null) {
+    form.value.articles[editingArticleIndex.value] = { ...newArticle.value }
+    editingArticleIndex.value = null
+  } else {
+    form.value.articles.push({ ...newArticle.value })
+  }
+  newArticle.value = { articleId: null, moddedName: '', description: '' }
+  addArticleForm.value = false
+}
+
+const editArticle = (i) => {
+  editingArticleIndex.value = i
+  newArticle.value = { ...form.value.articles[i] }
+  addArticleForm.value = true
 }
 
 const addHook = () => {
@@ -682,14 +698,29 @@ const addHook = () => {
   const hook = hooks.value.find(h => h.hookId === newHook.value.hookId)
   if (!hook) return
 
-  form.value.hooks.push({
+  const entry = {
     hookId: hook.hookId,
     offset: hook.offset,
     hookDescription: hook.description,
     description: newHook.value.description
-  })
+  }
+
+  if (editingHookIndex.value !== null) {
+    form.value.hooks[editingHookIndex.value] = entry
+    editingHookIndex.value = null
+  } else {
+    form.value.hooks.push(entry)
+  }
 
   newHook.value = { hookId: null, description: '' }
+  addHookForm.value = false
+}
+
+const editHook = (i) => {
+  editingHookIndex.value = i
+  const entry = form.value.hooks[i]
+  newHook.value = { hookId: entry.hookId, description: entry.description }
+  addHookForm.value = true
 }
 
 const moveset = ref(null)
@@ -946,11 +977,19 @@ section h2 {
   letter-spacing: 0.009375em;
   font-size: medium;
 }
+.edit-icon,
 .delete-icon {
   background: none;
   font-size: 20px;
   margin-left: 8px;
+  color: #aaaaaa;
+  transition: color 150ms ease-in-out;
 }
+.edit-icon:hover,
+.delete-icon:hover {
+  color: #dddddd;
+}
+.edit-icon::before,
 .delete-icon::before {
   margin-top: -4px;
 }
