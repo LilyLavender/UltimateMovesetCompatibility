@@ -4,7 +4,7 @@
       {{ props.post.blogTitle }}
     </v-card-title>
     <v-card-text>
-      <p v-html="props.post.blogText" class="blog-text"></p>
+      <div v-html="renderedText" class="blog-text"></div>
     </v-card-text>
     <div>
       <v-img v-if="props.post.blogImageUrl" :src="getFullImageUrl(props.post.blogImageUrl)" class="blog-image" />
@@ -18,6 +18,7 @@
 <script setup>
 import { computed } from 'vue'
 import { format } from 'date-fns'
+import { marked } from 'marked'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
@@ -36,6 +37,8 @@ const getFullImageUrl = (path) => {
   if (!path) return null
   return path.startsWith('/') ? `${apiUrl}${path}` : path
 }
+
+const renderedText = computed(() => marked.parse(props.post.blogText || ''))
 </script>
 
 <style scoped>
@@ -47,6 +50,17 @@ const getFullImageUrl = (path) => {
 }
 .blog-text {
   font-size: 1.3em;
+}
+.blog-text :deep(p) {
+  margin-bottom: 0.75em;
+}
+.blog-text :deep(ol),
+.blog-text :deep(ul) {
+  padding-left: 1.5em;
+  margin-bottom: 0.75em;
+}
+.blog-text :deep(li) {
+  margin-bottom: 0.2em;
 }
 .blog-subtitle {
   margin-bottom: 0.4em;

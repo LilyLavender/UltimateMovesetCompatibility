@@ -382,7 +382,16 @@
               v-model="form.sourceCode"
               label="Source Code URL"
               type="url"
-            />
+            >
+              <!-- Hint -->
+              <template #details>
+                <router-link 
+                  to="/open-source"
+                  class="offsite unvisitable text-decoration-none"
+                  target="_blank"
+                >Why should I open-source my movesets?</router-link>
+              </template>
+            </v-text-field>
           </v-col>
         </v-row>
       </section>
@@ -408,7 +417,7 @@
           <v-col cols="12" sm="4">
             <v-checkbox 
               v-model="form.hasAgentInit"
-              label="agent_init"
+              label="Agent init"
               messages="Runs once when a fighter is spawned in"
             />
           </v-col>
@@ -922,7 +931,7 @@ section h2 {
   border-radius: 3px;
 }
 .submit-button {
-  background-color: #1e1e1e;
+  background-color: #2e2e2e;
   color: #e2e2e2;
 }
 .add-button {

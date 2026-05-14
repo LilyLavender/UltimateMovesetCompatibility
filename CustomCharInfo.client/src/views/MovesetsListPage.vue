@@ -126,7 +126,7 @@ const baseHeaders = [
   { title: "Release", key: "releaseState" },
   { title: "Global OPFF", key: "hasGlobalOpff" },
   { title: "Char OPFF", key: "hasCharacterOpff" },
-  { title: "agent_init", key: "hasAgentInit" },
+  { title: "Agent init", key: "hasAgentInit" },
   { title: "on_line pre", key: "hasGlobalOnLinePre" },
   { title: "on_line end", key: "hasGlobalOnLineEnd" },
 ];

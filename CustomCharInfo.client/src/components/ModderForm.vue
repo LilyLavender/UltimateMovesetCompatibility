@@ -50,11 +50,12 @@
           </v-col>
 
           <!-- Bio -->
-          <v-col cols="12">
+          <v-col cols="12" class="mb-5">
             <v-textarea
               variant="outlined"
               v-model="modder.bio"
               label="Bio"
+              placeholder="Displayed on your modder profile page."
               rows="3"
               auto-grow hide-details
             />

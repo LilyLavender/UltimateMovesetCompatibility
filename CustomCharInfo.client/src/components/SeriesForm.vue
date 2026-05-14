@@ -193,8 +193,9 @@ section h2 {
   margin-bottom: 10px;
 }
 .submit-button {
-  background-color: #1e1e1e;
+  background-color: #2e2e2e;
   color: #e2e2e2;
+  text-transform: unset;
 }
 .notes-field {
   max-width: 400px;

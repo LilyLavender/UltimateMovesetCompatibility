@@ -38,7 +38,7 @@
         <v-row dense class="row-1">
           <!-- Basic Info -->
           <v-col cols="12" md="5">
-            <div class="info-card">
+            <div class="info-card basic-info-card">
               <!-- Header -->
               <h1>
                 Basic Info 
@@ -133,13 +133,43 @@
           <v-col cols="12" md="3">
             <div class="mb-4 info-card">
               <h1>Functions</h1>
-              <ul class="functions-list">
-                <li>Global OPFF: <StatusIcon :value="moveset.hasGlobalOpff" /></li>
-                <li>Character OPFF: <StatusIcon :value="moveset.hasCharacterOpff" /></li>
-                <li>agent_init: <StatusIcon :value="moveset.hasAgentInit" /></li>
-                <li>on_line pre: <StatusIcon :value="moveset.hasGlobalOnLinePre" /></li>
-                <li>on_line end: <StatusIcon :value="moveset.hasGlobalOnLineEnd" /></li>
-              </ul>
+              <div class="functions-list">
+                <v-tooltip text="Runs once every frame for all characters" location="left" open-delay="500">
+                  <template #activator="{ props }">
+                    <div class="function-row" v-bind="props">
+                      <span>Global OPFF</span><StatusIcon :value="moveset.hasGlobalOpff" />
+                    </div>
+                  </template>
+                </v-tooltip>
+                <v-tooltip :text="`Runs once every frame for ${moveset.vanillaChar?.displayName ?? 'the character'}`" location="left" open-delay="500">
+                  <template #activator="{ props }">
+                    <div class="function-row" v-bind="props">
+                      <span>Character OPFF</span><StatusIcon :value="moveset.hasCharacterOpff" />
+                    </div>
+                  </template>
+                </v-tooltip>
+                <v-tooltip text="Runs once when a fighter is spawned in" location="left" open-delay="500">
+                  <template #activator="{ props }">
+                    <div class="function-row" v-bind="props">
+                      <span>agent_init</span><StatusIcon :value="moveset.hasAgentInit" />
+                    </div>
+                  </template>
+                </v-tooltip>
+                <v-tooltip text="Runs once every time a pre status script runs" location="left" open-delay="500">
+                  <template #activator="{ props }">
+                    <div class="function-row" v-bind="props">
+                      <span>on_line pre</span><StatusIcon :value="moveset.hasGlobalOnLinePre" />
+                    </div>
+                  </template>
+                </v-tooltip>
+                <v-tooltip text="Runs once every time an end status script runs" location="left" open-delay="500">
+                  <template #activator="{ props }">
+                    <div class="function-row" v-bind="props">
+                      <span>on_line end</span><StatusIcon :value="moveset.hasGlobalOnLineEnd" />
+                    </div>
+                  </template>
+                </v-tooltip>
+              </div>
             </div>
           </v-col>
 
@@ -509,6 +539,14 @@ const StatusIcon = defineComponent({
   }
 }
 
+.basic-info-card p {
+  color: #999;
+}
+.basic-info-card p strong,
+.basic-info-card p a {
+  color: #dedede;
+}
+
 .info-card {
   background-color: #12121280;
   padding: 0.5em 1em 0.5em 1em;
@@ -537,14 +575,30 @@ strong {
   margin-left: 5px;
 }
 
+:deep(.v-overlay__content) {
+  background-color: #000000e0 !important;
+  border: 1px solid #666 !important;
+}
+
 .hastooltip {
   border-bottom: 1px dotted #dedede;
   cursor: help;
   margin-right: 5px;
 }
 
-ul.functions-list > li {
-  margin-bottom: -12px;
+.functions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.function-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: default;
+}
+.function-row > i {
+  line-height: 24px;
 }
 
 .row-1 > *:nth-child(2) li,

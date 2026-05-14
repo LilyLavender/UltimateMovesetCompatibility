@@ -7,6 +7,7 @@ import AboutPage from '@/views/AboutPage.vue';
 import PhotoSubmissionPage from '@/views/PhotoSubmissionPage.vue';
 import ImageHostingPage from '@/views/ImageHostingPage.vue';
 import MovesetSubmissionGuide from '@/views/MovesetSubmissionGuide.vue';
+import OpenSourcePage from '@/views/OpenSourcePage.vue';
 import PrivacyPolicyPage from '@/views/PrivacyPolicyPage.vue';
 import ForgotPasswordPage from '@/views/ForgotPasswordPage.vue';
 // Movesets
@@ -732,6 +733,12 @@ const routes = [
     name: 'ImageHostingPage',
     component: ImageHostingPage,
     meta: { title: 'Image Hosting Info' },
+  },
+  {
+    path: '/open-source',
+    name: 'OpenSource',
+    component: OpenSourcePage,
+    meta: { title: 'Why Open-Source Your Moveset?' },
   },
   {
     path: '/moveset-submission-guide',
