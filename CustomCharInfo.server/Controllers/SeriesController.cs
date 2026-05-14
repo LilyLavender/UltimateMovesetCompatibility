@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using CustomCharInfo.server.Data;
 using CustomCharInfo.server.Models;
 using CustomCharInfo.server.Models.DTOs;
+using CustomCharInfo.server.Helpers;
 
 using SixLabors.ImageSharp;
 using Microsoft.AspNetCore.Authorization;
@@ -202,7 +203,7 @@ namespace CustomCharInfo.server.Controllers
                 ItemTypeId = 3,
                 ItemId = series.SeriesId,
                 AcceptanceStateId = newState,
-                Notes = "",
+                Notes = dto.Notes ?? "",
                 CreatedAt = DateTime.UtcNow
             });
 
@@ -248,8 +249,17 @@ namespace CustomCharInfo.server.Controllers
             if (duplicateSeries)
                 return Conflict("A series with this name already exists.");
 
+            var snapName = existingSeries.SeriesName;
+            var snapIcon = existingSeries.SeriesIconUrl;
+
             existingSeries.SeriesName = normalizedName;
             existingSeries.SeriesIconUrl = dto.SeriesIconUrl;
+
+            var diff = DiffHelper.Build(new (string, object?, object?)[]
+            {
+                ("SeriesName",    snapName, normalizedName),
+                ("SeriesIconUrl", snapIcon, dto.SeriesIconUrl),
+            });
 
             // Calculate new acceptance state
             var user = await _userManager.Users
@@ -269,7 +279,8 @@ namespace CustomCharInfo.server.Controllers
                 ItemTypeId = 3,
                 ItemId = id,
                 AcceptanceStateId = newState,
-                Notes = "",
+                Notes = dto.Notes ?? "",
+                Diff = diff,
                 CreatedAt = DateTime.UtcNow
             });
 

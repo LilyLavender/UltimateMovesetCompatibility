@@ -59,16 +59,26 @@
               auto-grow hide-details
             />
           </v-col>
+
         </v-row>
 
-        <!-- Submit -->
-        <v-row>
-          <v-col>
-            <v-btn class="btn" type="submit">
-              {{ isEditMode ? "Save Profile" : "Apply for Modder" }}
-            </v-btn>
-          </v-col>
-        </v-row>
+        <!-- Notes + Submit -->
+        <div class="d-flex align-start ga-3 justify-end mt-3">
+          <v-textarea
+            variant="outlined"
+            density="compact"
+            v-model="modder.notes"
+            :label="isEditMode ? 'Editing notes' : 'Submission notes'"
+            placeholder="Optional, shown to admins only."
+            rows="1"
+            auto-grow
+            hide-details
+            class="notes-field"
+          />
+          <v-btn class="btn mt-1" type="submit">
+            {{ isEditMode ? "Save Profile" : "Apply for Modder" }}
+          </v-btn>
+        </div>
 
         <!-- Feedback -->
         <v-row>
@@ -102,6 +112,7 @@ const modder = ref({
   bio: '',
   gamebananaId: null,
   discordUsername: '',
+  notes: '',
 })
 
 const modderId = ref(null)
@@ -155,6 +166,7 @@ const save = async () => {
       bio: modder.value.bio,
       gamebananaId: modder.value.gamebananaId,
       discordUsername: modder.value.discordUsername,
+      notes: modder.value.notes,
     })
     success.value = true
     error.value = null
@@ -189,5 +201,17 @@ section {
 
 :deep(.v-text-field__prefix__text) {
   color: #e4e4e4;
+}
+.notes-field {
+  max-width: 400px;
+}
+.notes-field :deep(.v-field__input) {
+  font-size: 0.85rem;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.notes-field :deep(.v-label) {
+  font-style: italic;
+  color: #6e6e6e !important;
 }
 </style>

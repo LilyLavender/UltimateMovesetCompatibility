@@ -19,7 +19,9 @@ namespace CustomCharInfo.server.Models
         public AcceptanceState AcceptanceState { get; set; }
 
         public string Notes { get; set; }
-        
-        public DateTime CreatedAt { get; set; } 
+
+        public string? Diff { get; set; }
+
+        public DateTime CreatedAt { get; set; }
     }
 }

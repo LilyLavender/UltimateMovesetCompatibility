@@ -8,6 +8,7 @@ namespace CustomCharInfo.server.Models
         public object Item { get; set; }
         public AcceptanceStateDto AcceptanceState { get; set; }
         public string Notes { get; set; }
+        public string? Diff { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 

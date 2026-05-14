@@ -40,6 +40,7 @@ namespace CustomCharInfo.server.Models.DTOs
         public List<int>? DependencyIds { get; set; }
         public List<MovesetHookDto>? Hooks { get; set; }
         public List<MovesetArticleDto>? Articles { get; set; }
+        public string? Notes { get; set; }
     }
 }
 

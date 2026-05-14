@@ -201,6 +201,7 @@ namespace CustomCharInfo.server.Controllers
                     AcceptanceStateName = a.AcceptanceState.AcceptanceStateName
                 },
                 Notes = a.Notes,
+                Diff = a.Diff,
                 CreatedAt = a.CreatedAt
             }).ToList();
 
@@ -307,6 +308,7 @@ namespace CustomCharInfo.server.Controllers
                     AcceptanceStateName = a.AcceptanceState.AcceptanceStateName
                 },
                 Notes = a.Notes,
+                Diff = a.Diff,
                 CreatedAt = a.CreatedAt
             }).ToList();
 
@@ -453,6 +455,7 @@ namespace CustomCharInfo.server.Controllers
                     AcceptanceStateName = actionLog.AcceptanceState.AcceptanceStateName
                 },
                 Notes = actionLog.Notes,
+                Diff = actionLog.Diff,
                 CreatedAt = actionLog.CreatedAt
             };
 

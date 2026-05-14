@@ -50,9 +50,20 @@
         </v-row>
       </section>
 
-      <!-- Submit -->
-      <div class="d-flex justify-end">
-        <v-btn @click="submit" class="btn submit-button">
+      <!-- Notes + Submit -->
+      <div class="d-flex align-start ga-3 justify-end">
+        <v-textarea
+          variant="outlined"
+          density="compact"
+          v-model="form.notes"
+          :label="isEditMode ? 'Editing notes' : 'Submission notes'"
+          placeholder="Optional, shown to admins only."
+          rows="1"
+          auto-grow
+          hide-details
+          class="notes-field"
+        />
+        <v-btn @click="submit" class="btn submit-button mt-1">
           {{ isEditMode ? 'Save' : 'Add Series' }}
         </v-btn>
       </div>
@@ -88,6 +99,7 @@ const series = ref(null)
 const form = ref({
   seriesName: '',
   seriesIconUrl: '',
+  notes: '',
 })
 
 const showSeparateIds = ref(false)
@@ -183,5 +195,17 @@ section h2 {
 .submit-button {
   background-color: #1e1e1e;
   color: #e2e2e2;
+}
+.notes-field {
+  max-width: 400px;
+}
+.notes-field :deep(.v-field__input) {
+  font-size: 0.85rem;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.notes-field :deep(.v-label) {
+  font-style: italic;
+  color: #6e6e6e !important;
 }
 </style>

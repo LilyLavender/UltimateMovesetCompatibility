@@ -7,30 +7,34 @@
         <!-- Item (if moveset) -->
         <div v-if="log.itemType.itemTypeId === 1">
           <h3>
-            Moveset: 
+            Moveset:
             <router-link
-              :to="{ name: 'MovesetDetail', params: { movesetId: log.item?.movesetId } }"
+              v-if="log.item?.movesetId"
+              :to="{ name: 'MovesetDetail', params: { movesetId: log.item.movesetId } }"
               class="unvisitable"
             >
-              {{ log.item?.moddedCharName }}
+              {{ log.item.moddedCharName }}
             </router-link>
+            <span v-else>{{ log.item?.moddedCharName ?? '(deleted)' }}</span>
           </h3>
         </div>
 
         <!-- Item (if user) -->
         <div v-else-if="log.itemType.itemTypeId === 2">
           <h3>
-            User: 
+            User:
             <router-link
-              :to="{ name: 'ModderDetail', params: { id: log.item?.modderId } }"
+              v-if="log.item?.modderId"
+              :to="{ name: 'ModderDetail', params: { id: log.item.modderId } }"
               class="unvisitable"
             >
-              {{ log.item?.name }}
+              {{ log.item.name }}
             </router-link>
+            <span v-else>{{ log.item?.name ?? '(deleted)' }}</span>
 
             <router-link
-              v-if="pendingUser"
-              :to="{ name: 'EditModder', params: { id: log.item?.modderId } }"
+              v-if="pendingUser && log.item?.modderId"
+              :to="{ name: 'EditModder', params: { id: log.item.modderId } }"
               class="unvisitable ml-1 small-link"
             >
               <v-icon>mdi-pencil</v-icon>
@@ -42,11 +46,11 @@
         <!-- Item (if series) -->
         <div v-if="log.itemType.itemTypeId === 3">
           <h3>
-            Series: 
-            {{ log.item?.seriesName }}
+            Series:
+            {{ log.item?.seriesName ?? '(deleted)' }}
             <router-link
-              v-if="true"
-              :to="{ name: 'EditSeries', params: { seriesId: log.item?.seriesId } }"
+              v-if="log.item?.seriesId"
+              :to="{ name: 'EditSeries', params: { seriesId: log.item.seriesId } }"
               class="unvisitable ml-1 small-link"
             >
               <v-icon>mdi-pencil</v-icon>
@@ -63,7 +67,25 @@
         </span>
 
         <!-- Notes -->
-        <p v-if="log.notes">"{{ log.notes }}"</p>
+        <p v-if="log.notes" class="mt-1 fst-italic">"{{ log.notes }}"</p>
+
+        <!-- Diff -->
+        <div v-if="parsedDiff.length" class="mt-2 diff-list">
+          <div v-for="change in parsedDiff" :key="change.field" class="diff-row">
+            <span class="diff-field">{{ change.field }}</span>
+            <template v-if="change.old && change.new">
+              <span class="diff-old">{{ change.old }}</span>
+              <span class="diff-arrow">→</span>
+              <span class="diff-new">{{ change.new }}</span>
+            </template>
+            <template v-else-if="change.old">
+              <span class="diff-old">{{ change.old }}</span>
+            </template>
+            <template v-else>
+              <span class="diff-new">{{ change.new }}</span>
+            </template>
+          </div>
+        </div>
       </v-col>
     </v-row>
   </v-card>
@@ -83,6 +105,11 @@ const formatDate = (date) => {
 }
 
 const pendingUser = computed(() => [3, 4].includes(props.log.acceptanceState.acceptanceStateId))
+
+const parsedDiff = computed(() => {
+  if (!props.log.diff) return []
+  try { return JSON.parse(props.log.diff) } catch { return [] }
+})
 
 const acceptanceStyle = computed(() => {
   const id = props.log.acceptanceState.acceptanceStateId
@@ -107,5 +134,34 @@ const acceptanceStyle = computed(() => {
 <style scoped>
 .small-link {
   font-size: 1rem;
+}
+.diff-list {
+  font-size: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.diff-row {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.diff-field {
+  font-weight: bold;
+  min-width: 90px;
+  color: #ccc;
+}
+.diff-old {
+  color: #f08080;
+  text-decoration: line-through;
+  word-break: break-all;
+}
+.diff-arrow {
+  color: #888;
+}
+.diff-new {
+  color: #90ee90;
+  word-break: break-all;
 }
 </style>

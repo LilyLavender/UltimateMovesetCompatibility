@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using CustomCharInfo.server.Data;
 using CustomCharInfo.server.Models;
 using CustomCharInfo.server.Models.DTOs;
+using CustomCharInfo.server.Helpers;
 
 using SixLabors.ImageSharp;
 using Microsoft.AspNetCore.Authorization;
@@ -239,7 +240,7 @@ namespace CustomCharInfo.server.Controllers
                 ItemTypeId = 2,
                 ItemId = modder.ModderId,
                 AcceptanceStateId = 2,
-                Notes = "",
+                Notes = dto.Notes ?? "",
                 CreatedAt = DateTime.UtcNow
             });
 
@@ -284,6 +285,10 @@ namespace CustomCharInfo.server.Controllers
             if (modder == null)
                 return NotFound();
 
+            var snapBio = modder.Bio;
+            var snapGbId = modder.GamebananaId;
+            var snapDiscord = modder.DiscordUsername;
+
             if (dto.Bio != null)
                 modder.Bio = dto.Bio;
 
@@ -292,6 +297,13 @@ namespace CustomCharInfo.server.Controllers
 
             if (dto.DiscordUsername != null)
                 modder.DiscordUsername = dto.DiscordUsername;
+
+            var diff = DiffHelper.Build(new (string, object?, object?)[]
+            {
+                ("Bio",             snapBio,     dto.Bio),
+                ("GamebananaId",    snapGbId,    dto.GamebananaId),
+                ("DiscordUsername", snapDiscord, dto.DiscordUsername),
+            });
 
             int newState = user.UserTypeId == 3
                 ? 7
@@ -303,7 +315,8 @@ namespace CustomCharInfo.server.Controllers
                 ItemTypeId = 2,
                 ItemId = id,
                 AcceptanceStateId = newState,
-                Notes = "",
+                Notes = dto.Notes ?? "",
+                Diff = diff,
                 CreatedAt = DateTime.UtcNow
             });
 
