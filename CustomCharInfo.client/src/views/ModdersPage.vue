@@ -32,8 +32,20 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useHead } from '@unhead/vue'
 import axios from 'axios'
 import api from '@/services/api'
+
+useHead({
+  title: 'UMC | Modders',
+  meta: [
+    { name: 'description', content: 'Browse modders on Ultimate Moveset Compatibility.' },
+    { property: 'og:title', content: 'Modders — Ultimate Moveset Compatibility' },
+    { property: 'og:description', content: 'Browse modders on Ultimate Moveset Compatibility.' },
+    { name: 'twitter:title', content: 'Modders — Ultimate Moveset Compatibility' },
+    { name: 'twitter:description', content: 'Browse modders on Ultimate Moveset Compatibility.' },
+  ],
+})
 
 const modders = ref([])
 const avatars = ref({})
@@ -41,7 +53,6 @@ const avatars = ref({})
 onMounted(async () => {
   const res = await api.get('/modders/public')
   modders.value = res.data
-  document.title = 'UMC | Modders'
 
   const fetches = modders.value
     .filter(m => m.gamebananaId)

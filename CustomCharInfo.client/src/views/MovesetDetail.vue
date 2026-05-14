@@ -240,6 +240,7 @@
 <script setup>
 import { ref, watch, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useHead } from '@unhead/vue'
 import api from '@/services/api'
 import movesetHeroUnknown from "@/assets/moveset_hero_unknown.png"
 import seriesIconUnknown from "@/assets/series_icon_unknown.png"
@@ -249,6 +250,31 @@ const route = useRoute()
 const router = useRouter()
 const moveset = ref(null)
 const user = ref(null)
+
+useHead(computed(() => {
+  const name = moveset.value?.moddedCharName
+  const description = name
+    ? `View ${name} moveset info on Ultimate Moveset Compatibility.`
+    : 'View information on Super Smash Bros. Ultimate custom movesets.'
+  const image = moveset.value?.movesetHeroImageUrl
+    ? getFullImageUrl(moveset.value.movesetHeroImageUrl, '')
+    : null
+  return {
+    title: name ? `UMC | ${name} Moveset` : 'UMC',
+    meta: [
+      { name: 'description', content: description },
+      { property: 'og:title', content: name ? `${name} Moveset` : 'Ultimate Moveset Compatibility' },
+      { property: 'og:description', content: description },
+      ...(image ? [
+        { property: 'og:image', content: image },
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:image', content: image },
+      ] : []),
+      { name: 'twitter:title', content: name ? `${name} Moveset` : 'Ultimate Moveset Compatibility' },
+      { name: 'twitter:description', content: description },
+    ],
+  }
+}))
 
 const apiUrl = import.meta.env.VITE_API_URL
 
@@ -361,7 +387,6 @@ onMounted(async () => {
   try {
     const movesetRes = await api.get(`/movesets/${route.params.movesetId}`)
     moveset.value = movesetRes.data
-    document.title = `UMC | ${moveset.value?.moddedCharName} Moveset`; // sets page title
   } catch (err) {
     router.replace({ name: 'ErrorPage', query: { http: 404, reason: 'Moveset not found' } })
   }

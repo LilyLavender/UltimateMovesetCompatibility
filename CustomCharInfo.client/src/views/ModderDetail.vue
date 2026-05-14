@@ -49,8 +49,9 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useHead } from '@unhead/vue'
 import axios from 'axios'
 import api from '@/services/api'
 import MovesetList from '@/components/MovesetList.vue'
@@ -62,6 +63,23 @@ const route = useRoute()
 const modderId = route.params.id
 
 const modder = ref(null)
+
+useHead(computed(() => {
+  const name = modder.value?.name
+  const description = name
+    ? `View ${name}'s movesets on Ultimate Moveset Compatibility.`
+    : 'View information on Super Smash Bros. Ultimate custom movesets.'
+  return {
+    title: name ? `UMC | ${name}` : 'UMC',
+    meta: [
+      { name: 'description', content: description },
+      { property: 'og:title', content: name ?? 'Ultimate Moveset Compatibility' },
+      { property: 'og:description', content: description },
+      { name: 'twitter:title', content: name ?? 'Ultimate Moveset Compatibility' },
+      { name: 'twitter:description', content: description },
+    ],
+  }
+}))
 const movesets = ref([])
 const modderPfpUrl = ref(null)
 const modderIsAdmin = ref(false)
@@ -71,7 +89,6 @@ onMounted(async () => {
   try {
     const { data } = await api.get(`/modders/${modderId}`)
     modder.value = data
-    document.title = `UMC | ${modder.value?.name}` // sets page title
 
     // Check if modder is admin
     const adminRes = await api.get(`/modders/is-admin?modderId=${modderId}`)

@@ -61,10 +61,22 @@
 
 <script setup>
 import { ref, onMounted, computed, nextTick } from 'vue'
+import { useHead } from '@unhead/vue'
 import { getMovesets } from '@/services/movesetService'
 import api from '@/services/api'
 
 import ScrollingHero from '@/components/ScrollingHero.vue'
+
+useHead({
+  title: 'Ultimate Moveset Compatibility',
+  meta: [
+    { name: 'description', content: 'View information on Super Smash Bros. Ultimate custom movesets.' },
+    { property: 'og:title', content: 'Ultimate Moveset Compatibility' },
+    { property: 'og:description', content: 'View information on Super Smash Bros. Ultimate custom movesets.' },
+    { name: 'twitter:title', content: 'Ultimate Moveset Compatibility' },
+    { name: 'twitter:description', content: 'View information on Super Smash Bros. Ultimate custom movesets.' },
+  ],
+})
 import MovesetList from '@/components/MovesetList.vue'
 import BlogPost from '@/components/BlogPost.vue'
 

@@ -11,6 +11,7 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
+    "@unhead/vue": "^3.1.0",
     "axios": "^1.9.0",
     "date-fns": "^4.1.0",
     "jwt-decode": "^4.0.0",

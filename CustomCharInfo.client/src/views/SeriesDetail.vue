@@ -39,8 +39,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useHead } from '@unhead/vue'
 import api from '@/services/api'
 import MovesetList from '@/components/MovesetList.vue'
 
@@ -56,6 +57,31 @@ const apiUrl = import.meta.env.VITE_API_URL
 const getFullImageUrl = (path) =>
   path?.startsWith('/') ? `${apiUrl}${path}` : path
 
+useHead(computed(() => {
+  const name = series.value?.seriesName
+  const description = name
+    ? `Browse ${name} movesets on Ultimate Moveset Compatibility.`
+    : 'View information on Super Smash Bros. Ultimate custom movesets.'
+  const image = series.value?.seriesIconUrl
+    ? getFullImageUrl(series.value.seriesIconUrl)
+    : null
+  return {
+    title: name ? `UMC | ${name}` : 'UMC',
+    meta: [
+      { name: 'description', content: description },
+      { property: 'og:title', content: name ?? 'Ultimate Moveset Compatibility' },
+      { property: 'og:description', content: description },
+      ...(image ? [
+        { property: 'og:image', content: image },
+        { name: 'twitter:card', content: 'summary' },
+        { name: 'twitter:image', content: image },
+      ] : []),
+      { name: 'twitter:title', content: name ?? 'Ultimate Moveset Compatibility' },
+      { name: 'twitter:description', content: description },
+    ],
+  }
+}))
+
 onMounted(async () => {
   try {
     const [seriesRes, movesetsRes] = await Promise.all([
@@ -65,7 +91,6 @@ onMounted(async () => {
 
     series.value = seriesRes.data
     movesets.value = movesetsRes.data
-    document.title = `UMC | ${series.value.seriesName}`
 
     // Check if current user can edit this series
     try {
