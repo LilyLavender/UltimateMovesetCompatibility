@@ -350,12 +350,15 @@
         </v-row>
       </section>
       
+      <!-- Links + Function Usage -->
+      <div class="links-functions-row">
+
       <!-- Links -->
-      <section class="darker-preview-text">
+      <section class="darker-preview-text links-section">
         <h2>Links</h2>
         <v-row>
           <!-- Mod Page -->
-          <v-col cols="12" sm="6">
+          <v-col cols="12">
             <v-text-field
               variant="outlined"
               v-model="form.modPageUrl"
@@ -365,26 +368,26 @@
             />
           </v-col>
           <!-- GameBanana WIP -->
-          <v-col cols="12" sm="6">
+          <v-col cols="12">
             <v-text-field
               variant="outlined"
               v-model="form.gamebananaWipId"
-              label="GameBanana WIP"
+              label="GameBanana WIP Page"
               :prefix="GB_WIP_URL"
               @input="digitsOnly('gamebananaWipId')"
             />
           </v-col>
           <!-- Mods Wiki -->
-          <v-col cols="12" sm="6">
+          <v-col cols="12">
             <v-text-field
               variant="outlined"
               v-model="form.modsWikiLink"
-              label="SSBU Mods Wiki"
+              label="SSBU Mods Wiki Page"
               :prefix="MODS_WIKI_URL"
             />
           </v-col>
           <!-- Source Code -->
-          <v-col cols="12" sm="6">
+          <v-col cols="12">
             <v-text-field
               variant="outlined"
               v-model="form.sourceCode"
@@ -405,46 +408,58 @@
       </section>
 
       <!-- Function Usage -->
-      <section class="flex-1">
+      <section class="functions-section">
         <h2>Function Usage</h2>
         <v-row class="functions">
-          <v-col cols="12" sm="4">
-            <v-checkbox 
+          <v-col cols="12">
+            <v-checkbox
               v-model="form.hasGlobalOpff"
               label="Global OPFF"
               messages="Runs once every frame for all characters"
+              true-icon="mdi-check-bold"
+              false-icon="mdi-close-thick"
             />
           </v-col>
-          <v-col cols="12" sm="4">
-            <v-checkbox 
+          <v-col cols="12">
+            <v-checkbox
               v-model="form.hasCharacterOpff"
               label="Character OPFF"
               :messages="`Runs once every frame for ${getVanillaCharDisplayName(form.vanillaCharInternalName)}`"
+              true-icon="mdi-check-bold"
+              false-icon="mdi-close-thick"
             />
           </v-col>
-          <v-col cols="12" sm="4">
-            <v-checkbox 
+          <v-col cols="12">
+            <v-checkbox
               v-model="form.hasAgentInit"
               label="Agent init"
               messages="Runs once when a fighter is spawned in"
+              true-icon="mdi-check-bold"
+              false-icon="mdi-close-thick"
             />
           </v-col>
-          <v-col cols="12" sm="4">
-            <v-checkbox 
+          <v-col cols="12">
+            <v-checkbox
               v-model="form.hasGlobalOnLinePre"
               label="Global on_line pre"
               messages="Runs once every time a pre status script runs"
+              true-icon="mdi-check-bold"
+              false-icon="mdi-close-thick"
             />
           </v-col>
-          <v-col cols="12" sm="4">
-            <v-checkbox 
+          <v-col cols="12">
+            <v-checkbox
               v-model="form.hasGlobalOnLineEnd"
               label="Global on_line end"
               messages="Runs once every time an end status script runs"
+              true-icon="mdi-check-bold"
+              false-icon="mdi-close-thick"
             />
           </v-col>
         </v-row>
       </section>
+
+      </div><!-- end links-functions-row -->
 
       <!-- Articles -->
       <section>
@@ -1084,12 +1099,67 @@ section h2 {
   color: #c8c8c8 !important;
 }
 
+/* Links + Function Usage side by side */
+.links-functions-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  align-items: flex-start;
+}
+.links-functions-row > section {
+  margin-bottom: 0;
+}
+.links-section {
+  flex: 7;
+}
+.functions-section {
+  flex: 5;
+  min-width: 0;
+  padding-left: 1.75em;
+}
+
 /* Function usage section */
 .functions {
   margin-bottom: 0.75em;
 }
 .functions > div {
-  padding: 0em 1.5em;
+  padding: 0;
+}
+
+/* Checkbox hints sit directly below the checkbox */
+:deep(.functions-section .v-checkbox .v-input__details) {
+  padding-inline-start: 0;
+  min-height: unset;
+  overflow: revert;
+}
+:deep(.functions-section .v-checkbox .v-messages) {
+  padding-left: 0;
+  left: 48.5px;
+  top: -16px;
+  font-size: 1.1em;
+}
+
+/* Checkbox: red bg + X when unchecked, green bg + check when checked */
+:deep(.functions-section .v-selection-control__input) {
+  background-color: rgb(180, 40, 40);
+  border-radius: 5px;
+  color: white;
+  width: 30px;
+  height: 30px;
+  top: 4px;
+  left: -1px;
+}
+:deep(.functions-section .v-selection-control--dirty .v-selection-control__input) {
+  background-color: rgb(40, 160, 60);
+}
+:deep(.functions-section .v-selection-control__input > i) {
+  opacity: 1 !important;
+}
+:deep(.functions-section .v-label--clickable) {
+  font-size: 1.1em;
+}
+:deep(.functions-section .v-input__control) {
+  margin-left: 0.5em;
 }
 
 /* Toggle form button */

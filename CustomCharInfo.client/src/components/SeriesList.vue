@@ -62,6 +62,7 @@ import api from '@/services/api'
 import SeriesCard from './SeriesCard.vue'
 
 const series = ref([])
+const blockedSeriesIds = ref(new Set())
 const showOnlyWithMovesets = ref(true)
 const sortBy = ref('Alphabetical')
 const apiUrl = import.meta.env.VITE_API_URL
@@ -71,12 +72,30 @@ onMounted(async () => {
   const [seriesRes] = await Promise.all([
     api.get('/series', { params: { inSeriesList: true } }),
     api.get('/auth/me').then(r => { user.value = r.data }).catch(() => {}),
+    api.get('/logs', { params: { acceptanceStates: [1, 2, 3, 4, 5, 6, 7], itemTypes: [3] } })
+      .then(r => {
+        const latestPerSeries = new Map()
+        for (const log of r.data) {
+          const id = log.item?.seriesId
+          if (id == null) continue
+          const cur = latestPerSeries.get(id)
+          if (!cur || new Date(log.createdAt) > new Date(cur.createdAt)) {
+            latestPerSeries.set(id, log)
+          }
+        }
+        const blocked = new Set()
+        for (const [id, log] of latestPerSeries) {
+          if ([2, 4].includes(log.acceptanceState?.acceptanceStateId)) blocked.add(id)
+        }
+        blockedSeriesIds.value = blocked
+      })
+      .catch(() => {}),
   ])
   series.value = seriesRes.data
 })
 
 const filteredAndSortedSeries = computed(() => {
-  let result = [...series.value]
+  let result = series.value.filter(s => !blockedSeriesIds.value.has(s.seriesId))
 
   if (showOnlyWithMovesets.value) {
     result = result.filter(s => s.movesetCount > 0)

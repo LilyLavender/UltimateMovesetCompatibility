@@ -94,11 +94,12 @@ onMounted(async () => {
     const adminRes = await api.get(`/modders/is-admin?modderId=${modderId}`)
     modderIsAdmin.value = adminRes.data.isAdmin
 
-    // Fetch movesets
-    const movesetRes = await api.get(`movesets?modderId=${modderId}&page=1&sort=releaseDateAsc`)
-    movesets.value = movesetRes.data.sort(
-      (a, b) => new Date(a.releaseDate) - new Date(b.releaseDate)
-    )
+    // Fetch movesets via the general endpoint (which already excludes hardheld movesets)
+    // and filter client-side by modder name.
+    const movesetRes = await api.get('movesets')
+    movesets.value = movesetRes.data
+      .filter(m => m.modders.includes(modder.value.name))
+      .sort((a, b) => new Date(a.releaseDate) - new Date(b.releaseDate))
 
     if (modder.value.pfpUrl) {
       modderPfpUrl.value = modder.value.pfpUrl

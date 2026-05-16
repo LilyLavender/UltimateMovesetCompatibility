@@ -18,7 +18,7 @@
       />
 
       <!-- Series icon -->
-      <div v-if="moveset.seriesIconUrl" class="moveset-card__series">
+      <div v-if="moveset.seriesIconUrl && !blockedSeriesIconUrls.has(moveset.seriesIconUrl)" class="moveset-card__series">
         <img
           :src="getFullImageUrl(moveset.seriesIconUrl)"
           alt="Series Icon"
@@ -52,6 +52,10 @@ const props = defineProps({
   canView: {
     type: Boolean,
     default: true,
+  },
+  blockedSeriesIconUrls: {
+    type: Set,
+    default: () => new Set(),
   },
 })
 

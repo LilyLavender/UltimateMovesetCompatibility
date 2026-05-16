@@ -12,9 +12,11 @@
       />
       <div>
         <v-card-title class="p-0">{{ series.seriesName }}</v-card-title>
-        <v-card-subtitle class="p-0 mt--1">
-          {{ series.movesetCount }} {{ series.movesetCount === 1 ? 'moveset' : 'movesets' }}
-        </v-card-subtitle>
+        <slot name="subtitle">
+          <v-card-subtitle class="p-0 mt--1">
+            {{ series.movesetCount }} {{ series.movesetCount === 1 ? 'moveset' : 'movesets' }}
+          </v-card-subtitle>
+        </slot>
       </div>
     </router-link>
 

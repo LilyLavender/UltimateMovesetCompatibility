@@ -8,7 +8,7 @@
       </v-col>
       
       <!-- Sort -->
-      <v-col cols="12" sm="4">
+      <v-col cols="12" sm="5">
         <v-select
           label="Sort"
           v-model="sortMode"
@@ -23,7 +23,7 @@
       </v-col>
 
       <!-- Release State -->
-      <v-col cols="12" sm="4">
+      <v-col cols="12" sm="5">
         <v-select
           label="Release State"
           v-model="filterReleaseState"
@@ -36,21 +36,6 @@
         />
       </v-col>
 
-      <!-- Privacy -->
-      <v-col cols="12" sm="2">
-        <v-select
-          label="Privacy"
-          v-model="filterPrivate"
-          clearable
-          variant="outlined"
-          hide-details
-          :items="[
-            { title: 'All', value: null },
-            { title: 'Public', value: false },
-            { title: 'Private', value: true }
-          ]"
-        />
-      </v-col>
     </v-row>
 
     <!-- Moveset List -->
@@ -60,6 +45,7 @@
         :key="m.movesetId"
         :moveset="m"
         :canView="canViewMoveset(m)"
+        :blockedSeriesIconUrls="blockedSeriesIconUrls"
       />
     </div>
   </div>
@@ -85,11 +71,12 @@ const props = defineProps({
 const fetchedMovesets = ref([])
 const releaseStates = ref([])
 const user = ref(null)
+const blockedSeriesIconUrls = ref(new Set())
+const hardHeldMovesetIds = ref(new Set())
 
 // sort/filter
 const sortMode = ref('alpha')
 const filterReleaseState = ref(null)
-const filterPrivate = ref(null)
 
 const displayedMovesets = computed(() => props.movesets ?? fetchedMovesets.value)
 
@@ -106,15 +93,11 @@ const canViewMoveset = (moveset) => {
 }
 
 const processedMovesets = computed(() => {
-  let list = [...displayedMovesets.value]
+  let list = displayedMovesets.value.filter(m => !hardHeldMovesetIds.value.has(m.movesetId))
 
   // Filter
   if (filterReleaseState.value != null) {
     list = list.filter(m => m.releaseState === filterReleaseState.value)
-  }
-
-  if (filterPrivate.value != null) {
-    list = list.filter(m => m.privateMoveset === filterPrivate.value)
   }
 
   // Sort
@@ -186,10 +169,48 @@ const fetchUser = async () => {
   }
 }
 
+const fetchBlockedIds = async () => {
+  try {
+    const res = await api.get('/logs', {
+      params: { acceptanceStates: [1, 2, 3, 4, 5, 6, 7], itemTypes: [1, 3] },
+    })
+    const latestPerMoveset = new Map()
+    const latestPerSeries = new Map()
+    for (const log of res.data) {
+      const typeId = log.itemType?.itemTypeId
+      if (typeId === 1) {
+        const id = log.item?.movesetId
+        if (id == null) continue
+        const cur = latestPerMoveset.get(id)
+        if (!cur || new Date(log.createdAt) > new Date(cur.createdAt)) latestPerMoveset.set(id, log)
+      } else if (typeId === 3) {
+        const id = log.item?.seriesId
+        if (id == null) continue
+        const cur = latestPerSeries.get(id)
+        if (!cur || new Date(log.createdAt) > new Date(cur.createdAt)) latestPerSeries.set(id, log)
+      }
+    }
+    const hardMovesets = new Set()
+    for (const [id, log] of latestPerMoveset) {
+      if ([2, 4].includes(log.acceptanceState?.acceptanceStateId)) hardMovesets.add(id)
+    }
+    hardHeldMovesetIds.value = hardMovesets
+
+    const blockedUrls = new Set()
+    for (const [, log] of latestPerSeries) {
+      if ([2, 4].includes(log.acceptanceState?.acceptanceStateId) && log.item?.seriesIconUrl) {
+        blockedUrls.add(log.item.seriesIconUrl)
+      }
+    }
+    blockedSeriesIconUrls.value = blockedUrls
+  } catch {
+    // fail open
+  }
+}
+
 onMounted(async () => {
   if (!props.movesets) await fetchMovesets()
-  await fetchUser()
-  await fetchReleaseStates()
+  await Promise.all([fetchUser(), fetchReleaseStates(), fetchBlockedIds()])
 })
 </script>
 

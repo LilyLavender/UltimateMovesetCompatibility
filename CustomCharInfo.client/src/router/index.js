@@ -37,6 +37,7 @@ import BlogPage from '@/views/BlogPage.vue';
 import BlogPostForm from '@/components/BlogPostForm.vue';
 // User
 import AccountPage from '@/views/AccountPage.vue';
+import MyContentPage from '@/views/MyContentPage.vue';
 import ResetPasswordPage from '@/views/ResetPasswordPage.vue';
 // Admin
 import AdminPortal from '@/views/AdminPortal.vue';
@@ -525,6 +526,12 @@ const routes = [
     name: 'UserActions',
     component: AccountPage,
     meta: { title: 'User Settings' },
+  },
+  {
+    path: '/my-content',
+    name: 'MyContent',
+    component: MyContentPage,
+    meta: { title: 'My Content' },
   },
   {
     path: '/admin-portal',

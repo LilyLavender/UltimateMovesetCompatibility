@@ -23,16 +23,27 @@
         <div class="title-container">
           <h1 class="title-font page-title no-select">{{ moveset.moddedCharName }}</h1>
         </div>
-        <div class="like-row">
-          <button
-            class="like-btn"
-            :class="{ 'like-btn--liked': userLiked }"
-            @click="toggleLike"
-            :title="user ? (userLiked ? 'Unlike' : 'Like') : 'Sign in to like'"
-          >
-            <v-icon>{{ userLiked ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
-          </button>
-          <span class="like-count">{{ likeCount }}</span>
+        <div class="left-overlay">
+          <div v-if="warningInfo" class="moveset-warning">This moveset is <span v-if="warningInfo.isPrivate" class="pill pill--private">Private</span><span v-if="warningInfo.isPrivate && warningInfo.pendingType"> and </span><span v-if="warningInfo.pendingType" :class="['pill', warningInfo.pendingType === 'Admin' ? 'pill--admin' : 'pill--user']">Pending {{ warningInfo.pendingType }} Action</span>. It can only be seen by {{ singleModder ? 'you' : 'its creators' }} and site admins.</div>
+          <div class="like-row">
+            <button
+              class="like-btn"
+              :class="{ 'like-btn--liked': userLiked }"
+              @click="toggleLike"
+              :title="user ? (userLiked ? 'Unlike' : 'Like') : 'Sign in to like'"
+            >
+              <v-icon>{{ userLiked ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
+            </button>
+            <span class="like-count">{{ likeCount }}</span>
+            <router-link
+              v-if="userIsModder"
+              :to="{ name: 'EditMoveset', params: { movesetId: route.params.movesetId } }"
+              class="edit-link unvisitable"
+              title="Edit moveset"
+            >
+              <v-icon>mdi-pencil</v-icon>
+            </router-link>
+          </div>
         </div>
         <img
           :src="getFullImageUrl(moveset.movesetHeroImageUrl, movesetHeroUnknown)"
@@ -51,15 +62,7 @@
           <v-col cols="12" md="5">
             <div class="info-card basic-info-card">
               <!-- Header -->
-              <h1>
-                Basic Info 
-                <router-link
-                  :to="{ name: 'EditMoveset', params: { movesetId: route.params.movesetId } }"
-                  class="edit-link unvisitable"
-                >
-                  <v-icon v-if="userIsModder">mdi-pencil</v-icon>
-                </router-link>
-              </h1>
+              <h1>Basic Info</h1>
 
               <!-- Creator(s) -->
               <div class="align-center" v-if="moveset.movesetModders?.length">
@@ -263,6 +266,7 @@ const moveset = ref(null)
 const user = ref(null)
 const likeCount = ref(0)
 const userLiked = ref(false)
+const latestLog = ref(null)
 
 useHead(computed(() => {
   const name = moveset.value?.moddedCharName
@@ -306,6 +310,17 @@ const backgroundColor = computed(() => {
 const userIsModder = computed(() => {
   if (!user.value || !moveset.value?.movesetModders) return false
   return moveset.value.movesetModders.some(mm => mm.modder.modderId === user.value.modderId)
+})
+
+const singleModder = computed(() => moveset.value?.movesetModders?.length === 1)
+
+const warningInfo = computed(() => {
+  if (!moveset.value) return null
+  const isPrivate = !!moveset.value.privateMoveset
+  const stateId = latestLog.value?.acceptanceState?.acceptanceStateId
+  const pendingType = stateId === 2 ? 'Admin' : stateId === 4 ? 'User' : null
+  if (!isPrivate && !pendingType) return null
+  return { isPrivate, pendingType }
 })
 
 // Calculate the releaseState to display
@@ -419,7 +434,17 @@ onMounted(async () => {
   try {
     const userRes = await api.get('/auth/me')
     user.value = userRes.data
-  } catch (err) {
+  } catch {
+    //
+  }
+  try {
+    const isAdmin = user.value?.userTypeId === 3
+    const logsRes = await api.get(isAdmin ? '/logs?viewAll=true' : '/logs')
+    const movesetId = parseInt(route.params.movesetId)
+    latestLog.value = logsRes.data
+      .filter(log => log.itemType?.itemTypeId === 1 && log.item?.movesetId === movesetId)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] ?? null
+  } catch {
     //
   }
 })
@@ -521,7 +546,7 @@ const StatusIcon = defineComponent({
 
 .title-container {
   position: absolute;
-  width: fit-content;
+  width: max-content;
   padding-right: 1em;
 }
 
@@ -675,25 +700,62 @@ strong {
 .edit-link {
   display: inline-block;
   font-size: 16px;
-  transition: filter 0.2s ease-in-out;
+  transition: color 0.2s ease-in-out;
 }
 
 .edit-link:hover {
-  filter: brightness(0.8);
+  color: #fff;
 }
 
-.mdi-pencil {
-  margin-top: -12px;
-}
-
-.like-row {
+.left-overlay {
   position: absolute;
   top: 5.5em;
   left: 1.1em;
   z-index: 10;
   display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.moveset-warning {
+  font-size: 0.75em;
+  color: #ccc;
+  max-width: 22.5em;
+  background-color: #12121299;
+  padding: 0.35em 0.6em;
+  border-radius: 4px;
+  backdrop-filter: blur(3px);
+  line-height: 1.5;
+}
+
+.pill {
+  display: inline-block;
+  font-size: 0.9em;
+  padding: 0.05em 0.45em;
+  border-radius: 999px;
+  font-weight: bold;
+  color: #111;
+  vertical-align: baseline;
+}
+
+.pill--private {
+  background-color: rgb(220, 50, 50);
+  color: #fff;
+}
+
+.pill--admin {
+  background-color: rgb(52, 194, 241);
+}
+
+.pill--user {
+  background-color: rgb(241, 241, 52);
+}
+
+.like-row {
+  display: flex;
   align-items: center;
   gap: 0.4em;
+  color: #ccc;
 }
 
 .like-btn {
@@ -701,7 +763,6 @@ strong {
   border: none;
   cursor: pointer;
   padding: 0;
-  color: #aaa;
   line-height: 1;
   transition: color 0.15s;
 }
@@ -710,13 +771,8 @@ strong {
   color: #fff;
 }
 
-.like-btn--liked {
-  color: #fff;
-}
-
 .like-count {
   font-size: 0.9em;
-  color: #ccc;
 }
 
 /* Display of checkmark/x */

@@ -131,10 +131,18 @@
         </router-link>
       </div>
 
-      <!-- Signed-in (ADMIN) actions -->
-      <div v-if="user?.userTypeId == 3">
-        <!-- Admin Portal -->
+      <!-- My content + Admin Portal -->
+      <div v-if="user?.modderId || user?.userTypeId == 3">
         <router-link
+          v-if="user?.modderId"
+          :to="{ name: 'MyContent' }"
+          class="router-link unvisitable user-link"
+        >
+          <v-icon>mdi-view-list</v-icon>
+          My content
+        </router-link>
+        <router-link
+          v-if="user?.userTypeId == 3"
           :to="{ name: 'AdminPortal' }"
           class="router-link unvisitable user-link"
         >
