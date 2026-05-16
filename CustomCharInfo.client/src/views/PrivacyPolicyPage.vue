@@ -37,7 +37,7 @@
 
       <h2>Contact</h2>
       <p>
-        For any privacy-related questions or requests, contact Lily on Discord.
+        For any privacy-related questions or requests, please contact Lily on Discord.
       </p>
     </div>
   </v-container>

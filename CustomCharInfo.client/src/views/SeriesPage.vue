@@ -3,20 +3,29 @@
     <!-- Page title -->
     <h1 class="mb-4 page-title">Series</h1>
 
-    <!-- Add series button -->
-    <div 
+    <!-- Modder actions -->
+    <div
       v-if="user && user.userTypeId >= 2"
-      class="mb-5 pb-5"
+      class="d-flex ga-3 mb-5 pb-3 flex-wrap"
     >
-      <router-link
+      <v-btn
         :to="{ name: 'AddSeries' }"
-        class="unvisitable text-decoration-none"
+        variant="tonal"
+        prepend-icon="mdi-plus"
+        class="action-btn"
       >
-        <v-icon>mdi-plus</v-icon>
-        Add series
-      </router-link>
+        Add Series
+      </v-btn>
+      <v-btn
+        :to="{ name: 'RequestEditSeries' }"
+        variant="tonal"
+        prepend-icon="mdi-pencil"
+        class="action-btn"
+      >
+        Edit Series
+      </v-btn>
     </div>
-    
+
     <!-- Series List -->
     <SeriesList />
   </v-container>
@@ -30,10 +39,19 @@ import SeriesList from '@/components/SeriesList.vue'
 const user = ref(null)
 
 onMounted(async () => {
-  user.value = (await api.get('/auth/me')).data
+  try {
+    user.value = (await api.get('/auth/me')).data
+  } catch {
+    user.value = null
+  }
 })
 </script>
 
 <style scoped>
-
+.action-btn {
+  text-transform: none;
+  letter-spacing: normal;
+  background-color: #2e2e2e;
+  color: #e2e2e2;
+}
 </style>

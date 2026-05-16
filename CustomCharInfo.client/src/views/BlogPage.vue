@@ -7,7 +7,7 @@
     <div v-else>
       <p class="router-link">
         <i class="mdi mdi-arrow-right-bottom"></i>
-        Want to add to the blog? Contact Lily
+        Want to add to the blog? Contact an admin
       </p>
 
       <BlogPost v-for="post in blogPosts" :key="post.blogPostId" :post="post" />

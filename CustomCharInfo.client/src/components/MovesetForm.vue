@@ -39,6 +39,14 @@
               clearable
             >
               <template #label>Modders <span class="required-asterisk">*</span></template>
+              <!-- Hint -->
+              <template #details>
+                <router-link
+                  to="/modder-credit-guide"
+                  class="offsite unvisitable text-decoration-none"
+                  target="_blank"
+                >Who should I include?</router-link>
+              </template>
             </v-select>
           </v-col>
           <!-- Series -->

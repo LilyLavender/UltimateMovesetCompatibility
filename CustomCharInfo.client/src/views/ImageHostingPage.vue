@@ -30,7 +30,7 @@
       </p>
 
       <p>
-        If you have suggestions for image hosts to add, feel free to DM Lily on Discord
+        If you have suggestions for image hosts to add, feel free to message Lily
       </p>
     
     </div>

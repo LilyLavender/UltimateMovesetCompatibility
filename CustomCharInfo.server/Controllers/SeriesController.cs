@@ -66,6 +66,11 @@ namespace CustomCharInfo.server.Controllers
                 .Select(log => log.ItemId)
                 .ToHashSet();
 
+            var userModderSeriesIds = movesetSeriesIds
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .ToHashSet();
+
             var seriesQuery = _context.Series
                 .Select(s => new
                 {
@@ -91,7 +96,8 @@ namespace CustomCharInfo.server.Controllers
                         m.SeriesId == s.SeriesId
                     ),
 
-                    CanEdit = editableSeriesIds.Contains(s.SeriesId)
+                    CanEdit = editableSeriesIds.Contains(s.SeriesId),
+                    IsUserModder = userModderSeriesIds.Contains(s.SeriesId)
                 });
 
             // Hide all added series where movesets are private
@@ -210,6 +216,47 @@ namespace CustomCharInfo.server.Controllers
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetSeries), new { id = series.SeriesId }, series);
+        }
+
+        [HttpPost("{id}/request-edit")]
+        [Authorize]
+        public async Task<IActionResult> RequestSeriesEdit(int id, [FromBody] RequestEditSeriesDto dto)
+        {
+            var userId = _userManager.GetUserId(User);
+            var userFromId = await _context.Users.FindAsync(userId);
+            if (userFromId == null || userFromId.UserTypeId < 2)
+                return Forbid();
+
+            var modderId = userFromId.ModderId;
+            if (modderId == null)
+                return Forbid();
+
+            var seriesExists = await _context.Series.AnyAsync(s => s.SeriesId == id);
+            if (!seriesExists)
+                return NotFound("Series not found.");
+
+            var hasMoveset = await _context.MovesetModders
+                .AnyAsync(mm => mm.ModderId == modderId && mm.Moveset.SeriesId == id);
+            if (!hasMoveset)
+                return Forbid();
+
+            if (string.IsNullOrWhiteSpace(dto.Notes))
+                return BadRequest("Notes are required when requesting a series edit.");
+
+            var log = new ActionLog
+            {
+                UserId = userId,
+                ItemTypeId = 3,
+                ItemId = id,
+                AcceptanceStateId = 1,
+                Notes = dto.Notes,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.ActionLogs.Add(log);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { log.ActionLogId });
         }
 
         [HttpPut("{id}")]

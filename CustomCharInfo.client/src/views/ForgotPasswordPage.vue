@@ -5,13 +5,24 @@
 
     <!-- Main content -->
     <div>
-      <p>I don't have access to an automatic email service, so unfortunately it's not the greatest solution but if you dm Lily on Discord I will manually clear your password hash and send you a link to reset it 🫶</p>
+      <p>
+        UMC doesn't use an automated email service, so password resets are handled manually.
+      </p>
+      <p>
+        Send an admin a message and they'll clear your account and get you a reset link as soon as they can.
+      </p>
     </div>
   </v-container>
 </template>
 
 <style scoped>
 .page-title {
-  font-size: 5em;
+  font-size: 3em;
+}
+
+p {
+  opacity: 0.5;
+  line-height: 1.6;
+  margin-bottom: 0.75em;
 }
 </style>

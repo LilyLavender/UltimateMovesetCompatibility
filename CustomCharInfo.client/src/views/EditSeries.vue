@@ -1,5 +1,5 @@
 <template>
-  <SeriesForm mode="edit" :movesetId="parseInt(route.params.movesetId)" />
+  <SeriesForm mode="edit" :seriesId="parseInt(route.params.seriesId)" />
 </template>
 
 <script setup>

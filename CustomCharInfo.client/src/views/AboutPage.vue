@@ -6,7 +6,7 @@
     <!-- Main content -->
     <div class="space-between-ps">
       <!-- Intro -->
-      <p>Hello all! I'm <a href="https://github.com/LilyLavender" target="_blank" class="unvisitable">LilyLambda</a>, the creator of Ultimate Moveset Compatibility. This site is a passion project of mine to bring a space both for end-users to see which movesets are available and for developers to ensure compatibility between their projects.</p>
+      <p>Hello all! I'm <a href="https://github.com/LilyLavender" target="_blank" class="unvisitable">Lily</a>, the creator of Ultimate Moveset Compatibility. This site is a passion project of mine to bring a space both for end-users to see which movesets are available and for developers to ensure compatibility between their projects.</p>
 
       <!-- Ko-Fi -->
       <p class="has-inline-image">
@@ -16,7 +16,7 @@
       </p>
 
       <!-- Suggestions -->
-      <p>If you have suggestions as to how I can improve UMC, feel free to reach out to me on Discord @LilyLambda or <a href="https://github.com/LilyLavender/UltimateMovesetCompatibility/issues" target="_blank" class="unvisitable">create an issue on GitHub</a>. Any help is appreciated.</p>
+      <p>If you have suggestions as to how I can improve UMC, feel free to <a href="https://github.com/LilyLavender/UltimateMovesetCompatibility/issues" target="_blank" class="unvisitable">create an issue on GitHub</a> UNLESS it's a security issue, in which case you should contact me directly. Any help is appreciated.</p>
 
       <!-- Outro -->
       <p>Thank you all for the continued support 💚</p>

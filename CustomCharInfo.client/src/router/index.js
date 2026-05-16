@@ -7,6 +7,7 @@ import AboutPage from '@/views/AboutPage.vue';
 import PhotoSubmissionPage from '@/views/PhotoSubmissionPage.vue';
 import ImageHostingPage from '@/views/ImageHostingPage.vue';
 import MovesetSubmissionGuide from '@/views/MovesetSubmissionGuide.vue';
+import ModderCreditGuide from '@/views/ModderCreditGuide.vue';
 import OpenSourcePage from '@/views/OpenSourcePage.vue';
 import PrivacyPolicyPage from '@/views/PrivacyPolicyPage.vue';
 import ForgotPasswordPage from '@/views/ForgotPasswordPage.vue';
@@ -26,6 +27,7 @@ import SeriesPage from '@/views/SeriesPage.vue';
 import SeriesDetail from '@/views/SeriesDetail.vue';
 import AddSeries from '@/views/AddSeries.vue';
 import EditSeries from '@/views/EditSeries.vue';
+import RequestEditSeries from '@/views/RequestEditSeries.vue';
 // Hooks
 import HooksPage from '@/views/HooksPage.vue';
 import AddHook from '@/views/AddHook.vue';
@@ -73,6 +75,37 @@ const routes = [
     name: 'Series',
     component: SeriesPage,
     meta: { title: 'Series' },
+  },
+  {
+    path: '/series/request-edit',
+    name: 'RequestEditSeries',
+    component: RequestEditSeries,
+    meta: { title: 'Edit a Series' },
+    beforeEnter: async (to, from, next) => {
+      try {
+        const user = (await api.get('/auth/me')).data;
+        if (user.userTypeId >= 2) {
+          next();
+        } else {
+          next({
+            name: 'ErrorPage',
+            query: {
+              httpCode: '403 Forbidden',
+              reason: 'You do not have permission to access this page.',
+            }
+          })
+        }
+      } catch (err) {
+        next({
+          name: 'ErrorPage',
+          query: {
+            httpCode: '401 Unauthorized',
+            reason: 'Authentication failed.',
+            extra: 'Try signing in or refreshing the page.',
+          }
+        })
+      }
+    }
   },
   {
     path: '/series/:seriesId',
@@ -745,6 +778,12 @@ const routes = [
     name: 'MovesetSubmissionGuide',
     component: MovesetSubmissionGuide,
     meta: { title: 'Moveset Submission Guide' },
+  },
+  {
+    path: '/modder-credit-guide',
+    name: 'ModderCreditGuide',
+    component: ModderCreditGuide,
+    meta: { title: 'Who Should I Include?' },
   },
   {
     path: '/privacy-policy',

@@ -24,7 +24,7 @@
         More detail on any guideline can be provided upon request.
       </p>
 
-      <p>If you'd like to submit a photo, feel free to reach out to Lily on Discord @LilyLambda for consideration.</p>
+      <p>If you'd like to submit a photo, feel free to message Lily for consideration.</p>
 
     </div>
   </v-container>
