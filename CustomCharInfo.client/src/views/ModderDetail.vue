@@ -100,8 +100,9 @@ onMounted(async () => {
       (a, b) => new Date(a.releaseDate) - new Date(b.releaseDate)
     )
 
-    // Fetch GameBanana pfp
-    if (modder.value.gamebananaId) {
+    if (modder.value.pfpUrl) {
+      modderPfpUrl.value = modder.value.pfpUrl
+    } else if (modder.value.gamebananaId) {
       try {
         const res = await axios.get(
           `https://api.gamebanana.com/Core/Item/Data?itemtype=Member&itemid=${modder.value.gamebananaId}&fields=Url().sHdAvatarUrl(),Url().sAvatarUrl()`

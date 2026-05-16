@@ -1,7 +1,7 @@
 <template>
   <v-container>
-    <v-row class="mb-4">
-      <v-col cols="12" sm="6">
+    <v-row class="mb-4" align="center">
+      <v-col cols="12" sm="auto">
         <v-checkbox
           v-model="showOnlyWithMovesets"
           label="Only show series with movesets"
@@ -9,7 +9,29 @@
           hide-details
         />
       </v-col>
-      <v-col cols="12" sm="6">
+      <v-col class="d-flex justify-center ga-2">
+        <template v-if="user && user.userTypeId >= 2">
+          <v-btn
+            :to="{ name: 'AddSeries' }"
+            variant="outlined"
+            prepend-icon="mdi-plus"
+            class="action-btn"
+            size="small"
+          >
+            Add Series
+          </v-btn>
+          <v-btn
+            :to="{ name: 'RequestEditSeries' }"
+            variant="outlined"
+            prepend-icon="mdi-pencil"
+            class="action-btn"
+            size="small"
+          >
+            Edit Series
+          </v-btn>
+        </template>
+      </v-col>
+      <v-col cols="12" sm="3">
         <v-select
           variant="outlined"
           v-model="sortBy"
@@ -43,12 +65,14 @@ const series = ref([])
 const showOnlyWithMovesets = ref(true)
 const sortBy = ref('Alphabetical')
 const apiUrl = import.meta.env.VITE_API_URL
+const user = ref(null)
 
 onMounted(async () => {
-  const res = await api.get('/series', {
-    params: { inSeriesList: true }
-  })
-  series.value = res.data
+  const [seriesRes] = await Promise.all([
+    api.get('/series', { params: { inSeriesList: true } }),
+    api.get('/auth/me').then(r => { user.value = r.data }).catch(() => {}),
+  ])
+  series.value = seriesRes.data
 })
 
 const filteredAndSortedSeries = computed(() => {
@@ -67,3 +91,12 @@ const filteredAndSortedSeries = computed(() => {
   return result
 })
 </script>
+
+<style scoped>
+.action-btn {
+  text-transform: none;
+  letter-spacing: normal;
+  color: #b0b0b0;
+  border-color: #4a4a4a;
+}
+</style>

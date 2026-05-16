@@ -66,6 +66,7 @@ namespace CustomCharInfo.server.Controllers
                     Name = m.User != null ? m.User.UserName : m.Name,
                     m.Bio,
                     m.GamebananaId,
+                    m.PfpUrl,
                     MovesetCount = m.MovesetModders.Count(mm =>
                         mm.Moveset.PrivateMoveset != true &&
                         !blockedStates.Contains(
@@ -120,10 +121,11 @@ namespace CustomCharInfo.server.Controllers
                     x.Modder.Bio,
                     x.Modder.GamebananaId,
                     x.Modder.DiscordUsername,
+                    x.Modder.PfpUrl,
                     Problematic = x.Modder.User != null && x.Modder.User.Problematic == true
                 })
                 .ToListAsync();
-        
+
             return Ok(modders);
         }
 
@@ -166,6 +168,7 @@ namespace CustomCharInfo.server.Controllers
                     x.Modder.Bio,
                     x.Modder.GamebananaId,
                     x.Modder.DiscordUsername,
+                    x.Modder.PfpUrl,
                     Problematic = x.Modder.User != null && x.Modder.User.Problematic == true
                 })
                 .FirstOrDefaultAsync();
@@ -227,7 +230,8 @@ namespace CustomCharInfo.server.Controllers
                 Name = user?.UserName,
                 Bio = dto.Bio,
                 GamebananaId = dto.GamebananaId,
-                DiscordUsername = dto.DiscordUsername
+                DiscordUsername = dto.DiscordUsername,
+                PfpUrl = dto.PfpUrl
             };
 
             _context.Modders.Add(modder);
@@ -288,6 +292,7 @@ namespace CustomCharInfo.server.Controllers
             var snapBio = modder.Bio;
             var snapGbId = modder.GamebananaId;
             var snapDiscord = modder.DiscordUsername;
+            var snapPfpUrl = modder.PfpUrl;
 
             if (dto.Bio != null)
                 modder.Bio = dto.Bio;
@@ -298,11 +303,14 @@ namespace CustomCharInfo.server.Controllers
             if (dto.DiscordUsername != null)
                 modder.DiscordUsername = dto.DiscordUsername;
 
+            modder.PfpUrl = dto.PfpUrl;
+
             var diff = DiffHelper.Build(new (string, object?, object?)[]
             {
                 ("Bio",             snapBio,     dto.Bio),
                 ("GamebananaId",    snapGbId,    dto.GamebananaId),
                 ("DiscordUsername", snapDiscord, dto.DiscordUsername),
+                ("PfpUrl",         snapPfpUrl,  dto.PfpUrl),
             });
 
             int newState = user.UserTypeId == 3

@@ -11,8 +11,8 @@
       >
         <div class="modder-pfp-wrap">
           <img
-            v-if="avatars[modder.modderId]"
-            :src="avatars[modder.modderId]"
+            v-if="modder.pfpUrl || avatars[modder.modderId]"
+            :src="modder.pfpUrl || avatars[modder.modderId]"
             class="modder-pfp"
             alt=""
           />
@@ -55,7 +55,7 @@ onMounted(async () => {
   modders.value = res.data
 
   const fetches = modders.value
-    .filter(m => m.gamebananaId)
+    .filter(m => !m.pfpUrl && m.gamebananaId)
     .map(async (m) => {
       try {
         const r = await axios.get(

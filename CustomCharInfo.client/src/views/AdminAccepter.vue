@@ -187,6 +187,27 @@
             <MovesetCard :moveset="selectedFull" :canView="true" />
           </div>
 
+          <!-- Modder preview -->
+          <div v-if="selectedFull && form.itemTypeId === 2" class="mb-3">
+            <h2 class="mb-1">Preview</h2>
+            <div class="modder-preview">
+              <div class="modder-preview-pfp-wrap">
+                <img
+                  v-if="modderPfpPreview"
+                  :src="modderPfpPreview"
+                  class="modder-preview-pfp"
+                  alt=""
+                />
+                <v-icon v-else size="48" style="color: #555">mdi-account</v-icon>
+              </div>
+              <div class="modder-preview-info">
+                <span class="modder-preview-name">{{ selectedFull.name }}</span>
+                <span v-if="selectedFull.bio" class="modder-preview-bio">{{ selectedFull.bio }}</span>
+                <span v-if="selectedFull.discordUsername" class="modder-preview-discord">@{{ selectedFull.discordUsername }}</span>
+              </div>
+            </div>
+          </div>
+
           <!-- Series preview: 3x3 icon grid -->
           <div v-if="selectedFull && form.itemTypeId === 3" class="mb-3">
             <h2 class="mb-1">Preview</h2>
@@ -217,6 +238,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import axios from 'axios'
 import api from '@/services/api'
 import ActionLogGroup from '@/components/ActionLogGroup.vue'
 import MovesetCard from '@/components/MovesetCard.vue'
@@ -255,6 +277,7 @@ const error = ref(null)
 const itemLogs = ref([])
 const loadingLogs = ref(false)
 const pendingAdminLogs = ref([])
+const modderGbPfp = ref(null)
 
 const itemTypeLabel = (id) => ({ 1: 'Moveset', 2: 'Modder', 3: 'Series' })[id] ?? '?'
 
@@ -317,9 +340,9 @@ const fetchItems = async () => {
       items.value = sorted.map(m => ({ id: m.movesetId, name: m.moddedCharName }))
     } else if (form.value.itemTypeId === 2) {
       const res = await api.get('/modders')
-      fullItemsById.value = {}
-      items.value = res.data.sort((a, b) => a.name.localeCompare(b.name))
-        .map(m => ({ id: m.modderId, name: m.name }))
+      const sorted = res.data.sort((a, b) => a.name.localeCompare(b.name))
+      fullItemsById.value = Object.fromEntries(sorted.map(m => [m.modderId, m]))
+      items.value = sorted.map(m => ({ id: m.modderId, name: m.name }))
     } else if (form.value.itemTypeId === 3) {
       const res = await api.get('/series')
       const sorted = res.data.sort((a, b) => a.seriesName.localeCompare(b.seriesName))
@@ -336,6 +359,10 @@ const fetchItems = async () => {
 
 const selectedFull = computed(() =>
   form.value.itemId ? (fullItemsById.value[form.value.itemId] ?? null) : null
+)
+
+const modderPfpPreview = computed(() =>
+  selectedFull.value?.pfpUrl || modderGbPfp.value || null
 )
 
 const SURROUNDING_SERIES_IDS = [6, 39, 4, 11, 1, 2, 34, 20]
@@ -398,6 +425,21 @@ watch(
   () => [form.value.itemTypeId, form.value.itemId],
   fetchItemLogs
 )
+
+// Fetch GB pfp when a modder without a custom pfpUrl is selected
+watch(selectedFull, async (modder) => {
+  modderGbPfp.value = null
+  if (!modder || form.value.itemTypeId !== 2 || modder.pfpUrl) return
+  if (!modder.gamebananaId) return
+  try {
+    const res = await axios.get(
+      `https://api.gamebanana.com/Core/Item/Data?itemtype=Member&itemid=${modder.gamebananaId}&fields=Url().sHdAvatarUrl(),Url().sAvatarUrl()`
+    )
+    modderGbPfp.value = res.data[0] || res.data[1] || null
+  } catch {
+    modderGbPfp.value = null
+  }
+})
 
 onMounted(async () => {
   await fetchUser()
@@ -507,6 +549,58 @@ div:has(>.center-entire) {
 
 .accept-btn:hover {
   background-color: rgba(76, 175, 80, 0.28) !important;
+}
+
+.modder-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: #1e1e1e;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.modder-preview-pfp-wrap {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #2e2e2e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modder-preview-pfp {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.modder-preview-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.modder-preview-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.modder-preview-bio {
+  font-size: 0.82rem;
+  color: #aaa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modder-preview-discord {
+  font-size: 0.82rem;
+  color: #7289da;
 }
 
 .series-grid-preview {

@@ -5,10 +5,24 @@
       <h1 class="mt-5 mb-5" v-else>Edit Your Modder Profile</h1>
 
       <v-form @submit.prevent="isEditMode ? save() : submit()" v-if="user">
-        <v-row>
+        <!-- Row 1: PFP preview + Username + GB ID + Discord -->
+        <v-row align="center" class="mb-0">
+          <!-- PFP preview -->
+          <v-col cols="auto">
+            <div class="pfp-preview-wrap">
+              <img
+                v-if="pfpPreviewUrl"
+                :src="pfpPreviewUrl"
+                class="pfp-preview"
+                alt="PFP preview"
+              />
+              <v-icon v-else size="48" class="pfp-preview-placeholder">mdi-account</v-icon>
+            </div>
+          </v-col>
+
           <!-- Username -->
-          <v-col cols="12" sm="4">
-            <v-text-field 
+          <v-col cols="12" sm>
+            <v-text-field
               v-model="user.userName"
               label="Username"
               variant="outlined"
@@ -16,8 +30,8 @@
               readonly
             >
               <template #details>
-                Edit your username in your&nbsp;
-                <router-link 
+                Edit your username in&nbsp;
+                <router-link
                   to="/user-actions"
                   class="offsite unvisitable"
                   target="_blank"
@@ -29,7 +43,7 @@
           </v-col>
 
           <!-- GameBanana ID -->
-          <v-col cols="12" sm="5">
+          <v-col cols="12" sm="4">
             <v-text-field
               variant="outlined"
               v-model.number="modder.gamebananaId"
@@ -44,13 +58,32 @@
             <v-text-field
               variant="outlined"
               v-model="modder.discordUsername"
-              label="Discord Username"
+              label="Discord"
               prefix="@"
             />
           </v-col>
+        </v-row>
 
-          <!-- Bio -->
-          <v-col cols="12" class="mb-5">
+        <!-- Row 2: PFP URL -->
+        <v-row class="mb-0">
+          <v-col cols="12">
+            <v-text-field
+              variant="outlined"
+              v-model="modder.pfpUrl"
+              label="Profile Picture URL"
+              placeholder="Any square image URL (jpg, png, gif…)"
+              clearable
+            >
+              <template #details>
+                <span class="hint-text">Falls back to GameBanana avatar if left empty.</span>
+              </template>
+            </v-text-field>
+          </v-col>
+        </v-row>
+
+        <!-- Row 3: Bio -->
+        <v-row class="mb-3">
+          <v-col cols="12">
             <v-textarea
               variant="outlined"
               v-model="modder.bio"
@@ -60,7 +93,6 @@
               auto-grow hide-details
             />
           </v-col>
-
         </v-row>
 
         <!-- Notes + Submit -->
@@ -96,7 +128,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
+import axios from 'axios'
 import api from '@/services/api'
 import { GB_MEMBER_URL } from '@/globals'
 
@@ -113,10 +146,26 @@ const modder = ref({
   bio: '',
   gamebananaId: null,
   discordUsername: '',
+  pfpUrl: '',
   notes: '',
 })
 
 const modderId = ref(null)
+const gbPfpUrl = ref(null)
+
+const pfpPreviewUrl = computed(() => modder.value.pfpUrl || gbPfpUrl.value || null)
+
+const fetchGbPfp = async (gbId) => {
+  if (!gbId) { gbPfpUrl.value = null; return }
+  try {
+    const res = await axios.get(
+      `https://api.gamebanana.com/Core/Item/Data?itemtype=Member&itemid=${gbId}&fields=Url().sHdAvatarUrl(),Url().sAvatarUrl()`
+    )
+    gbPfpUrl.value = res.data[0] || res.data[1] || null
+  } catch {
+    gbPfpUrl.value = null
+  }
+}
 
 const fetchUserAndModder = async () => {
   try {
@@ -136,6 +185,7 @@ const fetchUserAndModder = async () => {
         bio: modderRes.data.bio || '',
         gamebananaId: modderRes.data.gamebananaId || null,
         discordUsername: modderRes.data.discordUsername || null,
+        pfpUrl: modderRes.data.pfpUrl || '',
       }
     }
   } catch {
@@ -143,7 +193,12 @@ const fetchUserAndModder = async () => {
   }
 }
 
-onMounted(fetchUserAndModder)
+onMounted(async () => {
+  await fetchUserAndModder()
+  fetchGbPfp(modder.value.gamebananaId)
+})
+
+watch(() => modder.value.gamebananaId, fetchGbPfp)
 
 const digitsOnly = (field) => {
   if (form[field] == null) return
@@ -167,6 +222,7 @@ const save = async () => {
       bio: modder.value.bio,
       gamebananaId: modder.value.gamebananaId,
       discordUsername: modder.value.discordUsername,
+      pfpUrl: modder.value.pfpUrl || null,
       notes: modder.value.notes,
     })
     success.value = true
@@ -201,8 +257,37 @@ section {
 }
 
 :deep(.v-text-field__prefix__text) {
-  color: #e4e4e4;
+  font-size: 0.85em;
+  color: #484848;
 }
+
+.pfp-preview-wrap {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #2e2e2e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pfp-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pfp-preview-placeholder {
+  color: #555;
+}
+
+.hint-text {
+  font-size: 0.78rem;
+  color: #777;
+}
+
 .notes-field {
   max-width: 400px;
 }

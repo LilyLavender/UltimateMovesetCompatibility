@@ -15,6 +15,8 @@ namespace CustomCharInfo.server.Models
 
         public string? DiscordUsername { get; set; }
 
+        public string? PfpUrl { get; set; }
+
         public string UserId { get; set; }
         public ApplicationUser User { get; set; }
 
