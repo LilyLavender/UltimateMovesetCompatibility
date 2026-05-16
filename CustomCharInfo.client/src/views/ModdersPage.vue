@@ -19,7 +19,10 @@
           <v-icon v-else size="36" class="modder-pfp-placeholder">mdi-account</v-icon>
         </div>
         <div class="modder-info">
-          <span class="modder-name">{{ modder.name }}</span>
+          <span class="modder-name">
+            {{ modder.name }}
+            <v-icon v-if="modder.isAdmin" size="16" class="admin-badge">mdi-shield-account</v-icon>
+          </span>
           <span v-if="modder.bio" class="modder-bio">{{ modder.bio }}</span>
           <!-- <span class="modder-count">
             {{ modder.movesetCount }} {{ modder.movesetCount === 1 ? 'moveset' : 'movesets' }}
@@ -125,6 +128,11 @@ onMounted(async () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.admin-badge {
+  vertical-align: middle;
+  margin-left: -2px;
+  margin-bottom: 2px;
 }
 .modder-count {
   font-size: 0.8em;

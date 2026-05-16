@@ -67,6 +67,7 @@ namespace CustomCharInfo.server.Controllers
                     m.Bio,
                     m.GamebananaId,
                     m.PfpUrl,
+                    IsAdmin = m.User != null && m.User.UserTypeId == 3,
                     MovesetCount = m.MovesetModders.Count(mm =>
                         mm.Moveset.PrivateMoveset != true &&
                         !blockedStates.Contains(
