@@ -23,6 +23,17 @@
         <div class="title-container">
           <h1 class="title-font page-title no-select">{{ moveset.moddedCharName }}</h1>
         </div>
+        <div class="like-row">
+          <button
+            class="like-btn"
+            :class="{ 'like-btn--liked': userLiked }"
+            @click="toggleLike"
+            :title="user ? (userLiked ? 'Unlike' : 'Like') : 'Sign in to like'"
+          >
+            <v-icon>{{ userLiked ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
+          </button>
+          <span class="like-count">{{ likeCount }}</span>
+        </div>
         <img
           :src="getFullImageUrl(moveset.movesetHeroImageUrl, movesetHeroUnknown)"
           alt="Character UI"
@@ -250,6 +261,8 @@ const route = useRoute()
 const router = useRouter()
 const moveset = ref(null)
 const user = ref(null)
+const likeCount = ref(0)
+const userLiked = ref(false)
 
 useHead(computed(() => {
   const name = moveset.value?.moddedCharName
@@ -382,11 +395,24 @@ const releaseDisplay = computed(() => {
   return null
 })
 
+const toggleLike = async () => {
+  if (!user.value) return
+  try {
+    const res = await api.post(`/movesets/${route.params.movesetId}/like`)
+    likeCount.value = res.data.likeCount
+    userLiked.value = res.data.userLiked
+  } catch {
+    //
+  }
+}
+
 // Mounted
 onMounted(async () => {
   try {
     const movesetRes = await api.get(`/movesets/${route.params.movesetId}`)
     moveset.value = movesetRes.data
+    likeCount.value = movesetRes.data.likeCount ?? 0
+    userLiked.value = movesetRes.data.userLiked ?? false
   } catch (err) {
     router.replace({ name: 'ErrorPage', query: { http: 404, reason: 'Moveset not found' } })
   }
@@ -394,7 +420,7 @@ onMounted(async () => {
     const userRes = await api.get('/auth/me')
     user.value = userRes.data
   } catch (err) {
-    // 
+    //
   }
 })
 </script>
@@ -485,6 +511,7 @@ const StatusIcon = defineComponent({
 
 .column-left {
   flex: 7;
+  position: relative;
 }
 
 .column-right {
@@ -657,6 +684,39 @@ strong {
 
 .mdi-pencil {
   margin-top: -12px;
+}
+
+.like-row {
+  position: absolute;
+  top: 5.5em;
+  left: 1.1em;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+.like-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: #aaa;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.like-btn:hover {
+  color: #fff;
+}
+
+.like-btn--liked {
+  color: #fff;
+}
+
+.like-count {
+  font-size: 0.9em;
+  color: #ccc;
 }
 
 /* Display of checkmark/x */

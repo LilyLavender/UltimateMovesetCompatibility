@@ -16,7 +16,8 @@
           hide-details
           :items="[
             { title: 'Alphabetical', value: 'alpha' },
-            { title: 'Release Date', value: 'releaseDate' }
+            { title: 'Release Date', value: 'releaseDate' },
+            { title: 'Most Popular', value: 'popularity' }
           ]"
         />
       </v-col>
@@ -146,6 +147,9 @@ const processedMovesets = computed(() => {
       const modderB = (b.modders[0] || '').toLowerCase()
       return modderA.localeCompare(modderB)
     })
+  } else if (sortMode.value === 'popularity') {
+    list = list.filter(m => !m.privateMoveset)
+    list.sort((a, b) => (b.likeCount ?? 0) - (a.likeCount ?? 0) || a.moddedCharName.localeCompare(b.moddedCharName))
   } else if (!props.movesets) {
     list.sort((a, b) => {
       if (a.privateMoveset !== b.privateMoveset) return a.privateMoveset ? 1 : -1

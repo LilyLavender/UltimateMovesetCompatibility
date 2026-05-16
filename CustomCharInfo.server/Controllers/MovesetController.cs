@@ -135,6 +135,10 @@ namespace CustomCharInfo.server.Controllers
                             .FirstOrDefault()
                         : x.Moveset.ModdedCharName),
 
+                "popularity" => query
+                    .OrderByDescending(x => _context.MovesetLikes.Count(ml => ml.MovesetId == x.Moveset.MovesetId))
+                    .ThenBy(x => x.Moveset.ModdedCharName),
+
                 _ => query
                     .OrderBy(x => x.Moveset.PrivateMoveset)
                     .ThenBy(x => x.Moveset.ModdedCharName)
@@ -179,6 +183,8 @@ namespace CustomCharInfo.server.Controllers
                     x.Moveset.ReleaseDate,
                     x.Moveset.AdminPick,
                     x.Moveset.PrivateMoveset,
+
+                    LikeCount = _context.MovesetLikes.Count(ml => ml.MovesetId == x.Moveset.MovesetId),
                 })
                 .ToListAsync();
 
@@ -471,6 +477,9 @@ namespace CustomCharInfo.server.Controllers
                     return Forbid();
                 }
             }
+
+            moveset.LikeCount = await _context.MovesetLikes.CountAsync(ml => ml.MovesetId == moveset.MovesetId);
+            moveset.UserLiked = userId != null && await _context.MovesetLikes.AnyAsync(ml => ml.MovesetId == moveset.MovesetId && ml.UserId == userId);
 
             return Ok(moveset);
         }
@@ -851,6 +860,30 @@ namespace CustomCharInfo.server.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        [Authorize]
+        [HttpPost("{id}/like")]
+        public async Task<IActionResult> ToggleLike(int id)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return Forbid();
+
+            var moveset = await _context.Movesets.FindAsync(id);
+            if (moveset == null) return NotFound();
+
+            var existing = await _context.MovesetLikes
+                .FirstOrDefaultAsync(ml => ml.MovesetId == id && ml.UserId == userId);
+
+            if (existing != null)
+                _context.MovesetLikes.Remove(existing);
+            else
+                _context.MovesetLikes.Add(new MovesetLike { MovesetId = id, UserId = userId, CreatedAt = DateTime.UtcNow });
+
+            await _context.SaveChangesAsync();
+
+            var likeCount = await _context.MovesetLikes.CountAsync(ml => ml.MovesetId == id);
+            return Ok(new { likeCount, userLiked = existing == null });
         }
     }
 }

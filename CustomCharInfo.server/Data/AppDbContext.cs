@@ -27,6 +27,9 @@ namespace CustomCharInfo.server.Data
         public DbSet<ApplicationUser> Users { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
 
+        // Likes
+        public DbSet<MovesetLike> MovesetLikes { get; set; }
+
         // Admin
         public DbSet<ActionLog> ActionLogs { get; set; }
         public DbSet<ItemType> ItemTypes { get; set; }
@@ -50,6 +53,9 @@ namespace CustomCharInfo.server.Data
 
             modelBuilder.Entity<MovesetHook>()
                 .HasKey(mh => new { mh.MovesetId, mh.HookId });
+
+            modelBuilder.Entity<MovesetLike>()
+                .HasKey(ml => new { ml.MovesetId, ml.UserId });
 
             modelBuilder.Entity<Moveset>()
                 .HasOne(m => m.VanillaChar)

@@ -46,6 +46,9 @@ namespace CustomCharInfo.server.Models.DTOs
 
         public string ThumbhImageUrl { get; set; }
         public string MovesetHeroImageUrl { get; set; }
+
+        public int LikeCount { get; set; }
+        public bool UserLiked { get; set; }
     }
 
     public class VanillaCharDto2
