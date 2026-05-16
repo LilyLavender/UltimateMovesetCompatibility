@@ -60,13 +60,13 @@
       </v-row>
 
       <!-- Logs -->
-      <v-row v-if="filteredLogs.length">
+      <v-row v-if="filteredGroups.length">
         <v-col
-          v-for="log in filteredLogs"
-          :key="log.actionLogId"
+          v-for="group in filteredGroups"
+          :key="group.key"
           cols="12"
         >
-          <ActionLogItem :log="log" :isAdmin="isAdmin && !userId" />
+          <ActionLogGroup :logs="group.logs" :isAdmin="isAdmin && !userId" />
         </v-col>
       </v-row>
       <p v-else>No logs found.</p>
@@ -77,7 +77,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import api from '@/services/api'
-import ActionLogItem from '@/components/ActionLogItem.vue'
+import ActionLogGroup from '@/components/ActionLogGroup.vue'
 
 const props = defineProps({
   viewAll: {
@@ -91,7 +91,7 @@ const props = defineProps({
 })
 
 const logs = ref([])
-const filteredLogs = ref([])
+const filteredGroups = ref([])
 const user = ref(null)
 const isAdmin = ref(false)
 const filterEnabled = ref(true)
@@ -128,21 +128,16 @@ const fetchUser = async () => {
 const fetchLogs = async () => {
   try {
     const params = {
-      acceptanceStates: selectedAcceptanceStates.value,
+      acceptanceStates: [1, 2, 3, 4, 5, 6, 7],
       itemTypes: selectedItemTypes.value
     }
 
-    // Admin viewing user
     if (props.userId) {
       params.targetUserId = props.userId
       params.viewAll = false
-    }
-    // Admin viewing all
-    else if (props.viewAll) {
+    } else if (props.viewAll) {
       params.viewAll = true
-    }
-    // Normal user
-    else {
+    } else {
       params.viewAll = false
     }
 
@@ -158,23 +153,23 @@ const filterLogs = () => {
   const enabledStates = selectedAcceptanceStates.value
   const enabledItemTypes = selectedItemTypes.value
 
-  const latestMap = new Map()
+  const groupMap = new Map()
   for (const log of logs.value) {
     if (!enabledItemTypes.includes(log.itemType.itemTypeId)) continue
-
     const key = `${log.itemType.itemTypeId}-${log.item?.movesetId ?? log.item?.modderId ?? log.item?.seriesId ?? log.itemId}`
-    const existing = latestMap.get(key)
-    if (!existing || new Date(log.createdAt) > new Date(existing.createdAt)) {
-      latestMap.set(key, log)
-    }
+    if (!groupMap.has(key)) groupMap.set(key, [])
+    groupMap.get(key).push(log)
   }
 
-  const latestLogs = Array.from(latestMap.values())
-  filteredLogs.value = filterEnabled.value
-    ? latestLogs.filter(log =>
-        enabledStates.includes(log.acceptanceState.acceptanceStateId)
-      )
-    : latestLogs
+  const groups = []
+  for (const [key, groupLogs] of groupMap) {
+    groupLogs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    const latest = groupLogs[0]
+    if (filterEnabled.value && !enabledStates.includes(latest.acceptanceState.acceptanceStateId)) continue
+    groups.push({ key, logs: groupLogs })
+  }
+
+  filteredGroups.value = groups
 }
 
 // Filter helpers
@@ -193,11 +188,8 @@ watch(
     if (props.userId) fetchLogs()
   }
 )
-watch(
-  [selectedAcceptanceStates, selectedItemTypes],
-  fetchLogs,
-  { deep: true }
-)
+watch(selectedAcceptanceStates, filterLogs, { deep: true })
+watch(selectedItemTypes, fetchLogs, { deep: true })
 
 onMounted(async () => {
   await fetchUser()
