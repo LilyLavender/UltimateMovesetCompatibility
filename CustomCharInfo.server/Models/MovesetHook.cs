@@ -13,5 +13,7 @@ namespace CustomCharInfo.server.Models
         public Hook Hook { get; set; }
 
         public string? Description { get; set; }
+
+        public int SortOrder { get; set; }
     }
 }

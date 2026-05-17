@@ -14,6 +14,7 @@ import ForgotPasswordPage from '@/views/ForgotPasswordPage.vue';
 // Movesets
 import MovesetsPage from '@/views/MovesetsPage.vue';
 import MovesetsListPage from '@/views/MovesetsListPage.vue';
+import SlotGridPage from '@/views/SlotGridPage.vue';
 import MovesetDetail from '@/views/MovesetDetail.vue';
 import AddMoveset from '@/views/AddMoveset.vue';
 import EditMoveset from '@/views/EditMoveset.vue';
@@ -64,6 +65,12 @@ const routes = [
     name: 'MovesetsList',
     component: MovesetsListPage,
     meta: { title: 'Movesets' },
+  },
+  {
+    path: '/slot-grid',
+    name: 'SlotGrid',
+    component: SlotGridPage,
+    meta: { title: 'Slot Grid' },
   },
   {
     path: '/blog',

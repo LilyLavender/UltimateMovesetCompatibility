@@ -8,6 +8,8 @@ namespace CustomCharInfo.server.Models.DTOs
         public int HookId { get; set; }
 
         public string? Description { get; set; }
+
+        public int SortOrder { get; set; }
     }
 }
 

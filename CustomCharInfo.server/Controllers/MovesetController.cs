@@ -191,6 +191,55 @@ namespace CustomCharInfo.server.Controllers
             return Ok(movesets);
         }
 
+        [HttpGet("slot-grid")]
+        public async Task<ActionResult> GetSlotGrid()
+        {
+            var blockedStates = new[] { 2, 4, 6 };
+
+            var rows = await _context.Movesets
+                .AsNoTracking()
+                .Select(m => new
+                {
+                    m.MovesetId,
+                    m.ModdedCharName,
+                    m.VanillaCharInternalName,
+                    VanillaDisplayName = m.VanillaChar != null ? m.VanillaChar.DisplayName : m.VanillaCharInternalName,
+                    SlotsStart = m.SlotsStart ?? 0,
+                    SlotsEnd = m.SlotsEnd ?? 0,
+                    IsPrivate = m.PrivateMoveset == true,
+                    LatestState = _context.ActionLogs
+                        .Where(a => a.ItemTypeId == 1 && a.ItemId == m.MovesetId)
+                        .OrderByDescending(a => a.CreatedAt)
+                        .Select(a => (int?)a.AcceptanceStateId)
+                        .FirstOrDefault()
+                })
+                .ToListAsync();
+
+            var result = rows
+                .Where(m => m.LatestState == null || !blockedStates.Contains(m.LatestState.Value))
+                .GroupBy(m => new { m.VanillaCharInternalName, m.VanillaDisplayName })
+                .OrderBy(g => g.Key.VanillaDisplayName)
+                .Select(g => new
+                {
+                    VanillaChar = g.Key.VanillaCharInternalName,
+                    DisplayName = g.Key.VanillaDisplayName,
+                    Movesets = g
+                        .OrderBy(m => m.SlotsStart)
+                        .Select(m => new
+                        {
+                            m.MovesetId,
+                            Name = m.IsPrivate ? "???" : m.ModdedCharName,
+                            m.SlotsStart,
+                            m.SlotsEnd,
+                            m.IsPrivate
+                        })
+                        .ToList()
+                })
+                .ToList();
+
+            return Ok(result);
+        }
+
         [HttpGet("report")]
         public async Task<ActionResult<IEnumerable<object>>> GetMovesetsReport()
         {
@@ -412,10 +461,12 @@ namespace CustomCharInfo.server.Controllers
                         }).ToList(),
 
                     MovesetArticles = m.MovesetArticles
+                        .OrderBy(ma => ma.SortOrder)
                         .Select(ma => new MovesetArticleDto2
                         {
                             ModdedName = ma.ModdedName,
                             Description = ma.Description,
+                            SortOrder = ma.SortOrder,
                             Article = new ArticleDto2
                             {
                                 ArticleId = ma.Article.ArticleId,
@@ -425,9 +476,11 @@ namespace CustomCharInfo.server.Controllers
                         }).ToList(),
 
                     MovesetHooks = m.MovesetHooks
+                        .OrderBy(mh => mh.SortOrder)
                         .Select(mh => new MovesetHookDto2
                         {
                             Description = mh.Description,
+                            SortOrder = mh.SortOrder,
                             Hook = new HookDto2
                             {
                                 HookId = mh.Hook.HookId,
@@ -524,16 +577,18 @@ namespace CustomCharInfo.server.Controllers
                 PrivateModder = dto.PrivateModder,
                 MovesetModders = dto.ModderIds.Select(id => new MovesetModder { ModderId = id }).ToList(),
                 MovesetDependencies = dto.DependencyIds?.Select(id => new MovesetDependency { DependencyId = id }).ToList() ?? new List<MovesetDependency>(),
-                MovesetHooks = dto.Hooks?.Select(h => new MovesetHook
+                MovesetHooks = dto.Hooks?.Select((h, i) => new MovesetHook
                 {
                     HookId = h.HookId,
-                    Description = h.Description
+                    Description = h.Description,
+                    SortOrder = i
                 }).ToList() ?? new List<MovesetHook>(),
-                MovesetArticles = dto.Articles?.Select(a => new MovesetArticle
+                MovesetArticles = dto.Articles?.Select((a, i) => new MovesetArticle
                 {
                     ArticleId = a.ArticleId,
                     ModdedName = a.ModdedName,
-                    Description = a.Description
+                    Description = a.Description,
+                    SortOrder = i
                 }).ToList() ?? new List<MovesetArticle>()
             };
 
@@ -752,23 +807,25 @@ namespace CustomCharInfo.server.Controllers
             // Sync Hooks
             _context.MovesetHooks.RemoveRange(moveset.MovesetHooks);
             moveset.MovesetHooks = dto.Hooks
-                .Select(h => new MovesetHook
+                .Select((h, i) => new MovesetHook
                 {
                     MovesetId = id,
                     HookId = h.HookId,
-                    Description = h.Description
+                    Description = h.Description,
+                    SortOrder = i
                 })
                 .ToList();
 
             // Sync Articles
             _context.MovesetArticles.RemoveRange(moveset.MovesetArticles);
             moveset.MovesetArticles = dto.Articles
-                .Select(a => new MovesetArticle
+                .Select((a, i) => new MovesetArticle
                 {
                     MovesetId = id,
                     ArticleId = a.ArticleId,
                     ModdedName = a.ModdedName,
-                    Description = a.Description
+                    Description = a.Description,
+                    SortOrder = i
                 })
                 .ToList();
 

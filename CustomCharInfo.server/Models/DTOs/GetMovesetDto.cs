@@ -103,6 +103,7 @@ namespace CustomCharInfo.server.Models.DTOs
         public ArticleDto2 Article { get; set; }
         public string ModdedName { get; set; }
         public string Description { get; set; }
+        public int SortOrder { get; set; }
     }
 
     public class ArticleDto2
@@ -116,6 +117,7 @@ namespace CustomCharInfo.server.Models.DTOs
     {
         public HookDto2 Hook { get; set; }
         public string Description { get; set; }
+        public int SortOrder { get; set; }
     }
 
     public class HookDto2

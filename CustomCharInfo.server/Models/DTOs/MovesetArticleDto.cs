@@ -9,6 +9,8 @@ namespace CustomCharInfo.server.Models.DTOs
         [Required]
         public string ModdedName { get; set; }
         public string? Description { get; set; }
+
+        public int SortOrder { get; set; }
     }
 }
 

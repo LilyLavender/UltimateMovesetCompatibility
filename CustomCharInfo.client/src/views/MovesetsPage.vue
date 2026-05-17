@@ -14,6 +14,15 @@
         View all movesets as a table
       </router-link>
 
+      <!-- View slot grid -->
+      <router-link
+        :to="{ name: 'SlotGrid' }"
+        class="unvisitable text-decoration-none ml-5"
+      >
+        <i class="mdi mdi-grid"></i>
+        View slot grid
+      </router-link>
+
       <!-- Add moveset -->
       <router-link
         v-if="user && user.userTypeId >= 2"

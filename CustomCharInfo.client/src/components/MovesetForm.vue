@@ -532,11 +532,15 @@
             v-for="(entry, i) in form.articles"
             :key="i"
           >
-            <v-list-item-title class="d-inline">
+            <v-list-item-title>
               <strong>{{ entry.description }}</strong>: {{ getArticleName(entry.articleId) }} ({{ entry.moddedName }})
             </v-list-item-title>
-            <v-icon @click="editArticle(i)" class="d-inline edit-icon">mdi-pencil</v-icon>
-            <v-icon @click="form.articles.splice(i, 1)" class="d-inline delete-icon">mdi-delete</v-icon>
+            <template #append>
+              <v-icon @click="moveItem(form.articles, i, -1)" class="reorder-icon" :class="{ invisible: i === 0 }">mdi-arrow-up</v-icon>
+              <v-icon @click="moveItem(form.articles, i, 1)" class="reorder-icon" :class="{ invisible: i === form.articles.length - 1 }">mdi-arrow-down</v-icon>
+              <v-icon @click="editArticle(i)" class="edit-icon">mdi-pencil</v-icon>
+              <v-icon @click="form.articles.splice(i, 1)" class="delete-icon">mdi-delete</v-icon>
+            </template>
           </v-list-item>
         </v-list>
       </section>
@@ -603,11 +607,15 @@
             v-for="(entry, i) in form.hooks"
             :key="i"
           >
-            <v-list-item-title class="d-inline">
-              0x{{ entry.offset }} ({{ entry.hookDescription }}) – {{ entry.description }}
+            <v-list-item-title>
+              0x{{ entry.offset }} <span class="hook-usage-dim">({{ entry.hookDescription }})</span> – <span class="hook-usage-dim">{{ entry.description }}</span>
             </v-list-item-title>
-            <v-icon @click="editHook(i)" class="d-inline edit-icon">mdi-pencil</v-icon>
-            <v-icon @click="form.hooks.splice(i, 1)" class="d-inline delete-icon">mdi-delete</v-icon>
+            <template #append>
+              <v-icon @click="moveItem(form.hooks, i, -1)" class="reorder-icon" :class="{ invisible: i === 0 }">mdi-arrow-up</v-icon>
+              <v-icon @click="moveItem(form.hooks, i, 1)" class="reorder-icon" :class="{ invisible: i === form.hooks.length - 1 }">mdi-arrow-down</v-icon>
+              <v-icon @click="editHook(i)" class="edit-icon">mdi-pencil</v-icon>
+              <v-icon @click="form.hooks.splice(i, 1)" class="delete-icon">mdi-delete</v-icon>
+            </template>
           </v-list-item>
         </v-list>
       </section>
@@ -737,6 +745,14 @@ const addHook = () => {
 
   newHook.value = { hookId: null, description: '' }
   addHookForm.value = false
+}
+
+const moveItem = (arr, i, dir) => {
+  const j = i + dir
+  if (j < 0 || j >= arr.length) return
+  const tmp = arr[i]
+  arr[i] = arr[j]
+  arr[j] = tmp
 }
 
 const editHook = (i) => {
@@ -1001,7 +1017,8 @@ section h2 {
   font-size: medium;
 }
 .edit-icon,
-.delete-icon {
+.delete-icon,
+.reorder-icon {
   background: none;
   font-size: 20px;
   margin-left: 8px;
@@ -1009,12 +1026,21 @@ section h2 {
   transition: color 150ms ease-in-out;
 }
 .edit-icon:hover,
-.delete-icon:hover {
+.delete-icon:hover,
+.reorder-icon:hover {
   color: #dddddd;
 }
 .edit-icon::before,
-.delete-icon::before {
+.delete-icon::before,
+.reorder-icon::before {
   margin-top: -4px;
+}
+.invisible {
+  visibility: hidden;
+  pointer-events: none;
+}
+.hook-usage-dim {
+  opacity: 0.6;
 }
 
 /* Fix for showing/hiding extra ID input */

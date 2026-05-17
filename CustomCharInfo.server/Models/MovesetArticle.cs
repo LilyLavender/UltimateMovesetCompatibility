@@ -16,5 +16,7 @@ namespace CustomCharInfo.server.Models
         public string ModdedName { get; set; }
 
         public string? Description { get; set; }
+
+        public int SortOrder { get; set; }
     }
 }

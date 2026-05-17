@@ -91,10 +91,10 @@ const PILL_COLORS = {
 }
 
 const PILL_LABELS = {
-  1: 'Pending Admin (Soft)',
-  2: 'Pending Admin (Hard)',
-  3: 'Pending User (Soft)',
-  4: 'Pending User (Hard)',
+  1: 'Pending Admin Action (Soft)',
+  2: 'Pending Admin Action (Hard)',
+  3: 'Pending User Action (Soft)',
+  4: 'Pending User Action (Hard)',
   6: 'Rejected',
 }
 
