@@ -30,6 +30,9 @@ namespace CustomCharInfo.server.Data
         // Likes
         public DbSet<MovesetLike> MovesetLikes { get; set; }
 
+        // Compatibility
+        public DbSet<CompatibilityReport> CompatibilityReports { get; set; }
+
         // Admin
         public DbSet<ActionLog> ActionLogs { get; set; }
         public DbSet<ItemType> ItemTypes { get; set; }
@@ -94,6 +97,25 @@ namespace CustomCharInfo.server.Data
                 .WithMany(ass => ass.ActionLogs)
                 .HasForeignKey(al => al.AcceptanceStateId);
             
+            // Compatibility Reports
+            modelBuilder.Entity<CompatibilityReport>()
+                .HasOne<Moveset>()
+                .WithMany()
+                .HasForeignKey(cr => cr.MovesetId1)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<CompatibilityReport>()
+                .HasOne<Moveset>()
+                .WithMany()
+                .HasForeignKey(cr => cr.MovesetId2)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<CompatibilityReport>()
+                .HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(cr => cr.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             // User Roles
             modelBuilder.Entity<UserType>()
                 .HasMany(u => u.Users)

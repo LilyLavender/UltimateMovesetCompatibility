@@ -29,6 +29,8 @@ import SeriesDetail from '@/views/SeriesDetail.vue';
 import AddSeries from '@/views/AddSeries.vue';
 import EditSeries from '@/views/EditSeries.vue';
 import RequestEditSeries from '@/views/RequestEditSeries.vue';
+// Tools
+import CompatibilityCheckPage from '@/views/CompatibilityCheckPage.vue';
 // Hooks
 import HooksPage from '@/views/HooksPage.vue';
 import AddHook from '@/views/AddHook.vue';
@@ -71,6 +73,12 @@ const routes = [
     name: 'SlotGrid',
     component: SlotGridPage,
     meta: { title: 'Slot Grid' },
+  },
+  {
+    path: '/compatibility',
+    name: 'CompatibilityCheck',
+    component: CompatibilityCheckPage,
+    meta: { title: 'Compatibility Check' },
   },
   {
     path: '/blog',

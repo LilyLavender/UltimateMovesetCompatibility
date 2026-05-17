@@ -5,13 +5,22 @@
     <div v-if="loading" class="text-center py-10">Loading...</div>
 
     <template v-else>
-      <!-- Legend -->
-      <div class="legend mb-3">
-        <span class="swatch swatch-normal" />
-        <span class="legend-text">No overlap</span>
-        <span class="swatch swatch-overlap ml-4" />
-        <span class="legend-text">Slot overlap</span>
+      <!-- Legend + sort controls -->
+      <div class="controls-row mb-3">
+        <div class="legend">
+          <span class="swatch swatch-normal" />
+          <span class="legend-text">No overlap</span>
+          <span class="swatch swatch-overlap ml-4" />
+          <span class="legend-text">Slot overlap</span>
+          <p class="slot-note ml-5">Most movesets allow their slots to be changed, so two movesets sharing a slot range isn't necessarily a dealbreaker.</p>
+        </div>
+        <div class="sort-btns">
+          <span class="sort-label">Sort:</span>
+          <button :class="['sort-btn', sortOrder === 'alpha' ? 'sort-btn--active' : '']" @click="sortOrder = 'alpha'">A–Z</button>
+          <button :class="['sort-btn', sortOrder === 'count' ? 'sort-btn--active' : '']" @click="sortOrder = 'count'">Moveset Count</button>
+        </div>
       </div>
+
 
       <!-- Table -->
       <div class="scroll-container">
@@ -41,7 +50,7 @@
                 :alt="row.displayName"
                 loading="lazy"
               />
-              <span class="char-name">{{ row.displayName }}</span>
+              <span class="char-name">{{ row.displayName }} <span class="char-count">({{ row.movesetCount }})</span></span>
             </div>
             <div class="slots-col" :style="{ height: rowHeight(row) + 'px' }">
               <div
@@ -103,6 +112,7 @@ const LANE_H = 26
 const loading = ref(true)
 const allChars = ref([])
 const gridData = ref([])
+const sortOrder = ref('alpha')
 
 const movesetsByChar = computed(() => {
   const map = {}
@@ -156,9 +166,6 @@ function slotRangeText(m) {
 
 function tooltipText(m) {
   let text = `${m.name} (${slotRangeText(m)})`
-  if (m.hasOverlap && m.overlapNames.length) {
-    text += ` — overlaps: ${m.overlapNames.join(', ')}`
-  }
   return text
 }
 
@@ -195,8 +202,8 @@ function assignLanesAndOverlaps(movesets) {
   return { movesets: result, laneCount: laneEnds.length }
 }
 
-const processedGrid = computed(() =>
-  allChars.value
+const processedGrid = computed(() => {
+  const rows = allChars.value
     .filter(c => c.vanillaCharInternalName !== 'kirby')
     .map(c => {
       const raw = movesetsByChar.value[c.vanillaCharInternalName] ?? []
@@ -205,10 +212,19 @@ const processedGrid = computed(() =>
         vanillaChar: c.vanillaCharInternalName,
         displayName: c.displayName,
         movesets,
-        laneCount
+        laneCount,
+        movesetCount: raw.length
       }
     })
-)
+
+  if (sortOrder.value === 'count') {
+    rows.sort((a, b) => b.movesetCount - a.movesetCount || a.displayName.localeCompare(b.displayName))
+  } else {
+    rows.sort((a, b) => a.displayName.localeCompare(b.displayName))
+  }
+
+  return rows
+})
 
 onMounted(async () => {
   const [charsRes, gridRes] = await Promise.all([
@@ -374,12 +390,66 @@ onMounted(async () => {
   min-width: 0;
 }
 
+/* Controls row */
+.controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 /* Legend */
 .legend {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 12px;
+}
+
+/* Sort buttons */
+.sort-btns {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sort-label {
+  font-size: 12px;
+  color: #888;
+  margin-right: 2px;
+}
+
+.sort-btn {
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 4px;
+  border: 1px solid #444;
+  background: #1e1e1e;
+  color: #ccc;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.sort-btn:hover { background: #2a2a2a; }
+
+.sort-btn--active {
+  background: #1565c0;
+  border-color: #1976d2;
+  color: #fff;
+}
+
+/* Slot note */
+.slot-note {
+  font-size: 12px;
+  color: #888;
+  margin: 0;
+}
+
+/* Char count badge */
+.char-count {
+  color: #666;
+  font-size: 0.85em;
 }
 
 .swatch {

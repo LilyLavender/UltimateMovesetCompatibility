@@ -23,6 +23,15 @@
         View slot grid
       </router-link>
 
+      <!-- Compatibility check -->
+      <router-link
+        :to="{ name: 'CompatibilityCheck' }"
+        class="unvisitable text-decoration-none ml-5"
+      >
+        <i class="mdi mdi-swap-horizontal"></i>
+        Compatibility check
+      </router-link>
+
       <!-- Add moveset -->
       <router-link
         v-if="user && user.userTypeId >= 2"

@@ -43,9 +43,9 @@ useHead({
   title: 'UMC | Modders',
   meta: [
     { name: 'description', content: 'Browse modders on Ultimate Moveset Compatibility.' },
-    { property: 'og:title', content: 'Modders — Ultimate Moveset Compatibility' },
+    { property: 'og:title', content: 'Modders | Ultimate Moveset Compatibility' },
     { property: 'og:description', content: 'Browse modders on Ultimate Moveset Compatibility.' },
-    { name: 'twitter:title', content: 'Modders — Ultimate Moveset Compatibility' },
+    { name: 'twitter:title', content: 'Modders | Ultimate Moveset Compatibility' },
     { name: 'twitter:description', content: 'Browse modders on Ultimate Moveset Compatibility.' },
   ],
 })

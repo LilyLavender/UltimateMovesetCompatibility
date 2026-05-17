@@ -148,7 +148,7 @@ onUnmounted(() => {
   width: 60px;
 }
 
-/* Plain div wrapper — no Vuetify overflow:hidden — so ::before can bleed right freely */
+/* Plain div wrapper */
 .nav-bg-wrapper {
   position: absolute;
   right: 0;
