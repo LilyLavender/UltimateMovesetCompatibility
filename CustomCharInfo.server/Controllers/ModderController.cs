@@ -123,6 +123,9 @@ namespace CustomCharInfo.server.Controllers
                     x.Modder.GamebananaId,
                     x.Modder.DiscordUsername,
                     x.Modder.PfpUrl,
+                    x.Modder.TwitterUsername,
+                    x.Modder.BlueskyHandle,
+                    x.Modder.GithubUsername,
                     Problematic = x.Modder.User != null && x.Modder.User.Problematic == true
                 })
                 .ToListAsync();
@@ -170,6 +173,9 @@ namespace CustomCharInfo.server.Controllers
                     x.Modder.GamebananaId,
                     x.Modder.DiscordUsername,
                     x.Modder.PfpUrl,
+                    x.Modder.TwitterUsername,
+                    x.Modder.BlueskyHandle,
+                    x.Modder.GithubUsername,
                     Problematic = x.Modder.User != null && x.Modder.User.Problematic == true
                 })
                 .FirstOrDefaultAsync();
@@ -232,7 +238,10 @@ namespace CustomCharInfo.server.Controllers
                 Bio = dto.Bio,
                 GamebananaId = dto.GamebananaId,
                 DiscordUsername = dto.DiscordUsername,
-                PfpUrl = dto.PfpUrl
+                PfpUrl = dto.PfpUrl,
+                TwitterUsername = dto.TwitterUsername,
+                BlueskyHandle = dto.BlueskyHandle,
+                GithubUsername = dto.GithubUsername,
             };
 
             _context.Modders.Add(modder);
@@ -294,6 +303,9 @@ namespace CustomCharInfo.server.Controllers
             var snapGbId = modder.GamebananaId;
             var snapDiscord = modder.DiscordUsername;
             var snapPfpUrl = modder.PfpUrl;
+            var snapTwitter = modder.TwitterUsername;
+            var snapBluesky = modder.BlueskyHandle;
+            var snapGithub = modder.GithubUsername;
 
             if (dto.Bio != null)
                 modder.Bio = dto.Bio;
@@ -305,6 +317,9 @@ namespace CustomCharInfo.server.Controllers
                 modder.DiscordUsername = dto.DiscordUsername;
 
             modder.PfpUrl = dto.PfpUrl;
+            modder.TwitterUsername = dto.TwitterUsername;
+            modder.BlueskyHandle = dto.BlueskyHandle;
+            modder.GithubUsername = dto.GithubUsername;
 
             var diff = DiffHelper.Build(new (string, object?, object?)[]
             {
@@ -312,6 +327,9 @@ namespace CustomCharInfo.server.Controllers
                 ("GamebananaId",    snapGbId,    dto.GamebananaId),
                 ("DiscordUsername", snapDiscord, dto.DiscordUsername),
                 ("PfpUrl",         snapPfpUrl,  dto.PfpUrl),
+                ("TwitterUsername", snapTwitter,  dto.TwitterUsername),
+                ("BlueskyHandle",   snapBluesky,  dto.BlueskyHandle),
+                ("GithubUsername",  snapGithub,   dto.GithubUsername),
             });
 
             int newState = user.UserTypeId == 3

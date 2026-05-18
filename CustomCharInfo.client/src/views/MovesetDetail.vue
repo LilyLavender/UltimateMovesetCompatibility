@@ -367,8 +367,8 @@ const releaseDisplay = computed(() => {
   }
 
   // Beta testing
-  if (state === 'Open for Beta Testing') {
-    let text = 'Open for Beta Testing'
+  if (state === 'Open Beta') {
+    let text = 'Open Beta'
     if (hasDate) {
       text += isPast
         ? ` (Released ${formatDate(date)})`

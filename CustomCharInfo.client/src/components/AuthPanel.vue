@@ -152,20 +152,12 @@
       </div>
     </div>
   </v-card>
-  <v-card class="pa-4" width="1020px" v-if="user">
-    <!-- Signed-in (ANY) actions -->
-    <div>
-      <!-- Action Log -->
-      <ActionLogList />
-    </div>
-  </v-card>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import api from '@/services/api'
 import { jwtDecode } from "jwt-decode"
-import ActionLogList from '@/components/ActionLogList.vue'
 
 const email = ref('')
 const password = ref('')

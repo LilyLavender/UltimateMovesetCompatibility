@@ -8,6 +8,9 @@ namespace CustomCharInfo.server.Models.DTOs
         public int? GamebananaId { get; set; }
         public string? DiscordUsername { get; set; }
         public string? PfpUrl { get; set; }
+        public string? TwitterUsername { get; set; }
+        public string? BlueskyHandle { get; set; }
+        public string? GithubUsername { get; set; }
         public string? Notes { get; set; }
     }
 }

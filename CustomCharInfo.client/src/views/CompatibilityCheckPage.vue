@@ -187,7 +187,7 @@ import api from '@/services/api'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
-const ALLOWED_STATES = new Set(['Released', 'Pending Update', 'Open for Beta Testing'])
+const ALLOWED_STATES = new Set(['Released', 'Pending Update', 'Open Beta'])
 const COMMUNITY_MIN_VOTES = 3
 const COMMUNITY_THRESHOLD = 0.65
 

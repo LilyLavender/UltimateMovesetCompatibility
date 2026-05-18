@@ -59,6 +59,9 @@ namespace CustomCharInfo.server.Controllers
                 .Include(m => m.MovesetModders)
                     .ThenInclude(mm => mm.Modder)
                         .ThenInclude(modder => modder.User)
+                .Include(m => m.MovesetArticles)
+                    .ThenInclude(ma => ma.Article)
+                .Include(m => m.VanillaChar)
                 .Select(m => new
                 {
                     Moveset = m,
@@ -191,6 +194,18 @@ namespace CustomCharInfo.server.Controllers
                             : x.Moveset.Subtitle,
 
                     LikeCount = _context.MovesetLikes.Count(ml => ml.MovesetId == x.Moveset.MovesetId),
+
+                    VanillaCharName = x.Moveset.VanillaCharInternalName,
+                    VanillaCharDisplayName = x.Moveset.VanillaChar != null
+                        ? x.Moveset.VanillaChar.DisplayName
+                        : x.Moveset.VanillaCharInternalName,
+                    SeriesName = x.Moveset.PrivateMoveset == true && !(isAdmin || x.IsOwner)
+                        ? null
+                        : (x.Moveset.Series != null ? x.Moveset.Series.SeriesName : null),
+                    ArticleNames = x.Moveset.MovesetArticles
+                        .Select(ma => $"{ma.Article.VanillaCharInternalName}_{ma.Article.ArticleName}"),
+                    HasSourceCode = x.Moveset.SourceCode != null && x.Moveset.SourceCode != "",
+                    HasModsWikiLink = x.Moveset.ModsWikiLink != null && x.Moveset.ModsWikiLink != "",
                 })
                 .ToListAsync();
 
@@ -359,7 +374,7 @@ namespace CustomCharInfo.server.Controllers
                     // Articles
                     Articles = x.Moveset.MovesetArticles.Select(ma => new
                     {
-                        Original = $"{ma.Article.VanillaCharInternalName}-{ma.Article.ArticleName}",
+                        Original = $"{ma.Article.VanillaCharInternalName}_{ma.Article.ArticleName}",
                         Cloned = x.Moveset.PrivateMoveset == true ? "???" : ma.ModdedName
                     }),
 

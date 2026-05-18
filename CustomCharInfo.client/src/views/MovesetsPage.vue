@@ -1,7 +1,7 @@
 <template>
   <div class="p-6 mx-auto">
     <!-- Page title -->
-    <h1 class="mb-1 title-font page-title no-select">All Movesets</h1>
+    <h1 class="mb-1 title-font page-title no-select text-center">All Movesets</h1>
 
     <!-- Actions -->
     <div class="mb-5 pb-5 d-flex justify-center">

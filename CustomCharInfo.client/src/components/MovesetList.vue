@@ -1,34 +1,46 @@
 <template>
   <div class="moveset-list-all no-select">
     <!-- Controls -->
-    <v-row v-if="showControls" class="controls mb-2">
-      <!-- Header -->
-      <v-col cols="12" sm="3">
-        <h2 class="center-entire">Filters</h2>
+    <v-row v-if="showControls" dense align="center" class="controls mb-3">
+
+      <!-- Search -->
+      <v-col cols="12" sm="12" md="4">
+        <v-text-field
+          v-model="searchQuery"
+          label="Search"
+          placeholder="Name, series, creator…"
+          variant="outlined"
+          density="compact"
+          hide-details
+          clearable
+          prepend-inner-icon="mdi-magnify"
+        />
       </v-col>
-      
+
       <!-- Sort -->
-      <v-col cols="12" sm="3">
+      <v-col cols="6" sm="4" md="2">
         <v-select
           label="Sort"
           v-model="sortMode"
           variant="outlined"
+          density="compact"
           hide-details
           :items="[
             { title: 'Alphabetical', value: 'alpha' },
             { title: 'Release Date', value: 'releaseDate' },
-            { title: 'Most Popular', value: 'popularity' }
+            { title: 'Most Popular', value: 'popularity' },
           ]"
         />
       </v-col>
 
       <!-- Release State -->
-      <v-col cols="12" sm="3">
+      <v-col cols="6" sm="4" md="2">
         <v-select
           label="Release State"
           v-model="filterReleaseState"
           clearable
           variant="outlined"
+          density="compact"
           hide-details
           :items="releaseStates"
           item-title="releaseStateName"
@@ -36,12 +48,113 @@
         />
       </v-col>
 
+      <!-- Privacy -->
+      <v-col cols="6" sm="4" md="2">
+        <v-select
+          label="Privacy"
+          v-model="filterPrivacy"
+          variant="outlined"
+          density="compact"
+          hide-details
+          :items="[
+            { title: 'All', value: 'all' },
+            { title: 'Public', value: 'public' },
+            { title: 'Private', value: 'private' },
+          ]"
+        />
+      </v-col>
+
       <!-- Show Joke Movesets -->
-      <v-col cols="12" sm="3" class="joke-toggle-col">
+      <v-col cols="auto" class="joke-toggle-col d-flex align-center">
         <v-checkbox
           v-model="showJokeMovesets"
           hide-details
-          label="Show Joke Movesets"
+          density="compact"
+          label="Joke Movesets"
+        />
+      </v-col>
+
+      <!-- Vanilla Character -->
+      <v-col cols="12" sm="6" md="4">
+        <v-autocomplete
+          label="Vanilla Character"
+          v-model="filterVanillaChar"
+          clearable
+          variant="outlined"
+          density="compact"
+          hide-details
+          :items="vanillaChars"
+          item-title="displayName"
+          item-value="internalName"
+          :custom-filter="vanillaCharFilter"
+          auto-select-first
+        >
+          <template #item="{ props, item }">
+            <v-list-item v-bind="props" class="vc-remove-title">
+              <div class="vc-filter-option">
+                <img
+                  :src="`/UltimateMovesetCompatibility/vanilla-stock-icons/chara_2_${item.raw.internalName}.png`"
+                  class="vc-stock-icon"
+                />
+                <span>{{ item.raw.displayName }}</span>
+              </div>
+            </v-list-item>
+          </template>
+          <template #selection="{ item }">
+            <div class="vc-filter-option">
+              <img
+                :src="`/UltimateMovesetCompatibility/vanilla-stock-icons/chara_2_${item.raw.internalName}.png`"
+                class="vc-stock-icon"
+              />
+              <span>{{ item.raw.displayName }}</span>
+            </div>
+          </template>
+        </v-autocomplete>
+      </v-col>
+
+      <!-- Vanilla Article -->
+      <v-col cols="12" sm="6" md="4">
+        <v-autocomplete
+          label="Vanilla Article"
+          v-model="filterArticle"
+          clearable
+          variant="outlined"
+          density="compact"
+          hide-details
+          :items="articleNames"
+          auto-select-first
+        />
+      </v-col>
+
+      <!-- Open Source -->
+      <v-col cols="6" sm="3" md="2">
+        <v-select
+          label="Source"
+          v-model="filterOpenSource"
+          variant="outlined"
+          density="compact"
+          hide-details
+          :items="[
+            { title: 'All', value: 'all' },
+            { title: 'Open Source', value: 'yes' },
+            { title: 'Closed Source', value: 'no' },
+          ]"
+        />
+      </v-col>
+
+      <!-- On Mods Wiki -->
+      <v-col cols="6" sm="3" md="2">
+        <v-select
+          label="Mods Wiki"
+          v-model="filterOnModsWiki"
+          variant="outlined"
+          density="compact"
+          hide-details
+          :items="[
+            { title: 'All', value: 'all' },
+            { title: 'On Mods Wiki', value: 'yes' },
+            { title: 'Not on Mods Wiki', value: 'no' },
+          ]"
         />
       </v-col>
 
@@ -86,9 +199,39 @@ const hardHeldMovesetIds = ref(new Set())
 // sort/filter
 const sortMode = ref('alpha')
 const filterReleaseState = ref(null)
+const filterPrivacy = ref('all')
+const filterVanillaChar = ref(null)
+const filterArticle = ref(null)
+const searchQuery = ref('')
 const showJokeMovesets = ref(false)
+const filterOpenSource = ref('all')
+const filterOnModsWiki = ref('all')
+
+const vanillaCharFilter = (_, query, item) => {
+  const q = query.toLowerCase()
+  return item.raw.displayName.toLowerCase().includes(q) ||
+         item.raw.internalName.toLowerCase().includes(q)
+}
 
 const displayedMovesets = computed(() => props.movesets ?? fetchedMovesets.value)
+
+const vanillaChars = computed(() => {
+  const map = new Map()
+  displayedMovesets.value.forEach(m => {
+    if (m.vanillaCharName) map.set(m.vanillaCharName, m.vanillaCharDisplayName ?? m.vanillaCharName)
+  })
+  return [...map.entries()]
+    .sort((a, b) => a[1].localeCompare(b[1]))
+    .map(([internalName, displayName]) => ({ internalName, displayName }))
+})
+
+const articleNames = computed(() => {
+  const set = new Set()
+  displayedMovesets.value.forEach(m => {
+    m.articleNames?.forEach(a => { if (a) set.add(a) })
+  })
+  return [...set].sort()
+})
 
 const canViewMoveset = (moveset) => {
   if (!moveset.privateMoveset) return true
@@ -110,9 +253,50 @@ const processedMovesets = computed(() => {
     list = list.filter(m => !m.isJokeMoveset)
   }
 
-  // Filter
+  // Text search
+  if (searchQuery.value?.trim()) {
+    const q = searchQuery.value.trim().toLowerCase()
+    list = list.filter(m =>
+      m.moddedCharName?.toLowerCase().includes(q) ||
+      m.modders?.some(mod => mod.toLowerCase().includes(q)) ||
+      m.seriesName?.toLowerCase().includes(q)
+    )
+  }
+
+  // Release state filter
   if (filterReleaseState.value != null) {
     list = list.filter(m => m.releaseState === filterReleaseState.value)
+  }
+
+  // Privacy filter
+  if (filterPrivacy.value === 'public') {
+    list = list.filter(m => !m.privateMoveset)
+  } else if (filterPrivacy.value === 'private') {
+    list = list.filter(m => m.privateMoveset)
+  }
+
+  // Vanilla character filter
+  if (filterVanillaChar.value != null) {
+    list = list.filter(m => m.vanillaCharName === filterVanillaChar.value)
+  }
+
+  // Article filter
+  if (filterArticle.value != null) {
+    list = list.filter(m => m.articleNames?.includes(filterArticle.value))
+  }
+
+  // Open source filter
+  if (filterOpenSource.value === 'yes') {
+    list = list.filter(m => m.hasSourceCode)
+  } else if (filterOpenSource.value === 'no') {
+    list = list.filter(m => !m.hasSourceCode)
+  }
+
+  // Mods wiki filter
+  if (filterOnModsWiki.value === 'yes') {
+    list = list.filter(m => m.hasModsWikiLink)
+  } else if (filterOnModsWiki.value === 'no') {
+    list = list.filter(m => !m.hasModsWikiLink)
   }
 
   // Sort
@@ -235,17 +419,20 @@ onMounted(async () => {
   flex-wrap: wrap;
   justify-content: center;
   margin: 0 auto;
-  max-width: 1020px;
+  width: 1020px;
+  max-width: 100%;
 }
 
 .moveset-card {
   flex: 0 1 33.33%;
+  min-width: 340px;
   box-sizing: border-box;
 }
 
 @media (max-width: 768px) {
   .moveset-card {
     flex: 0 1 50%;
+    min-width: unset;
   }
 }
 
@@ -259,18 +446,34 @@ onMounted(async () => {
   margin-bottom: 4em;
 }
 
-/* Center text */
-.center-entire {
-  text-align: center;
-}
-
-div:has(>.center-entire) {
-  align-content: center;
-}
-
 .joke-toggle-col {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Vanilla char filter dropdown */
+.vc-filter-option {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+}
+
+.vc-stock-icon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+/* The selection slot sits inside v-field__input alongside the native <input>.
+   That input has flex-grow so it consumes left space, pushing our content right.
+   Expanding the selection wrapper to fill available space corrects this. */
+:deep(.v-select__selection) {
+  flex: 1;
+  min-width: 0;
+}
+
+.vc-remove-title :deep(.v-list-item-title:not(.vc-filter-option .v-list-item-title)) {
+  display: none;
 }
 </style>

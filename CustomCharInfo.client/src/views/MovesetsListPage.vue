@@ -1,32 +1,25 @@
 <template>
-  <v-container max-width="1200px">
-    <div class="d-flex align-baseline justify-space-between">
-      <!-- Header -->
-      <h1 class="mb-4 page-title no-select">Moveset Table</h1>
+  <div class="moveset-table-page">
+    <h1 class="page-title no-select mb-3">Moveset Table</h1>
 
-      <!-- Download -->
-      <div class="d-flex justify-end mb-2">
-        <v-btn @click="downloadCSV" class="btn">
-          <v-icon>mdi-file-download</v-icon>
-          Download CSV
-        </v-btn>
-      </div>
+    <!-- Controls row -->
+    <div class="controls-row mb-3">
+      <button class="dl-btn" @click="downloadCSV">
+        <span class="mdi mdi-file-download" />
+        Download CSV
+      </button>
     </div>
 
     <!-- Table -->
+    <div class="scroll-container">
     <v-data-table
       :headers="headers"
       :items="normalizedMovesets"
       item-key="moddedCharName"
-      class="dark-table sectioned-table"
-      density="comfortable"
+      class="umc-table"
+      density="compact"
       :items-per-page="-1"
       hide-default-footer
-      :style="{
-        '--core-end': coreEndIndex,
-        '--bool-end': boolEndIndex,
-        '--article-end': articleEndIndex
-      }"
     >
       <!-- Modded char name with subtitle -->
       <template #item.moddedCharName="{ item }">
@@ -51,7 +44,7 @@
             released: item.releaseState === 'Released',
             upcoming: item.releaseState === 'Upcoming',
             pending: item.releaseState === 'Pending Update',
-            beta: item.releaseState === 'Open for Beta Testing',
+            beta: item.releaseState === 'Open Beta',
             deprecated: item.releaseState === 'Deprecated'
           }"
         >
@@ -112,7 +105,8 @@
 
 
     </v-data-table>
-  </v-container>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -123,17 +117,17 @@ const movesets = ref([]);
 
 // Headers before processing
 const baseHeaders = [
-  { title: "Creators", key: "modders" },
-  { title: "Modded Char", key: "moddedCharName", headerProps: { class: "sticky" }, cellProps: { class: "sticky" },},
-  { title: "Vanilla Char", key: "vanillaCharName" },
-  { title: "Slotted/Replacement ID", key: "slotReplacementId" },
-  { title: "Slots", key: "slotsRange" },
-  { title: "Release", key: "releaseState" },
-  { title: "Global OPFF", key: "hasGlobalOpff" },
-  { title: "Char OPFF", key: "hasCharacterOpff" },
-  { title: "Agent init", key: "hasAgentInit" },
-  { title: "on_line pre", key: "hasGlobalOnLinePre" },
-  { title: "on_line end", key: "hasGlobalOnLineEnd" },
+  { title: "Creators",              key: "modders",           headerProps: { class: "core-col" },         cellProps: { class: "core-col" } },
+  { title: "Modded Char",           key: "moddedCharName",    headerProps: { class: "sticky core-col" },  cellProps: { class: "sticky core-col" } },
+  { title: "Vanilla Char",          key: "vanillaCharName",   headerProps: { class: "core-col" },         cellProps: { class: "core-col" } },
+  { title: "Slotted/Replacement",   key: "slotReplacementId", headerProps: { class: "core-col" },         cellProps: { class: "core-col" } },
+  { title: "Slots",                 key: "slotsRange",        headerProps: { class: "core-col" },         cellProps: { class: "core-col" } },
+  { title: "Release",               key: "releaseState" },
+  { title: "Global OPFF",           key: "hasGlobalOpff" },
+  { title: "Char OPFF",             key: "hasCharacterOpff" },
+  { title: "Agent init",            key: "hasAgentInit" },
+  { title: "on_line pre",           key: "hasGlobalOnLinePre" },
+  { title: "on_line end",           key: "hasGlobalOnLineEnd" },
 ];
 
 // Gather unique articles and hooks
@@ -160,8 +154,8 @@ const headers = computed(() => [
     if (h.key === "releaseState") {
       return {
         ...h,
-        headerProps: { class: "section-divider" },
-        cellProps: { class: "section-divider" },
+        headerProps: { class: "section-divider core-col" },
+        cellProps: { class: "section-divider core-col" },
       };
     }
 
@@ -288,36 +282,109 @@ function downloadCSV() {
 </script>
 
 <style scoped>
-.page-title {
-  width: fit-content;
+/* Page */
+.moveset-table-page {
+  padding: 1.5rem;
 }
 
+.page-title {
+  text-align: center;
+}
+
+/* Controls row */
+.controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* Download button — styled like slot-grid sort-btn, but larger */
+.dl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  padding: 5px 16px;
+  border-radius: 4px;
+  border: 1px solid #444;
+  background: #1e1e1e;
+  color: #ccc;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.dl-btn:hover {
+  background: #2a2a2a;
+}
+
+/* Table container */
+.scroll-container {
+  border: 1px solid #333;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* Vuetify table overrides */
+:deep(.umc-table) {
+  background: transparent !important;
+}
+
+:deep(.umc-table .v-data-table__th) {
+  padding: 3px 10px !important;
+  font-size: 13px !important;
+  white-space: nowrap;
+  border-bottom: 1px solid #333 !important;
+  color: #fff !important;
+}
+
+:deep(.umc-table .v-data-table__td) {
+  max-width: none !important;
+  padding: 3px 10px !important;
+  font-size: 13px !important;
+  white-space: nowrap;
+  border-bottom: 1px solid #252525 !important;
+  color: #fff !important;
+}
+
+:deep(.umc-table .v-data-table__tr:hover td) {
+  background: #181818 !important;
+}
+
+/* Section dividers */
+:deep(.section-divider) {
+  border-right: 2px solid #1a1a1a !important;
+}
+
+/* Core columns (#121212 background) */
+:deep(.umc-table .v-data-table__th.core-col) {
+  background: #121212 !important;
+}
+
+:deep(.umc-table .v-data-table__td.core-col) {
+  background: #121212 !important;
+}
+
+/* Sticky char name column */
+:deep(.v-data-table__td.sticky) {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+
+/* Subtitle inside cell */
 .table-subtitle {
-  font-size: 0.8em;
-  opacity: 0.55;
+  font-size: 0.85em;
+  opacity: 0.5;
   font-weight: normal;
 }
 
-/* Expanded section */
-.expanded-section {
-  background: #00000080;
-  padding: 1rem;
-  border-radius: 8px;
-}
-
-.expanded-section h3 {
-  margin-bottom: 0.25rem;
-}
-
-/* Pills */
-/* Todo base pill class */
+/* Pills — flat corners to match slot-grid */
 .bool-pill {
   display: inline-block;
-  width: 80%;
   text-align: center;
-  padding: 0.25em 1em;
-  border-radius: 999px;
-  font-size: 0.8rem;
+  padding: 1px 8px;
+  border-radius: 3px;
+  font-size: 12px;
   color: #fff;
 }
 
@@ -330,69 +397,29 @@ function downloadCSV() {
 }
 
 .usage-pill {
-  background-color: #1565c0;
+  display: inline-block;
+  background-color: #1565c0cc;
+  border: 1px solid #1976d2;
   color: #fff;
-  padding: 0.25em 0.5em;
-  border-radius: 6px;
-  font-size: 0.75rem;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 12px;
   white-space: nowrap;
-  min-width: 80%;
-  width: fit-content;
 }
 
 .release-pill {
   display: inline-block;
-  padding: 0.25em 0.75em;
-  border-radius: 999px;
-  font-size: 0.8rem;
+  padding: 1px 8px;
+  border-radius: 3px;
+  font-size: 12px;
   font-weight: 500;
   color: #fff;
-  text-align: center;
-  min-width: 80%;
+  white-space: nowrap;
 }
 
-.release-pill.released {
-  background-color: #2e7d32;
-}
-
+.release-pill.released  { background-color: #2e7d32; }
 .release-pill.upcoming,
-.release-pill.pending {
-  background-color: #fbc02d;
-  color: #000;
-}
-
-.release-pill.beta {
-  background-color: #acba22;
-  color: #000;
-}
-
-.release-pill.deprecated {
-  background-color: #c62828;
-}
-
-/* Table sections */
-:deep(.section-divider) {
-  border-right: 3px solid #1a1a1a;
-}
-
-/* Sticky column */
-:deep(.v-data-table__td.sticky) {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-}
-
-/* Remove max-width on cells */
-:deep(.v-data-table__td) {
-  max-width: none !important;
-}
-
-/* Todo make btn class common */
-.btn {
-  text-transform: unset;
-  letter-spacing: 0.009375em;
-  font-size: medium;
-  background-color: #2e2e2e;
-  color: #e2e2e2;
-}
+.release-pill.pending   { background-color: #fbc02d; color: #000; }
+.release-pill.beta      { background-color: #acba22; color: #000; }
+.release-pill.deprecated { background-color: #c62828; }
 </style>

@@ -50,7 +50,12 @@
               label="GameBanana ID"
               @input="digitsOnly('gamebananaId')"
               :prefix="GB_MEMBER_URL"
-            />
+            >
+              <template #label>
+                <img src="https://images.gamebanana.com/img/ico/games/banana.gif" class="field-platform-icon" alt="" />
+                GameBanana ID
+              </template>
+            </v-text-field>
           </v-col>
 
           <!-- Discord -->
@@ -60,11 +65,59 @@
               v-model="modder.discordUsername"
               label="Discord"
               prefix="@"
-            />
+            >
+              <template #label>
+                <img src="https://cdn.simpleicons.org/discord/5865F2" class="field-platform-icon" alt="" />
+                Discord
+              </template>
+            </v-text-field>
           </v-col>
         </v-row>
 
-        <!-- Row 2: PFP URL -->
+        <!-- Row 2: Twitter, Bluesky, GitHub -->
+        <v-row class="mb-0">
+          <v-col cols="12" sm="4">
+            <v-text-field
+              variant="outlined"
+              v-model="modder.twitterUsername"
+              label="Twitter / X"
+              prefix="x.com/"
+            >
+              <template #label>
+                <img src="https://cdn.simpleicons.org/x/ffffff" class="field-platform-icon" alt="" />
+                Twitter
+              </template>
+            </v-text-field>
+          </v-col>
+          <v-col cols="12" sm="4">
+            <v-text-field
+              variant="outlined"
+              v-model="modder.blueskyHandle"
+              label="Bluesky"
+              prefix="bsky.app/profile/"
+            >
+              <template #label>
+                <img src="https://cdn.simpleicons.org/bluesky/0085FF" class="field-platform-icon" alt="" />
+                Bluesky
+              </template>
+            </v-text-field>
+          </v-col>
+          <v-col cols="12" sm="4">
+            <v-text-field
+              variant="outlined"
+              v-model="modder.githubUsername"
+              label="GitHub"
+              prefix="github.com/"
+            >
+              <template #label>
+                <img src="https://cdn.simpleicons.org/github/ffffff" class="field-platform-icon" alt="" />
+                GitHub
+              </template>
+            </v-text-field>
+          </v-col>
+        </v-row>
+
+        <!-- Row 3: PFP URL -->
         <v-row class="mb-0">
           <v-col cols="12">
             <v-text-field
@@ -81,7 +134,7 @@
           </v-col>
         </v-row>
 
-        <!-- Row 3: Bio -->
+        <!-- Row 4: Bio -->
         <v-row class="mb-3">
           <v-col cols="12">
             <v-textarea
@@ -147,6 +200,9 @@ const modder = ref({
   gamebananaId: null,
   discordUsername: '',
   pfpUrl: '',
+  twitterUsername: '',
+  blueskyHandle: '',
+  githubUsername: '',
   notes: '',
 })
 
@@ -184,8 +240,11 @@ const fetchUserAndModder = async () => {
       modder.value = {
         bio: modderRes.data.bio || '',
         gamebananaId: modderRes.data.gamebananaId || null,
-        discordUsername: modderRes.data.discordUsername || null,
+        discordUsername: modderRes.data.discordUsername || '',
         pfpUrl: modderRes.data.pfpUrl || '',
+        twitterUsername: modderRes.data.twitterUsername || '',
+        blueskyHandle: modderRes.data.blueskyHandle || '',
+        githubUsername: modderRes.data.githubUsername || '',
       }
     }
   } catch {
@@ -207,7 +266,12 @@ const digitsOnly = (field) => {
 
 const submit = async () => {
   try {
-    await api.post('/modders', modder.value)
+    await api.post('/modders', {
+      ...modder.value,
+      twitterUsername: modder.value.twitterUsername || null,
+      blueskyHandle: modder.value.blueskyHandle || null,
+      githubUsername: modder.value.githubUsername || null,
+    })
     success.value = true
     error.value = null
   } catch {
@@ -223,6 +287,9 @@ const save = async () => {
       gamebananaId: modder.value.gamebananaId,
       discordUsername: modder.value.discordUsername,
       pfpUrl: modder.value.pfpUrl || null,
+      twitterUsername: modder.value.twitterUsername || null,
+      blueskyHandle: modder.value.blueskyHandle || null,
+      githubUsername: modder.value.githubUsername || null,
       notes: modder.value.notes,
     })
     success.value = true
@@ -281,6 +348,15 @@ section {
 
 .pfp-preview-placeholder {
   color: #555;
+}
+
+.field-platform-icon {
+  width: 14px;
+  height: 14px;
+  vertical-align: middle;
+  margin-right: 3px;
+  margin-bottom: 2px;
+  opacity: 0.85;
 }
 
 .hint-text {

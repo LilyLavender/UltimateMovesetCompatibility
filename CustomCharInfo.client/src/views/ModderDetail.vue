@@ -3,23 +3,59 @@
     <v-row class="modder-section-1">
       <v-col cols="2" class="text-center">
         <!-- Pfp -->
-        <img v-if="modderPfpUrl" :src="modderPfpUrl" class="modder-pfp" alt="GameBanana PFP" />
+        <img v-if="modderPfpUrl" :src="modderPfpUrl" class="modder-pfp" alt="Profile picture" />
         <div v-else class="modder-pfp-null"><v-icon size="128">mdi-account</v-icon></div>
-        <!-- GameBanana -->
-        <a
-          v-if="modder?.gamebananaId"
-          :href="`${GB_MEMBER_URL}${modder.gamebananaId}`"
-          class="offsite unvisitable"
-          target="_blank" rel="noopener"
-        >GameBanana</a>
-        <!-- Discord -->
-        <span
-          v-if="modder?.discordUsername && !modder?.problematic"
-        >
-          <br>
-          <img class="discord-icon" src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66e278299a53f5bf88615e90_Symbol.svg" alt="Discord icon" />
-          @{{ modder.discordUsername }}
-        </span>
+
+        <!-- Social Links -->
+        <div class="social-links">
+          <v-tooltip v-if="modder?.gamebananaId" location="bottom">
+            <template #activator="{ props: tip }">
+              <a v-bind="tip" :href="`${GB_MEMBER_URL}${modder.gamebananaId}`" class="social-link" target="_blank" rel="noopener">
+                <img src="https://images.gamebanana.com/img/ico/games/banana.gif" class="social-icon-img" alt="GameBanana" />
+              </a>
+            </template>
+            <span class="tooltip-label">GameBanana <v-icon size="x-small">mdi-open-in-new</v-icon></span>
+          </v-tooltip>
+
+          <v-tooltip v-if="modder?.discordUsername && !modder?.problematic" location="bottom">
+            <template #activator="{ props: tip }">
+              <span v-bind="tip" class="social-link" @click="copyDiscord" role="button">
+                <img src="https://cdn.simpleicons.org/discord/5865F2" class="social-icon-img" alt="Discord" />
+              </span>
+            </template>
+            <span class="tooltip-label">
+              {{ discordCopied ? 'Copied!' : `@${modder.discordUsername}` }}
+              <v-icon size="x-small">mdi-content-copy</v-icon>
+            </span>
+          </v-tooltip>
+
+          <v-tooltip v-if="modder?.twitterUsername" location="bottom">
+            <template #activator="{ props: tip }">
+              <a v-bind="tip" :href="`https://x.com/${modder.twitterUsername}`" class="social-link" target="_blank" rel="noopener">
+                <img src="https://cdn.simpleicons.org/x/ffffff" class="social-icon-img" alt="Twitter" />
+              </a>
+            </template>
+            <span class="tooltip-label">@{{ modder.twitterUsername }} <v-icon size="x-small">mdi-open-in-new</v-icon></span>
+          </v-tooltip>
+
+          <v-tooltip v-if="modder?.blueskyHandle" location="bottom">
+            <template #activator="{ props: tip }">
+              <a v-bind="tip" :href="`https://bsky.app/profile/${modder.blueskyHandle}`" class="social-link" target="_blank" rel="noopener">
+                <img src="https://cdn.simpleicons.org/bluesky/0085FF" class="social-icon-img" alt="Bluesky" />
+              </a>
+            </template>
+            <span class="tooltip-label">{{ modder.blueskyHandle }} <v-icon size="x-small">mdi-open-in-new</v-icon></span>
+          </v-tooltip>
+
+          <v-tooltip v-if="modder?.githubUsername" location="bottom">
+            <template #activator="{ props: tip }">
+              <a v-bind="tip" :href="`https://github.com/${modder.githubUsername}`" class="social-link" target="_blank" rel="noopener">
+                <img src="https://cdn.simpleicons.org/github/ffffff" class="social-icon-img" alt="GitHub" />
+              </a>
+            </template>
+            <span class="tooltip-label">@{{ modder.githubUsername }} <v-icon size="x-small">mdi-open-in-new</v-icon></span>
+          </v-tooltip>
+        </div>
       </v-col>
       <v-col cols="10">
         <div class="title-container">
@@ -83,6 +119,15 @@ useHead(computed(() => {
 const movesets = ref([])
 const modderPfpUrl = ref(null)
 const modderIsAdmin = ref(false)
+const discordCopied = ref(false)
+
+const copyDiscord = async () => {
+  try {
+    await navigator.clipboard.writeText(modder.value.discordUsername)
+  } catch {}
+  discordCopied.value = true
+  setTimeout(() => { discordCopied.value = false }, 2000)
+}
 
 onMounted(async () => {
   // Fetch modder info
@@ -180,10 +225,32 @@ i.admin-display {
   margin-top: -0.5em;
 }
 
-.discord-icon {
-  height: 1em;
-  margin-bottom: -3px;
-  filter: brightness(0.87);
+.social-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+.social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+  text-decoration: none;
+  padding: 2px;
+}
+
+.social-link:hover {
+  opacity: 1;
+}
+
+.social-icon-img {
+  width: 22px;
+  height: 22px;
 }
 
 .modder-section-1 {
@@ -220,5 +287,11 @@ i.admin-display {
 
 .movesets-title {
   font-size: 2.5em;
+}
+
+.tooltip-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 </style>
