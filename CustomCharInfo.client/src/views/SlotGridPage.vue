@@ -89,7 +89,7 @@
                   }"
                 >
                   <v-tooltip activator="parent" location="top" :text="tooltipText(m)" />
-                  <span class="bar-label">{{ m.name }}</span>
+                  <span class="bar-label">{{ displayName(m) }}</span>
                 </router-link>
               </template>
             </div>
@@ -164,9 +164,12 @@ function slotRangeText(m) {
   return `c${pad(m.slotsStart)}–c${pad(m.slotsEnd)}`
 }
 
+function displayName(m) {
+  return m.subtitle ? `${m.name} (${m.subtitle})` : m.name
+}
+
 function tooltipText(m) {
-  let text = `${m.name} (${slotRangeText(m)})`
-  return text
+  return `${displayName(m)} (${slotRangeText(m)})`
 }
 
 function assignLanesAndOverlaps(movesets) {

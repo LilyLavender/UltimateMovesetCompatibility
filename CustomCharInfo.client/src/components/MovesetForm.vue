@@ -251,7 +251,7 @@
           </v-col>
         </v-row>
       </section>
-      
+
       <!-- Display -->
       <section>
         <h2>Display</h2>
@@ -620,6 +620,45 @@
         </v-list>
       </section>
 
+      <!-- Advanced Settings -->
+      <section class="advanced-section">
+        <h3
+          class="advanced-toggle"
+          @click="showAdvanced = !showAdvanced"
+        >
+          Advanced Settings
+          <v-icon class="advanced-chevron" :class="{ rotated: showAdvanced }">mdi-chevron-down</v-icon>
+        </h3>
+        <v-expand-transition>
+          <div v-if="showAdvanced">
+            <v-row>
+              <!-- Joke Moveset -->
+              <v-col cols="12" sm="4">
+                <v-checkbox
+                  v-model="form.isJokeMoveset"
+                  true-icon="mdi-egg-easter"
+                  false-icon="mdi-egg-outline"
+                  label="Joke Moveset"
+                  messages="Marks this as a joke moveset. Required for April Fool's movesets."
+                  class="joke-checkbox"
+                />
+              </v-col>
+
+              <!-- Subtitle -->
+              <v-col cols="12" sm="4">
+                <v-text-field
+                  variant="outlined"
+                  v-model="form.subtitle"
+                  label="Subtitle"
+                  placeholder="e.g. V2, Ult-S, Standalone"
+                  messages="Shown in parentheses next to this moveset's name. For disambiguation purposes only."
+                />
+              </v-col>
+            </v-row>
+          </div>
+        </v-expand-transition>
+      </section>
+
       <!-- Notes + Submit -->
       <div class="d-flex align-start ga-3 justify-end">
         <v-textarea
@@ -664,6 +703,7 @@ const addArticleForm = ref(false)
 const addHookForm = ref(false)
 const editingArticleIndex = ref(null)
 const editingHookIndex = ref(null)
+const showAdvanced = ref(false)
 
 const isDirty = ref(false)
 let initialFormSnapshot = null
@@ -797,6 +837,11 @@ const form = ref({
   // Articles & Hooks
   articles: [],
   hooks: [],
+  // Advanced
+  isJokeMoveset: false,
+  subtitle: '',
+  disambiguationMovesetId: null,
+  relatedSubtitle: '',
   // Admin notes
   notes: '',
 })
@@ -856,6 +901,9 @@ onMounted(async () => {
 
       showSeparateIds.value = form.value.slottedId !== form.value.replacementId
       slotRange.value = [form.value.slotsStart, form.value.slotsEnd]
+      if (res.data.isJokeMoveset || res.data.subtitle || res.data.disambiguationMovesetId) {
+        showAdvanced.value = true
+      }
       form.value.modderIds = res.data.movesetModders?.map(m => m.modder.modderId) || []
       form.value.dependencyIds = res.data.movesetDependencies?.map(d => d.dependency.dependencyId) || []
       form.value.articles = res.data.movesetArticles?.map(a => ({
@@ -1218,6 +1266,32 @@ section h2 {
   margin-bottom: 1em;
   opacity: 0.5;
   margin-left: 1em;
+}
+
+.advanced-toggle {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  user-select: none;
+}
+.advanced-toggle:hover {
+  opacity: 0.8;
+}
+.advanced-chevron {
+  font-size: 1.2em;
+  transition: transform 250ms ease-in-out;
+}
+.advanced-chevron.rotated {
+  transform: rotate(180deg);
+}
+:deep(.joke-checkbox .v-selection-control__input > i) {
+  font-size: 1.4em;
+  color: #888;
+  transition: color 150ms ease-in-out;
+}
+:deep(.joke-checkbox .v-selection-control--dirty .v-selection-control__input > i) {
+  color: #ff733c;
 }
 </style>
 

@@ -3,12 +3,12 @@
     <!-- Controls -->
     <v-row v-if="showControls" class="controls mb-2">
       <!-- Header -->
-      <v-col cols="12" sm="2">
+      <v-col cols="12" sm="3">
         <h2 class="center-entire">Filters</h2>
       </v-col>
       
       <!-- Sort -->
-      <v-col cols="12" sm="5">
+      <v-col cols="12" sm="3">
         <v-select
           label="Sort"
           v-model="sortMode"
@@ -23,7 +23,7 @@
       </v-col>
 
       <!-- Release State -->
-      <v-col cols="12" sm="5">
+      <v-col cols="12" sm="3">
         <v-select
           label="Release State"
           v-model="filterReleaseState"
@@ -33,6 +33,15 @@
           :items="releaseStates"
           item-title="releaseStateName"
           item-value="releaseStateName"
+        />
+      </v-col>
+
+      <!-- Show Joke Movesets -->
+      <v-col cols="12" sm="3" class="joke-toggle-col">
+        <v-checkbox
+          v-model="showJokeMovesets"
+          hide-details
+          label="Show Joke Movesets"
         />
       </v-col>
 
@@ -77,6 +86,7 @@ const hardHeldMovesetIds = ref(new Set())
 // sort/filter
 const sortMode = ref('alpha')
 const filterReleaseState = ref(null)
+const showJokeMovesets = ref(false)
 
 const displayedMovesets = computed(() => props.movesets ?? fetchedMovesets.value)
 
@@ -94,6 +104,11 @@ const canViewMoveset = (moveset) => {
 
 const processedMovesets = computed(() => {
   let list = displayedMovesets.value.filter(m => !hardHeldMovesetIds.value.has(m.movesetId))
+
+  // Filter joke movesets (only when controls are shown — user profiles/series always show all)
+  if (props.showControls && !showJokeMovesets.value) {
+    list = list.filter(m => !m.isJokeMoveset)
+  }
 
   // Filter
   if (filterReleaseState.value != null) {
@@ -251,5 +266,11 @@ onMounted(async () => {
 
 div:has(>.center-entire) {
   align-content: center;
+}
+
+.joke-toggle-col {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

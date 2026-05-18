@@ -21,9 +21,14 @@
       <!-- Column 1 (left) -->
       <div class="column-left">
         <div class="title-container">
-          <h1 class="title-font page-title no-select">{{ moveset.moddedCharName }}</h1>
+          <h1 class="title-font page-title no-select">
+            {{ moveset.moddedCharName }}<span v-if="moveset.subtitle" class="page-title-subtitle"> ({{ moveset.subtitle }})</span>
+          </h1>
         </div>
         <div class="left-overlay">
+          <div v-if="moveset.isJokeMoveset" class="moveset-warning joke-warning">
+            <span class="pill pill--joke"><v-icon size="14">mdi-egg-easter</v-icon> Joke Moveset</span>
+          </div>
           <div v-if="warningInfo" class="moveset-warning">This moveset is <span v-if="warningInfo.isPrivate" class="pill pill--private">Private</span><span v-if="warningInfo.isPrivate && warningInfo.pendingType"> and </span><span v-if="warningInfo.pendingType" :class="['pill', warningInfo.pendingType === 'Admin' ? 'pill--admin' : 'pill--user']">Pending {{ warningInfo.pendingType }} Action</span>. It can only be seen by {{ singleModder ? 'you' : 'its creators' }} and site admins.</div>
           <div class="like-row">
             <button
@@ -749,6 +754,29 @@ strong {
 
 .pill--user {
   background-color: rgb(241, 241, 52);
+}
+
+.pill--joke {
+  background-color: #ff733c;
+  color: #111;
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  gap: 4px;
+}
+
+.joke-warning {
+  background: none;
+  padding: 0;
+  backdrop-filter: none;
+}
+
+.page-title-subtitle {
+  font-size: 0.45em;
+  opacity: 0.55;
+  font-weight: normal;
+  letter-spacing: 0;
+  vertical-align: middle;
 }
 
 .like-row {

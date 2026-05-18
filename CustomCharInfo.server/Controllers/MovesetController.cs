@@ -183,6 +183,12 @@ namespace CustomCharInfo.server.Controllers
                     x.Moveset.ReleaseDate,
                     x.Moveset.AdminPick,
                     x.Moveset.PrivateMoveset,
+                    x.Moveset.IsJokeMoveset,
+
+                    Subtitle =
+                        x.Moveset.PrivateMoveset == true && !(isAdmin || x.IsOwner)
+                            ? null
+                            : x.Moveset.Subtitle,
 
                     LikeCount = _context.MovesetLikes.Count(ml => ml.MovesetId == x.Moveset.MovesetId),
                 })
@@ -202,6 +208,7 @@ namespace CustomCharInfo.server.Controllers
                 {
                     m.MovesetId,
                     m.ModdedCharName,
+                    m.Subtitle,
                     m.VanillaCharInternalName,
                     VanillaDisplayName = m.VanillaChar != null ? m.VanillaChar.DisplayName : m.VanillaCharInternalName,
                     SlotsStart = m.SlotsStart ?? 0,
@@ -229,6 +236,7 @@ namespace CustomCharInfo.server.Controllers
                         {
                             m.MovesetId,
                             Name = m.IsPrivate ? "???" : m.ModdedCharName,
+                            Subtitle = m.IsPrivate ? null : m.Subtitle,
                             m.SlotsStart,
                             m.SlotsEnd,
                             m.IsPrivate
@@ -321,6 +329,11 @@ namespace CustomCharInfo.server.Controllers
                             ? "???"
                             : x.Moveset.ModdedCharName,
 
+                    Subtitle =
+                        x.Moveset.PrivateMoveset == true
+                            ? null
+                            : x.Moveset.Subtitle,
+
                     VanillaCharName = x.Moveset.VanillaCharInternalName,
 
                     SlottedId =
@@ -410,6 +423,10 @@ namespace CustomCharInfo.server.Controllers
                     AdminPick = m.AdminPick,
                     PrivateMoveset = m.PrivateMoveset,
                     PrivateModder = m.PrivateModder,
+                    IsJokeMoveset = m.IsJokeMoveset,
+                    Subtitle = m.Subtitle,
+                    DisambiguationMovesetId = m.DisambiguationMovesetId,
+                    RelatedSubtitle = m.RelatedSubtitle,
 
                     ThumbhImageUrl = m.ThumbhImageUrl,
                     MovesetHeroImageUrl = m.MovesetHeroImageUrl,
@@ -575,6 +592,10 @@ namespace CustomCharInfo.server.Controllers
                 SourceCode = dto.SourceCode,
                 PrivateMoveset = dto.PrivateMoveset,
                 PrivateModder = dto.PrivateModder,
+                IsJokeMoveset = dto.IsJokeMoveset,
+                Subtitle = dto.Subtitle,
+                DisambiguationMovesetId = dto.DisambiguationMovesetId,
+                RelatedSubtitle = dto.RelatedSubtitle,
                 MovesetModders = dto.ModderIds.Select(id => new MovesetModder { ModderId = id }).ToList(),
                 MovesetDependencies = dto.DependencyIds?.Select(id => new MovesetDependency { DependencyId = id }).ToList() ?? new List<MovesetDependency>(),
                 MovesetHooks = dto.Hooks?.Select((h, i) => new MovesetHook
@@ -748,6 +769,7 @@ namespace CustomCharInfo.server.Controllers
                 moveset.MovesetHeroImageUrl, moveset.BackgroundColor, moveset.ModsWikiLink,
                 ReleaseDate   = moveset.ReleaseDate?.ToString("yyyy-MM-dd"),
                 moveset.ModpackName, moveset.SourceCode, moveset.PrivateMoveset, moveset.PrivateModder,
+                moveset.IsJokeMoveset, moveset.Subtitle,
                 Modders       = string.Join(", ", moveset.MovesetModders
                     .Select(m => modderNameMap.TryGetValue(m.ModderId, out var n) ? n : m.ModderId.ToString())
                     .OrderBy(x => x)),
@@ -786,6 +808,10 @@ namespace CustomCharInfo.server.Controllers
             moveset.SourceCode = dto.SourceCode;
             moveset.PrivateMoveset = dto.PrivateMoveset;
             moveset.PrivateModder = dto.PrivateModder;
+            moveset.IsJokeMoveset = dto.IsJokeMoveset;
+            moveset.Subtitle = dto.Subtitle;
+            moveset.DisambiguationMovesetId = dto.DisambiguationMovesetId;
+            moveset.RelatedSubtitle = dto.RelatedSubtitle;
 
             // Sync (i know that guy!!) Modders
             _context.MovesetModders.RemoveRange(moveset.MovesetModders);
@@ -878,6 +904,8 @@ namespace CustomCharInfo.server.Controllers
                 ("SourceCode",      snap.SourceCode,        dto.SourceCode),
                 ("Private",         snap.PrivateMoveset,    dto.PrivateMoveset),
                 ("PrivateModder",   snap.PrivateModder,     dto.PrivateModder),
+                ("JokeMoveset",     snap.IsJokeMoveset,     dto.IsJokeMoveset),
+                ("Subtitle",        snap.Subtitle,          dto.Subtitle),
                 ("Modders",         snap.Modders,           newModders),
                 ("Dependencies",    snap.Dependencies,      newDeps),
                 ("Hooks",           snap.Hooks,             newHooks),

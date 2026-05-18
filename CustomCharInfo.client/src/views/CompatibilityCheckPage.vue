@@ -20,7 +20,7 @@
       >
         <div class="ms-card__thumb" :style="thumbStyle(m)" />
         <div class="ms-card__overlay" :style="overlayStyle(m)" />
-        <span class="ms-card__name">{{ m.moddedCharName }}</span>
+        <span class="ms-card__name">{{ m.moddedCharName }}<span v-if="m.subtitle" class="ms-card__subtitle"> ({{ m.subtitle }})</span></span>
         <!-- Vote bar: shown when one moveset is selected and this card has vote data -->
         <div
           v-if="selection.length === 1 && !isSelected(m) && pairSummary(m.movesetId)"
@@ -102,7 +102,7 @@
       <!-- Moveset comparison panel -->
       <div class="compare-panel" v-if="result.a && result.b">
         <div class="compare-col">
-          <div class="compare-header"><strong>{{ result.a.moddedCharName }}</strong></div>
+          <div class="compare-header"><strong>{{ result.a.moddedCharName }}<span v-if="result.a.subtitle" class="compare-subtitle"> ({{ result.a.subtitle }})</span></strong></div>
           <div class="compare-meta">
             <img v-if="result.a.vanillaChar" :src="iconUrl(result.a.vanillaChar.vanillaCharInternalName)" class="meta-char-icon" />
             {{ result.a.vanillaChar?.displayName ?? '-' }}
@@ -141,7 +141,7 @@
         <div class="compare-divider" />
 
         <div class="compare-col">
-          <div class="compare-header"><strong>{{ result.b.moddedCharName }}</strong></div>
+          <div class="compare-header"><strong>{{ result.b.moddedCharName }}<span v-if="result.b.subtitle" class="compare-subtitle"> ({{ result.b.subtitle }})</span></strong></div>
           <div class="compare-meta">
             <img v-if="result.b.vanillaChar" :src="iconUrl(result.b.vanillaChar.vanillaCharInternalName)" class="meta-char-icon" />
             {{ result.b.vanillaChar?.displayName ?? '-' }}
@@ -567,12 +567,12 @@ onMounted(async () => {
   overflow: hidden;
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.12s, box-shadow 0.12s, opacity 0.12s, filter 0.12s;
+  transition: border-color 0.18s, border-radius 0.18s, box-shadow 0.18s, opacity 0.18s, filter 0.18s;
   flex-shrink: 0;
   outline: none;
 }
 
-.ms-card:hover:not(.ms-card--dimmed) { filter: brightness(1.18); }
+.ms-card:hover:not(.ms-card--dimmed) { filter: brightness(0.9); border-radius: 11px; }
 .ms-card--dimmed { opacity: 0.35; cursor: default; }
 
 .ms-card--selected {
@@ -609,6 +609,11 @@ onMounted(async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.ms-card__subtitle {
+  font-size: 0.8em;
+  opacity: 0.65;
+  font-weight: normal;
 }
 
 /* Vote bar — full card background, behind overlay */
@@ -652,6 +657,7 @@ onMounted(async () => {
 .compare-col { flex: 1; padding: 0.875rem 1rem; min-width: 0; }
 .compare-header { margin-bottom: 0.2rem; }
 .compare-header strong { font-size: 1em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.compare-subtitle { font-size: 0.75em; opacity: 0.6; font-weight: normal; }
 .compare-meta { font-size: 0.9em; color: #aaa; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
 
 .meta-char-icon {

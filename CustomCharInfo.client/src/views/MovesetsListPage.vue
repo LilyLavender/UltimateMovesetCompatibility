@@ -28,6 +28,11 @@
         '--article-end': articleEndIndex
       }"
     >
+      <!-- Modded char name with subtitle -->
+      <template #item.moddedCharName="{ item }">
+        {{ item.moddedCharName }}<span v-if="item.subtitle" class="table-subtitle"> ({{ item.subtitle }})</span>
+      </template>
+
       <!-- Slotted/Replacement ID -->
       <template #item.slotReplacementId="{ item }">
         <span v-if="item.slottedId === item.replacementId">
@@ -284,7 +289,13 @@ function downloadCSV() {
 
 <style scoped>
 .page-title {
-  width: fit-content; 
+  width: fit-content;
+}
+
+.table-subtitle {
+  font-size: 0.8em;
+  opacity: 0.55;
+  font-weight: normal;
 }
 
 /* Expanded section */

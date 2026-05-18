@@ -47,6 +47,15 @@ namespace CustomCharInfo.server.Models
         public bool? AdminPick { get; set; }
         public bool? PrivateMoveset { get; set; }
         public bool? PrivateModder { get; set; }
+        public bool? IsJokeMoveset { get; set; }
+
+        [MaxLength(64)]
+        public string? Subtitle { get; set; }
+
+        public int? DisambiguationMovesetId { get; set; }
+
+        [MaxLength(64)]
+        public string? RelatedSubtitle { get; set; }
 
         // Navigation
         public VanillaChar VanillaChar { get; set; }

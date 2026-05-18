@@ -27,7 +27,7 @@
 
       <!-- Character name -->
       <p class="moveset-card__charname">
-        {{ moveset.moddedCharName }}
+        {{ moveset.moddedCharName }}<span v-if="moveset.subtitle" class="moveset-card__subtitle"> ({{ moveset.subtitle }})</span>
       </p>
 
       <!-- Creator(s) -->
@@ -159,5 +159,12 @@ const backgroundGradient = computed(() => {
   left: 2px;
   bottom: -2px;
   font-size: x-small;
+}
+
+.moveset-card__subtitle {
+  font-size: 0.65em;
+  opacity: 0.65;
+  font-weight: normal;
+  letter-spacing: 0;
 }
 </style>
