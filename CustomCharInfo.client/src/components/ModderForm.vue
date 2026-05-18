@@ -182,6 +182,7 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
 import api from '@/services/api'
 import { GB_MEMBER_URL } from '@/globals'
@@ -206,6 +207,7 @@ const modder = ref({
   notes: '',
 })
 
+const router = useRouter()
 const modderId = ref(null)
 const gbPfpUrl = ref(null)
 
@@ -274,6 +276,7 @@ const submit = async () => {
     })
     success.value = true
     error.value = null
+    router.push('/user-actions')
   } catch {
     success.value = false
     error.value = 'Failed to submit application.'
@@ -294,6 +297,7 @@ const save = async () => {
     })
     success.value = true
     error.value = null
+    router.push(`/modder/${modderId.value}`)
   } catch {
     success.value = false
     error.value = 'Failed to update modder info.'

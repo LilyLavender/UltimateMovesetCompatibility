@@ -36,8 +36,6 @@ namespace CustomCharInfo.server.Models.DTOs
         public bool? PrivateModder { get; set; }
         public bool? IsJokeMoveset { get; set; }
         public string? Subtitle { get; set; }
-        public int? DisambiguationMovesetId { get; set; }
-        public string? RelatedSubtitle { get; set; }
 
         public VanillaCharDto2 VanillaChar { get; set; }
         public ReleaseStateDto2 ReleaseState { get; set; }

@@ -840,8 +840,6 @@ const form = ref({
   // Advanced
   isJokeMoveset: false,
   subtitle: '',
-  disambiguationMovesetId: null,
-  relatedSubtitle: '',
   // Admin notes
   notes: '',
 })
@@ -901,7 +899,7 @@ onMounted(async () => {
 
       showSeparateIds.value = form.value.slottedId !== form.value.replacementId
       slotRange.value = [form.value.slotsStart, form.value.slotsEnd]
-      if (res.data.isJokeMoveset || res.data.subtitle || res.data.disambiguationMovesetId) {
+      if (res.data.isJokeMoveset || res.data.subtitle) {
         showAdvanced.value = true
       }
       form.value.modderIds = res.data.movesetModders?.map(m => m.modder.modderId) || []

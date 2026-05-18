@@ -52,11 +52,6 @@ namespace CustomCharInfo.server.Models
         [MaxLength(64)]
         public string? Subtitle { get; set; }
 
-        public int? DisambiguationMovesetId { get; set; }
-
-        [MaxLength(64)]
-        public string? RelatedSubtitle { get; set; }
-
         // Navigation
         public VanillaChar VanillaChar { get; set; }
         public ReleaseState ReleaseState { get; set; }

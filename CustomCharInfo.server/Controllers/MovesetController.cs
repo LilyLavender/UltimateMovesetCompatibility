@@ -440,8 +440,6 @@ namespace CustomCharInfo.server.Controllers
                     PrivateModder = m.PrivateModder,
                     IsJokeMoveset = m.IsJokeMoveset,
                     Subtitle = m.Subtitle,
-                    DisambiguationMovesetId = m.DisambiguationMovesetId,
-                    RelatedSubtitle = m.RelatedSubtitle,
 
                     ThumbhImageUrl = m.ThumbhImageUrl,
                     MovesetHeroImageUrl = m.MovesetHeroImageUrl,
@@ -609,8 +607,6 @@ namespace CustomCharInfo.server.Controllers
                 PrivateModder = dto.PrivateModder,
                 IsJokeMoveset = dto.IsJokeMoveset,
                 Subtitle = dto.Subtitle,
-                DisambiguationMovesetId = dto.DisambiguationMovesetId,
-                RelatedSubtitle = dto.RelatedSubtitle,
                 MovesetModders = dto.ModderIds.Select(id => new MovesetModder { ModderId = id }).ToList(),
                 MovesetDependencies = dto.DependencyIds?.Select(id => new MovesetDependency { DependencyId = id }).ToList() ?? new List<MovesetDependency>(),
                 MovesetHooks = dto.Hooks?.Select((h, i) => new MovesetHook
@@ -825,8 +821,6 @@ namespace CustomCharInfo.server.Controllers
             moveset.PrivateModder = dto.PrivateModder;
             moveset.IsJokeMoveset = dto.IsJokeMoveset;
             moveset.Subtitle = dto.Subtitle;
-            moveset.DisambiguationMovesetId = dto.DisambiguationMovesetId;
-            moveset.RelatedSubtitle = dto.RelatedSubtitle;
 
             // Sync (i know that guy!!) Modders
             _context.MovesetModders.RemoveRange(moveset.MovesetModders);
