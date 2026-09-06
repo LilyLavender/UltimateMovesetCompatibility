@@ -30,14 +30,19 @@
               readonly
             >
               <template #details>
-                Edit your username in&nbsp;
-                <router-link
-                  to="/user-actions"
-                  class="offsite unvisitable"
-                  target="_blank"
-                >
-                  user settings
-                </router-link>
+                <span>
+                  Edit your username in&nbsp;
+                  <router-link
+                    to="/user-actions"
+                    class="offsite unvisitable"
+                    target="_blank"
+                  >
+                    user settings
+                  </router-link>
+                  <span v-if="!isEditMode">
+                    This must be done before submitting a modder application.
+                  </span>
+                </span>
               </template>
             </v-text-field>
           </v-col>
