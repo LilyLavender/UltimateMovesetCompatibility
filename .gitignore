@@ -20,10 +20,11 @@ CustomCharInfo.client/.vscode/
 *.sln
 *.sw?
 
-# Other
+# Project-specific
 /*.md
 !/README.md
 .claude/
 *.rb
 *.sql
 backups/
+docs/
