@@ -55,28 +55,23 @@
           </div>
         </v-col>
 
-        <!-- Blog Image URL -->
-        <v-col cols="12" sm="4">
-          <v-text-field
-            variant="outlined"
-            v-model="form.blogImageUrl"
-            label="Post Image URL"
-            placeholder="https://example.com/image.png"
-          />
-        </v-col>
-        <v-col cols="12" sm="8">
-          <v-img
-            v-if="form.blogImageUrl"
-            :src="getFullImageUrl(form.blogImageUrl)"
-          />
+        <!-- Blog Image -->
+        <v-col cols="12" sm="6">
+          <p class="field-label">Post Image</p>
+          <ImageUploadField v-model="form.blogImageUrl" />
         </v-col>
       </v-row>
     </section>
 
     <!-- Submit -->
     <div class="d-flex justify-end">
-      <v-btn @click="submit" class="submit-button">
-        Add Blog Post
+      <v-btn
+        @click="submit"
+        class="submit-button"
+        :loading="isSubmitting"
+        :disabled="isSubmitting"
+      >
+        {{ uploadStatus || 'Add Blog Post' }}
       </v-btn>
     </div>
   </v-container>
@@ -87,11 +82,13 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { marked } from 'marked'
 import api from '@/services/api'
+import ImageUploadField from '@/components/ImageUploadField.vue'
 
 const router = useRouter()
-const apiUrl = import.meta.env.VITE_API_URL
 
 const tab = ref('write')
+const isSubmitting = ref(false)
+const uploadStatus = ref('')
 
 const form = ref({
   blogTitle: '',
@@ -101,9 +98,16 @@ const form = ref({
 
 const renderedPreview = computed(() => marked.parse(form.value.blogText || ''))
 
-const getFullImageUrl = (path) => {
-  if (!path) return null
-  return path.startsWith('/') ? `${apiUrl}${path}` : path
+const uploadImageIfNeeded = async (value) => {
+  if (!(value instanceof File)) return value
+
+  const formData = new FormData()
+  formData.append('File', value)
+
+  const res = await api.post('/upload/blog-image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return res.data.url
 }
 
 const submit = async () => {
@@ -112,16 +116,35 @@ const submit = async () => {
     return
   }
 
+  isSubmitting.value = true
+  uploadStatus.value = 'Uploading image...'
+
+  let blogImageUrl
+  try {
+    blogImageUrl = await uploadImageIfNeeded(form.value.blogImageUrl)
+  } catch (err) {
+    console.error("Image upload failed:", JSON.stringify(err.response?.data) || err.message)
+    alert("Failed to upload image. Please check the file and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+    isSubmitting.value = false
+    uploadStatus.value = ''
+    return
+  }
+
+  uploadStatus.value = 'Posting...'
+
   try {
     await api.post("/blog", {
       blogTitle: form.value.blogTitle,
       blogText: form.value.blogText,
-      blogImageUrl: form.value.blogImageUrl,
+      blogImageUrl,
     })
     router.push("/blog")
   } catch (err) {
     console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
     alert("Failed to post blog.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+  } finally {
+    isSubmitting.value = false
+    uploadStatus.value = ''
   }
 }
 </script>
@@ -140,6 +163,11 @@ h1 {
   background-color: #2e2e2e;
   color: #e2e2e2;
   text-transform: unset;
+}
+.field-label {
+  font-size: 0.85rem;
+  color: #b0b0b0;
+  margin-bottom: 4px;
 }
 
 .editor-header {

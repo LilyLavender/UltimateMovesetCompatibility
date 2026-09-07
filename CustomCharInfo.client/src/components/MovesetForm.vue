@@ -265,16 +265,12 @@
         <v-row>
           <!-- ThumbH URL -->
           <v-col cols="12" sm="6">
-            <v-text-field
-              variant="outlined"
+            <p class="field-label">Thumbnail (340x82)</p>
+            <ImageUploadField
               v-model="form.thumbhImageUrl"
-              label="Thumbnail (340x82)"
-              placeholder="https://example.com/image.png"
-              messages="A thumbnail image displayed in moveset lists."
-            />
-            <v-img
-              :src="getFullImageUrl(form.thumbhImageUrl) || thumbhUnknown"
-              class="mt-2 preview-image"
+              :required-width="IMAGE_UPLOAD_SPECS.thumb_h.width"
+              :required-height="IMAGE_UPLOAD_SPECS.thumb_h.height"
+              hint="A thumbnail image displayed in moveset lists."
             />
             <!-- Download -->
             <a
@@ -287,19 +283,12 @@
           </v-col>
           <!-- Hero URL -->
           <v-col cols="12" sm="6">
-            <v-text-field
-              variant="outlined"
+            <p class="field-label">Render (1200x1200)</p>
+            <ImageUploadField
               v-model="form.movesetHeroImageUrl"
-              label="Render (1200x1200)"
-              placeholder="https://example.com/image.png"
-              messages="The render of the character cropped to fit."
-            />
-            <v-img
-              :src="getFullImageUrl(form.movesetHeroImageUrl) || movesetHeroUnknown"
-              height="150"
-              width="150"
-              class="mt-2 preview-image"
-              cover
+              :required-width="IMAGE_UPLOAD_SPECS.moveset_hero.width"
+              :required-height="IMAGE_UPLOAD_SPECS.moveset_hero.height"
+              hint="The render of the character cropped to fit."
             />
             <!-- Download -->
             <a
@@ -672,8 +661,13 @@
           hide-details
           class="notes-field"
         />
-        <v-btn @click="submit" class="btn submit-button mt-1">
-          {{ isEditMode ? 'Save' : 'Submit Moveset' }}
+        <v-btn
+          @click="submit"
+          class="btn submit-button mt-1"
+          :loading="isSubmitting"
+          :disabled="isSubmitting"
+        >
+          {{ uploadStatus || (isEditMode ? 'Save' : 'Submit Moveset') }}
         </v-btn>
       </div>
     </v-container>
@@ -684,9 +678,10 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import api from '@/services/api'
+import ImageUploadField from '@/components/ImageUploadField.vue'
 import thumbhUnknown from "@/assets/thumb_h_unknown.png"
 import movesetHeroUnknown from "@/assets/moveset_hero_unknown.png"
-import { GB_PAGE_URL, GB_WIP_URL, MODS_WIKI_URL } from '@/globals'
+import { GB_PAGE_URL, GB_WIP_URL, MODS_WIKI_URL, IMAGE_UPLOAD_SPECS } from '@/globals'
 
 const props = defineProps({
   mode: { type: String },
@@ -706,10 +701,14 @@ const editingHookIndex = ref(null)
 const showAdvanced = ref(false)
 
 const isDirty = ref(false)
+const isSubmitting = ref(false)
+const uploadStatus = ref('')
 let initialFormSnapshot = null
 
+const justSubmitted = ref(false)
+
 onBeforeRouteLeave((to, from, next) => {
-  if (isDirty.value) {
+  if (isDirty.value && !justSubmitted.value) {
     const confirmed = window.confirm('You have unsaved changes. Are you sure you want to leave?')
     next(confirmed)
   } else {
@@ -718,7 +717,7 @@ onBeforeRouteLeave((to, from, next) => {
 })
 
 const handleBeforeUnload = (e) => {
-  if (isDirty.value) {
+  if (isDirty.value && !justSubmitted.value) {
     e.preventDefault()
     e.returnValue = ''
   }
@@ -953,6 +952,20 @@ const formattedReleaseDate = computed({
   }
 })
 
+const uploadImageIfNeeded = async (value, type, itemName) => {
+  if (!(value instanceof File)) return value
+
+  const formData = new FormData()
+  formData.append('File', value)
+  formData.append('Type', type)
+  formData.append('ItemName', itemName || 'unnamed')
+
+  const res = await api.post('/upload/moveset-image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return res.data.url
+}
+
 const submit = async () => {
   const slotsStart = parseInt(form.value.slotsStart)
   const slotsEnd = parseInt(form.value.slotsEnd)
@@ -997,21 +1010,43 @@ const submit = async () => {
     form.value.slottedId = form.value.replacementId
   }
 
+  isSubmitting.value = true
+  uploadStatus.value = 'Uploading images...'
+
+  try {
+    form.value.thumbhImageUrl = await uploadImageIfNeeded(form.value.thumbhImageUrl, 'thumb_h', form.value.moddedCharName)
+    form.value.movesetHeroImageUrl = await uploadImageIfNeeded(form.value.movesetHeroImageUrl, 'moveset_hero', form.value.moddedCharName)
+  } catch (err) {
+    console.error("Image upload failed:", JSON.stringify(err.response?.data) || err.message)
+    alert("Failed to upload image(s). Please check the file and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+    isSubmitting.value = false
+    uploadStatus.value = ''
+    return
+  }
+
+  uploadStatus.value = 'Saving moveset...'
+
   const payload = { ...form.value }
 
   try {
-    isDirty.value = false
     if (props.mode === 'edit' && props.movesetId) {
       await api.put(`/movesets/${props.movesetId}`, payload)
+      isDirty.value = false
+      justSubmitted.value = true
       router.push(`/moveset/${props.movesetId}`)
     } else {
       const res = await api.post('/movesets', payload)
       const newId = res.data.movesetId
+      isDirty.value = false
+      justSubmitted.value = true
       router.push(`/moveset/${newId}`)
     }
   } catch (err) {
     console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
     alert("Failed to save moveset. Please check the form and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+  } finally {
+    isSubmitting.value = false
+    uploadStatus.value = ''
   }
 }
 </script>
@@ -1045,6 +1080,11 @@ section h2 {
 .preview-image {
   border: 1px solid #686868;
   border-radius: 3px;
+}
+.field-label {
+  font-size: 0.85rem;
+  color: #b0b0b0;
+  margin-bottom: 4px;
 }
 .submit-button {
   background-color: #2e2e2e;

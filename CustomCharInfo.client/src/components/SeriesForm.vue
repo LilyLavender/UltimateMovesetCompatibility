@@ -32,19 +32,14 @@
           </v-col>
 
           <!-- Image URL -->
-          <v-col cols="8" sm="6">
-            <v-text-field
-              variant="outlined"
+          <v-col cols="12" sm="8">
+            <p class="field-label">Series Icon (800x800)</p>
+            <ImageUploadField
               v-model="form.seriesIconUrl"
-              label="Series Icon URL"
-              placeholder="https://example.com/image.png"
-              messages="Series icons MUST be #333333 on a 800x800 canvas with 100px of padding on each side. See other series icons for reference."
-            />
-          </v-col>
-          <v-col cols="4" sm="2">
-            <v-img
-              :src="getFullImageUrl(form.seriesIconUrl) || seriesIconUnknown"
-              width="200"
+              :required-width="IMAGE_UPLOAD_SPECS.series_icon.width"
+              :required-height="IMAGE_UPLOAD_SPECS.series_icon.height"
+              hint="Series icons MUST be #333333 on a 800x800 canvas with 100px of padding on each side. See other series icons for reference."
+              :preview-max-height="180"
             />
           </v-col>
         </v-row>
@@ -63,8 +58,13 @@
           hide-details
           class="notes-field"
         />
-        <v-btn @click="submit" class="btn submit-button mt-1">
-          {{ isEditMode ? 'Save' : 'Add Series' }}
+        <v-btn
+          @click="submit"
+          class="btn submit-button mt-1"
+          :loading="isSubmitting"
+          :disabled="isSubmitting"
+        >
+          {{ uploadStatus || (isEditMode ? 'Save' : 'Add Series') }}
         </v-btn>
       </div>
     </v-container>
@@ -75,7 +75,8 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
-import seriesIconUnknown from "@/assets/series_icon_unknown.png"
+import ImageUploadField from '@/components/ImageUploadField.vue'
+import { IMAGE_UPLOAD_SPECS } from '@/globals'
 
 const props = defineProps({
   mode: { type: String },
@@ -88,13 +89,6 @@ const isEditMode = computed(() => props.mode === 'edit')
 const route = useRoute()
 const router = useRouter()
 
-const apiUrl = import.meta.env.VITE_API_URL
-
-const getFullImageUrl = (path) => {
-  if (!path) return null
-  return path.startsWith('/') ? `${apiUrl}${path}` : path
-}
-
 const series = ref(null)
 const form = ref({
   seriesName: '',
@@ -104,6 +98,8 @@ const form = ref({
 
 const showSeparateIds = ref(false)
 const nameError = ref('')
+const isSubmitting = ref(false)
+const uploadStatus = ref('')
 const allSeries = ref([])
 const originalName = ref('')
 
@@ -147,12 +143,41 @@ const validateSeriesName = () => {
   }
 }
 
+const uploadImageIfNeeded = async (value, type, itemName) => {
+  if (!(value instanceof File)) return value
+
+  const formData = new FormData()
+  formData.append('File', value)
+  formData.append('Type', type)
+  formData.append('ItemName', itemName || 'unnamed')
+
+  const res = await api.post('/upload/moveset-image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return res.data.url
+}
+
 const submit = async () => {
   // Validation
   validateSeriesName()
   if (nameError.value) {
     return
   }
+
+  isSubmitting.value = true
+  uploadStatus.value = 'Uploading image...'
+
+  try {
+    form.value.seriesIconUrl = await uploadImageIfNeeded(form.value.seriesIconUrl, 'series_icon', form.value.seriesName)
+  } catch (err) {
+    console.error("Image upload failed:", JSON.stringify(err.response?.data) || err.message)
+    alert("Failed to upload image. Please check the file and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+    isSubmitting.value = false
+    uploadStatus.value = ''
+    return
+  }
+
+  uploadStatus.value = 'Saving series...'
 
   const payload = { ...form.value }
 
@@ -168,6 +193,9 @@ const submit = async () => {
   } catch (err) {
     console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
     alert("Failed to save series. Please check the form and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+  } finally {
+    isSubmitting.value = false
+    uploadStatus.value = ''
   }
 }
 
@@ -196,6 +224,11 @@ section h2 {
   background-color: #2e2e2e;
   color: #e2e2e2;
   text-transform: unset;
+}
+.field-label {
+  font-size: 0.85rem;
+  color: #b0b0b0;
+  margin-bottom: 4px;
 }
 .notes-field {
   max-width: 400px;
