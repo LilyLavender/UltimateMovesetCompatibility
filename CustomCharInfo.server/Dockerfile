@@ -1,11 +1,11 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-COPY CustomCharInfo.server/*.csproj ./CustomCharInfo.server/
-RUN dotnet restore ./CustomCharInfo.server/CustomCharInfo.server.csproj
+COPY *.csproj ./
+RUN dotnet restore ./CustomCharInfo.server.csproj
 
-COPY CustomCharInfo.server/ ./CustomCharInfo.server/
-RUN dotnet publish ./CustomCharInfo.server/CustomCharInfo.server.csproj -c Release -o /app/publish --no-restore
+COPY . .
+RUN dotnet publish ./CustomCharInfo.server.csproj -c Release -o /app/publish --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
