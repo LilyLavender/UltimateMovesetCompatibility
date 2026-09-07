@@ -1,5 +1,5 @@
 # Ultimate Moveset Compatibility
-Ultimate Moveset Compatibility, or UMC, is a Vue3 SPA + ASP.NET Core 9 API (Azure Web App) + Azure SQL Server project. UMC was made as a platform for moveset creators to showcase their projects and ensure compatibility between movesets.
+Ultimate Moveset Compatibility, or UMC, is a Vue3 SPA + ASP.NET Core 9 API + Neon Postgres + Cloudflare R2 project. UMC was made as a platform for moveset creators to showcase their projects and ensure compatibility between movesets.
 
 ## Credits
 - **Lily**: Main developer behind the frontend and backend of the site.
@@ -26,10 +26,5 @@ npm run deploy
 ```
 
 Publish backend
-```
-dotnet build
-dotnet publish -c Release -o ./publish
-```
-Right click `server/publish` > `Deploy to Web App` > `umc-backend`.
 
-DELETE `server/publish`
+`Git push` to `main`. Render deploys automatically.
