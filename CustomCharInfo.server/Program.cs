@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Claims;
+using Amazon.S3;
+using Amazon.Runtime;
 
 namespace CustomCharInfo.server
 {
@@ -46,7 +48,23 @@ namespace CustomCharInfo.server
             });
             // DbContext
             builder.Services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+                options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+            // Cloudflare R2 (S3-compatible) client for image storage
+            builder.Services.AddSingleton<IAmazonS3>(sp =>
+            {
+                var config = sp.GetRequiredService<IConfiguration>();
+                var accountId = config["R2:AccountId"];
+                var accessKey = config["R2:AccessKeyId"];
+                var secretKey = config["R2:SecretAccessKey"];
+
+                var s3Config = new AmazonS3Config
+                {
+                    ServiceURL = $"https://{accountId}.r2.cloudflarestorage.com",
+                    ForcePathStyle = true,
+                };
+                return new AmazonS3Client(new BasicAWSCredentials(accessKey, secretKey), s3Config);
+            });
             // Identity
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
@@ -85,14 +103,16 @@ namespace CustomCharInfo.server
                 options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
             });
             // CORS
+            var corsOrigins = new List<string> { "http://localhost:5173", "https://lilylavender.github.io" };
+            var configuredOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+            if (configuredOrigins != null)
+                corsOrigins.AddRange(configuredOrigins);
+
             builder.Services.AddCors(options =>
             {
                 options.AddDefaultPolicy(policy =>
                 {
-                    policy.WithOrigins("http://localhost:5173")
-                          .AllowAnyHeader()
-                          .AllowAnyMethod();
-                    policy.WithOrigins("https://lilylavender.github.io")
+                    policy.WithOrigins(corsOrigins.ToArray())
                           .AllowAnyHeader()
                           .AllowAnyMethod();
                 });
