@@ -41,6 +41,7 @@ namespace CustomCharInfo.server.Controllers
                 Key = key,
                 InputStream = stream,
                 ContentType = file.ContentType,
+                DisablePayloadSigning = true, // R2 doesn't support the SDK's default chunked/streaming SigV4 payload signing.
             });
 
             var publicBaseUrl = _config["R2:PublicBaseUrl"]?.TrimEnd('/');
