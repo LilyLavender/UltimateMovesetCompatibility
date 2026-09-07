@@ -79,7 +79,7 @@ namespace CustomCharInfo.server.Controllers
                         )
                     )
                 })
-                .OrderBy(m => m.Name)
+                .OrderBy(m => m.Name.ToLower())
                 .ToListAsync();
 
             return Ok(modders);
