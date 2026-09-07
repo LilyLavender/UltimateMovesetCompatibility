@@ -11,7 +11,7 @@
         class="unvisitable text-decoration-none"
       >
         <i class="mdi mdi-arrow-right-bottom"></i>
-        View all movesets as a table
+        Moveset table
       </router-link>
 
       <!-- View slot grid -->
@@ -20,7 +20,7 @@
         class="unvisitable text-decoration-none ml-5"
       >
         <i class="mdi mdi-grid"></i>
-        View slot grid
+        Slot grid
       </router-link>
 
       <!-- Compatibility check -->
@@ -39,7 +39,7 @@
         class="unvisitable text-decoration-none ml-5"
       >
         <v-icon>mdi-plus</v-icon>
-        Submit Moveset
+        Submit moveset
       </router-link>
     </div>
 
