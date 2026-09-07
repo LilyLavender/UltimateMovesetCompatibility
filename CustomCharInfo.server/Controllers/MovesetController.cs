@@ -700,13 +700,10 @@ namespace CustomCharInfo.server.Controllers
             if (!isModder)
                 return Forbid();
 
-            // Find latest log; Don't allow editing if last acceptance state isn't what's expected.
             var latestLog = await _context.ActionLogs
                 .Where(a => a.ItemTypeId == 1 && a.ItemId == id)
                 .OrderByDescending(a => a.CreatedAt)
                 .FirstOrDefaultAsync();
-            if (latestLog?.AcceptanceStateId == 6)
-                return Forbid();
 
             if (dto.ModderIds == null || !dto.ModderIds.Any())
             {
@@ -866,13 +863,15 @@ namespace CustomCharInfo.server.Controllers
 
             // Log action
             int newState =
-            user?.UserTypeId == 3
-                ? 7 // admin auto-accept
-                : keyDetailsChanged
-                    ? 2 // hard admin
-                    : (latestLog?.AcceptanceStateId == 2 || latestLog?.AcceptanceStateId == 4)
-                        ? 2 // stay hard
-                        : 1; // soft admin
+            latestLog?.AcceptanceStateId == 6
+                ? 6 // stay rejected
+                : user?.UserTypeId == 3
+                    ? 7 // admin auto-accept
+                    : keyDetailsChanged
+                        ? 2 // hard admin
+                        : (latestLog?.AcceptanceStateId == 2 || latestLog?.AcceptanceStateId == 4)
+                            ? 2 // stay hard
+                            : 1; // soft admin
 
             var newModders = string.Join(", ", (dto.ModderIds ?? new())
                 .Select(mid => modderNameMap.TryGetValue(mid, out var n) ? n : mid.ToString())
