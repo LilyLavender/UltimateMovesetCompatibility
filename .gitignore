@@ -1,7 +1,6 @@
 # Backend
 CustomCharInfo.server/bin/
 CustomCharInfo.server/obj/
-CustomCharInfo.server/Migrations/
 CustomCharInfo.server/publish/
 CustomCharInfo.server/appsettings.*
 CustomCharInfo.server/appsettings.json

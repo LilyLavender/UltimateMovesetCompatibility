@@ -267,8 +267,8 @@ onMounted(async () => {
 watch(() => modder.value.gamebananaId, fetchGbPfp)
 
 const digitsOnly = (field) => {
-  if (form[field] == null) return
-  form[field] = String(form[field]).replace(/\D+/g, '')
+  if (modder.value[field] == null) return
+  modder.value[field] = String(modder.value[field]).replace(/\D+/g, '')
 }
 
 const submit = async () => {

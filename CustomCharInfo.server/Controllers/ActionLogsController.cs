@@ -27,6 +27,40 @@ namespace CustomCharInfo.server.Controllers
             _userManager = userManager;
         }
 
+        // Determines whether the requester may view logs for the given item:
+        // admins may view anything; everyone else must be the modder that owns
+        // the modder/moveset/series in question.
+        private async Task<bool> CanViewItemLogsAsync(string requesterId, int itemTypeId, int itemId)
+        {
+            var requester = await _context.Users
+                .Select(u => new { u.Id, u.UserTypeId, u.ModderId })
+                .FirstOrDefaultAsync(u => u.Id == requesterId);
+
+            if (requester == null)
+                return false;
+
+            if (requester.UserTypeId == 3) // Admin
+                return true;
+
+            if (requester.ModderId == null)
+                return false;
+
+            switch (itemTypeId)
+            {
+                case 2: // Modder
+                    return requester.ModderId == itemId;
+                case 1: // Moveset
+                    return await _context.MovesetModders
+                        .AnyAsync(mm => mm.ModderId == requester.ModderId && mm.MovesetId == itemId);
+                case 3: // Series
+                    return await _context.Movesets
+                        .AnyAsync(m => m.SeriesId == itemId &&
+                            _context.MovesetModders.Any(mm => mm.ModderId == requester.ModderId && mm.MovesetId == m.MovesetId));
+                default:
+                    return false;
+            }
+        }
+
         [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<GetActionLogDto>>> GetActionLogs(
@@ -208,11 +242,25 @@ namespace CustomCharInfo.server.Controllers
             return Ok(logs);
         }
 
+        [Authorize]
         [HttpGet("{itemTypeId}-{itemId}")]
         public async Task<ActionResult<IEnumerable<GetActionLogDto>>> GetActionLogsByItem(
             int itemTypeId,
             int itemId)
         {
+            var requesterId = _userManager.GetUserId(User);
+            if (requesterId == null)
+                return Forbid();
+
+            var canView = await CanViewItemLogsAsync(requesterId, itemTypeId, itemId);
+            if (!canView)
+                return Forbid();
+
+            var isAdmin = await _context.Users
+                .Where(u => u.Id == requesterId)
+                .Select(u => u.UserTypeId == 3)
+                .FirstOrDefaultAsync();
+
             var logsRaw = await _context.ActionLogs
                 .Include(a => a.User)
                 .Include(a => a.ItemType)
@@ -276,7 +324,7 @@ namespace CustomCharInfo.server.Controllers
                 {
                     Id = a.User.Id,
                     UserName = a.User.UserName,
-                    Email = a.User.Email
+                    Email = isAdmin ? a.User.Email : null
                 },
                 ItemType = new ItemTypeDto
                 {
@@ -380,6 +428,7 @@ namespace CustomCharInfo.server.Controllers
             return CreatedAtAction(nameof(GetActionLog), new { id = log.ActionLogId }, log);
         }
 
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<GetActionLogDto>> GetActionLog(int id)
         {
@@ -391,6 +440,19 @@ namespace CustomCharInfo.server.Controllers
 
             if (actionLog == null)
                 return NotFound();
+
+            var requesterId = _userManager.GetUserId(User);
+            if (requesterId == null)
+                return Forbid();
+
+            var canView = await CanViewItemLogsAsync(requesterId, actionLog.ItemTypeId, actionLog.ItemId);
+            if (!canView)
+                return Forbid();
+
+            var isAdmin = await _context.Users
+                .Where(u => u.Id == requesterId)
+                .Select(u => u.UserTypeId == 3)
+                .FirstOrDefaultAsync();
 
             object? itemDetails = null;
 
@@ -441,7 +503,7 @@ namespace CustomCharInfo.server.Controllers
                 {
                     Id = actionLog.User.Id,
                     UserName = actionLog.User.UserName,
-                    Email = actionLog.User.Email
+                    Email = isAdmin ? actionLog.User.Email : null
                 },
                 ItemType = new ItemTypeDto
                 {

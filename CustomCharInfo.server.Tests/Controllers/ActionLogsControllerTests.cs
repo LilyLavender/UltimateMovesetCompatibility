@@ -112,9 +112,35 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
-        public async Task GetActionLogsByItem_ReturnsEmptyArray_WhenNoLogsExist()
+        public async Task GetActionLogsByItem_NoAuthenticatedUser_ReturnsForbid()
         {
             var controller = CreateController(null);
+
+            var result = await controller.GetActionLogsByItem(1, 999);
+
+            Assert.IsType<ForbidResult>(result.Result);
+        }
+
+        [Fact]
+        public async Task GetActionLogsByItem_NonOwningModder_ReturnsForbid()
+        {
+            var owner = SeedData.AddUser(_db.Context, "modder-user", userTypeId: 2, modderId: 20);
+            SeedData.AddModder(_db.Context, 20, owner.Id, "MyModder");
+            _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 1, ModdedCharName = "NotOwned", VanillaCharInternalName = "mario", ReleaseStateId = 1 });
+            _db.Context.SaveChanges();
+
+            var controller = CreateController(owner.Id);
+
+            var result = await controller.GetActionLogsByItem(1, 1);
+
+            Assert.IsType<ForbidResult>(result.Result);
+        }
+
+        [Fact]
+        public async Task GetActionLogsByItem_Admin_ReturnsEmptyArray_WhenNoLogsExist()
+        {
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            var controller = CreateController("admin-1");
 
             var result = await controller.GetActionLogsByItem(1, 999);
 
@@ -181,17 +207,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
-        public async Task GetActionLog_UnknownId_ReturnsNotFound()
-        {
-            var controller = CreateController(null);
-
-            var result = await controller.GetActionLog(999);
-
-            Assert.IsType<NotFoundResult>(result.Result);
-        }
-
-        [Fact]
-        public async Task GetActionLog_KnownMovesetLog_IncludesItemDetails()
+        public async Task GetActionLog_NoAuthenticatedUser_ReturnsForbid()
         {
             var author = SeedData.AddUser(_db.Context, "author-1", userTypeId: 1);
             _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 1, ModdedCharName = "Some Moveset", VanillaCharInternalName = "mario", ReleaseStateId = 1 });
@@ -202,9 +218,58 @@ namespace CustomCharInfo.server.Tests.Controllers
 
             var result = await controller.GetActionLog(log.ActionLogId);
 
+            Assert.IsType<ForbidResult>(result.Result);
+        }
+
+        [Fact]
+        public async Task GetActionLog_UnknownId_ReturnsNotFound()
+        {
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            var controller = CreateController("admin-1");
+
+            var result = await controller.GetActionLog(999);
+
+            Assert.IsType<NotFoundResult>(result.Result);
+        }
+
+        [Fact]
+        public async Task GetActionLog_KnownMovesetLog_IncludesItemDetails()
+        {
+            var author = SeedData.AddUser(_db.Context, "author-1", userTypeId: 1);
+            author.Email = "author@example.com";
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 1, ModdedCharName = "Some Moveset", VanillaCharInternalName = "mario", ReleaseStateId = 1 });
+            _db.Context.SaveChanges();
+            var log = SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: 1, DateTime.UtcNow, userId: author.Id);
+
+            var controller = CreateController("admin-1");
+
+            var result = await controller.GetActionLog(log.ActionLogId);
+
             var ok = Assert.IsType<OkObjectResult>(result.Result);
             var dto = (GetActionLogDto)ok.Value!;
             Assert.NotNull(dto.Item);
+            Assert.Equal("author@example.com", dto.User.Email);
+        }
+
+        [Fact]
+        public async Task GetActionLog_NonAdminViewer_EmailIsHidden()
+        {
+            var author = SeedData.AddUser(_db.Context, "author-1", userTypeId: 1);
+            var owner = SeedData.AddUser(_db.Context, "modder-user", userTypeId: 2, modderId: 20);
+            SeedData.AddModder(_db.Context, 20, owner.Id, "MyModder");
+            _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 1, ModdedCharName = "Some Moveset", VanillaCharInternalName = "mario", ReleaseStateId = 1 });
+            _db.Context.MovesetModders.Add(new Models.MovesetModder { MovesetId = 1, ModderId = 20, SortOrder = 0 });
+            _db.Context.SaveChanges();
+            var log = SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: 1, DateTime.UtcNow, userId: author.Id);
+
+            var controller = CreateController(owner.Id);
+
+            var result = await controller.GetActionLog(log.ActionLogId);
+
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            var dto = (GetActionLogDto)ok.Value!;
+            Assert.Null(dto.User.Email);
         }
     }
 }
