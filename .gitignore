@@ -8,11 +8,17 @@ CustomCharInfo.server/appsettings.json
 CustomCharInfo.server/appsettings.Development.json
 CustomCharInfo.server/wwwroot/
 
+# Backend tests
+CustomCharInfo.server.Tests/bin/
+CustomCharInfo.server.Tests/obj/
+CustomCharInfo.server.Tests/TestResults/
+
 # Frontend
 CustomCharInfo.client/node_modules/
 CustomCharInfo.client/logs
 CustomCharInfo.client/dist
 CustomCharInfo.client/.vscode/
+CustomCharInfo.client/coverage/
 *.log
 *.suo
 *.ntvs*

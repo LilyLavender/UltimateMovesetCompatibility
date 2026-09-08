@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "build": "vite build",
     "postbuild": "cp 404.html dist/404.html",
     "predeploy": "npm run build",
@@ -24,8 +26,11 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.2",
+    "@vue/test-utils": "^2.5.0",
     "gh-pages": "^6.3.0",
+    "jsdom": "^30.0.1",
     "sass": "^1.87.0",
-    "vite": "^6.3.1"
+    "vite": "^6.3.1",
+    "vitest": "^5.0.0"
   }
 }
