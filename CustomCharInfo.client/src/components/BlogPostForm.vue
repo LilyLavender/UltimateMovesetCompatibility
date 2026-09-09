@@ -81,6 +81,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import api from '@/services/api'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 
@@ -96,7 +97,7 @@ const form = ref({
   blogImageUrl: '',
 })
 
-const renderedPreview = computed(() => marked.parse(form.value.blogText || ''))
+const renderedPreview = computed(() => DOMPurify.sanitize(marked.parse(form.value.blogText || '')))
 
 const uploadImageIfNeeded = async (value) => {
   if (!(value instanceof File)) return value

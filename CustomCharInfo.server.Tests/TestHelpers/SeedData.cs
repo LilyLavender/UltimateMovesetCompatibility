@@ -19,7 +19,8 @@ namespace CustomCharInfo.server.Tests.TestHelpers
             context.ItemTypes.AddRange(
                 new ItemType { ItemTypeId = 1, ItemTypeName = "Moveset" },
                 new ItemType { ItemTypeId = 2, ItemTypeName = "Modder" },
-                new ItemType { ItemTypeId = 3, ItemTypeName = "Series" }
+                new ItemType { ItemTypeId = 3, ItemTypeName = "Series" },
+                new ItemType { ItemTypeId = 4, ItemTypeName = "Hook" }
             );
 
             context.Set<UserType>().AddRange(

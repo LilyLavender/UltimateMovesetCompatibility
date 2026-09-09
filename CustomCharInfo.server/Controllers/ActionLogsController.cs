@@ -28,8 +28,9 @@ namespace CustomCharInfo.server.Controllers
         }
 
         // Determines whether the requester may view logs for the given item:
-        // admins may view anything; everyone else must be the modder that owns
-        // the modder/moveset/series in question.
+        // admins may view anything; hooks are shared/unowned so any authenticated
+        // user may view them; everyone else must be the modder that owns the
+        // modder/moveset/series in question.
         private async Task<bool> CanViewItemLogsAsync(string requesterId, int itemTypeId, int itemId)
         {
             var requester = await _context.Users
@@ -40,6 +41,9 @@ namespace CustomCharInfo.server.Controllers
                 return false;
 
             if (requester.UserTypeId == 3) // Admin
+                return true;
+
+            if (itemTypeId == 4) // Hook
                 return true;
 
             if (requester.ModderId == null)
@@ -59,6 +63,102 @@ namespace CustomCharInfo.server.Controllers
                 default:
                     return false;
             }
+        }
+
+        private class ItemLookups
+        {
+            public Dictionary<int, (int Id, string Name)> Movesets { get; set; } = new();
+            public Dictionary<int, (int Id, string Name)> Modders { get; set; } = new();
+            public Dictionary<int, (int Id, string Name)> Series { get; set; } = new();
+            public Dictionary<int, (int Id, string Offset)> Hooks { get; set; } = new();
+        }
+
+        // Batches the item-detail lookups (moveset/modder/series/hook names) needed to
+        // render a set of action logs, so callers avoid N+1 queries per log.
+        private async Task<ItemLookups> BuildItemLookupsAsync(IEnumerable<ActionLog> logs)
+        {
+            var modderIds = logs.Where(l => l.ItemTypeId == 2).Select(l => l.ItemId).Distinct().ToList();
+            var movesetIds = logs.Where(l => l.ItemTypeId == 1).Select(l => l.ItemId).Distinct().ToList();
+            var seriesIds = logs.Where(l => l.ItemTypeId == 3).Select(l => l.ItemId).Distinct().ToList();
+            var hookIds = logs.Where(l => l.ItemTypeId == 4).Select(l => l.ItemId).Distinct().ToList();
+
+            var modders = await _context.Modders
+                .Where(m => modderIds.Contains(m.ModderId))
+                .Select(m => new { m.ModderId, UserName = m.User.UserName ?? m.Name })
+                .ToDictionaryAsync(m => m.ModderId, m => (m.ModderId, m.UserName));
+
+            var movesets = await _context.Movesets
+                .Where(m => movesetIds.Contains(m.MovesetId))
+                .Select(m => new { m.MovesetId, m.ModdedCharName })
+                .ToDictionaryAsync(m => m.MovesetId, m => (m.MovesetId, m.ModdedCharName));
+
+            var series = await _context.Series
+                .Where(s => seriesIds.Contains(s.SeriesId))
+                .Select(s => new { s.SeriesId, s.SeriesName })
+                .ToDictionaryAsync(s => s.SeriesId, s => (s.SeriesId, s.SeriesName));
+
+            var hooks = await _context.Hooks
+                .Where(h => hookIds.Contains(h.HookId))
+                .Select(h => new { h.HookId, h.Offset })
+                .ToDictionaryAsync(h => h.HookId, h => (h.HookId, h.Offset));
+
+            return new ItemLookups { Movesets = movesets, Modders = modders, Series = series, Hooks = hooks };
+        }
+
+        private static object? BuildItemDetails(ActionLog a, ItemLookups lookups)
+        {
+            return a.ItemTypeId switch
+            {
+                1 when lookups.Movesets.TryGetValue(a.ItemId, out var moveset) => new
+                {
+                    MovesetId = moveset.Id,
+                    ModdedCharName = moveset.Name
+                },
+                2 when lookups.Modders.TryGetValue(a.ItemId, out var modder) => new
+                {
+                    ModderId = modder.Id,
+                    Name = modder.Name
+                },
+                3 when lookups.Series.TryGetValue(a.ItemId, out var s) => new
+                {
+                    SeriesId = s.Id,
+                    SeriesName = s.Name
+                },
+                4 when lookups.Hooks.TryGetValue(a.ItemId, out var hook) => new
+                {
+                    HookId = hook.Id,
+                    Offset = hook.Offset
+                },
+                _ => null
+            };
+        }
+
+        private static GetActionLogDto ToDto(ActionLog a, ItemLookups lookups, bool isAdmin)
+        {
+            return new GetActionLogDto
+            {
+                ActionLogId = a.ActionLogId,
+                User = new UserSummaryDto
+                {
+                    Id = a.User.Id,
+                    UserName = a.User.UserName,
+                    Email = isAdmin ? a.User.Email : null
+                },
+                ItemType = new ItemTypeDto
+                {
+                    ItemTypeId = a.ItemType.ItemTypeId,
+                    ItemTypeName = a.ItemType.ItemTypeName
+                },
+                Item = BuildItemDetails(a, lookups),
+                AcceptanceState = new AcceptanceStateDto
+                {
+                    AcceptanceStateId = a.AcceptanceState.AcceptanceStateId,
+                    AcceptanceStateName = a.AcceptanceState.AcceptanceStateName
+                },
+                Notes = a.Notes,
+                Diff = a.Diff,
+                CreatedAt = a.CreatedAt
+            };
         }
 
         [Authorize]
@@ -173,71 +273,8 @@ namespace CustomCharInfo.server.Controllers
                 .Take(pageSize)
                 .ToListAsync();
 
-            var modderIds = logsRaw.Where(l => l.ItemTypeId == 2).Select(l => l.ItemId).Distinct().ToList();
-            var movesetIds = logsRaw.Where(l => l.ItemTypeId == 1).Select(l => l.ItemId).Distinct().ToList();
-            var seriesIds = logsRaw.Where(l => l.ItemTypeId == 3).Select(l => l.ItemId).Distinct().ToList();
-
-            var modders = await _context.Modders
-                .Where(m => modderIds.Contains(m.ModderId))
-                .Select(m => new
-                {
-                    m.ModderId,
-                    UserName = m.User.UserName ?? m.Name
-                })
-                .ToDictionaryAsync(m => m.ModderId, m => m);
-
-            var movesets = await _context.Movesets
-                .Where(m => movesetIds.Contains(m.MovesetId))
-                .Select(m => new { m.MovesetId, m.ModdedCharName })
-                .ToDictionaryAsync(m => m.MovesetId, m => m);
-
-            var series = await _context.Series
-                .Where(s => seriesIds.Contains(s.SeriesId))
-                .Select(s => new { s.SeriesId, s.SeriesName })
-                .ToDictionaryAsync(s => s.SeriesId, s => s);
-
-            var logs = logsRaw.Select(a => new GetActionLogDto
-            {
-                ActionLogId = a.ActionLogId,
-                User = new UserSummaryDto
-                {
-                    Id = a.User.Id,
-                    UserName = a.User.UserName,
-                    Email = a.User.Email
-                },
-                ItemType = new ItemTypeDto
-                {
-                    ItemTypeId = a.ItemType.ItemTypeId,
-                    ItemTypeName = a.ItemType.ItemTypeName
-                },
-                Item = a.ItemTypeId switch
-                {
-                    1 when movesets.TryGetValue(a.ItemId, out var moveset) => new
-                    {
-                        MovesetId = moveset.MovesetId,
-                        ModdedCharName = moveset.ModdedCharName
-                    },
-                    2 when modders.TryGetValue(a.ItemId, out var modder) => new
-                    {
-                        ModderId = modder.ModderId,
-                        Name = modder.UserName
-                    },
-                    3 when series.TryGetValue(a.ItemId, out var s) => new
-                    {
-                        SeriesId = s.SeriesId,
-                        SeriesName = s.SeriesName
-                    },
-                    _ => null
-                },
-                AcceptanceState = new AcceptanceStateDto
-                {
-                    AcceptanceStateId = a.AcceptanceState.AcceptanceStateId,
-                    AcceptanceStateName = a.AcceptanceState.AcceptanceStateName
-                },
-                Notes = a.Notes,
-                Diff = a.Diff,
-                CreatedAt = a.CreatedAt
-            }).ToList();
+            var lookups = await BuildItemLookupsAsync(logsRaw);
+            var logs = logsRaw.Select(a => ToDto(a, lookups, isAdmin)).ToList();
 
             return Ok(logs);
         }
@@ -272,93 +309,8 @@ namespace CustomCharInfo.server.Controllers
             if (!logsRaw.Any())
                 return Ok(Array.Empty<GetActionLogDto>());
 
-            var modderIds = logsRaw
-                .Where(l => l.ItemTypeId == 2)
-                .Select(l => l.ItemId)
-                .Distinct()
-                .ToList();
-
-            var movesetIds = logsRaw
-                .Where(l => l.ItemTypeId == 1)
-                .Select(l => l.ItemId)
-                .Distinct()
-                .ToList();
-
-            var seriesIds = logsRaw
-                .Where(l => l.ItemTypeId == 3)
-                .Select(l => l.ItemId)
-                .Distinct()
-                .ToList();
-
-            var modders = await _context.Modders
-                .Where(m => modderIds.Contains(m.ModderId))
-                .Select(m => new
-                {
-                    m.ModderId,
-                    UserName = m.User.UserName ?? m.Name
-                })
-                .ToDictionaryAsync(m => m.ModderId);
-
-            var movesets = await _context.Movesets
-                .Where(m => movesetIds.Contains(m.MovesetId))
-                .Select(m => new
-                {
-                    m.MovesetId,
-                    m.ModdedCharName
-                })
-                .ToDictionaryAsync(m => m.MovesetId);
-
-            var series = await _context.Series
-                .Where(s => seriesIds.Contains(s.SeriesId))
-                .Select(s => new
-                {
-                    s.SeriesId,
-                    s.SeriesName
-                })
-                .ToDictionaryAsync(s => s.SeriesId);
-
-            var logs = logsRaw.Select(a => new GetActionLogDto
-            {
-                ActionLogId = a.ActionLogId,
-                User = new UserSummaryDto
-                {
-                    Id = a.User.Id,
-                    UserName = a.User.UserName,
-                    Email = isAdmin ? a.User.Email : null
-                },
-                ItemType = new ItemTypeDto
-                {
-                    ItemTypeId = a.ItemType.ItemTypeId,
-                    ItemTypeName = a.ItemType.ItemTypeName
-                },
-                Item = a.ItemTypeId switch
-                {
-                    1 when movesets.TryGetValue(a.ItemId, out var moveset) => new
-                    {
-                        MovesetId = moveset.MovesetId,
-                        ModdedCharName = moveset.ModdedCharName
-                    },
-                    2 when modders.TryGetValue(a.ItemId, out var modder) => new
-                    {
-                        ModderId = modder.ModderId,
-                        Name = modder.UserName
-                    },
-                    3 when series.TryGetValue(a.ItemId, out var s) => new
-                    {
-                        SeriesId = s.SeriesId,
-                        SeriesName = s.SeriesName
-                    },
-                    _ => null
-                },
-                AcceptanceState = new AcceptanceStateDto
-                {
-                    AcceptanceStateId = a.AcceptanceState.AcceptanceStateId,
-                    AcceptanceStateName = a.AcceptanceState.AcceptanceStateName
-                },
-                Notes = a.Notes,
-                Diff = a.Diff,
-                CreatedAt = a.CreatedAt
-            }).ToList();
+            var lookups = await BuildItemLookupsAsync(logsRaw);
+            var logs = logsRaw.Select(a => ToDto(a, lookups, isAdmin)).ToList();
 
             return Ok(logs);
         }
@@ -454,72 +406,8 @@ namespace CustomCharInfo.server.Controllers
                 .Select(u => u.UserTypeId == 3)
                 .FirstOrDefaultAsync();
 
-            object? itemDetails = null;
-
-            if (actionLog.ItemTypeId == 1) // Moveset
-            {
-                var moveset = await _context.Movesets.FindAsync(actionLog.ItemId);
-                if (moveset != null)
-                {
-                    itemDetails = new
-                    {
-                        MovesetId = moveset.MovesetId,
-                        ModdedCharName = moveset.ModdedCharName
-                    };
-                }
-            }
-            else if (actionLog.ItemTypeId == 2) // Modder
-            {
-                var modder = await _context.Modders
-                    .Include(m => m.User)
-                    .SingleOrDefaultAsync(m => m.ModderId == actionLog.ItemId);
-            
-                if (modder != null)
-                {
-                    itemDetails = new
-                    {
-                        ModderId = modder.ModderId,
-                        Name = modder.User?.UserName ?? modder.Name
-                    };
-                }
-            }
-            else if (actionLog.ItemTypeId == 3) // Series
-            {
-                var series = await _context.Series.FindAsync(actionLog.ItemId);
-                if (series != null)
-                {
-                    itemDetails = new
-                    {
-                        SeriesId = series.SeriesId,
-                        SeriesName = series.SeriesName
-                    };
-                }
-            }
-
-            var logDto = new GetActionLogDto
-            {
-                ActionLogId = actionLog.ActionLogId,
-                User = new UserSummaryDto
-                {
-                    Id = actionLog.User.Id,
-                    UserName = actionLog.User.UserName,
-                    Email = isAdmin ? actionLog.User.Email : null
-                },
-                ItemType = new ItemTypeDto
-                {
-                    ItemTypeId = actionLog.ItemType.ItemTypeId,
-                    ItemTypeName = actionLog.ItemType.ItemTypeName
-                },
-                Item = itemDetails,
-                AcceptanceState = new AcceptanceStateDto
-                {
-                    AcceptanceStateId = actionLog.AcceptanceState.AcceptanceStateId,
-                    AcceptanceStateName = actionLog.AcceptanceState.AcceptanceStateName
-                },
-                Notes = actionLog.Notes,
-                Diff = actionLog.Diff,
-                CreatedAt = actionLog.CreatedAt
-            };
+            var lookups = await BuildItemLookupsAsync(new[] { actionLog });
+            var logDto = ToDto(actionLog, lookups, isAdmin);
 
             return Ok(logDto);
         }

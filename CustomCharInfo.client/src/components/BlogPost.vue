@@ -19,6 +19,7 @@
 import { computed } from 'vue'
 import { format } from 'date-fns'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
@@ -38,7 +39,7 @@ const getFullImageUrl = (path) => {
   return path.startsWith('/') ? `${apiUrl}${path}` : path
 }
 
-const renderedText = computed(() => marked.parse(props.post.blogText || ''))
+const renderedText = computed(() => DOMPurify.sanitize(marked.parse(props.post.blogText || '')))
 </script>
 
 <style scoped>

@@ -52,6 +52,34 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
+        public async Task CreateHook_Modder_WritesActionLogAsPendingAdminSoft()
+        {
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
+            var controller = CreateController("modder-1");
+
+            await controller.CreateHook(new CreateHookDto { Offset = "0x1234", Description = "Test", HookableStatusId = 1 });
+
+            var log = Assert.Single(_db.Context.ActionLogs);
+            Assert.Equal(4, log.ItemTypeId);
+            Assert.Equal(1, log.AcceptanceStateId);
+            Assert.Equal("modder-1", log.UserId);
+            Assert.Contains("0x1234", log.Diff);
+        }
+
+        [Fact]
+        public async Task CreateHook_Admin_StillWritesActionLogAsPendingAdminSoft()
+        {
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            var controller = CreateController("admin-1");
+
+            await controller.CreateHook(new CreateHookDto { Offset = "0x1234", Description = "Test", HookableStatusId = 1 });
+
+            var log = Assert.Single(_db.Context.ActionLogs);
+            Assert.Equal(4, log.ItemTypeId);
+            Assert.Equal(1, log.AcceptanceStateId);
+        }
+
+        [Fact]
         public async Task UpdateHook_UnknownId_ReturnsNotFound()
         {
             SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
@@ -77,6 +105,13 @@ namespace CustomCharInfo.server.Tests.Controllers
             var hook = await _db.Context.Hooks.FindAsync(1);
             Assert.Equal("New Description", hook!.Description);
             Assert.Equal("0x1", hook.Offset);
+
+            var log = Assert.Single(_db.Context.ActionLogs);
+            Assert.Equal(4, log.ItemTypeId);
+            Assert.Equal(1, log.ItemId);
+            Assert.Equal(1, log.AcceptanceStateId);
+            Assert.Contains("Description", log.Diff);
+            Assert.DoesNotContain("Offset", log.Diff);
         }
 
         [Fact]
@@ -106,6 +141,11 @@ namespace CustomCharInfo.server.Tests.Controllers
 
             Assert.IsType<NoContentResult>(result);
             Assert.Empty(_db.Context.Hooks);
+
+            var log = Assert.Single(_db.Context.ActionLogs);
+            Assert.Equal(4, log.ItemTypeId);
+            Assert.Equal(5, log.AcceptanceStateId);
+            Assert.Contains("ToDelete", log.Diff);
         }
 
         [Fact]

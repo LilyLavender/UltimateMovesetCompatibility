@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory  } from 'vue-router';
 import api from '@/services/api'
+import { createAuthGuard } from '@/router/guards'
 // Basic
 import HomePage from '@/views/HomePage.vue';
 import ErrorPage from '@/views/ErrorPage.vue';
@@ -326,62 +327,14 @@ const routes = [
     name: 'AddMoveset',
     component: AddMoveset,
     meta: { title: 'Submit Moveset' },
-    beforeEnter: async (to, from, next) => {
-      try {
-        const user = (await api.get('/auth/me')).data;
-        if (user.userTypeId >= 2) {
-          next();
-        } else {
-          next({
-            name: 'ErrorPage',
-            query: {
-              httpCode: '403 Forbidden',
-              reason: 'You do not have permission to access this page.',
-            }
-          })
-        }
-      } catch (err) {
-        next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '401 Unauthorized',
-            reason: 'Authentication failed.',
-            extra: 'Try signing in or refreshing the page.',
-          }
-        })
-      }
-    }
+    beforeEnter: createAuthGuard(user => user.userTypeId >= 2),
   },
   {
     path: '/series/add',
     name: 'AddSeries',
     component: AddSeries,
     meta: { title: 'Submit Series' },
-    beforeEnter: async (to, from, next) => {
-      try {
-        const user = (await api.get('/auth/me')).data;
-        if (user.userTypeId >= 2) {
-          next();
-        } else {
-          next({
-            name: 'ErrorPage',
-            query: {
-              httpCode: '403 Forbidden',
-              reason: 'You do not have permission to access this page.',
-            }
-          })
-        }
-      } catch (err) {
-        next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '401 Unauthorized',
-            reason: 'Authentication failed.',
-            extra: 'Try signing in or refreshing the page.',
-          }
-        })
-      }
-    }
+    beforeEnter: createAuthGuard(user => user.userTypeId >= 2),
   },
   {
     path: '/modders',
@@ -479,62 +432,14 @@ const routes = [
     name: 'AddHook',
     component: AddHook,
     meta: { title: 'Submit Hook' },
-    beforeEnter: async (to, from, next) => {
-      try {
-        const user = (await api.get('/auth/me')).data;
-        if (user.userTypeId >= 2) {
-          next();
-        } else {
-          next({
-            name: 'ErrorPage',
-            query: {
-              httpCode: '403 Forbidden',
-              reason: 'You do not have permission to access this page.',
-            }
-          })
-        }
-      } catch (err) {
-        next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '401 Unauthorized',
-            reason: 'Authentication failed.',
-            extra: 'Try signing in or refreshing the page.',
-          }
-        })
-      }
-    }
+    beforeEnter: createAuthGuard(user => user.userTypeId >= 2),
   },
   {
     path: '/hooks/edit/:hookId',
     name: 'EditHook',
     component: EditHook,
     props: true,
-    beforeEnter: async (to, from, next) => {
-      try {
-        const user = (await api.get('/auth/me')).data;
-        if (user.userTypeId >= 2) {
-          next();
-        } else {
-          next({
-            name: 'ErrorPage',
-            query: {
-              httpCode: '403 Forbidden',
-              reason: 'You do not have permission to access this page.',
-            }
-          })
-        }
-      } catch (err) {
-        next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '401 Unauthorized',
-            reason: 'Authentication failed.',
-            extra: 'Try signing in or refreshing the page.',
-          }
-        })
-      }
-    }
+    beforeEnter: createAuthGuard(user => user.userTypeId >= 2),
   },
   {
     path: '/user-actions',
@@ -553,217 +458,49 @@ const routes = [
     name: 'AdminPortal',
     component: AdminPortal,
     meta: { title: 'Admin portal' },
-    beforeEnter: async (to, from, next) => {
-      try {
-        const user = (await api.get('/auth/me')).data;
-        if (user.userTypeId === 3) {
-          next();
-        } else {
-          next({
-            name: 'ErrorPage',
-            query: {
-              httpCode: '403 Forbidden',
-              reason: 'You do not have permission to access this page.',
-            }
-          })
-        }
-      } catch (err) {
-        next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '401 Unauthorized',
-            reason: 'Authentication failed.',
-            extra: 'Try signing in or refreshing the page.',
-          }
-        })
-      }
-    }
+    beforeEnter: createAuthGuard(user => user.userTypeId === 3),
   },
   {
     path: '/action-log-manager',
     name: 'AdminAccepter',
     component: AdminAccepter,
     meta: { title: 'Action Log Manager' },
-    beforeEnter: async (to, from, next) => {
-      try {
-        const user = (await api.get('/auth/me')).data;
-        if (user.userTypeId === 3) {
-          next();
-        } else {
-          next({
-            name: 'ErrorPage',
-            query: {
-              httpCode: '403 Forbidden',
-              reason: 'You do not have permission to access this page.',
-            }
-          })
-        }
-      } catch (err) {
-        next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '401 Unauthorized',
-            reason: 'Authentication failed.',
-            extra: 'Try signing in or refreshing the page.',
-          }
-        })
-      }
-    }
+    beforeEnter: createAuthGuard(user => user.userTypeId === 3),
   },
   {
     path: '/notification-simulator',
     name: 'NotificationSimulator',
     component: NotificationSimulator,
     meta: { title: 'Notification Simulator' },
-    beforeEnter: async (to, from, next) => {
-      try {
-        const user = (await api.get('/auth/me')).data;
-        if (user.userTypeId === 3) {
-          next();
-        } else {
-          next({
-            name: 'ErrorPage',
-            query: {
-              httpCode: '403 Forbidden',
-              reason: 'You do not have permission to access this page.',
-            }
-          })
-        }
-      } catch (err) {
-        next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '401 Unauthorized',
-            reason: 'Authentication failed.',
-            extra: 'Try signing in or refreshing the page.',
-          }
-        })
-      }
-    }
+    beforeEnter: createAuthGuard(user => user.userTypeId === 3),
   },
   {
     path: '/admin-picks',
     name: 'AdminPicks',
     component: AdminPicks,
     meta: { title: 'Admin Picks' },
-    beforeEnter: async (to, from, next) => {
-      try {
-        const user = (await api.get('/auth/me')).data;
-        if (user.userTypeId === 3) {
-          next();
-        } else {
-          next({
-            name: 'ErrorPage',
-            query: {
-              httpCode: '403 Forbidden',
-              reason: 'You do not have permission to access this page.',
-            }
-          })
-        }
-      } catch (err) {
-        next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '401 Unauthorized',
-            reason: 'Authentication failed.',
-            extra: 'Try signing in or refreshing the page.',
-          }
-        })
-      }
-    }
+    beforeEnter: createAuthGuard(user => user.userTypeId === 3),
   },
   {
     path: '/admin-password-resetter',
     name: 'AdminPasswordResetter',
     component: AdminPasswordResetter,
     meta: { title: 'Password Resetter' },
-    beforeEnter: async (to, from, next) => {
-      try {
-        const user = (await api.get('/auth/me')).data;
-        if (user.userTypeId === 3) {
-          next();
-        } else {
-          next({
-            name: 'ErrorPage',
-            query: {
-              httpCode: '403 Forbidden',
-              reason: 'You do not have permission to access this page.',
-            }
-          })
-        }
-      } catch (err) {
-        next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '401 Unauthorized',
-            reason: 'Authentication failed.',
-            extra: 'Try signing in or refreshing the page.',
-          }
-        })
-      }
-    }
+    beforeEnter: createAuthGuard(user => user.userTypeId === 3),
   },
   {
     path: '/add-blog-post',
     name: 'AddBlogPost',
     component: BlogPostForm,
     meta: { title: 'Add Blog Post' },
-    beforeEnter: async (to, from, next) => {
-      try {
-        const user = (await api.get('/auth/me')).data;
-        if (user.userTypeId === 3) {
-          next();
-        } else {
-          next({
-            name: 'ErrorPage',
-            query: {
-              httpCode: '403 Forbidden',
-              reason: 'You do not have permission to access this page.',
-            }
-          })
-        }
-      } catch (err) {
-        next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '401 Unauthorized',
-            reason: 'Authentication failed.',
-            extra: 'Try signing in or refreshing the page.',
-          }
-        })
-      }
-    }
+    beforeEnter: createAuthGuard(user => user.userTypeId === 3),
   },
   {
     path: '/user-list',
     name: 'UserList',
     component: UserList,
     meta: { title: 'User List' },
-    beforeEnter: async (to, from, next) => {
-      try {
-        const user = (await api.get('/auth/me')).data;
-        if (user.userTypeId === 3) {
-          next();
-        } else {
-          next({
-            name: 'ErrorPage',
-            query: {
-              httpCode: '403 Forbidden',
-              reason: 'You do not have permission to access this page.',
-            }
-          })
-        }
-      } catch (err) {
-        next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '401 Unauthorized',
-            reason: 'Authentication failed.',
-            extra: 'Try signing in or refreshing the page.',
-          }
-        })
-      }
-    },
+    beforeEnter: createAuthGuard(user => user.userTypeId === 3),
   },
   {
     path: '/about',

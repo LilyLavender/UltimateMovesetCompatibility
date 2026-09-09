@@ -567,6 +567,7 @@ namespace CustomCharInfo.server.Controllers
             return Ok(moveset);
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult<Moveset>> PostMoveset(CreateMovesetDto dto)
         {
@@ -634,7 +635,7 @@ namespace CustomCharInfo.server.Controllers
                 UserId = userId,
                 ItemTypeId = 1,
                 ItemId = moveset.MovesetId,
-                AcceptanceStateId = 2,
+                AcceptanceStateId = newState,
                 Notes = dto.Notes ?? "",
                 CreatedAt = DateTime.UtcNow
             });
@@ -936,6 +937,7 @@ namespace CustomCharInfo.server.Controllers
             return NoContent();
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteMoveset(int id)
         {

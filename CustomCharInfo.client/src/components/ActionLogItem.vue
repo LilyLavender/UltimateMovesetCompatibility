@@ -58,6 +58,22 @@
             </router-link>
           </h3>
         </div>
+
+        <!-- Item (if hook) -->
+        <div v-else-if="log.itemType.itemTypeId === 4">
+          <h3>
+            Hook:
+            {{ log.item?.offset ?? '(deleted)' }}
+            <router-link
+              v-if="log.item?.hookId"
+              :to="{ name: 'EditHook', params: { hookId: log.item.hookId } }"
+              class="unvisitable ml-1 small-link"
+            >
+              <v-icon>mdi-pencil</v-icon>
+              Edit
+            </router-link>
+          </h3>
+        </div>
       </v-col>
 
       <v-col cols="12" sm="6">

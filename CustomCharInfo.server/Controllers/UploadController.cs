@@ -23,6 +23,17 @@ namespace CustomCharInfo.server.Controllers
 
         private readonly IConfiguration _config;
 
+        // Server-trusted extension -> content-type map. Never trust the client-supplied
+        // IFormFile.ContentType or filename extension for what actually gets served back.
+        private static readonly Dictionary<string, string> AllowedImageContentTypes = new()
+        {
+            { ".png", "image/png" },
+            { ".jpg", "image/jpeg" },
+            { ".jpeg", "image/jpeg" },
+            { ".gif", "image/gif" },
+            { ".webp", "image/webp" },
+        };
+
         public UploadController(AppDbContext context, UserManager<ApplicationUser> userManager, IAmazonS3 s3, IConfiguration config)
         {
             _context = context;
@@ -31,7 +42,7 @@ namespace CustomCharInfo.server.Controllers
             _config = config;
         }
 
-        private async Task<string> UploadToR2Async(IFormFile file, string key)
+        private async Task<string> UploadToR2Async(IFormFile file, string key, string contentType)
         {
             var bucket = _config["R2:BucketName"];
             using var stream = file.OpenReadStream();
@@ -40,7 +51,7 @@ namespace CustomCharInfo.server.Controllers
                 BucketName = bucket,
                 Key = key,
                 InputStream = stream,
-                ContentType = file.ContentType,
+                ContentType = contentType,
                 DisablePayloadSigning = true, // R2 doesn't support the SDK's default chunked/streaming SigV4 payload signing.
             });
 
@@ -71,22 +82,30 @@ namespace CustomCharInfo.server.Controllers
             if (!allowedTypes.TryGetValue(dto.Type, out var expectedSize))
                 return BadRequest("Invalid type. Must be one of thumb_h, moveset_hero, series_icon");
 
-            using (var imageStream = dto.File.OpenReadStream())
-            using (var image = Image.Load(imageStream))
+            var ext = Path.GetExtension(dto.File.FileName).ToLowerInvariant();
+            if (!AllowedImageContentTypes.TryGetValue(ext, out var contentType))
+                return BadRequest("Invalid file type. Must be one of: " + string.Join(", ", AllowedImageContentTypes.Keys));
+
+            try
             {
+                using var imageStream = dto.File.OpenReadStream();
+                using var image = Image.Load(imageStream);
                 if (image.Width != expectedSize.width || image.Height != expectedSize.height)
                     return BadRequest($"Invalid image dimensions. {dto.Type} must be {expectedSize.width}x{expectedSize.height}");
+            }
+            catch (UnknownImageFormatException)
+            {
+                return BadRequest("File is not a valid image.");
             }
 
             // Create GUID filename
             var guid = Guid.NewGuid();
-            var ext = Path.GetExtension(dto.File.FileName).ToLowerInvariant();
             var fileName = $"{dto.Type}_{guid}{ext}";
 
             var keyPrefix = dto.Type == "series_icon" ? "series-icons" : "moveset-ui";
             var key = $"uploads/{keyPrefix}/{fileName}";
 
-            var url = await UploadToR2Async(dto.File, key);
+            var url = await UploadToR2Async(dto.File, key, contentType);
 
             return Ok(new { url });
         }
@@ -104,11 +123,24 @@ namespace CustomCharInfo.server.Controllers
             if (dto.File == null || dto.File.Length == 0)
                 return BadRequest("File is missing.");
 
-            var fileExt = Path.GetExtension(dto.File.FileName);
+            var fileExt = Path.GetExtension(dto.File.FileName).ToLowerInvariant();
+            if (!AllowedImageContentTypes.TryGetValue(fileExt, out var contentType))
+                return BadRequest("Invalid file type. Must be one of: " + string.Join(", ", AllowedImageContentTypes.Keys));
+
+            try
+            {
+                using var imageStream = dto.File.OpenReadStream();
+                using var image = Image.Load(imageStream);
+            }
+            catch (UnknownImageFormatException)
+            {
+                return BadRequest("File is not a valid image.");
+            }
+
             var fileName = $"{Guid.NewGuid()}{fileExt}";
             var key = $"uploads/blog-images/{fileName}";
 
-            var url = await UploadToR2Async(dto.File, key);
+            var url = await UploadToR2Async(dto.File, key, contentType);
 
             return Ok(new { url });
         }

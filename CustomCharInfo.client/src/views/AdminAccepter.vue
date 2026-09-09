@@ -27,6 +27,7 @@
             </div>
             <div class="d-flex ga-2">
               <v-btn
+                v-if="log.itemType.itemTypeId !== 4"
                 variant="flat"
                 :class="['action-btn', pendingUserTargetState(log) === 4 ? 'pending-btn-hard' : 'pending-btn-soft']"
                 style="width: 50%"
@@ -37,7 +38,7 @@
               <v-btn
                 variant="flat"
                 class="action-btn accept-btn"
-                style="width: 50%"
+                :style="{ width: log.itemType.itemTypeId === 4 ? '100%' : '50%' }"
                 @click="prefillForm(log, 5)"
               >
                 Accepted
@@ -222,6 +223,16 @@
             </div>
           </div>
 
+          <!-- Hook preview -->
+          <div v-if="selectedFull && form.itemTypeId === 4" class="mb-3">
+            <h2 class="mb-1">Preview</h2>
+            <div class="hook-preview">
+              <div><strong>Offset:</strong> {{ selectedFull.offset }}</div>
+              <div><strong>Description:</strong> {{ selectedFull.description }}</div>
+              <div><strong>Status:</strong> {{ selectedFull.hookableStatus }}</div>
+            </div>
+          </div>
+
           <!-- Action log display -->
           <h2>Action Logs</h2>
           <ActionLogGroup
@@ -259,6 +270,7 @@ const itemTypes = [
   { label: 'Moveset', value: 1 },
   { label: 'Modder', value: 2 },
   { label: 'Series', value: 3 },
+  { label: 'Hook', value: 4 },
 ]
 
 const acceptanceStates = [
@@ -279,9 +291,9 @@ const loadingLogs = ref(false)
 const pendingAdminLogs = ref([])
 const modderGbPfp = ref(null)
 
-const itemTypeLabel = (id) => ({ 1: 'Moveset', 2: 'Modder', 3: 'Series' })[id] ?? '?'
+const itemTypeLabel = (id) => ({ 1: 'Moveset', 2: 'Modder', 3: 'Series', 4: 'Hook' })[id] ?? '?'
 
-const itemTypeIcon = (id) => ({ 1: 'mdi-sword', 2: 'mdi-account', 3: 'mdi-view-list' })[id] ?? 'mdi-help'
+const itemTypeIcon = (id) => ({ 1: 'mdi-sword', 2: 'mdi-account', 3: 'mdi-view-list', 4: 'mdi-hook' })[id] ?? 'mdi-help'
 
 const stateDotStyle = (id) => ({
   backgroundColor: id === 2 ? 'rgb(52, 194, 241)' : 'rgb(187, 224, 236)',
@@ -299,9 +311,9 @@ const acceptanceStateDotStyle = (id) => ({
   }[id] ?? '#888',
 })
 
-const getItemId = (log) => log.item?.movesetId ?? log.item?.modderId ?? log.item?.seriesId
+const getItemId = (log) => log.item?.movesetId ?? log.item?.modderId ?? log.item?.seriesId ?? log.item?.hookId
 
-const getItemName = (log) => log.item?.moddedCharName ?? log.item?.name ?? log.item?.seriesName ?? '(deleted)'
+const getItemName = (log) => log.item?.moddedCharName ?? log.item?.name ?? log.item?.seriesName ?? log.item?.offset ?? '(deleted)'
 
 const pendingUserTargetState = (log) => log.acceptanceState.acceptanceStateId === 2 ? 4 : 3
 
@@ -314,7 +326,7 @@ const fetchUser = async () => {
 const fetchPendingAdminLogs = async () => {
   try {
     const res = await api.get('/logs', {
-      params: { acceptanceStates: [1, 2], itemTypes: [1, 2, 3], viewAll: true }
+      params: { acceptanceStates: [1, 2], itemTypes: [1, 2, 3, 4], viewAll: true }
     })
     const latestMap = new Map()
     for (const log of res.data) {
@@ -348,6 +360,11 @@ const fetchItems = async () => {
       const sorted = res.data.sort((a, b) => a.seriesName.localeCompare(b.seriesName))
       fullItemsById.value = Object.fromEntries(sorted.map(s => [s.seriesId, s]))
       items.value = sorted.map(s => ({ id: s.seriesId, name: s.seriesName }))
+    } else if (form.value.itemTypeId === 4) {
+      const res = await api.get('/hooks')
+      const sorted = res.data.sort((a, b) => a.offset.localeCompare(b.offset))
+      fullItemsById.value = Object.fromEntries(sorted.map(h => [h.hookId, h]))
+      items.value = sorted.map(h => ({ id: h.hookId, name: `${h.offset} - ${h.description}` }))
     } else {
       fullItemsById.value = {}
       items.value = []
@@ -601,6 +618,16 @@ div:has(>.center-entire) {
 .modder-preview-discord {
   font-size: 0.82rem;
   color: #7289da;
+}
+
+.hook-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background-color: #1e1e1e;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 0.9rem;
 }
 
 .series-grid-preview {

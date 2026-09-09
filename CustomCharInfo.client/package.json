@@ -16,6 +16,7 @@
     "@unhead/vue": "^3.1.0",
     "axios": "^1.9.0",
     "date-fns": "^4.1.0",
+    "dompurify": "^3.4.15",
     "jwt-decode": "^4.0.0",
     "marked": "^18.0.3",
     "pinia": "^3.0.2",

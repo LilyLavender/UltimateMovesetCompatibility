@@ -7,6 +7,7 @@ using CustomCharInfo.server.Models.DTOs;
 
 using SixLabors.ImageSharp;
 using Microsoft.AspNetCore.Authorization;
+using CustomCharInfo.server.Helpers;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -64,6 +65,23 @@ namespace CustomCharInfo.server.Controllers
             return Ok(hook);
         }
 
+        // Hooks have no owner and no hard review gate.
+        // Edits take effect immediately for any modder.
+        // Create/update is still logged as pending admin soft.
+        private void LogHookAction(string userId, int hookId, int acceptanceStateId, string notes, string? diff)
+        {
+            _context.ActionLogs.Add(new ActionLog
+            {
+                UserId = userId,
+                ItemTypeId = 4,
+                ItemId = hookId,
+                AcceptanceStateId = acceptanceStateId,
+                Notes = notes,
+                Diff = diff,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
         [HttpPost]
         [Authorize]
         public async Task<ActionResult<CreateHookDto>> CreateHook(CreateHookDto dto)
@@ -84,6 +102,16 @@ namespace CustomCharInfo.server.Controllers
             _context.Hooks.Add(hook);
             await _context.SaveChangesAsync();
 
+            var diff = DiffHelper.Build(new (string, object?, object?)[]
+            {
+                ("Offset", null, hook.Offset),
+                ("Description", null, hook.Description),
+                ("HookableStatusId", null, hook.HookableStatusId),
+            });
+
+            LogHookAction(userId, hook.HookId, acceptanceStateId: 1, "Created hook", diff);
+            await _context.SaveChangesAsync();
+
             return CreatedAtAction(nameof(GetHook), new { id = hook.HookId }, hook);
         }
 
@@ -101,6 +129,10 @@ namespace CustomCharInfo.server.Controllers
             if (hook == null)
                 return NotFound();
 
+            var snapOffset = hook.Offset;
+            var snapDescription = hook.Description;
+            var snapHookableStatusId = hook.HookableStatusId;
+
             if (dto.Offset != null)
                 hook.Offset = dto.Offset;
 
@@ -110,6 +142,14 @@ namespace CustomCharInfo.server.Controllers
             if (dto.HookableStatusId.HasValue)
                 hook.HookableStatusId = dto.HookableStatusId.Value;
 
+            var diff = DiffHelper.Build(new (string, object?, object?)[]
+            {
+                ("Offset", snapOffset, hook.Offset),
+                ("Description", snapDescription, hook.Description),
+                ("HookableStatusId", snapHookableStatusId, hook.HookableStatusId),
+            });
+
+            LogHookAction(userId, hook.HookId, acceptanceStateId: 1, "Updated hook", diff);
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -129,6 +169,14 @@ namespace CustomCharInfo.server.Controllers
             if (hook == null)
                 return NotFound();
 
+            var diff = DiffHelper.Build(new (string, object?, object?)[]
+            {
+                ("Offset", hook.Offset, null),
+                ("Description", hook.Description, null),
+                ("HookableStatusId", hook.HookableStatusId, null),
+            });
+
+            LogHookAction(userId, hook.HookId, acceptanceStateId: 5, "Deleted hook", diff);
             _context.Hooks.Remove(hook);
             await _context.SaveChangesAsync();
 
