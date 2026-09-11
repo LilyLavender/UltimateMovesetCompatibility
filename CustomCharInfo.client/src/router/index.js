@@ -51,6 +51,7 @@ import NotificationSimulator from '@/views/NotificationSimulator.vue';
 import AdminPicks from '@/views/AdminPicks.vue';
 import AdminPasswordResetter from '@/views/AdminPasswordResetter.vue';
 import UserList from '@/views/UserList.vue';
+import ImageGarbageCollector from '@/views/ImageGarbageCollector.vue';
 
 const routes = [
   {
@@ -383,6 +384,13 @@ const routes = [
     name: 'UserList',
     component: UserList,
     meta: { title: 'User List' },
+    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
+  },
+  {
+    path: '/image-garbage-collector',
+    name: 'ImageGarbageCollector',
+    component: ImageGarbageCollector,
+    meta: { title: 'Image Garbage Collector' },
     beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
   },
   {

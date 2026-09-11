@@ -50,6 +50,14 @@
         <v-icon left>mdi-account-lock-open</v-icon>
         Reset passwords
       </router-link>
+
+      <router-link
+        :to="{ name: 'ImageGarbageCollector' }"
+        class="unvisitable ml-2 admin-link"
+      >
+        <v-icon left>mdi-image-remove</v-icon>
+        Image Garbage Collector
+      </router-link>
     </div>
 
     <!-- Action Log Dashboard -->
