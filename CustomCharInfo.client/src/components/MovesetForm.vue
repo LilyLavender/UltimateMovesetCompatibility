@@ -167,6 +167,7 @@
               v-model.number="form.slotsStart"
               label="Start Slot"
               @input="digitsOnly('slotsStart')"
+              @blur="checkSlotAlignment"
               :min="8"
               :max="255"
               prefix="c"
@@ -181,6 +182,7 @@
               v-model.number="form.slotsEnd"
               label="End Slot"
               @input="digitsOnly('slotsEnd')"
+              @blur="checkSlotAlignment"
               :min="8"
               :max="255"
               prefix="c"
@@ -671,6 +673,24 @@
         </v-btn>
       </div>
     </v-container>
+
+    <!-- Slot alignment warning -->
+    <v-dialog v-model="slotWarningDialog" max-width="480">
+      <v-card color="#2e2e2e">
+        <v-card-title>
+          <v-icon>mdi-alert</v-icon>
+          Unusual Slot Range
+        </v-card-title>
+        <v-card-text>
+          Slots c{{ form.slotsStart }} through c{{ form.slotsEnd }} aren't a standard 8-slot-aligned range
+          (e.g. c08-c15, c120-c127). Please double-check this is intentional before saving.
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn @click="dismissSlotWarning">Dismiss</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -866,6 +886,30 @@ watch(() => form.value.slottedId, (val) => {
 const digitsOnly = (field) => {
   if (form.value[field] == null) return
   form.value[field] = String(form.value[field]).replace(/\D+/g, '')
+}
+
+const slotWarningDialog = ref(false)
+let dismissedSlotRange = null
+
+const isSlotRangeClean = (start, end) => {
+  return start % 8 === 0 && (end - start + 1) % 8 === 0
+}
+
+const checkSlotAlignment = () => {
+  const start = parseInt(form.value.slotsStart)
+  const end = parseInt(form.value.slotsEnd)
+  if (isNaN(start) || isNaN(end)) return
+
+  if (isSlotRangeClean(start, end)) return
+
+  if (dismissedSlotRange && dismissedSlotRange[0] === start && dismissedSlotRange[1] === end) return
+
+  slotWarningDialog.value = true
+}
+
+const dismissSlotWarning = () => {
+  dismissedSlotRange = [parseInt(form.value.slotsStart), parseInt(form.value.slotsEnd)]
+  slotWarningDialog.value = false
 }
 
 onMounted(async () => {
