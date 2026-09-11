@@ -25,7 +25,7 @@ namespace CustomCharInfo.server.Tests.Controllers
             return controller;
         }
 
-        private Moveset AddMoveset(int id, string name, int releaseStateId = 1, bool isPrivate = false, bool? adminPick = null, DateTime? releaseDate = null)
+        private Moveset AddMoveset(int id, string name, int releaseStateId = 1, bool isPrivate = false, bool? adminPick = null, DateOnly? releaseDate = null)
         {
             var moveset = new Moveset
             {
@@ -152,8 +152,9 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task GetMovesets_UpcomingOnlyFilter_MatchesFutureReleaseDate()
         {
-            AddMoveset(1, "Past", releaseDate: DateTime.UtcNow.AddDays(-5));
-            AddMoveset(2, "Future", releaseDate: DateTime.UtcNow.AddDays(5));
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            AddMoveset(1, "Past", releaseDate: today.AddDays(-5));
+            AddMoveset(2, "Future", releaseDate: today.AddDays(5));
 
             var controller = CreateController();
 

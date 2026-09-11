@@ -264,6 +264,7 @@ import api from '@/services/api'
 import movesetHeroUnknown from "@/assets/moveset_hero_unknown.png"
 import seriesIconUnknown from "@/assets/series_icon_unknown.png"
 import { GB_WIP_URL, MODS_WIKI_URL, UserType, ItemType } from '@/globals'
+import { dateOnlyStringToLocalDate } from '@/services/dateOnly'
 
 const route = useRoute()
 const router = useRouter()
@@ -347,7 +348,7 @@ const releaseDisplay = computed(() => {
   const url = pageUrl || wipUrl
 
   const hasDate = !!releaseDate
-  const date = hasDate ? new Date(releaseDate) : null
+  const date = hasDate ? dateOnlyStringToLocalDate(releaseDate) : null
   const today = new Date()
   const isPast = date && date <= today
 

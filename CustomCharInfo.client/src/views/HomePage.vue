@@ -63,6 +63,7 @@
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useHead } from '@unhead/vue'
 import api from '@/services/api'
+import { localDateToDateOnlyString, compareDateOnlyStrings } from '@/services/dateOnly'
 
 import ScrollingHero from '@/components/ScrollingHero.vue'
 
@@ -88,23 +89,21 @@ const adminPicks = computed(() =>
 )
 
 const recentReleases = computed(() => {
-  const now = Date.now()
+  const todayStr = localDateToDateOnlyString(new Date())
 
   return adminPicks.value
-    .filter(m => {
-      if (!m.releaseDate) return false
-      const t = Date.parse(m.releaseDate)
-      return !Number.isNaN(t) && t <= now
-    })
-    .sort((a, b) => Date.parse(b.releaseDate) - Date.parse(a.releaseDate))
+    .filter(m => m.releaseDate && compareDateOnlyStrings(m.releaseDate, todayStr) <= 0)
+    .sort((a, b) => compareDateOnlyStrings(b.releaseDate, a.releaseDate))
     .slice(0, 6)
 })
 
 const upcomingReleases = computed(() => {
+  const todayStr = localDateToDateOnlyString(new Date())
+
   const withDate = adminPicks.value
-    .filter(m => m.releaseDate && new Date(m.releaseDate) > new Date())
-    .sort((a, b) => new Date(a.releaseDate) - new Date(b.releaseDate))
-  
+    .filter(m => m.releaseDate && compareDateOnlyStrings(m.releaseDate, todayStr) > 0)
+    .sort((a, b) => compareDateOnlyStrings(a.releaseDate, b.releaseDate))
+
   const noDate = adminPicks.value
     .filter(m => !m.releaseDate && !m.privateMoveset)
 

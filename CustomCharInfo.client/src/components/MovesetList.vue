@@ -178,6 +178,7 @@ import { ref, onMounted, computed } from 'vue'
 import MovesetCard from './MovesetCard.vue'
 import api from '@/services/api'
 import { UserType } from '@/globals'
+import { compareDateOnlyStrings } from '@/services/dateOnly'
 
 const props = defineProps({
   movesets: {
@@ -307,7 +308,7 @@ const processedMovesets = computed(() => {
 
       // Newest first
       if (aHasDate && bHasDate) {
-        return new Date(b.releaseDate) - new Date(a.releaseDate)
+        return compareDateOnlyStrings(b.releaseDate, a.releaseDate)
       }
 
       // With date first

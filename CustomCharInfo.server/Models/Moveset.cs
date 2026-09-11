@@ -41,7 +41,7 @@ namespace CustomCharInfo.server.Models
 
         [MaxLength(32)]
         public string? ModsWikiLink { get; set; }
-        public DateTime? ReleaseDate { get; set; }
+        public DateOnly? ReleaseDate { get; set; }
         public string? ModpackName { get; set; }
         public string? SourceCode { get; set; }
         public bool? AdminPick { get; set; }

@@ -92,6 +92,7 @@ import axios from 'axios'
 import api from '@/services/api'
 import MovesetList from '@/components/MovesetList.vue'
 import { GB_MEMBER_URL } from '@/globals'
+import { compareDateOnlyStrings } from '@/services/dateOnly'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
@@ -144,7 +145,7 @@ onMounted(async () => {
     const movesetRes = await api.get('movesets')
     movesets.value = movesetRes.data
       .filter(m => m.modders.includes(modder.value.name))
-      .sort((a, b) => new Date(a.releaseDate) - new Date(b.releaseDate))
+      .sort((a, b) => compareDateOnlyStrings(a.releaseDate, b.releaseDate))
 
     if (modder.value.pfpUrl) {
       modderPfpUrl.value = modder.value.pfpUrl

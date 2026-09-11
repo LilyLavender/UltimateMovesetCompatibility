@@ -207,7 +207,7 @@
               </template>
               <!-- ??? can't get any props to work -->
               <v-date-picker
-                v-model="form.releaseDate"
+                v-model="releaseDatePickerValue"
                 title="Release Date"
                 header="Select date"
               />
@@ -682,6 +682,7 @@ import ImageUploadField from '@/components/ImageUploadField.vue'
 import thumbhUnknown from "@/assets/thumb_h_unknown.png"
 import movesetHeroUnknown from "@/assets/moveset_hero_unknown.png"
 import { GB_PAGE_URL, GB_WIP_URL, MODS_WIKI_URL, IMAGE_UPLOAD_SPECS } from '@/globals'
+import { dateOnlyStringToLocalDate, localDateToDateOnlyString } from '@/services/dateOnly'
 
 const props = defineProps({
   mode: { type: String },
@@ -933,21 +934,25 @@ watch(slotRange, ([start, end]) => {
   form.value.slotsEnd = end
 })
 
+// Vuetify's date picker always emits a raw JS Date on selection regardless of what type it's bound to,
+// so this exists purely to translate between that Date and the "yyyy-MM-dd" string that actually gets submitted.
+const releaseDatePickerValue = computed({
+  get() {
+    return dateOnlyStringToLocalDate(form.value.releaseDate)
+  },
+  set(newVal) {
+    form.value.releaseDate = localDateToDateOnlyString(newVal)
+  }
+})
+
 const formattedReleaseDate = computed({
   get() {
-    if (!form.value.releaseDate) return ''
-    const date = new Date(form.value.releaseDate)
-    return date.toLocaleDateString()
+    const date = dateOnlyStringToLocalDate(form.value.releaseDate)
+    return date ? date.toLocaleDateString() : ''
   },
   set(newVal) {
     if (!newVal) {
       form.value.releaseDate = null
-      return
-    }
-
-    const parsed = new Date(newVal)
-    if (!isNaN(parsed)) {
-      form.value.releaseDate = parsed.toISOString().split('T')[0]
     }
   }
 })

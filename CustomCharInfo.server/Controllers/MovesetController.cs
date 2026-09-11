@@ -99,11 +99,13 @@ namespace CustomCharInfo.server.Controllers
             if (betaOnly == true)
                 query = query.Where(x => x.Moveset.ReleaseStateId == 4);
 
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
             if (upcomingOnly == true)
-                query = query.Where(x => x.Moveset.ReleaseDate > DateTime.UtcNow);
+                query = query.Where(x => x.Moveset.ReleaseDate > today);
 
             if (recentOnly == true)
-                query = query.Where(x => x.Moveset.ReleaseDate <= DateTime.UtcNow);
+                query = query.Where(x => x.Moveset.ReleaseDate <= today);
 
             // Visibility
             if (!isAdmin)
