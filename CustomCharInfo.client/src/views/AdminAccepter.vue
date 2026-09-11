@@ -267,21 +267,28 @@ const form = ref({
   notes: ''
 })
 
-const itemTypes = [
-  { label: 'Moveset', value: ItemType.Moveset },
-  { label: 'Modder', value: ItemType.Modder },
-  { label: 'Series', value: ItemType.Series },
-  { label: 'Hook', value: ItemType.Hook },
-]
+const itemTypes = ref([])
+const acceptanceStates = ref([])
 
-const acceptanceStates = [
-  { id: AcceptanceState.PendingAdminSoft, name: 'Pending Admin Action (Soft)' },
-  { id: AcceptanceState.PendingAdminHard, name: 'Pending Admin Action (Hard)' },
-  { id: AcceptanceState.PendingUserSoft, name: 'Pending User Action (Soft)' },
-  { id: AcceptanceState.PendingUserHard, name: 'Pending User Action (Hard)' },
-  { id: AcceptanceState.Accepted, name: 'Accepted' },
-  { id: AcceptanceState.Rejected, name: 'Rejected' },
-]
+const fetchItemTypes = async () => {
+  try {
+    const res = await api.get('/itemtypes')
+    itemTypes.value = res.data.map(t => ({ label: t.itemTypeName, value: t.itemTypeId }))
+  } catch (err) {
+    console.error('Failed to fetch item types:', err)
+  }
+}
+
+const fetchAcceptanceStates = async () => {
+  try {
+    const res = await api.get('/acceptancestates')
+    acceptanceStates.value = res.data
+      .filter(s => s.acceptanceStateId !== AcceptanceState.AutoAccepted)
+      .map(s => ({ id: s.acceptanceStateId, name: s.acceptanceStateName }))
+  } catch (err) {
+    console.error('Failed to fetch acceptance states:', err)
+  }
+}
 
 const items = ref([])
 const fullItemsById = ref({})
@@ -479,6 +486,8 @@ watch(selectedFull, async (modder) => {
 onMounted(async () => {
   await fetchUser()
   fetchPendingAdminLogs()
+  fetchItemTypes()
+  fetchAcceptanceStates()
 })
 </script>
 

@@ -52,6 +52,43 @@ describe('router role guards', () => {
     })
   })
 
+  describe('/series/edit/:seriesId (modders must own a moveset in the series)', () => {
+    const mockSeriesEditApi = ({ user, movesets = [], modderName = '' }) => {
+      api.get.mockImplementation((url) => {
+        if (url === '/auth/me') return Promise.resolve({ data: user })
+        if (url === '/logs') return Promise.resolve({ data: [] })
+        if (url === '/movesets') return Promise.resolve({ data: movesets })
+        if (url.startsWith('/modders/')) return Promise.resolve({ data: { name: modderName } })
+        return Promise.reject(new Error(`unexpected url: ${url}`))
+      })
+    }
+
+    it('redirects a modder who does not own any moveset in the series to ErrorPage 403', async () => {
+      mockSeriesEditApi({
+        user: { userTypeId: 2, modderId: 5 },
+        movesets: [{ modders: ['SomeoneElse'] }],
+        modderName: 'RequestingModder',
+      })
+
+      await router.push('/series/edit/1')
+
+      expect(router.currentRoute.value.name).toBe('ErrorPage')
+      expect(router.currentRoute.value.query.httpCode).toBe('403 Forbidden')
+    })
+
+    it('allows a modder who owns a moveset in the series through', async () => {
+      mockSeriesEditApi({
+        user: { userTypeId: 2, modderId: 5 },
+        movesets: [{ modders: ['RequestingModder'] }],
+        modderName: 'RequestingModder',
+      })
+
+      await router.push('/series/edit/1')
+
+      expect(router.currentRoute.value.name).toBe('EditSeries')
+    })
+  })
+
   describe('/admin-portal (requires userTypeId === 3)', () => {
     it('redirects anonymous/failed-auth users to ErrorPage 401', async () => {
       api.get.mockRejectedValue(new Error('401'))

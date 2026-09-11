@@ -267,19 +267,19 @@ const routes = [
           .filter(log => log.itemType?.itemTypeId === ItemType.Series && log.item?.seriesId === seriesId)
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
 
-        // Restrict if the latest acceptanceState is not a soft/hard edit awaiting the submitter's view
         const stateId = latestLog?.acceptanceState?.acceptanceStateId;
-        if (stateId !== AcceptanceState.PendingUserSoft && stateId !== AcceptanceState.PendingUserHard) {
-          if (user.userTypeId === UserType.Modder) {
-            next();
-          } else if (
-            (stateId === AcceptanceState.PendingAdminSoft || stateId === AcceptanceState.PendingAdminHard) &&
-            user.userTypeId === UserType.Admin
-          ) {
-            next();
-          } else {
-            return denyForbidden();
-          }
+
+        // The submitter reviewing their own pending edit
+        if (stateId === AcceptanceState.PendingUserSoft || stateId === AcceptanceState.PendingUserHard) {
+          return next();
+        }
+
+        // Admin review of a series awaiting admin action
+        if (
+          (stateId === AcceptanceState.PendingAdminSoft || stateId === AcceptanceState.PendingAdminHard) &&
+          user.userTypeId === UserType.Admin
+        ) {
+          return next();
         }
 
         // Get movesets from series
@@ -288,11 +288,9 @@ const routes = [
         // No movesets, only modders or admins
         if (movesets.length === 0) {
           if (user.userTypeId === UserType.Modder || user.userTypeId === UserType.Admin) {
-            next();
-          } else {
-            denyForbidden();
+            return next();
           }
-          return;
+          return denyForbidden();
         }
 
         // Check if user is a modder of a moveset in this series. The moveset list endpoint only
@@ -300,19 +298,18 @@ const routes = [
         const modderNames = movesets.flatMap(m => m.modders);
         const modderName = (await api.get(`/modders/${user.modderId}`)).data.name;
         if (modderNames.includes(modderName)) {
-          next();
-        } else {
-          next({
-            name: 'ErrorPage',
-            query: {
-              httpCode: '403 Forbidden',
-              reason: 'You do not have permission to edit this series.',
-              extra: 'Only modders of movesets in this series can edit it.',
-            }
-          });
+          return next();
         }
+        return next({
+          name: 'ErrorPage',
+          query: {
+            httpCode: '403 Forbidden',
+            reason: 'You do not have permission to edit this series.',
+            extra: 'Only modders of movesets in this series can edit it.',
+          }
+        });
       } catch (err) {
-        next({
+        return next({
           name: 'ErrorPage',
           query: {
             httpCode: '500 Server Error',

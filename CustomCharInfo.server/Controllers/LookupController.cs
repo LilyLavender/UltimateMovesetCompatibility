@@ -69,6 +69,28 @@ namespace CustomCharInfo.server.Controllers
         {
             var states = await _context.ReleaseStates.ToListAsync();
             return Ok(states);
-        }    
+        }
+
+        [HttpGet("itemtypes")]
+        public async Task<IActionResult> GetItemTypes()
+        {
+            var types = await _context.ItemTypes.Select(t => new
+            {
+                t.ItemTypeId,
+                t.ItemTypeName
+            }).ToListAsync();
+            return Ok(types);
+        }
+
+        [HttpGet("acceptancestates")]
+        public async Task<IActionResult> GetAcceptanceStates()
+        {
+            var states = await _context.AcceptanceStates.Select(s => new
+            {
+                s.AcceptanceStateId,
+                s.AcceptanceStateName
+            }).ToListAsync();
+            return Ok(states);
+        }
     }
 }
