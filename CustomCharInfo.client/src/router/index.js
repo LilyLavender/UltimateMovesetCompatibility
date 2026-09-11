@@ -1,6 +1,6 @@
 import { createRouter, createWebHashHistory  } from 'vue-router';
 import api from '@/services/api'
-import { createAuthGuard } from '@/router/guards'
+import { createAuthGuard, fetchAuthUser, getLatestLog, redirectError } from '@/router/guards'
 import { UserType, ItemType, BLOCKED_ACCEPTANCE_STATES, AcceptanceState } from '@/globals'
 // Basic
 import HomePage from '@/views/HomePage.vue';
@@ -115,38 +115,26 @@ const routes = [
     beforeEnter: async (to, from, next) => {
       const movesetId = parseInt(to.params.movesetId);
 
-      let latestLog = null
-      let moveset = null
-      let user = null
-
       try {
-        // Logs
+        // Logged-out users don't see logs
+        let latestLog = null
         try {
-          const logsRes = await api.get('/logs')
-          latestLog = logsRes.data
-            .filter(log =>
-              log.itemType?.itemTypeId === ItemType.Moveset &&
-              log.item?.movesetId === movesetId
-            )
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]
+          latestLog = await getLatestLog(ItemType.Moveset, item => item?.movesetId === movesetId)
         } catch {
-          // Logged-out users don't see logs
           latestLog = null
         }
-      
-        // Moveset public
-        const movesetRes = await api.get(`/movesets/${movesetId}`)
-        moveset = movesetRes.data
-      
+
+        const moveset = (await api.get(`/movesets/${movesetId}`)).data
         const modderIds = moveset.movesetModders.map(m => m.modder.modderId)
-      
-        // Auth
+
+        // Anonymous users are allowed here; auth is only needed to check ownership below
+        let user = null
         try {
           user = (await api.get('/auth/me')).data
         } catch {
           user = null
         }
-      
+
         const isPrivate =
           latestLog &&
           BLOCKED_ACCEPTANCE_STATES.includes(latestLog.acceptanceState.acceptanceStateId)
@@ -154,29 +142,15 @@ const routes = [
         if (isPrivate) {
           const isAdmin = user?.userTypeId === UserType.Admin
           const isOwner = user && modderIds.includes(user.modderId)
-        
+
           if (!isAdmin && !isOwner) {
-            return next({
-              name: 'ErrorPage',
-              query: {
-                httpCode: '403 Forbidden',
-                reason: 'This moveset is currently private.',
-                extra: 'Check back later, or try signing in.',
-              }
-            })
+            return redirectError(next, '403 Forbidden', 'This moveset is currently private.', 'Check back later, or try signing in.')
           }
         }
-      
+
         return next()
       } catch (err) {
-        return next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '500 Server Error',
-            reason: 'Could not load the moveset.',
-            extra: err.message || 'Please try again later.',
-          }
-        })
+        return redirectError(next, '500 Server Error', 'Could not load the moveset.', err.message || 'Please try again later.')
       }
     }
   },
@@ -190,42 +164,17 @@ const routes = [
       try {
         moveset = await api.get(`/movesets/${to.params.movesetId}`);
       } catch (err) {
-        return next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '500 Server Error',
-            reason: 'Could not load the moveset.',
-            extra: err.message || 'Please try again later.',
-          }
-        })
+        return redirectError(next, '500 Server Error', 'Could not load the moveset.', err.message || 'Please try again later.')
       }
 
-      let user
-      try {
-        user = (await api.get('/auth/me')).data;
-      } catch {
-        return next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '401 Unauthorized',
-            reason: 'Authentication failed.',
-            extra: 'Try signing in or refreshing the page.',
-          }
-        })
-      }
+      const user = await fetchAuthUser(next)
+      if (!user) return
 
       const modderIds = moveset.data.movesetModders.map(m => m.modder.modderId);
       if (modderIds.includes(user.modderId) || user.userTypeId === UserType.Admin) {
         next();
       } else {
-        next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '403 Forbidden',
-            reason: 'You do not have permission to access this page.',
-            extra: 'Try signing in?',
-          }
-        })
+        redirectError(next, '403 Forbidden', 'You do not have permission to access this page.', 'Try signing in?')
       }
     }
   },
@@ -237,36 +186,13 @@ const routes = [
     beforeEnter: async (to, from, next) => {
       const seriesId = parseInt(to.params.seriesId);
 
-      let user
-      try {
-        user = (await api.get('/auth/me')).data;
-      } catch {
-        return next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '401 Unauthorized',
-            reason: 'Authentication failed.',
-            extra: 'Try signing in or refreshing the page.',
-          }
-        });
-      }
+      const user = await fetchAuthUser(next)
+      if (!user) return
 
-      const denyForbidden = () => next({
-        name: 'ErrorPage',
-        query: {
-          httpCode: '403 Forbidden',
-          reason: 'You do not have permission to edit this series.',
-          extra: '',
-        }
-      });
+      const denyForbidden = () => redirectError(next, '403 Forbidden', 'You do not have permission to edit this series.', '')
 
       try {
-        // Get all logs for series
-        const logsRes = await api.get('/logs', { params: { userId: null } });
-        const latestLog = logsRes.data
-          .filter(log => log.itemType?.itemTypeId === ItemType.Series && log.item?.seriesId === seriesId)
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-
+        const latestLog = await getLatestLog(ItemType.Series, item => item?.seriesId === seriesId)
         const stateId = latestLog?.acceptanceState?.acceptanceStateId;
 
         // The submitter reviewing their own pending edit
@@ -300,23 +226,9 @@ const routes = [
         if (modderNames.includes(modderName)) {
           return next();
         }
-        return next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '403 Forbidden',
-            reason: 'You do not have permission to edit this series.',
-            extra: 'Only modders of movesets in this series can edit it.',
-          }
-        });
+        return redirectError(next, '403 Forbidden', 'You do not have permission to edit this series.', 'Only modders of movesets in this series can edit it.')
       } catch (err) {
-        return next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '500 Server Error',
-            reason: 'Could not load this series.',
-            extra: err.message || 'Please try again later.',
-          }
-        });
+        return redirectError(next, '500 Server Error', 'Could not load this series.', err.message || 'Please try again later.')
       }
     }
   },
@@ -352,28 +264,13 @@ const routes = [
     component: ApplyModder,
     props: true,
     beforeEnter: async (to, from, next) => {
-      try {
-        const user = (await api.get('/auth/me')).data;
-        if (!user.modderId) {
-          next();
-        } else {
-          next({
-          name: 'ErrorPage',
-            query: {
-              httpCode: '403 Forbidden',
-              reason: 'You have already applied for modder.',
-            }
-          })
-        }
-      } catch {
-        next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '401 Unauthorized',
-            reason: 'Authentication failed.',
-            extra: 'Try signing in or refreshing the page.',
-          }
-        })
+      const user = await fetchAuthUser(next)
+      if (!user) return
+
+      if (!user.modderId) {
+        next();
+      } else {
+        redirectError(next, '403 Forbidden', 'You have already applied for modder.')
       }
     }
   },
@@ -384,19 +281,8 @@ const routes = [
     meta: { title: 'Editing Modder Page' },
     props: true,
     beforeEnter: async (to, from, next) => {
-      let user
-      try {
-        user = (await api.get('/auth/me')).data;
-      } catch {
-        return next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '401 Unauthorized',
-            reason: 'Authentication failed.',
-            extra: 'Try signing in or refreshing the page.',
-          }
-        })
-      }
+      const user = await fetchAuthUser(next)
+      if (!user) return
 
       if (user.modderId === parseInt(to.params.id)) {
         return next();
@@ -411,24 +297,10 @@ const routes = [
         if (submitted) {
           next();
         } else {
-          next({
-            name: 'ErrorPage',
-            query: {
-              httpCode: '403 Forbidden',
-              reason: 'You do not have permission to access this page.',
-              extra: 'Try signing in?',
-            }
-          })
+          redirectError(next, '403 Forbidden', 'You do not have permission to access this page.', 'Try signing in?')
         }
       } catch (err) {
-        next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '500 Server Error',
-            reason: 'Could not load this modder.',
-            extra: err.message || 'Please try again later.',
-          }
-        })
+        redirectError(next, '500 Server Error', 'Could not load this modder.', err.message || 'Please try again later.')
       }
     },
   },
