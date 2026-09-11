@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.ObjectPool;
 using Microsoft.AspNetCore.WebUtilities;
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -38,6 +39,7 @@ namespace CustomCharInfo.server.Controllers
         }
 
         [HttpPost("register")]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> Register(RegisterDto dto)
         {
             var user = new ApplicationUser { UserName = dto.Email, Email = dto.Email, UserTypeId = 1 };
@@ -48,6 +50,7 @@ namespace CustomCharInfo.server.Controllers
         }
 
         [HttpPost("login")]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> Login(LoginDto dto)
         {
             var user = await _userManager.FindByEmailAsync(dto.Email);
@@ -62,6 +65,7 @@ namespace CustomCharInfo.server.Controllers
         }
 
         [HttpPost("refresh")]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestDto dto)
         {
             var stored = await _context.RefreshTokens
@@ -272,6 +276,7 @@ namespace CustomCharInfo.server.Controllers
         }
 
         [HttpPost("reset-password")]
+        [EnableRateLimiting("auth")]
         public async Task<ActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
         {
             var user = await _userManager.FindByIdAsync(dto.UserId);

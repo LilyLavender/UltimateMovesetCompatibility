@@ -68,5 +68,28 @@ namespace CustomCharInfo.server.Controllers
 
             return CreatedAtAction(nameof(GetBlogPosts), new { id = blogPost.BlogPostId }, blogPost);
         }
+
+        // Attaches an image uploaded just after a create - completes the create->upload->attach
+        // sequence started by CreateBlogPost. Only fills the field if it's still empty.
+        [Authorize]
+        [HttpPatch("{id}/image")]
+        public async Task<IActionResult> PatchBlogPostImage(int id, [FromBody] BlogPostImageDto dto)
+        {
+            var userId = _userManager.GetUserId(User);
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null || user.UserTypeId != 3)
+                return Forbid();
+
+            var blogPost = await _context.BlogPosts.FindAsync(id);
+            if (blogPost == null)
+                return NotFound();
+
+            if (!string.IsNullOrEmpty(blogPost.BlogImageUrl))
+                return Conflict("BlogImageUrl is already set; use a full update to change it.");
+
+            blogPost.BlogImageUrl = dto.BlogImageUrl;
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
     }
 }

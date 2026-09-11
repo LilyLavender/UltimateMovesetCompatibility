@@ -8,6 +8,7 @@ using CustomCharInfo.server.Helpers;
 
 using SixLabors.ImageSharp;
 using Microsoft.AspNetCore.Authorization;
+using Npgsql;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -15,6 +16,10 @@ namespace CustomCharInfo.server.Controllers
     [Route("api/series")]
     public class SeriesController : ControllerBase
     {
+        // Series seeded at launch (the base game's own franchises) end at this ID;
+        // anything higher was submitted by a modder.
+        private const int LastVanillaSeriesId = 41;
+
         private readonly AppDbContext _context;
 
         private readonly UserManager<ApplicationUser> _userManager;
@@ -104,7 +109,7 @@ namespace CustomCharInfo.server.Controllers
             if (inSeriesList == true)
             {
                 seriesQuery = seriesQuery.Where(s =>
-                    s.SeriesId <= 41 ||
+                    s.SeriesId <= LastVanillaSeriesId ||
                     s.TotalMovesets == 0 ||
                     s.MovesetCount > 0
                 );
@@ -195,7 +200,16 @@ namespace CustomCharInfo.server.Controllers
             };
 
             _context.Series.Add(series);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+            {
+                // The AnyAsync check above is check-then-act; this catches a genuine race against
+                // the unique index on SeriesName as a backstop.
+                return Conflict("A series with this name already exists.");
+            }
 
             // Log action
             var user = await _userManager.Users
@@ -216,6 +230,31 @@ namespace CustomCharInfo.server.Controllers
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetSeries), new { id = series.SeriesId }, series);
+        }
+
+        // Attaches an image uploaded just after a create, without writing an ActionLog entry or
+        // affecting review state - completes the create->upload->attach sequence started by
+        // CreateSeries. Only fills the field if it's still empty, so it can't be reused to swap
+        // an existing icon without going through the normal reviewed edit path.
+        [Authorize]
+        [HttpPatch("{id}/image")]
+        public async Task<IActionResult> PatchSeriesImage(int id, [FromBody] SeriesImageDto dto)
+        {
+            var userId = _userManager.GetUserId(User);
+            var userFromId = await _context.Users.FindAsync(userId);
+            if (userFromId == null || userFromId.UserTypeId < 2)
+                return Forbid();
+
+            var series = await _context.Series.FindAsync(id);
+            if (series == null)
+                return NotFound();
+
+            if (!string.IsNullOrEmpty(series.SeriesIconUrl))
+                return Conflict("SeriesIconUrl is already set; use the full update endpoint to change it.");
+
+            series.SeriesIconUrl = dto.SeriesIconUrl;
+            await _context.SaveChangesAsync();
+            return NoContent();
         }
 
         [HttpPost("{id}/request-edit")]
@@ -331,7 +370,14 @@ namespace CustomCharInfo.server.Controllers
                 CreatedAt = DateTime.UtcNow
             });
 
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+            {
+                return Conflict("A series with this name already exists.");
+            }
             return NoContent();
         }
 

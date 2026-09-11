@@ -645,6 +645,48 @@ namespace CustomCharInfo.server.Controllers
             return CreatedAtAction(nameof(GetMoveset), new { idOrSlottedId = moveset.MovesetId }, moveset);
         }
 
+        // Attaches images uploaded just after a create, without writing an ActionLog entry or
+        // affecting review state - the images were already part of the original submission's
+        // intent, this just completes the create->upload->attach sequence started by PostMoveset.
+        // Only fills fields that are still empty, so it can't be reused to swap an existing image
+        // without going through the normal reviewed edit path.
+        [Authorize]
+        [HttpPatch("{id}/images")]
+        public async Task<IActionResult> PatchMovesetImages(int id, [FromBody] MovesetImagesDto dto)
+        {
+            var userId = _userManager.GetUserId(User);
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+                return Forbid();
+
+            var moveset = await _context.Movesets
+                .Include(m => m.MovesetModders)
+                .FirstOrDefaultAsync(m => m.MovesetId == id);
+            if (moveset == null)
+                return NotFound();
+
+            bool isOwner = user.ModderId != null && moveset.MovesetModders.Any(mm => mm.ModderId == user.ModderId);
+            if (!isOwner && user.UserTypeId != 3)
+                return Forbid();
+
+            if (dto.ThumbhImageUrl != null)
+            {
+                if (!string.IsNullOrEmpty(moveset.ThumbhImageUrl))
+                    return Conflict("ThumbhImageUrl is already set; use the full update endpoint to change it.");
+                moveset.ThumbhImageUrl = dto.ThumbhImageUrl;
+            }
+
+            if (dto.MovesetHeroImageUrl != null)
+            {
+                if (!string.IsNullOrEmpty(moveset.MovesetHeroImageUrl))
+                    return Conflict("MovesetHeroImageUrl is already set; use the full update endpoint to change it.");
+                moveset.MovesetHeroImageUrl = dto.MovesetHeroImageUrl;
+            }
+
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
         [Authorize]
         [HttpPost("set-admin-picks")]
         public async Task<IActionResult> SetAdminPicks([FromBody] List<int> adminPickIds)

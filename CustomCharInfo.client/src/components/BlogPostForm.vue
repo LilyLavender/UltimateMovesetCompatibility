@@ -117,36 +117,44 @@ const submit = async () => {
     return
   }
 
+  // No blog post exists yet to attach an image to, so an upload failure or a save failure after
+  // upload would otherwise orphan the image in R2 with nothing referencing it. Create the post
+  // first (without a staged file), then upload and attach the image after.
   isSubmitting.value = true
-  uploadStatus.value = 'Uploading image...'
+  const stagedImage = form.value.blogImageUrl instanceof File ? form.value.blogImageUrl : null
 
-  let blogImageUrl
+  uploadStatus.value = 'Posting...'
+
+  let newId
   try {
-    blogImageUrl = await uploadImageIfNeeded(form.value.blogImageUrl)
+    const res = await api.post("/blog", {
+      blogTitle: form.value.blogTitle,
+      blogText: form.value.blogText,
+      blogImageUrl: stagedImage ? null : form.value.blogImageUrl,
+    })
+    newId = res.data.blogPostId
   } catch (err) {
-    console.error("Image upload failed:", JSON.stringify(err.response?.data) || err.message)
-    alert("Failed to upload image. Please check the file and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+    console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
+    alert("Failed to post blog.\n\n" + (JSON.stringify(err.response?.data) || err.message))
     isSubmitting.value = false
     uploadStatus.value = ''
     return
   }
 
-  uploadStatus.value = 'Posting...'
-
-  try {
-    await api.post("/blog", {
-      blogTitle: form.value.blogTitle,
-      blogText: form.value.blogText,
-      blogImageUrl,
-    })
-    router.push("/blog")
-  } catch (err) {
-    console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
-    alert("Failed to post blog.\n\n" + (JSON.stringify(err.response?.data) || err.message))
-  } finally {
-    isSubmitting.value = false
-    uploadStatus.value = ''
+  if (stagedImage) {
+    uploadStatus.value = 'Uploading image...'
+    try {
+      const blogImageUrl = await uploadImageIfNeeded(stagedImage)
+      await api.patch(`/blog/${newId}/image`, { blogImageUrl })
+    } catch (err) {
+      console.error("Image upload failed after blog post creation:", JSON.stringify(err.response?.data) || err.message)
+      alert("Blog post created, but the image failed to upload.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+    }
   }
+
+  isSubmitting.value = false
+  uploadStatus.value = ''
+  router.push("/blog")
 }
 </script>
 

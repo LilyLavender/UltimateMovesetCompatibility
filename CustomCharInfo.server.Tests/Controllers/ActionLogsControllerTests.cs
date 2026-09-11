@@ -112,6 +112,51 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
+        public async Task GetActionLogs_ModderSeesHookTheyveEditedBefore()
+        {
+            var owner = SeedData.AddUser(_db.Context, "modder-user", userTypeId: 2, modderId: 20);
+            SeedData.AddModder(_db.Context, 20, owner.Id, "MyModder");
+            var otherUser = SeedData.AddUser(_db.Context, "someone-else-1", userTypeId: 2);
+
+            var editedLog = new ActionLog { ItemTypeId = 4, ItemId = 1, AcceptanceStateId = 1, UserId = owner.Id, Notes = "", CreatedAt = DateTime.UtcNow };
+            var otherHookLog = new ActionLog { ItemTypeId = 4, ItemId = 2, AcceptanceStateId = 1, UserId = otherUser.Id, Notes = "", CreatedAt = DateTime.UtcNow };
+            _db.Context.ActionLogs.AddRange(editedLog, otherHookLog);
+            _db.Context.SaveChanges();
+
+            var controller = CreateController(owner.Id);
+
+            var result = await controller.GetActionLogs();
+
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            var logs = ((IEnumerable<GetActionLogDto>)ok.Value!).ToList();
+            Assert.Single(logs);
+            Assert.Equal(editedLog.ActionLogId, logs[0].ActionLogId);
+        }
+
+        [Fact]
+        public async Task GetActionLogs_NonModderUserSeesHookTheyveEditedBefore()
+        {
+            // Admins can edit hooks too, so a non-modder admin's own hook edits must still show
+            // up in their own (non-viewAll) log list.
+            var admin = SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            var otherUser = SeedData.AddUser(_db.Context, "someone-else-1", userTypeId: 2);
+
+            var editedLog = new ActionLog { ItemTypeId = 4, ItemId = 1, AcceptanceStateId = 1, UserId = admin.Id, Notes = "", CreatedAt = DateTime.UtcNow };
+            var otherHookLog = new ActionLog { ItemTypeId = 4, ItemId = 2, AcceptanceStateId = 1, UserId = otherUser.Id, Notes = "", CreatedAt = DateTime.UtcNow };
+            _db.Context.ActionLogs.AddRange(editedLog, otherHookLog);
+            _db.Context.SaveChanges();
+
+            var controller = CreateController(admin.Id);
+
+            var result = await controller.GetActionLogs();
+
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            var logs = ((IEnumerable<GetActionLogDto>)ok.Value!).ToList();
+            Assert.Single(logs);
+            Assert.Equal(editedLog.ActionLogId, logs[0].ActionLogId);
+        }
+
+        [Fact]
         public async Task GetActionLogsByItem_NoAuthenticatedUser_ReturnsForbid()
         {
             var controller = CreateController(null);

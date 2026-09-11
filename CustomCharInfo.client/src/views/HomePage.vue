@@ -62,7 +62,6 @@
 <script setup>
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useHead } from '@unhead/vue'
-import { getMovesets } from '@/services/movesetService'
 import api from '@/services/api'
 
 import ScrollingHero from '@/components/ScrollingHero.vue'
@@ -145,7 +144,7 @@ function loadTwitterScript() {
 
 onMounted(async () => {
   try {
-    const res = await getMovesets()
+    const res = await api.get('/movesets')
     allMovesets.value = res.data
     await fetchLatestBlogPost()
   } catch (err) {

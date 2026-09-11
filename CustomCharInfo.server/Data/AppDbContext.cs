@@ -81,6 +81,16 @@ namespace CustomCharInfo.server.Data
                 .WithMany()
                 .HasForeignKey(b => b.UserId);
 
+            // DB-level backstop for the client-side uniqueness pre-checks in HookForm.vue/SeriesForm.vue,
+            // which are check-then-act and can't prevent a genuine race on their own.
+            modelBuilder.Entity<Hook>()
+                .HasIndex(h => h.Offset)
+                .IsUnique();
+
+            modelBuilder.Entity<Series>()
+                .HasIndex(s => s.SeriesName)
+                .IsUnique();
+
             // Action Logs
             modelBuilder.Entity<ActionLog>()
                 .HasOne(al => al.User)
@@ -115,6 +125,24 @@ namespace CustomCharInfo.server.Data
                 .WithMany()
                 .HasForeignKey(cr => cr.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Backstop for the check-then-act dedup logic in CompatibilityController.SubmitReport
+            modelBuilder.Entity<CompatibilityReport>()
+                .HasIndex(cr => new { cr.MovesetId1, cr.MovesetId2, cr.UserId })
+                .IsUnique();
+
+            // Refresh tokens are looked up by Token on every refresh request
+            modelBuilder.Entity<RefreshToken>()
+                .HasIndex(rt => rt.Token)
+                .IsUnique();
+
+            modelBuilder.Entity<RefreshToken>()
+                .HasIndex(rt => rt.UserId);
+
+            // ItemId is polymorphic (meaning depends on ItemTypeId), so it can't be a real FK,
+            // but it's queried by value in every action-log lookup.
+            modelBuilder.Entity<ActionLog>()
+                .HasIndex(al => al.ItemId);
 
             // User Roles
             modelBuilder.Entity<UserType>()

@@ -67,6 +67,19 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
+        public async Task CreateHook_DuplicateOffset_ReturnsConflict()
+        {
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
+            var controller = CreateController("modder-1");
+            await controller.CreateHook(new CreateHookDto { Offset = "0x1234", Description = "Test", HookableStatusId = 1 });
+
+            var result = await controller.CreateHook(new CreateHookDto { Offset = "0x1234", Description = "Different description", HookableStatusId = 1 });
+
+            Assert.IsType<ConflictObjectResult>(result.Result);
+            Assert.Single(_db.Context.Hooks);
+        }
+
+        [Fact]
         public async Task CreateHook_Admin_StillWritesActionLogAsPendingAdminSoft()
         {
             SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
@@ -112,6 +125,36 @@ namespace CustomCharInfo.server.Tests.Controllers
             Assert.Equal(1, log.AcceptanceStateId);
             Assert.Contains("Description", log.Diff);
             Assert.DoesNotContain("Offset", log.Diff);
+        }
+
+        [Fact]
+        public async Task UpdateHook_UsesSubmittedNotes_NotAHardcodedDefault()
+        {
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
+            _db.Context.Hooks.Add(new Hook { HookId = 1, Offset = "0x1", Description = "Old", HookableStatusId = 1 });
+            _db.Context.SaveChanges();
+
+            var controller = CreateController("modder-1");
+
+            await controller.UpdateHook(1, new UpdateHookDto { Description = "New Description", Notes = "Fixed a typo" });
+
+            var log = Assert.Single(_db.Context.ActionLogs);
+            Assert.Equal("Fixed a typo", log.Notes);
+        }
+
+        [Fact]
+        public async Task UpdateHook_NoNotesSubmitted_LogsEmptyNotes()
+        {
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
+            _db.Context.Hooks.Add(new Hook { HookId = 1, Offset = "0x1", Description = "Old", HookableStatusId = 1 });
+            _db.Context.SaveChanges();
+
+            var controller = CreateController("modder-1");
+
+            await controller.UpdateHook(1, new UpdateHookDto { Description = "New Description" });
+
+            var log = Assert.Single(_db.Context.ActionLogs);
+            Assert.Equal("", log.Notes);
         }
 
         [Fact]

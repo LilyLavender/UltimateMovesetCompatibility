@@ -78,6 +78,7 @@
 import { ref, onMounted, watch } from 'vue'
 import api from '@/services/api'
 import ActionLogGroup from '@/components/ActionLogGroup.vue'
+import { UserType, ItemType } from '@/globals'
 
 const props = defineProps({
   viewAll: {
@@ -120,7 +121,7 @@ const fetchUser = async () => {
   try {
     const res = await api.get('/auth/me')
     user.value = res.data
-    isAdmin.value = user.value.userTypeId === 3
+    isAdmin.value = user.value.userTypeId === UserType.Admin
   } catch (err) {
     console.error('Failed to fetch user info:', err)
   }
@@ -180,7 +181,9 @@ const selectAllFilters = () => {
 }
 const selectOnlyRelevant = () => {
   selectedAcceptanceStates.value = [1, 2, 3, 4]
-  // selectedItemTypes.value = [1, 2, 3]
+  selectedItemTypes.value = isAdmin.value
+    ? [ItemType.Moveset, ItemType.Modder, ItemType.Series, ItemType.Hook]
+    : [ItemType.Moveset, ItemType.Modder, ItemType.Series]
 }
 
 watch(

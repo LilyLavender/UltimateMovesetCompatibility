@@ -17,4 +17,9 @@ namespace CustomCharInfo.server.Models.DTOs
         public string BlogText { get; set; }
         public string? BlogImageUrl { get; set; }
     }
+
+    public class BlogPostImageDto
+    {
+        public string? BlogImageUrl { get; set; }
+    }
 }

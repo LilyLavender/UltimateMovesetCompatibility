@@ -108,6 +108,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import api from '@/services/api'
 import seriesIconUnknown from '@/assets/series_icon_unknown.png'
+import { ItemType } from '@/globals'
 
 const apiUrl = import.meta.env.VITE_API_URL
 const resolveIconUrl = (path) =>
@@ -144,7 +145,7 @@ onMounted(async () => {
       .filter(s => s.isUserModder)
       .sort((a, b) => a.seriesName.localeCompare(b.seriesName))
 
-    const seriesLogs = logsRes.data.filter(l => l.itemType?.itemTypeId === 3)
+    const seriesLogs = logsRes.data.filter(l => l.itemType?.itemTypeId === ItemType.Series)
     for (const log of seriesLogs) {
       const sid = log.item?.seriesId
       if (!sid) continue

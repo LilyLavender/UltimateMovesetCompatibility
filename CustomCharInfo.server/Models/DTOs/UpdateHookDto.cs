@@ -5,5 +5,6 @@ namespace CustomCharInfo.server.Models.DTOs
         public string? Offset { get; set; }
         public string? Description { get; set; }
         public int? HookableStatusId { get; set; }
+        public string? Notes { get; set; }
     }
 }

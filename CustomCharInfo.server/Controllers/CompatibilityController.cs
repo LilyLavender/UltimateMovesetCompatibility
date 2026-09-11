@@ -71,9 +71,17 @@ namespace CustomCharInfo.server.Controllers
             var userId = _userManager.GetUserId(User);
             if (userId == null) return Unauthorized();
 
+            if (dto.MovesetId1 == dto.MovesetId2)
+                return BadRequest("A moveset cannot be compared against itself.");
+
             var (lo, hi) = dto.MovesetId1 < dto.MovesetId2
                 ? (dto.MovesetId1, dto.MovesetId2)
                 : (dto.MovesetId2, dto.MovesetId1);
+
+            var existingMovesetCount = await _context.Movesets
+                .CountAsync(m => m.MovesetId == lo || m.MovesetId == hi);
+            if (existingMovesetCount != 2)
+                return NotFound("One or both movesets do not exist.");
 
             var existing = await _context.CompatibilityReports
                 .FirstOrDefaultAsync(r => r.MovesetId1 == lo && r.MovesetId2 == hi && r.UserId == userId);

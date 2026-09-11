@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory  } from 'vue-router';
 import api from '@/services/api'
 import { createAuthGuard } from '@/router/guards'
+import { UserType, ItemType, BLOCKED_ACCEPTANCE_STATES, AcceptanceState } from '@/globals'
 // Basic
 import HomePage from '@/views/HomePage.vue';
 import ErrorPage from '@/views/ErrorPage.vue';
@@ -98,31 +99,7 @@ const routes = [
     name: 'RequestEditSeries',
     component: RequestEditSeries,
     meta: { title: 'Edit a Series' },
-    beforeEnter: async (to, from, next) => {
-      try {
-        const user = (await api.get('/auth/me')).data;
-        if (user.userTypeId >= 2) {
-          next();
-        } else {
-          next({
-            name: 'ErrorPage',
-            query: {
-              httpCode: '403 Forbidden',
-              reason: 'You do not have permission to access this page.',
-            }
-          })
-        }
-      } catch (err) {
-        next({
-          name: 'ErrorPage',
-          query: {
-            httpCode: '401 Unauthorized',
-            reason: 'Authentication failed.',
-            extra: 'Try signing in or refreshing the page.',
-          }
-        })
-      }
-    }
+    beforeEnter: createAuthGuard(user => user.userTypeId >= UserType.Modder),
   },
   {
     path: '/series/:seriesId',
@@ -137,8 +114,7 @@ const routes = [
     props: true,
     beforeEnter: async (to, from, next) => {
       const movesetId = parseInt(to.params.movesetId);
-      const blockedStates = [2, 4, 6];
-      
+
       let latestLog = null
       let moveset = null
       let user = null
@@ -149,7 +125,7 @@ const routes = [
           const logsRes = await api.get('/logs')
           latestLog = logsRes.data
             .filter(log =>
-              log.itemType?.itemTypeId === 1 &&
+              log.itemType?.itemTypeId === ItemType.Moveset &&
               log.item?.movesetId === movesetId
             )
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]
@@ -173,10 +149,10 @@ const routes = [
       
         const isPrivate =
           latestLog &&
-          blockedStates.includes(latestLog.acceptanceState.acceptanceStateId)
-      
+          BLOCKED_ACCEPTANCE_STATES.includes(latestLog.acceptanceState.acceptanceStateId)
+
         if (isPrivate) {
-          const isAdmin = user?.userTypeId === 3
+          const isAdmin = user?.userTypeId === UserType.Admin
           const isOwner = user && modderIds.includes(user.modderId)
         
           if (!isAdmin && !isOwner) {
@@ -210,30 +186,44 @@ const routes = [
     component: EditMoveset,
     props: true,
     beforeEnter: async (to, from, next) => {
+      let moveset
       try {
-        const moveset = await api.get(`/movesets/${to.params.movesetId}`);
-        const modderIds = moveset.data.movesetModders.map(m => m.modder.modderId);
-        const user = (await api.get('/auth/me')).data;
+        moveset = await api.get(`/movesets/${to.params.movesetId}`);
+      } catch (err) {
+        return next({
+          name: 'ErrorPage',
+          query: {
+            httpCode: '500 Server Error',
+            reason: 'Could not load the moveset.',
+            extra: err.message || 'Please try again later.',
+          }
+        })
+      }
 
-        if (modderIds.includes(user.modderId) || user.userTypeId === 3) {
-          next();
-        } else {
-          next({
-            name: 'ErrorPage',
-            query: {
-              httpCode: '403 Forbidden',
-              reason: 'You do not have permission to access this page.',
-              extra: 'Try signing in?',
-            }
-          })
-        }
+      let user
+      try {
+        user = (await api.get('/auth/me')).data;
       } catch {
-        next({
+        return next({
           name: 'ErrorPage',
           query: {
             httpCode: '401 Unauthorized',
             reason: 'Authentication failed.',
             extra: 'Try signing in or refreshing the page.',
+          }
+        })
+      }
+
+      const modderIds = moveset.data.movesetModders.map(m => m.modder.modderId);
+      if (modderIds.includes(user.modderId) || user.userTypeId === UserType.Admin) {
+        next();
+      } else {
+        next({
+          name: 'ErrorPage',
+          query: {
+            httpCode: '403 Forbidden',
+            reason: 'You do not have permission to access this page.',
+            extra: 'Try signing in?',
           }
         })
       }
@@ -245,33 +235,50 @@ const routes = [
     component: EditSeries,
     props: true,
     beforeEnter: async (to, from, next) => {
-      try {
-        const seriesId = parseInt(to.params.seriesId);
-        const user = (await api.get('/auth/me')).data;
+      const seriesId = parseInt(to.params.seriesId);
 
+      let user
+      try {
+        user = (await api.get('/auth/me')).data;
+      } catch {
+        return next({
+          name: 'ErrorPage',
+          query: {
+            httpCode: '401 Unauthorized',
+            reason: 'Authentication failed.',
+            extra: 'Try signing in or refreshing the page.',
+          }
+        });
+      }
+
+      const denyForbidden = () => next({
+        name: 'ErrorPage',
+        query: {
+          httpCode: '403 Forbidden',
+          reason: 'You do not have permission to edit this series.',
+          extra: '',
+        }
+      });
+
+      try {
         // Get all logs for series
         const logsRes = await api.get('/logs', { params: { userId: null } });
         const latestLog = logsRes.data
-          .filter(log => log.itemType?.itemTypeId === 3 && log.item?.seriesId === seriesId)
+          .filter(log => log.itemType?.itemTypeId === ItemType.Series && log.item?.seriesId === seriesId)
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-        
-        // Restrict if the latest acceptanceState is not 3 or 4
+
+        // Restrict if the latest acceptanceState is not a soft/hard edit awaiting the submitter's view
         const stateId = latestLog?.acceptanceState?.acceptanceStateId;
-        if (stateId !== 3 && stateId !== 4) {
-          if (user.userTypeId == 2) {
+        if (stateId !== AcceptanceState.PendingUserSoft && stateId !== AcceptanceState.PendingUserHard) {
+          if (user.userTypeId === UserType.Modder) {
             next();
-          } else if ((stateId === 1 || stateId === 2) && user.userTypeId === 3) {
+          } else if (
+            (stateId === AcceptanceState.PendingAdminSoft || stateId === AcceptanceState.PendingAdminHard) &&
+            user.userTypeId === UserType.Admin
+          ) {
             next();
           } else {
-            next({
-              name: 'ErrorPage',
-              query: {
-                httpCode: '403 Forbidden',
-                reason: 'You do not have permission to edit this series.',
-                extra: '',
-              }
-            });
-            return;
+            return denyForbidden();
           }
         }
 
@@ -280,22 +287,16 @@ const routes = [
 
         // No movesets, only modders or admins
         if (movesets.length === 0) {
-          if (user.userTypeId === 2 || user.userTypeId === 3) {
+          if (user.userTypeId === UserType.Modder || user.userTypeId === UserType.Admin) {
             next();
           } else {
-            next({
-              name: 'ErrorPage',
-              query: {
-                httpCode: '403 Forbidden',
-                reason: 'You do not have permission to edit this series.',
-                extra: '',
-              }
-            });
+            denyForbidden();
           }
           return;
         }
 
-        // Check if user is a modder of a moveset in this series
+        // Check if user is a modder of a moveset in this series. The moveset list endpoint only
+        // exposes modder display names (not IDs), so this has to match by name.
         const modderNames = movesets.flatMap(m => m.modders);
         const modderName = (await api.get(`/modders/${user.modderId}`)).data.name;
         if (modderNames.includes(modderName)) {
@@ -314,9 +315,9 @@ const routes = [
         next({
           name: 'ErrorPage',
           query: {
-            httpCode: '401 Unauthorized',
-            reason: 'Authentication failed.',
-            extra: 'Try signing in or refreshing the page.',
+            httpCode: '500 Server Error',
+            reason: 'Could not load this series.',
+            extra: err.message || 'Please try again later.',
           }
         });
       }
@@ -327,14 +328,14 @@ const routes = [
     name: 'AddMoveset',
     component: AddMoveset,
     meta: { title: 'Submit Moveset' },
-    beforeEnter: createAuthGuard(user => user.userTypeId >= 2),
+    beforeEnter: createAuthGuard(user => user.userTypeId >= UserType.Modder),
   },
   {
     path: '/series/add',
     name: 'AddSeries',
     component: AddSeries,
     meta: { title: 'Submit Series' },
-    beforeEnter: createAuthGuard(user => user.userTypeId >= 2),
+    beforeEnter: createAuthGuard(user => user.userTypeId >= UserType.Modder),
   },
   {
     path: '/modders',
@@ -356,7 +357,7 @@ const routes = [
     beforeEnter: async (to, from, next) => {
       try {
         const user = (await api.get('/auth/me')).data;
-        if ((!user.modderId || user.modderId === null)) {
+        if (!user.modderId) {
           next();
         } else {
           next({
@@ -386,36 +387,49 @@ const routes = [
     meta: { title: 'Editing Modder Page' },
     props: true,
     beforeEnter: async (to, from, next) => {
+      let user
       try {
-        const user = (await api.get('/auth/me')).data;
-        if (user.modderId === parseInt(to.params.id)) {
-          next();
-        } else {
-          const logsRes = await api.get(`/logs`, { params: { userId: user.id } });
-          const submitted = logsRes.data.find(log =>
-            log.itemType?.itemTypeId === 2 &&
-            log.item?.modderId === parseInt(to.params.id)
-          );
-          if (submitted) {
-            next();
-          } else {
-            next({
-              name: 'ErrorPage',
-              query: {
-                httpCode: '403 Forbidden',
-                reason: 'You do not have permission to access this page.',
-                extra: 'Try signing in?',
-              }
-            })
-          }
-        }
+        user = (await api.get('/auth/me')).data;
       } catch {
-        next({
+        return next({
           name: 'ErrorPage',
           query: {
             httpCode: '401 Unauthorized',
             reason: 'Authentication failed.',
             extra: 'Try signing in or refreshing the page.',
+          }
+        })
+      }
+
+      if (user.modderId === parseInt(to.params.id)) {
+        return next();
+      }
+
+      try {
+        const logsRes = await api.get(`/logs`, { params: { userId: user.id } });
+        const submitted = logsRes.data.find(log =>
+          log.itemType?.itemTypeId === ItemType.Modder &&
+          log.item?.modderId === parseInt(to.params.id)
+        );
+        if (submitted) {
+          next();
+        } else {
+          next({
+            name: 'ErrorPage',
+            query: {
+              httpCode: '403 Forbidden',
+              reason: 'You do not have permission to access this page.',
+              extra: 'Try signing in?',
+            }
+          })
+        }
+      } catch (err) {
+        next({
+          name: 'ErrorPage',
+          query: {
+            httpCode: '500 Server Error',
+            reason: 'Could not load this modder.',
+            extra: err.message || 'Please try again later.',
           }
         })
       }
@@ -432,14 +446,14 @@ const routes = [
     name: 'AddHook',
     component: AddHook,
     meta: { title: 'Submit Hook' },
-    beforeEnter: createAuthGuard(user => user.userTypeId >= 2),
+    beforeEnter: createAuthGuard(user => user.userTypeId >= UserType.Modder),
   },
   {
     path: '/hooks/edit/:hookId',
     name: 'EditHook',
     component: EditHook,
     props: true,
-    beforeEnter: createAuthGuard(user => user.userTypeId >= 2),
+    beforeEnter: createAuthGuard(user => user.userTypeId >= UserType.Modder),
   },
   {
     path: '/user-actions',
@@ -458,49 +472,49 @@ const routes = [
     name: 'AdminPortal',
     component: AdminPortal,
     meta: { title: 'Admin portal' },
-    beforeEnter: createAuthGuard(user => user.userTypeId === 3),
+    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
   },
   {
     path: '/action-log-manager',
     name: 'AdminAccepter',
     component: AdminAccepter,
     meta: { title: 'Action Log Manager' },
-    beforeEnter: createAuthGuard(user => user.userTypeId === 3),
+    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
   },
   {
     path: '/notification-simulator',
     name: 'NotificationSimulator',
     component: NotificationSimulator,
     meta: { title: 'Notification Simulator' },
-    beforeEnter: createAuthGuard(user => user.userTypeId === 3),
+    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
   },
   {
     path: '/admin-picks',
     name: 'AdminPicks',
     component: AdminPicks,
     meta: { title: 'Admin Picks' },
-    beforeEnter: createAuthGuard(user => user.userTypeId === 3),
+    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
   },
   {
     path: '/admin-password-resetter',
     name: 'AdminPasswordResetter',
     component: AdminPasswordResetter,
     meta: { title: 'Password Resetter' },
-    beforeEnter: createAuthGuard(user => user.userTypeId === 3),
+    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
   },
   {
     path: '/add-blog-post',
     name: 'AddBlogPost',
     component: BlogPostForm,
     meta: { title: 'Add Blog Post' },
-    beforeEnter: createAuthGuard(user => user.userTypeId === 3),
+    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
   },
   {
     path: '/user-list',
     name: 'UserList',
     component: UserList,
     meta: { title: 'User List' },
-    beforeEnter: createAuthGuard(user => user.userTypeId === 3),
+    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
   },
   {
     path: '/about',

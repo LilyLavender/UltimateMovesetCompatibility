@@ -165,38 +165,77 @@ const submit = async () => {
   }
 
   isSubmitting.value = true
-  uploadStatus.value = 'Uploading image...'
 
+  if (props.mode === 'edit' && props.seriesId) {
+    // Edit mode: the series already exists, so upload first (as before) and save in one request.
+    uploadStatus.value = 'Uploading image...'
+    try {
+      form.value.seriesIconUrl = await uploadImageIfNeeded(form.value.seriesIconUrl, 'series_icon', form.value.seriesName)
+    } catch (err) {
+      console.error("Image upload failed:", JSON.stringify(err.response?.data) || err.message)
+      alert("Failed to upload image. Please check the file and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+      isSubmitting.value = false
+      uploadStatus.value = ''
+      return
+    }
+
+    uploadStatus.value = 'Saving series...'
+    try {
+      await api.put(`/series/${props.seriesId}`, { ...form.value })
+      router.push('/series')
+    } catch (err) {
+      if (err.response?.status === 409) {
+        alert('A series with this name already exists.')
+        return
+      }
+      console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
+      alert("Failed to save series. Please check the form and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+    } finally {
+      isSubmitting.value = false
+      uploadStatus.value = ''
+    }
+    return
+  }
+
+  // Create mode: no series exists yet to attach an image to, so an upload failure or a save
+  // failure after upload would otherwise orphan the image in R2 with nothing referencing it.
+  // Create the series first (without a staged file), then upload and attach the image after.
+  const stagedIcon = form.value.seriesIconUrl instanceof File ? form.value.seriesIconUrl : null
+  const payload = { ...form.value }
+  if (stagedIcon) payload.seriesIconUrl = null
+
+  uploadStatus.value = 'Saving series...'
+
+  let newId
   try {
-    form.value.seriesIconUrl = await uploadImageIfNeeded(form.value.seriesIconUrl, 'series_icon', form.value.seriesName)
+    const res = await api.post('/series', payload)
+    newId = res.data.seriesId
   } catch (err) {
-    console.error("Image upload failed:", JSON.stringify(err.response?.data) || err.message)
-    alert("Failed to upload image. Please check the file and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+    if (err.response?.status === 409) {
+      alert('A series with this name already exists.')
+    } else {
+      console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
+      alert("Failed to save series. Please check the form and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+    }
     isSubmitting.value = false
     uploadStatus.value = ''
     return
   }
 
-  uploadStatus.value = 'Saving series...'
-
-  const payload = { ...form.value }
-
-  // API
-  try {
-    if (props.mode == 'edit' && props.seriesId) {
-      await api.put(`/series/${props.seriesId}`, payload)
-    } else {
-      await api.post('/series', payload)
+  if (stagedIcon) {
+    uploadStatus.value = 'Uploading image...'
+    try {
+      const seriesIconUrl = await uploadImageIfNeeded(stagedIcon, 'series_icon', form.value.seriesName)
+      await api.patch(`/series/${newId}/image`, { seriesIconUrl })
+    } catch (err) {
+      console.error("Image upload failed after series creation:", JSON.stringify(err.response?.data) || err.message)
+      alert("Series created, but the image failed to upload. You can add it later by editing the series.\n\n" + (JSON.stringify(err.response?.data) || err.message))
     }
-
-    router.push('/series')
-  } catch (err) {
-    console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
-    alert("Failed to save series. Please check the form and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
-  } finally {
-    isSubmitting.value = false
-    uploadStatus.value = ''
   }
+
+  isSubmitting.value = false
+  uploadStatus.value = ''
+  router.push('/series')
 }
 
 watch(

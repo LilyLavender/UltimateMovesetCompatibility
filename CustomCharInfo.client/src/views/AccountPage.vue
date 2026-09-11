@@ -26,8 +26,10 @@
 import { computed } from 'vue'
 import AuthPanel from '@/components/AuthPanel.vue'
 import ActionLogList from '@/components/ActionLogList.vue'
+import { useAuthStore } from '@/stores/auth'
 
-const isLoggedIn = computed(() => !!localStorage.getItem('token'))
+const authStore = useAuthStore()
+const isLoggedIn = computed(() => authStore.isLoggedIn)
 </script>
 
 <style scoped>

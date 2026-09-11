@@ -3,7 +3,7 @@
     <!-- Sign in/out/up -->
     <div>
       <!-- Sign in/up -->
-      <div v-if="!token">
+      <div v-if="!authStore.isLoggedIn">
         <!-- Email/password -->
         <v-text-field v-model="email" label="Email" variant="outlined" />
         <v-text-field v-model="password" label="Password" type="password" variant="outlined">
@@ -132,7 +132,7 @@
       </div>
 
       <!-- My content + Admin Portal -->
-      <div v-if="user?.modderId || user?.userTypeId == 3">
+      <div v-if="user?.modderId || user?.userTypeId === UserType.Admin">
         <router-link
           v-if="user?.modderId"
           :to="{ name: 'MyContent' }"
@@ -142,7 +142,7 @@
           My content
         </router-link>
         <router-link
-          v-if="user?.userTypeId == 3"
+          v-if="user?.userTypeId === UserType.Admin"
           :to="{ name: 'AdminPortal' }"
           class="router-link unvisitable user-link"
         >
@@ -155,14 +155,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
-import { jwtDecode } from "jwt-decode"
+import { useAuthStore } from '@/stores/auth'
+import { UserType, ItemType, AcceptanceState } from '@/globals'
+
+const authStore = useAuthStore()
+const user = computed(() => authStore.user)
 
 const email = ref('')
 const password = ref('')
-const token = ref(localStorage.getItem('token'))
-const user = ref(null)
 const editProfileForm = ref(false)
 const errorMsgs = ref([])
 const editedUsername = ref('')
@@ -170,7 +172,7 @@ const editedUsername = ref('')
 const register = async () => {
   try {
     errorMsgs.value = []
-    await api.post('/auth/register', { email: email.value, password: password.value })
+    await authStore.register(email.value, password.value)
     alert('Registered! You can now log in.')
   } catch (err) {
     console.error("Register Failed:", err)
@@ -181,12 +183,8 @@ const register = async () => {
 const login = async () => {
   try {
     errorMsgs.value = []
-    const res = await api.post('/auth/login', { email: email.value, password: password.value })
-    token.value = res.data.token
-    localStorage.setItem('token', token.value)
-    localStorage.setItem('refreshToken', res.data.refreshToken)
-    api.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
-    getCurrentUserDetails()
+    await authStore.login(email.value, password.value)
+    await checkPendingApproval()
   } catch (err) {
     console.error("Login Failed:", err)
     errorMsgs.value = extractErrorMessages(err)
@@ -199,7 +197,7 @@ const updateUsername = async () => {
       newUserName: editedUsername.value
     })
     alert('Username updated successfully!')
-    await getCurrentUserDetails()
+    await authStore.fetchCurrentUser()
     editProfileForm.value = false
   } catch (err) {
     console.error("Failed to update username:", err)
@@ -208,21 +206,9 @@ const updateUsername = async () => {
 }
 
 const logout = async () => {
-  const storedRefreshToken = localStorage.getItem('refreshToken')
-  if (storedRefreshToken) {
-    try {
-      await api.post('/auth/logout', { refreshToken: storedRefreshToken })
-    } catch {
-      // Revocation is best-effort; proceed regardless
-    }
-  }
-  token.value = null
-  email.value = null
-  password.value = null
-  user.value = null
-  localStorage.removeItem('token')
-  localStorage.removeItem('refreshToken')
-  delete api.defaults.headers.common['Authorization']
+  await authStore.logout()
+  email.value = ''
+  password.value = ''
 }
 
 function extractErrorMessages(err) {
@@ -251,26 +237,19 @@ function extractErrorMessages(err) {
   return ['An error occurred.']
 }
 
-function isTokenExpired(token) {
-  if (!token) return true;
-  const { exp } = jwtDecode(token);
-  return Date.now() >= exp * 1000;
-}
-
 const pendingApproval = ref(false)
 
-async function getCurrentUserDetails() {
-  const res = await api.get('/auth/me')
-  user.value = res.data
-
+async function checkPendingApproval() {
+  if (!user.value) return
+  pendingApproval.value = false
   try {
     const logsRes = await api.get('/logs', {
       params: { userId: user.value.id }
     })
     const logs = logsRes.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    const latestLog = logs.find(log => log.itemType.itemTypeId === 2)
+    const latestLog = logs.find(log => log.itemType.itemTypeId === ItemType.Modder)
 
-    if (latestLog && [2, 4].includes(latestLog.acceptanceState.acceptanceStateId)) {
+    if (latestLog && [AcceptanceState.PendingAdminHard, AcceptanceState.PendingUserHard].includes(latestLog.acceptanceState.acceptanceStateId)) {
       pendingApproval.value = true
     }
   } catch (err) {
@@ -278,27 +257,11 @@ async function getCurrentUserDetails() {
   }
 }
 
-const handleAuthExpired = () => {
-  token.value = null
-  user.value = null
-}
-
 onMounted(async () => {
-  window.addEventListener('auth:expired', handleAuthExpired)
-
-  const storedToken = localStorage.getItem('token')
-  if (storedToken) {
-    api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`
-    try {
-      await getCurrentUserDetails()
-    } catch {
-      // Interceptor will have cleared tokens if refresh also failed
-    }
+  if (authStore.isLoggedIn) {
+    await authStore.ensureLoaded()
+    await checkPendingApproval()
   }
-})
-
-onUnmounted(() => {
-  window.removeEventListener('auth:expired', handleAuthExpired)
 })
 </script>
 

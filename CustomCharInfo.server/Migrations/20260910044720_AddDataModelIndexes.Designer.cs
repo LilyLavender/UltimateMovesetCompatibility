@@ -3,6 +3,7 @@ using System;
 using CustomCharInfo.server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CustomCharInfo.server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260910044720_AddDataModelIndexes")]
+    partial class AddDataModelIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -285,9 +288,6 @@ namespace CustomCharInfo.server.Migrations
                     b.HasKey("HookId");
 
                     b.HasIndex("HookableStatusId");
-
-                    b.HasIndex("Offset")
-                        .IsUnique();
 
                     b.ToTable("Hooks");
                 });
@@ -651,9 +651,6 @@ namespace CustomCharInfo.server.Migrations
                         .HasColumnType("character varying(64)");
 
                     b.HasKey("SeriesId");
-
-                    b.HasIndex("SeriesName")
-                        .IsUnique();
 
                     b.ToTable("Series");
                 });

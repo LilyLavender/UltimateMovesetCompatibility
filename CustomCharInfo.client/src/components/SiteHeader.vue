@@ -41,9 +41,12 @@
 
 <script setup>
 import { useRoute } from 'vue-router';
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 import umcLogo from "@/assets/umc-logo.svg"
+
+const authStore = useAuthStore()
 
 const links = [
   { title: "Home", route: "/" },
@@ -78,8 +81,7 @@ const adminBadgeStyle = computed(() => ({
 }))
 
 const fetchNotifications = async () => {
-  const token = localStorage.getItem('token')
-  if (!token) {
+  if (!authStore.isLoggedIn) {
     userPendingCount.value = 0
     adminPendingCount.value = 0
     return
@@ -115,18 +117,14 @@ const fetchNotifications = async () => {
   }
 }
 
-const handleAuthExpired = () => {
-  userPendingCount.value = 0
-  adminPendingCount.value = 0
-}
-
-onMounted(async () => {
-  window.addEventListener('auth:expired', handleAuthExpired)
-  await fetchNotifications()
+// Refetch when login state changes (e.g. logging in/out without a page reload) instead of
+// only on mount, now that isLoggedIn is reactive shared state.
+watch(() => authStore.isLoggedIn, () => {
+  fetchNotifications()
 })
 
-onUnmounted(() => {
-  window.removeEventListener('auth:expired', handleAuthExpired)
+onMounted(async () => {
+  await fetchNotifications()
 })
 </script>
 

@@ -33,52 +33,29 @@ namespace CustomCharInfo.server.Controllers
             if (currentUser == null || currentUser.UserTypeId != 3)
                 return Forbid();
 
-            // Load all users
-            var users = await _context.Users
-                .Select(u => new
+            // Users with a matching Modder row, joined in SQL rather than loading both tables
+            // into memory and joining with LINQ-to-Objects.
+            var inBoth = await (
+                from u in _context.Users
+                join m in _context.Modders on u.ModderId equals (int?)m.ModderId
+                select new
                 {
-                    u.Id,
-                    u.ModderId,
-                    u.UserName,
-                    u.Email,
-                    u.UserTypeId
-                })
-                .ToListAsync();
-            var modders = await _context.Modders
-                .Select(m => new
-                {
-                    m.ModderId,
-                    Name = m.Name,
-                    m.Bio,
-                    m.GamebananaId,
-                    m.UserId,
-                    m.DiscordUsername
-                })
+                    User = new { u.Id, u.ModderId, u.UserName, u.Email, u.UserTypeId },
+                    Modder = new { m.ModderId, m.Name, m.Bio, m.GamebananaId, m.UserId, m.DiscordUsername }
+                }
+            ).ToListAsync();
+
+            // Users with no matching Modder row
+            var onlyUsers = await _context.Users
+                .Where(u => !_context.Modders.Any(m => m.ModderId == u.ModderId))
+                .Select(u => new { u.Id, u.ModderId, u.UserName, u.Email, u.UserTypeId })
                 .ToListAsync();
 
-            // Users in both tables
-            var inBoth = users
-                .Where(u => u.ModderId.HasValue && modders.Any(m => m.ModderId == u.ModderId.Value))
-                .Select(u =>
-                {
-                    var m = modders.First(m => m.ModderId == u.ModderId.Value);
-                    return new
-                    {
-                        User = u,
-                        Modder = m
-                    };
-                })
-                .ToList();
-
-            // Users only in ApplicationUser
-            var onlyUsers = users
-                .Where(u => !u.ModderId.HasValue || !modders.Any(m => m.ModderId == u.ModderId.Value))
-                .ToList();
-
-            // Users only in Modders
-            var onlyModders = modders
-                .Where(m => !users.Any(u => u.ModderId == m.ModderId))
-                .ToList();
+            // Modders with no matching user row
+            var onlyModders = await _context.Modders
+                .Where(m => !_context.Users.Any(u => u.ModderId == m.ModderId))
+                .Select(m => new { m.ModderId, m.Name, m.Bio, m.GamebananaId, m.UserId, m.DiscordUsername })
+                .ToListAsync();
 
             return Ok(new
             {

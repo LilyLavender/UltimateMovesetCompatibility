@@ -12,5 +12,7 @@ namespace CustomCharInfo.server.Models.DTOs
 
         [Required]
         public int HookableStatusId { get; set; }
+
+        public string? Notes { get; set; }
     }
 }

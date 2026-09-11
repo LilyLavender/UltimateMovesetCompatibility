@@ -46,10 +46,21 @@
         </v-row>
       </section>
 
-      <!-- Submit -->
-      <div class="d-flex justify-end">
+      <!-- Notes + Submit -->
+      <div class="d-flex align-start ga-3 justify-end">
+        <v-textarea
+          variant="outlined"
+          density="compact"
+          v-model="form.notes"
+          :label="isEditMode ? 'Editing notes' : 'Submission notes'"
+          placeholder="Optional, shown to admins only."
+          rows="1"
+          auto-grow
+          hide-details
+          class="notes-field"
+        />
         <v-btn
-          class="btn submit-button"
+          class="btn submit-button mt-1"
           @click="submit"
         >
           {{ isEditMode ? 'Save' : 'Add Hook' }}
@@ -77,7 +88,8 @@ const hook = ref(null)
 const form = ref({
   offset: '',
   description: '',
-  hookableStatusId: null
+  hookableStatusId: null,
+  notes: ''
 })
 
 const offsetInput = ref('')
@@ -122,24 +134,6 @@ const submit = async () => {
     return
   }
 
-  // Check for duplicate offset
-  if (!isEditMode.value) {
-    try {
-      const res = await api.get('/hooks')
-      const existingHook = res.data.find(
-        h => h.offset.toString().toUpperCase() === form.value.offset.toUpperCase()
-      )
-      if (existingHook) {
-        alert(`A hook with offset 0x${form.value.offset} already exists.`)
-        return
-      }
-    } catch (err) {
-      console.error('Failed to fetch hooks for duplicate check', err)
-      alert('Could not verify offset uniqueness. Try again later.')
-      return
-    }
-  }
-
   const payload = { ...form.value }
 
   try {
@@ -150,6 +144,10 @@ const submit = async () => {
     }
     router.push('/hooks')
   } catch (err) {
+    if (err.response?.status === 409) {
+      alert(`A hook with offset 0x${form.value.offset} already exists.`)
+      return
+    }
     console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
     alert("Failed to save hook.\n\n" + (JSON.stringify(err.response?.data) || err.message))
   }
@@ -171,5 +169,18 @@ h1 {
 .submit-button {
   background-color: #1e1e1e;
   color: #e2e2e2;
+}
+
+.notes-field {
+  max-width: 400px;
+}
+.notes-field :deep(.v-field__input) {
+  font-size: 0.85rem;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.notes-field :deep(.v-label) {
+  font-style: italic;
+  color: #6e6e6e !important;
 }
 </style>

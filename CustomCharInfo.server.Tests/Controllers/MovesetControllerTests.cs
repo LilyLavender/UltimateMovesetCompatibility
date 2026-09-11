@@ -227,5 +227,61 @@ namespace CustomCharInfo.server.Tests.Controllers
             var ok = Assert.IsType<OkObjectResult>(result.Result);
             Assert.NotNull(ok.Value);
         }
+
+        [Fact]
+        public async Task PatchMovesetImages_OwnerModder_FillsEmptyFields()
+        {
+            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: 2, modderId: 5);
+            SeedData.AddModder(_db.Context, 5, owner.Id, "OwnerModder");
+            var moveset = AddMoveset(1, "New Moveset");
+            _db.Context.MovesetModders.Add(new MovesetModder { MovesetId = moveset.MovesetId, ModderId = 5, SortOrder = 0 });
+            _db.Context.SaveChanges();
+            var controller = CreateController(owner.Id);
+
+            var result = await controller.PatchMovesetImages(1, new Models.DTOs.MovesetImagesDto
+            {
+                ThumbhImageUrl = "/uploads/thumb.png",
+                MovesetHeroImageUrl = "/uploads/hero.png"
+            });
+
+            Assert.IsType<NoContentResult>(result);
+            var updated = await _db.Context.Movesets.FindAsync(1);
+            Assert.Equal("/uploads/thumb.png", updated!.ThumbhImageUrl);
+            Assert.Equal("/uploads/hero.png", updated.MovesetHeroImageUrl);
+            Assert.Empty(_db.Context.ActionLogs);
+        }
+
+        [Fact]
+        public async Task PatchMovesetImages_AlreadySet_ReturnsConflict()
+        {
+            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: 2, modderId: 5);
+            SeedData.AddModder(_db.Context, 5, owner.Id, "OwnerModder");
+            var moveset = AddMoveset(1, "New Moveset");
+            moveset.ThumbhImageUrl = "/uploads/existing.png";
+            _db.Context.MovesetModders.Add(new MovesetModder { MovesetId = moveset.MovesetId, ModderId = 5, SortOrder = 0 });
+            _db.Context.SaveChanges();
+            var controller = CreateController(owner.Id);
+
+            var result = await controller.PatchMovesetImages(1, new Models.DTOs.MovesetImagesDto { ThumbhImageUrl = "/uploads/new.png" });
+
+            Assert.IsType<ConflictObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task PatchMovesetImages_NonOwningModder_ReturnsForbid()
+        {
+            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: 2, modderId: 5);
+            SeedData.AddModder(_db.Context, 5, owner.Id, "OwnerModder");
+            var other = SeedData.AddUser(_db.Context, "other-1", userTypeId: 2, modderId: 6);
+            SeedData.AddModder(_db.Context, 6, other.Id, "OtherModder");
+            var moveset = AddMoveset(1, "New Moveset");
+            _db.Context.MovesetModders.Add(new MovesetModder { MovesetId = moveset.MovesetId, ModderId = 5, SortOrder = 0 });
+            _db.Context.SaveChanges();
+            var controller = CreateController(other.Id);
+
+            var result = await controller.PatchMovesetImages(1, new Models.DTOs.MovesetImagesDto { ThumbhImageUrl = "/uploads/new.png" });
+
+            Assert.IsType<ForbidResult>(result);
+        }
     }
 }

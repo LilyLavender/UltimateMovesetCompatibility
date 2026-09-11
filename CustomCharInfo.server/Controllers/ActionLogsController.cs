@@ -227,6 +227,14 @@ namespace CustomCharInfo.server.Controllers
                         .ToListAsync();
                 }
 
+                // Hooks are shared/unowned - a user can see a hook's logs if they've submitted a
+                // log entry for it before (i.e. they've created or edited it at some point).
+                var editedHookIds = await _context.ActionLogs
+                    .Where(log => log.UserId == effectiveUserId && log.ItemTypeId == 4)
+                    .Select(log => log.ItemId)
+                    .Distinct()
+                    .ToListAsync();
+
                 if (modderId != null)
                 {
                     // Get movesetIds user is a modder for
@@ -245,13 +253,15 @@ namespace CustomCharInfo.server.Controllers
                     query = query.Where(a =>
                         (a.ItemTypeId == 2 && a.ItemId == modderId) ||
                         (a.ItemTypeId == 1 && userMovesetIds.Contains(a.ItemId)) ||
-                        (a.ItemTypeId == 3 && seriesIdsFromMovesets.Contains(a.ItemId))
+                        (a.ItemTypeId == 3 && seriesIdsFromMovesets.Contains(a.ItemId)) ||
+                        (a.ItemTypeId == 4 && editedHookIds.Contains(a.ItemId))
                     );
                 }
                 else
                 {
                     query = query.Where(a =>
-                        a.ItemTypeId == 2 && extraModderItemIds.Contains(a.ItemId)
+                        (a.ItemTypeId == 2 && extraModderItemIds.Contains(a.ItemId)) ||
+                        (a.ItemTypeId == 4 && editedHookIds.Contains(a.ItemId))
                     );
                 }
             }
@@ -355,6 +365,10 @@ namespace CustomCharInfo.server.Controllers
 
                 if (originalUser != null && modder != null)
                 {
+                    // ApplicationUser.ModderId is a denormalized cache of Modder.UserId,
+                    // kept for fast user->modder lookups without a join.
+                    // This is the only place that sets it.
+                    // Any other code path that links a user to a modder must update both sides here or the two will silently desync.
                     if (originalUser.ModderId == null)
                     {
                         originalUser.ModderId = dto.ItemId;

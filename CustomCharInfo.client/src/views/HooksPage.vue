@@ -5,7 +5,7 @@
 
     <!-- Add hook button -->
     <div 
-      v-if="user && user.userTypeId >= 2"
+      v-if="user && user.userTypeId >= UserType.Modder"
       class="mb-5 pb-5"
     >
       <router-link
@@ -56,6 +56,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/services/api'
+import { UserType } from '@/globals'
 
 const user = ref(null)
 const hooks = ref([])

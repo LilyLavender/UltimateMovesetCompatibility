@@ -8,6 +8,8 @@ using System.Text;
 using System.Security.Claims;
 using Amazon.S3;
 using Amazon.Runtime;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CustomCharInfo.server
 {
@@ -96,6 +98,22 @@ namespace CustomCharInfo.server
             });
             builder.Services.AddAuthorization();
 
+            // Rate limiting for auth endpoints (login/register/refresh/reset-password) to slow
+            // brute-force and credential-stuffing attempts. Partitioned per client IP.
+            builder.Services.AddRateLimiter(options =>
+            {
+                options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+                options.AddPolicy("auth", httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 5,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueLimit = 0
+                        }));
+            });
+
             // Controllers
             builder.Services.AddControllers().AddJsonOptions(options =>
             {
@@ -130,6 +148,7 @@ namespace CustomCharInfo.server
             app.UseHttpsRedirection();
             app.UseAuthentication();
             app.UseAuthorization();
+            app.UseRateLimiter();
             app.MapControllers();
 
             app.Run();

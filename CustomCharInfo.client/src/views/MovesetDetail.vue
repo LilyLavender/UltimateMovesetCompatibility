@@ -263,7 +263,7 @@ import { useHead } from '@unhead/vue'
 import api from '@/services/api'
 import movesetHeroUnknown from "@/assets/moveset_hero_unknown.png"
 import seriesIconUnknown from "@/assets/series_icon_unknown.png"
-import { GB_WIP_URL, MODS_WIKI_URL } from '@/globals'
+import { GB_WIP_URL, MODS_WIKI_URL, UserType, ItemType } from '@/globals'
 
 const route = useRoute()
 const router = useRouter()
@@ -443,11 +443,11 @@ onMounted(async () => {
     //
   }
   try {
-    const isAdmin = user.value?.userTypeId === 3
+    const isAdmin = user.value?.userTypeId === UserType.Admin
     const logsRes = await api.get(isAdmin ? '/logs?viewAll=true' : '/logs')
     const movesetId = parseInt(route.params.movesetId)
     latestLog.value = logsRes.data
-      .filter(log => log.itemType?.itemTypeId === 1 && log.item?.movesetId === movesetId)
+      .filter(log => log.itemType?.itemTypeId === ItemType.Moveset && log.item?.movesetId === movesetId)
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] ?? null
   } catch {
     //

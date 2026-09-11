@@ -5,7 +5,7 @@
         <!-- User & Date -->
         <strong>{{ log.user.userName }}</strong> | {{ formatDate(log.createdAt) }} UTC
         <!-- Item (if moveset) -->
-        <div v-if="log.itemType.itemTypeId === 1">
+        <div v-if="log.itemType.itemTypeId === ItemType.Moveset">
           <h3>
             Moveset:
             <router-link
@@ -20,7 +20,7 @@
         </div>
 
         <!-- Item (if user) -->
-        <div v-else-if="log.itemType.itemTypeId === 2">
+        <div v-else-if="log.itemType.itemTypeId === ItemType.Modder">
           <h3>
             User:
             <router-link
@@ -44,7 +44,7 @@
         </div>
 
         <!-- Item (if series) -->
-        <div v-if="log.itemType.itemTypeId === 3">
+        <div v-if="log.itemType.itemTypeId === ItemType.Series">
           <h3>
             Series:
             {{ log.item?.seriesName ?? '(deleted)' }}
@@ -60,10 +60,17 @@
         </div>
 
         <!-- Item (if hook) -->
-        <div v-else-if="log.itemType.itemTypeId === 4">
+        <div v-else-if="log.itemType.itemTypeId === ItemType.Hook">
           <h3>
             Hook:
-            {{ log.item?.offset ?? '(deleted)' }}
+            <router-link
+              v-if="log.item?.hookId"
+              :to="{ name: 'Hooks' }"
+              class="unvisitable"
+            >
+              0x{{ log.item.offset }}
+            </router-link>
+            <span v-else>{{ log.item?.offset ? `0x${log.item.offset}` : '(deleted)' }}</span>
             <router-link
               v-if="log.item?.hookId"
               :to="{ name: 'EditHook', params: { hookId: log.item.hookId } }"
@@ -110,6 +117,7 @@
 <script setup>
 import { computed } from 'vue'
 import { format } from 'date-fns'
+import { ItemType, AcceptanceState } from '@/globals'
 
 const props = defineProps({
   log: Object,
@@ -120,7 +128,7 @@ const formatDate = (date) => {
   return format(new Date(date), 'PPpp')
 }
 
-const pendingUser = computed(() => [3, 4].includes(props.log.acceptanceState.acceptanceStateId))
+const pendingUser = computed(() => [AcceptanceState.PendingUserSoft, AcceptanceState.PendingUserHard].includes(props.log.acceptanceState.acceptanceStateId))
 
 const parsedDiff = computed(() => {
   if (!props.log.diff) return []
@@ -130,13 +138,13 @@ const parsedDiff = computed(() => {
 const acceptanceStyle = computed(() => {
   const id = props.log.acceptanceState.acceptanceStateId
   const bgColors = {
-    1: 'rgb(187, 224, 236)', // Pending Admin (Soft)
-    2: 'rgb(52, 194, 241)', // Pending Admin (Hard)
-    3: 'rgb(241, 241, 142)', // Pending User (Soft)
-    4: 'rgb(241, 241, 52)', // Pending User (Hard)
-    5: 'rgb(52, 241, 52)', // Accepted
-    6: 'rgb(241, 52, 52)',  // Rejected
-    7: 'rgb(52, 241, 52)', // Auto-Accepted
+    [AcceptanceState.PendingAdminSoft]: 'rgb(187, 224, 236)',
+    [AcceptanceState.PendingAdminHard]: 'rgb(52, 194, 241)',
+    [AcceptanceState.PendingUserSoft]: 'rgb(241, 241, 142)',
+    [AcceptanceState.PendingUserHard]: 'rgb(241, 241, 52)',
+    [AcceptanceState.Accepted]: 'rgb(52, 241, 52)',
+    [AcceptanceState.Rejected]: 'rgb(241, 52, 52)',
+    [AcceptanceState.AutoAccepted]: 'rgb(52, 241, 52)',
   }
 
   return {

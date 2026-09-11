@@ -91,6 +91,38 @@ describe('ActionLogList', () => {
     expect(wrapper.findAllComponents(ActionLogGroup)).toHaveLength(2)
   })
 
+  it('"Only Relevant" excludes hooks for a regular user', async () => {
+    api.get.mockImplementation((url) => {
+      if (url === '/auth/me') return Promise.resolve({ data: { userTypeId: 1 } })
+      return Promise.resolve({ data: [] })
+    })
+
+    const wrapper = mountList()
+    await flushPromises()
+
+    await wrapper.findAll('button').find(b => b.text() === 'Only Relevant').trigger('click')
+    await flushPromises()
+
+    const logsCall = api.get.mock.calls.filter(([url]) => url === '/logs').pop()
+    expect(logsCall[1].params.itemTypes).toEqual([1, 2, 3])
+  })
+
+  it('"Only Relevant" includes hooks for an admin', async () => {
+    api.get.mockImplementation((url) => {
+      if (url === '/auth/me') return Promise.resolve({ data: { userTypeId: 3 } })
+      return Promise.resolve({ data: [] })
+    })
+
+    const wrapper = mountList()
+    await flushPromises()
+
+    await wrapper.findAll('button').find(b => b.text() === 'Only Relevant').trigger('click')
+    await flushPromises()
+
+    const logsCall = api.get.mock.calls.filter(([url]) => url === '/logs').pop()
+    expect(logsCall[1].params.itemTypes).toEqual([1, 2, 3, 4])
+  })
+
   it('requests scoped logs for a given userId instead of viewAll', async () => {
     mountList({ userId: 'user-42', viewAll: true })
     await flushPromises()

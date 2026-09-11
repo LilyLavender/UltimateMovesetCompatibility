@@ -34,7 +34,7 @@
 
       <!-- Add moveset -->
       <router-link
-        v-if="user && user.userTypeId >= 2"
+        v-if="user && user.userTypeId >= UserType.Modder"
         :to="{ name: 'AddMoveset' }"
         class="unvisitable text-decoration-none ml-5"
       >
@@ -52,6 +52,7 @@
 import { ref, onMounted } from 'vue'
 import api from '@/services/api'
 import MovesetList from '@/components/MovesetList.vue'
+import { UserType } from '@/globals'
 
 const user = ref(null)
 

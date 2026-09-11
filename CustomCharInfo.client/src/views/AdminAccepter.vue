@@ -27,9 +27,9 @@
             </div>
             <div class="d-flex ga-2">
               <v-btn
-                v-if="log.itemType.itemTypeId !== 4"
+                v-if="log.itemType.itemTypeId !== ItemType.Hook"
                 variant="flat"
-                :class="['action-btn', pendingUserTargetState(log) === 4 ? 'pending-btn-hard' : 'pending-btn-soft']"
+                :class="['action-btn', pendingUserTargetState(log) === AcceptanceState.PendingUserHard ? 'pending-btn-hard' : 'pending-btn-soft']"
                 style="width: 50%"
                 @click="prefillForm(log, pendingUserTargetState(log))"
               >
@@ -38,8 +38,8 @@
               <v-btn
                 variant="flat"
                 class="action-btn accept-btn"
-                :style="{ width: log.itemType.itemTypeId === 4 ? '100%' : '50%' }"
-                @click="prefillForm(log, 5)"
+                :style="{ width: log.itemType.itemTypeId === ItemType.Hook ? '100%' : '50%' }"
+                @click="prefillForm(log, AcceptanceState.Accepted)"
               >
                 Accepted
               </v-btn>
@@ -183,13 +183,13 @@
         <!-- Right column -->
         <v-col cols="12" md="7">
           <!-- Moveset preview -->
-          <div v-if="selectedFull && form.itemTypeId === 1" class="mb-3">
+          <div v-if="selectedFull && form.itemTypeId === ItemType.Moveset" class="mb-3">
             <h2 class="mb-1">Preview</h2>
             <MovesetCard :moveset="selectedFull" :canView="true" />
           </div>
 
           <!-- Modder preview -->
-          <div v-if="selectedFull && form.itemTypeId === 2" class="mb-3">
+          <div v-if="selectedFull && form.itemTypeId === ItemType.Modder" class="mb-3">
             <h2 class="mb-1">Preview</h2>
             <div class="modder-preview">
               <div class="modder-preview-pfp-wrap">
@@ -210,7 +210,7 @@
           </div>
 
           <!-- Series preview: 3x3 icon grid -->
-          <div v-if="selectedFull && form.itemTypeId === 3" class="mb-3">
+          <div v-if="selectedFull && form.itemTypeId === ItemType.Series" class="mb-3">
             <h2 class="mb-1">Preview</h2>
             <div class="series-grid-preview">
               <img
@@ -224,10 +224,10 @@
           </div>
 
           <!-- Hook preview -->
-          <div v-if="selectedFull && form.itemTypeId === 4" class="mb-3">
+          <div v-if="selectedFull && form.itemTypeId === ItemType.Hook" class="mb-3">
             <h2 class="mb-1">Preview</h2>
             <div class="hook-preview">
-              <div><strong>Offset:</strong> {{ selectedFull.offset }}</div>
+              <div><strong>Offset:</strong> 0x{{ selectedFull.offset }}</div>
               <div><strong>Description:</strong> {{ selectedFull.description }}</div>
               <div><strong>Status:</strong> {{ selectedFull.hookableStatus }}</div>
             </div>
@@ -254,6 +254,7 @@ import api from '@/services/api'
 import ActionLogGroup from '@/components/ActionLogGroup.vue'
 import MovesetCard from '@/components/MovesetCard.vue'
 import seriesIconUnknown from '@/assets/series_icon_unknown.png'
+import { ItemType, AcceptanceState } from '@/globals'
 
 const apiUrl = import.meta.env.VITE_API_URL
 const resolveIconUrl = (path) => path?.startsWith('/') ? `${apiUrl}${path}` : (path ?? seriesIconUnknown)
@@ -267,19 +268,19 @@ const form = ref({
 })
 
 const itemTypes = [
-  { label: 'Moveset', value: 1 },
-  { label: 'Modder', value: 2 },
-  { label: 'Series', value: 3 },
-  { label: 'Hook', value: 4 },
+  { label: 'Moveset', value: ItemType.Moveset },
+  { label: 'Modder', value: ItemType.Modder },
+  { label: 'Series', value: ItemType.Series },
+  { label: 'Hook', value: ItemType.Hook },
 ]
 
 const acceptanceStates = [
-  { id: 1, name: 'Pending Admin Action (Soft)' },
-  { id: 2, name: 'Pending Admin Action (Hard)' },
-  { id: 3, name: 'Pending User Action (Soft)' },
-  { id: 4, name: 'Pending User Action (Hard)' },
-  { id: 5, name: 'Accepted' },
-  { id: 6, name: 'Rejected' },
+  { id: AcceptanceState.PendingAdminSoft, name: 'Pending Admin Action (Soft)' },
+  { id: AcceptanceState.PendingAdminHard, name: 'Pending Admin Action (Hard)' },
+  { id: AcceptanceState.PendingUserSoft, name: 'Pending User Action (Soft)' },
+  { id: AcceptanceState.PendingUserHard, name: 'Pending User Action (Hard)' },
+  { id: AcceptanceState.Accepted, name: 'Accepted' },
+  { id: AcceptanceState.Rejected, name: 'Rejected' },
 ]
 
 const items = ref([])
@@ -291,31 +292,44 @@ const loadingLogs = ref(false)
 const pendingAdminLogs = ref([])
 const modderGbPfp = ref(null)
 
-const itemTypeLabel = (id) => ({ 1: 'Moveset', 2: 'Modder', 3: 'Series', 4: 'Hook' })[id] ?? '?'
+const itemTypeLabel = (id) => ({
+  [ItemType.Moveset]: 'Moveset',
+  [ItemType.Modder]: 'Modder',
+  [ItemType.Series]: 'Series',
+  [ItemType.Hook]: 'Hook',
+})[id] ?? '?'
 
-const itemTypeIcon = (id) => ({ 1: 'mdi-sword', 2: 'mdi-account', 3: 'mdi-view-list', 4: 'mdi-hook' })[id] ?? 'mdi-help'
+const itemTypeIcon = (id) => ({
+  [ItemType.Moveset]: 'mdi-sword',
+  [ItemType.Modder]: 'mdi-account',
+  [ItemType.Series]: 'mdi-view-list',
+  [ItemType.Hook]: 'mdi-hook',
+})[id] ?? 'mdi-help'
 
 const stateDotStyle = (id) => ({
-  backgroundColor: id === 2 ? 'rgb(52, 194, 241)' : 'rgb(187, 224, 236)',
+  backgroundColor: id === AcceptanceState.PendingAdminHard ? 'rgb(52, 194, 241)' : 'rgb(187, 224, 236)',
 })
 
 const acceptanceStateDotStyle = (id) => ({
   backgroundColor: {
-    1: 'rgb(187, 224, 236)',
-    2: 'rgb(52, 194, 241)',
-    3: 'rgb(241, 241, 142)',
-    4: 'rgb(241, 241, 52)',
-    5: 'rgb(52, 241, 52)',
-    6: 'rgb(241, 52, 52)',
-    7: 'rgb(52, 241, 52)',
+    [AcceptanceState.PendingAdminSoft]: 'rgb(187, 224, 236)',
+    [AcceptanceState.PendingAdminHard]: 'rgb(52, 194, 241)',
+    [AcceptanceState.PendingUserSoft]: 'rgb(241, 241, 142)',
+    [AcceptanceState.PendingUserHard]: 'rgb(241, 241, 52)',
+    [AcceptanceState.Accepted]: 'rgb(52, 241, 52)',
+    [AcceptanceState.Rejected]: 'rgb(241, 52, 52)',
+    [AcceptanceState.AutoAccepted]: 'rgb(52, 241, 52)',
   }[id] ?? '#888',
 })
 
 const getItemId = (log) => log.item?.movesetId ?? log.item?.modderId ?? log.item?.seriesId ?? log.item?.hookId
 
-const getItemName = (log) => log.item?.moddedCharName ?? log.item?.name ?? log.item?.seriesName ?? log.item?.offset ?? '(deleted)'
+const getItemName = (log) => log.item?.moddedCharName ?? log.item?.name ?? log.item?.seriesName ?? (log.item?.offset ? `0x${log.item.offset}` : undefined) ?? '(deleted)'
 
-const pendingUserTargetState = (log) => log.acceptanceState.acceptanceStateId === 2 ? 4 : 3
+const pendingUserTargetState = (log) =>
+  log.acceptanceState.acceptanceStateId === AcceptanceState.PendingAdminHard
+    ? AcceptanceState.PendingUserHard
+    : AcceptanceState.PendingUserSoft
 
 
 const fetchUser = async () => {
@@ -326,7 +340,11 @@ const fetchUser = async () => {
 const fetchPendingAdminLogs = async () => {
   try {
     const res = await api.get('/logs', {
-      params: { acceptanceStates: [1, 2], itemTypes: [1, 2, 3, 4], viewAll: true }
+      params: {
+        acceptanceStates: [AcceptanceState.PendingAdminSoft, AcceptanceState.PendingAdminHard],
+        itemTypes: [ItemType.Moveset, ItemType.Modder, ItemType.Series, ItemType.Hook],
+        viewAll: true
+      }
     })
     const latestMap = new Map()
     for (const log of res.data) {
@@ -337,7 +355,7 @@ const fetchPendingAdminLogs = async () => {
       }
     }
     pendingAdminLogs.value = Array.from(latestMap.values())
-      .filter(log => [1, 2].includes(log.acceptanceState.acceptanceStateId))
+      .filter(log => [AcceptanceState.PendingAdminSoft, AcceptanceState.PendingAdminHard].includes(log.acceptanceState.acceptanceStateId))
   } catch (err) {
     console.error('Failed to fetch pending admin logs:', err)
   }
@@ -345,22 +363,22 @@ const fetchPendingAdminLogs = async () => {
 
 const fetchItems = async () => {
   try {
-    if (form.value.itemTypeId === 1) {
+    if (form.value.itemTypeId === ItemType.Moveset) {
       const res = await api.get('/movesets')
       const sorted = res.data.sort((a, b) => a.moddedCharName.localeCompare(b.moddedCharName))
       fullItemsById.value = Object.fromEntries(sorted.map(m => [m.movesetId, m]))
       items.value = sorted.map(m => ({ id: m.movesetId, name: m.moddedCharName }))
-    } else if (form.value.itemTypeId === 2) {
+    } else if (form.value.itemTypeId === ItemType.Modder) {
       const res = await api.get('/modders')
       const sorted = res.data.sort((a, b) => a.name.localeCompare(b.name))
       fullItemsById.value = Object.fromEntries(sorted.map(m => [m.modderId, m]))
       items.value = sorted.map(m => ({ id: m.modderId, name: m.name }))
-    } else if (form.value.itemTypeId === 3) {
+    } else if (form.value.itemTypeId === ItemType.Series) {
       const res = await api.get('/series')
       const sorted = res.data.sort((a, b) => a.seriesName.localeCompare(b.seriesName))
       fullItemsById.value = Object.fromEntries(sorted.map(s => [s.seriesId, s]))
       items.value = sorted.map(s => ({ id: s.seriesId, name: s.seriesName }))
-    } else if (form.value.itemTypeId === 4) {
+    } else if (form.value.itemTypeId === ItemType.Hook) {
       const res = await api.get('/hooks')
       const sorted = res.data.sort((a, b) => a.offset.localeCompare(b.offset))
       fullItemsById.value = Object.fromEntries(sorted.map(h => [h.hookId, h]))
@@ -385,7 +403,7 @@ const modderPfpPreview = computed(() =>
 const SURROUNDING_SERIES_IDS = [6, 39, 4, 11, 1, 2, 34, 20]
 
 const seriesGridCells = computed(() => {
-  if (!selectedFull.value || form.value.itemTypeId !== 3) return []
+  if (!selectedFull.value || form.value.itemTypeId !== ItemType.Series) return []
   const surrounding = SURROUNDING_SERIES_IDS.map(id => fullItemsById.value[id] ?? null)
   const cells = Array(9).fill(null)
   cells[4] = selectedFull.value
@@ -446,7 +464,7 @@ watch(
 // Fetch GB pfp when a modder without a custom pfpUrl is selected
 watch(selectedFull, async (modder) => {
   modderGbPfp.value = null
-  if (!modder || form.value.itemTypeId !== 2 || modder.pfpUrl) return
+  if (!modder || form.value.itemTypeId !== ItemType.Modder || modder.pfpUrl) return
   if (!modder.gamebananaId) return
   try {
     const res = await axios.get(

@@ -44,6 +44,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useHead } from '@unhead/vue'
 import api from '@/services/api'
 import MovesetList from '@/components/MovesetList.vue'
+import { UserType } from '@/globals'
 
 const route = useRoute()
 const router = useRouter()
@@ -97,7 +98,7 @@ onMounted(async () => {
       const userRes = await api.get('/auth/me')
       const user = userRes.data
       canEdit.value = seriesRes.data.canEdit ||
-        user.userTypeId === 3 ||
+        user.userTypeId === UserType.Admin ||
         movesetsRes.data.some(m => m.modders.includes(user.userName))
     } catch {
       canEdit.value = false

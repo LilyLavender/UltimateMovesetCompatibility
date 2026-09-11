@@ -79,6 +79,50 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
+        public async Task PatchSeriesImage_FillsEmptyIcon()
+        {
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
+            _db.Context.Series.Add(new Series { SeriesId = 1, SeriesName = "Original" });
+            _db.Context.SaveChanges();
+            var controller = CreateController("modder-1");
+
+            var result = await controller.PatchSeriesImage(1, new SeriesImageDto { SeriesIconUrl = "/uploads/icon.png" });
+
+            Assert.IsType<NoContentResult>(result);
+            var series = await _db.Context.Series.FindAsync(1);
+            Assert.Equal("/uploads/icon.png", series!.SeriesIconUrl);
+            Assert.Empty(_db.Context.ActionLogs);
+        }
+
+        [Fact]
+        public async Task PatchSeriesImage_AlreadySet_ReturnsConflict()
+        {
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
+            _db.Context.Series.Add(new Series { SeriesId = 1, SeriesName = "Original", SeriesIconUrl = "/uploads/existing.png" });
+            _db.Context.SaveChanges();
+            var controller = CreateController("modder-1");
+
+            var result = await controller.PatchSeriesImage(1, new SeriesImageDto { SeriesIconUrl = "/uploads/new.png" });
+
+            Assert.IsType<ConflictObjectResult>(result);
+            var series = await _db.Context.Series.FindAsync(1);
+            Assert.Equal("/uploads/existing.png", series!.SeriesIconUrl);
+        }
+
+        [Fact]
+        public async Task PatchSeriesImage_NonModder_ReturnsForbid()
+        {
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: 1);
+            _db.Context.Series.Add(new Series { SeriesId = 1, SeriesName = "Original" });
+            _db.Context.SaveChanges();
+            var controller = CreateController("user-1");
+
+            var result = await controller.PatchSeriesImage(1, new SeriesImageDto { SeriesIconUrl = "/uploads/icon.png" });
+
+            Assert.IsType<ForbidResult>(result);
+        }
+
+        [Fact]
         public async Task UpdateSeries_NotYetActionable_ReturnsForbid()
         {
             SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);

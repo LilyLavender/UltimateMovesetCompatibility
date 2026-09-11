@@ -1011,43 +1011,80 @@ const submit = async () => {
   }
 
   isSubmitting.value = true
-  uploadStatus.value = 'Uploading images...'
 
+  if (props.mode === 'edit' && props.movesetId) {
+    // Edit mode: the moveset already exists, so upload first (as before) and save in one request.
+    uploadStatus.value = 'Uploading images...'
+    try {
+      form.value.thumbhImageUrl = await uploadImageIfNeeded(form.value.thumbhImageUrl, 'thumb_h', form.value.moddedCharName)
+      form.value.movesetHeroImageUrl = await uploadImageIfNeeded(form.value.movesetHeroImageUrl, 'moveset_hero', form.value.moddedCharName)
+    } catch (err) {
+      console.error("Image upload failed:", JSON.stringify(err.response?.data) || err.message)
+      alert("Failed to upload image(s). Please check the file and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+      isSubmitting.value = false
+      uploadStatus.value = ''
+      return
+    }
+
+    uploadStatus.value = 'Saving moveset...'
+    try {
+      await api.put(`/movesets/${props.movesetId}`, { ...form.value })
+      isDirty.value = false
+      justSubmitted.value = true
+      router.push(`/moveset/${props.movesetId}`)
+    } catch (err) {
+      console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
+      alert("Failed to save moveset. Please check the form and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+    } finally {
+      isSubmitting.value = false
+      uploadStatus.value = ''
+    }
+    return
+  }
+
+  // Create mode: no moveset exists yet to attach an image to, so an upload failure or a save
+  // failure after upload would otherwise orphan the image in R2 with nothing referencing it.
+  // Create the moveset first (without staged files), then upload and attach images after -
+  // that way a failure at any step never leaves an upload with no surviving record.
+  const stagedThumb = form.value.thumbhImageUrl instanceof File ? form.value.thumbhImageUrl : null
+  const stagedHero = form.value.movesetHeroImageUrl instanceof File ? form.value.movesetHeroImageUrl : null
+
+  const payload = { ...form.value }
+  if (stagedThumb) payload.thumbhImageUrl = null
+  if (stagedHero) payload.movesetHeroImageUrl = null
+
+  uploadStatus.value = 'Saving moveset...'
+
+  let newId
   try {
-    form.value.thumbhImageUrl = await uploadImageIfNeeded(form.value.thumbhImageUrl, 'thumb_h', form.value.moddedCharName)
-    form.value.movesetHeroImageUrl = await uploadImageIfNeeded(form.value.movesetHeroImageUrl, 'moveset_hero', form.value.moddedCharName)
+    const res = await api.post('/movesets', payload)
+    newId = res.data.movesetId
   } catch (err) {
-    console.error("Image upload failed:", JSON.stringify(err.response?.data) || err.message)
-    alert("Failed to upload image(s). Please check the file and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+    console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
+    alert("Failed to save moveset. Please check the form and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
     isSubmitting.value = false
     uploadStatus.value = ''
     return
   }
 
-  uploadStatus.value = 'Saving moveset...'
-
-  const payload = { ...form.value }
-
-  try {
-    if (props.mode === 'edit' && props.movesetId) {
-      await api.put(`/movesets/${props.movesetId}`, payload)
-      isDirty.value = false
-      justSubmitted.value = true
-      router.push(`/moveset/${props.movesetId}`)
-    } else {
-      const res = await api.post('/movesets', payload)
-      const newId = res.data.movesetId
-      isDirty.value = false
-      justSubmitted.value = true
-      router.push(`/moveset/${newId}`)
+  if (stagedThumb || stagedHero) {
+    uploadStatus.value = 'Uploading images...'
+    try {
+      const images = {}
+      if (stagedThumb) images.thumbhImageUrl = await uploadImageIfNeeded(stagedThumb, 'thumb_h', form.value.moddedCharName)
+      if (stagedHero) images.movesetHeroImageUrl = await uploadImageIfNeeded(stagedHero, 'moveset_hero', form.value.moddedCharName)
+      await api.patch(`/movesets/${newId}/images`, images)
+    } catch (err) {
+      console.error("Image upload failed after moveset creation:", JSON.stringify(err.response?.data) || err.message)
+      alert("Moveset created, but the image(s) failed to upload. You can add them later by editing the moveset.\n\n" + (JSON.stringify(err.response?.data) || err.message))
     }
-  } catch (err) {
-    console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
-    alert("Failed to save moveset. Please check the form and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
-  } finally {
-    isSubmitting.value = false
-    uploadStatus.value = ''
   }
+
+  isDirty.value = false
+  justSubmitted.value = true
+  isSubmitting.value = false
+  uploadStatus.value = ''
+  router.push(`/moveset/${newId}`)
 }
 </script>
 

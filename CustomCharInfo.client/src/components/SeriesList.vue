@@ -10,7 +10,7 @@
         />
       </v-col>
       <v-col class="d-flex justify-center ga-2">
-        <template v-if="user && user.userTypeId >= 2">
+        <template v-if="user && user.userTypeId >= UserType.Modder">
           <v-btn
             :to="{ name: 'AddSeries' }"
             variant="outlined"
@@ -60,6 +60,7 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 import SeriesCard from './SeriesCard.vue'
+import { UserType } from '@/globals'
 
 const series = ref([])
 const blockedSeriesIds = ref(new Set())

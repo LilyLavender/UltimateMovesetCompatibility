@@ -8,6 +8,7 @@ using CustomCharInfo.server.Models.DTOs;
 using SixLabors.ImageSharp;
 using Microsoft.AspNetCore.Authorization;
 using CustomCharInfo.server.Helpers;
+using Npgsql;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -92,6 +93,9 @@ namespace CustomCharInfo.server.Controllers
             if (userFromId == null || userFromId.UserTypeId < 2)
                 return Forbid();
 
+            if (await _context.Hooks.AnyAsync(h => h.Offset == dto.Offset))
+                return Conflict("A hook with this offset already exists.");
+
             var hook = new Hook
             {
                 Offset = dto.Offset,
@@ -100,7 +104,16 @@ namespace CustomCharInfo.server.Controllers
             };
 
             _context.Hooks.Add(hook);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+            {
+                // The AnyAsync check above is check-then-act; this catches a genuine race against
+                // the unique index on Offset as a backstop.
+                return Conflict("A hook with this offset already exists.");
+            }
 
             var diff = DiffHelper.Build(new (string, object?, object?)[]
             {
@@ -109,7 +122,7 @@ namespace CustomCharInfo.server.Controllers
                 ("HookableStatusId", null, hook.HookableStatusId),
             });
 
-            LogHookAction(userId, hook.HookId, acceptanceStateId: 1, "Created hook", diff);
+            LogHookAction(userId, hook.HookId, acceptanceStateId: 1, dto.Notes ?? "", diff);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetHook), new { id = hook.HookId }, hook);
@@ -149,8 +162,15 @@ namespace CustomCharInfo.server.Controllers
                 ("HookableStatusId", snapHookableStatusId, hook.HookableStatusId),
             });
 
-            LogHookAction(userId, hook.HookId, acceptanceStateId: 1, "Updated hook", diff);
-            await _context.SaveChangesAsync();
+            LogHookAction(userId, hook.HookId, acceptanceStateId: 1, dto.Notes ?? "", diff);
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+            {
+                return Conflict("A hook with this offset already exists.");
+            }
 
             return NoContent();
         }

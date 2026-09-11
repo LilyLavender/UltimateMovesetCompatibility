@@ -176,8 +176,8 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import MovesetCard from './MovesetCard.vue'
-import { getMovesets } from '@/services/movesetService'
 import api from '@/services/api'
+import { UserType } from '@/globals'
 
 const props = defineProps({
   movesets: {
@@ -237,7 +237,7 @@ const canViewMoveset = (moveset) => {
   if (!moveset.privateMoveset) return true
   if (!user.value) return false
 
-  const isAdmin = user.value.userTypeId === 3
+  const isAdmin = user.value.userTypeId === UserType.Admin
   const isModder =
     user.value.userName &&
     moveset.modders.includes(user.value.userName) // This should absolutely not be done by username but there's security on the moveset itself so it's whatever lol
@@ -248,7 +248,7 @@ const canViewMoveset = (moveset) => {
 const processedMovesets = computed(() => {
   let list = displayedMovesets.value.filter(m => !hardHeldMovesetIds.value.has(m.movesetId))
 
-  // Filter joke movesets (only when controls are shown — user profiles/series always show all)
+  // Filter joke movesets
   if (props.showControls && !showJokeMovesets.value) {
     list = list.filter(m => !m.isJokeMoveset)
   }
@@ -346,7 +346,7 @@ const processedMovesets = computed(() => {
 })
 
 const fetchMovesets = async () => {
-  const res = await getMovesets()
+  const res = await api.get('/movesets')
   fetchedMovesets.value = res.data
 }
 
