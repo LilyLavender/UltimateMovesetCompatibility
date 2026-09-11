@@ -988,8 +988,14 @@ const submit = async () => {
   // Validate modderId
   const user = await api.get('/auth/me');
   if (!form.value.modderIds.includes(user.data.modderId)) {
-    alert('You cannot save a moveset you do not own.')
-    return
+    if (!isEditMode.value) {
+      alert('You cannot save a moveset you do not own.')
+      return
+    }
+    const confirmed = window.confirm(
+      'You are removing yourself as a modder on this moveset. You will lose access to edit it. Continue?'
+    )
+    if (!confirmed) return
   }
 
   // Validate other fields
