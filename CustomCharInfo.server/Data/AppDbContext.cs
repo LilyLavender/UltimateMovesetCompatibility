@@ -26,6 +26,7 @@ namespace CustomCharInfo.server.Data
         // Users
         public DbSet<ApplicationUser> Users { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<UserIpAddress> UserIpAddresses { get; set; }
 
         // Likes
         public DbSet<MovesetLike> MovesetLikes { get; set; }
@@ -138,6 +139,17 @@ namespace CustomCharInfo.server.Data
 
             modelBuilder.Entity<RefreshToken>()
                 .HasIndex(rt => rt.UserId);
+
+            // Unique IPs per user, upserted on each hit rather than kept as full history.
+            modelBuilder.Entity<UserIpAddress>()
+                .HasIndex(uip => new { uip.UserId, uip.IpAddress })
+                .IsUnique();
+
+            modelBuilder.Entity<UserIpAddress>()
+                .HasOne(uip => uip.User)
+                .WithMany()
+                .HasForeignKey(uip => uip.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // ItemId is polymorphic (meaning depends on ItemTypeId), so it can't be a real FK,
             // but it's queried by value in every action-log lookup.

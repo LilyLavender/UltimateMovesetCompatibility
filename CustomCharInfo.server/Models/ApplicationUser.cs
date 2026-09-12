@@ -15,5 +15,8 @@ namespace CustomCharInfo.server.Models
 
         // Moderation
         public bool? Problematic { get; set; } = false;
+
+        // Last active
+        public DateTime? LastActiveAt { get; set; }
     }
 }

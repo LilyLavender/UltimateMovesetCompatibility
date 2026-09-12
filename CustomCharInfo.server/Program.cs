@@ -1,8 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using CustomCharInfo.server.Models;
 using CustomCharInfo.server.Data;
+using CustomCharInfo.server.Services;
+using CustomCharInfo.server.Filters;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Claims;
@@ -98,6 +101,19 @@ namespace CustomCharInfo.server
             });
             builder.Services.AddAuthorization();
 
+            // Render terminates TLS at its own proxy in front of the app, so the raw connection IP is Render's proxy, not the client.
+            // Trust X-Forwarded-For to recover the real client IP.
+            // KnownNetworks/KnownProxies are cleared because Render's proxy IP isn't fixed/published.
+            builder.Services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders = ForwardedHeaders.XForwardedFor;
+                options.KnownNetworks.Clear();
+                options.KnownProxies.Clear();
+            });
+
+            builder.Services.AddScoped<IpActivityService>();
+            builder.Services.AddScoped<ActivityTrackingFilter>();
+
             // Rate limiting for auth endpoints (login/register/refresh/reset-password) to slow
             // brute-force and credential-stuffing attempts. Partitioned per client IP.
             builder.Services.AddRateLimiter(options =>
@@ -115,7 +131,10 @@ namespace CustomCharInfo.server
             });
 
             // Controllers
-            builder.Services.AddControllers().AddJsonOptions(options =>
+            builder.Services.AddControllers(options =>
+            {
+                options.Filters.Add<ActivityTrackingFilter>();
+            }).AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
                 options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
@@ -144,6 +163,7 @@ namespace CustomCharInfo.server
                 app.UseSwaggerUI();
                 app.MapOpenApi();
             }
+            app.UseForwardedHeaders();
             app.UseCors();
             app.UseHttpsRedirection();
             app.UseAuthentication();

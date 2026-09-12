@@ -13,6 +13,7 @@ using Microsoft.Extensions.ObjectPool;
 using Microsoft.AspNetCore.WebUtilities;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.RateLimiting;
+using CustomCharInfo.server.Services;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -24,18 +25,21 @@ namespace CustomCharInfo.server.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IConfiguration _config;
+        private readonly IpActivityService _ipActivityService;
 
         public AccountController(
             AppDbContext context,
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            IConfiguration config
+            IConfiguration config,
+            IpActivityService ipActivityService
         )
         {
             _context = context;
             _userManager = userManager;
             _signInManager = signInManager;
             _config = config;
+            _ipActivityService = ipActivityService;
         }
 
         [HttpPost("register")]
@@ -59,6 +63,7 @@ namespace CustomCharInfo.server.Controllers
 
             var accessToken = GenerateJwtToken(user);
             var refreshToken = CreateRefreshToken(user.Id);
+            await _ipActivityService.Track(user.Id, HttpContext.Connection.RemoteIpAddress?.ToString());
             await _context.SaveChangesAsync();
 
             return Ok(new { token = accessToken, refreshToken });

@@ -1,6 +1,7 @@
 using CustomCharInfo.server.Controllers;
 using CustomCharInfo.server.Models;
 using CustomCharInfo.server.Models.DTOs;
+using CustomCharInfo.server.Services;
 using CustomCharInfo.server.Tests.TestHelpers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -29,7 +30,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         private AccountController CreateController(Mock<UserManager<ApplicationUser>> userManager, string? currentUserId = null)
         {
             var signInManager = MockSignInManagerFactory.Create(userManager.Object);
-            var controller = new AccountController(_db.Context, userManager.Object, signInManager, FakeConfig());
+            var controller = new AccountController(_db.Context, userManager.Object, signInManager, FakeConfig(), new IpActivityService(_db.Context));
             if (currentUserId != null)
                 controller.SetFakeUser(currentUserId);
             else

@@ -3,18 +3,22 @@
     <h1 class="mb-1 page-title no-select">Privacy Policy</h1>
 
     <div class="content">
-      <p class="last-updated">Last updated: April 11, 2026</p>
+      <p class="last-updated">Last updated: September 11, 2026</p>
 
       <h2>What we collect</h2>
       <p>
-        When you create an account, we store your email address and a salted & hashed password.
+        When you create an account, we store your email address and a salted & hashed password (meaning your actual password never touches our database).
         Your email address is used only for account-related purposes and is never shared with third parties or displayed publicly.
+      </p>
+      <p>
+        We also record the IP address you log in from to help restrict abusive accounts.
+        IP addresses are never displayed publicly and are not shared with third parties.
       </p>
 
       <h2>What we don't collect</h2>
       <p>
         UMC does not use tracking cookies, analytics services, or advertising.
-        We do not collect IP addresses, device information, or browsing behavior.
+        We do not track your browsing behavior or device information.
       </p>
 
       <h2>Third-party services</h2>

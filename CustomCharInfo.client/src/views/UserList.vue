@@ -54,6 +54,9 @@ const userHeaders = [
   { title: "Email", key: "email" },
   { title: "UserType", key: "userTypeId" },
   { title: "ModderId", key: "modderId" },
+  { title: "Last Active", key: "lastActiveAt" },
+  { title: "Last IP", key: "lastIp" },
+  { title: "IP Count", key: "ipCount" },
 ];
 
 const modderHeaders = [
@@ -75,6 +78,9 @@ const bothHeaders = [
   { title: "Bio", key: "modder.bio" },
   { title: "GamebananaId", key: "modder.gamebananaId" },
   { title: "DiscordUsername", key: "modder.discordUsername" },
+  { title: "Last Active", key: "user.lastActiveAt" },
+  { title: "Last IP", key: "user.lastIp" },
+  { title: "IP Count", key: "user.ipCount" },
 ];
 
 // Fetch all users on mount
