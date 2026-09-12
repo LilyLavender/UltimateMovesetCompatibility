@@ -3,7 +3,7 @@
     <h1 class="mb-5 page-title no-select">Image Garbage Collector</h1>
 
     <p class="mb-4 helper-text">
-      Lists every image uploaded to R2, showing which ones are still referenced by either a move set, series, blog post, or modder profile.
+      Lists every image uploaded to R2, showing which ones are still referenced by either a moveset, series, blog post, modder profile, or banner image.
       Does not show images uploaded in the last 48 hours. 
     </p>
 

@@ -284,5 +284,69 @@ namespace CustomCharInfo.server.Tests.Controllers
 
             Assert.IsType<ForbidResult>(result);
         }
+
+        [Fact]
+        public async Task DeleteMoveset_NonAdmin_ReturnsForbid()
+        {
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: 1);
+            AddMoveset(1, "Test");
+            var controller = CreateController("user-1");
+
+            var result = await controller.DeleteMoveset(1);
+
+            Assert.IsType<ForbidResult>(result);
+        }
+
+        [Fact]
+        public async Task DeleteMoveset_UnknownId_ReturnsNotFound()
+        {
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            var controller = CreateController("admin-1");
+
+            var result = await controller.DeleteMoveset(999);
+
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        [Fact]
+        public async Task DeleteMoveset_Admin_RemovesMoveset()
+        {
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            AddMoveset(1, "Test");
+            var controller = CreateController("admin-1");
+
+            var result = await controller.DeleteMoveset(1);
+
+            Assert.IsType<NoContentResult>(result);
+            Assert.Null(await _db.Context.Movesets.FindAsync(1));
+        }
+
+        [Fact]
+        public async Task DeleteMoveset_WithCompatibilityReports_RemovesReportsToo()
+        {
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            SeedData.AddUser(_db.Context, "reporter-1", userTypeId: 1);
+            AddMoveset(1, "First");
+            AddMoveset(2, "Second");
+            _db.Context.CompatibilityReports.Add(new CompatibilityReport
+            {
+                MovesetId1 = 1,
+                MovesetId2 = 2,
+                UserId = "reporter-1",
+                IsCompatible = true,
+                CreatedAt = DateTime.UtcNow,
+            });
+            _db.Context.SaveChanges();
+
+            var controller = CreateController("admin-1");
+
+            var result = await controller.DeleteMoveset(1);
+
+            Assert.IsType<NoContentResult>(result);
+            Assert.Null(await _db.Context.Movesets.FindAsync(1));
+            Assert.Empty(_db.Context.CompatibilityReports);
+            // The other moveset in the pairing survives, only its report row is gone.
+            Assert.NotNull(await _db.Context.Movesets.FindAsync(2));
+        }
     }
 }

@@ -995,8 +995,23 @@ namespace CustomCharInfo.server.Controllers
             if (moveset == null)
                 return NotFound();
 
+            // CompatibilityReports have a Restrict FK to Moveset (AppDbContext.cs),
+            // so they'd block this delete with a DbUpdateException unless removed first.
+            // Everything else (MovesetLikes/Modders/Hooks/Articles/Dependencies) cascades via EF's default convention,
+            // confirmed in CascadeDeleteTests.
+            // ActionLogs referencing this moveset are left in place as an audit trail;
+            // the frontend already tolerates a missing item there.
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            var reports = await _context.CompatibilityReports
+                .Where(cr => cr.MovesetId1 == id || cr.MovesetId2 == id)
+                .ToListAsync();
+            _context.CompatibilityReports.RemoveRange(reports);
+
             _context.Movesets.Remove(moveset);
             await _context.SaveChangesAsync();
+
+            await transaction.CommitAsync();
 
             return NoContent();
         }

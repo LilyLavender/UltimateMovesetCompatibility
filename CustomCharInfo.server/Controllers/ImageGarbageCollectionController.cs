@@ -129,6 +129,7 @@ namespace CustomCharInfo.server.Controllers
             referencedUrls.AddRange(await _context.Series.Select(s => s.SeriesIconUrl).ToListAsync());
             referencedUrls.AddRange(await _context.BlogPosts.Select(b => b.BlogImageUrl).ToListAsync());
             referencedUrls.AddRange(await _context.Modders.Select(m => m.PfpUrl).ToListAsync());
+            referencedUrls.AddRange(await _context.BannerImages.Select(b => b.ImageUrl).ToListAsync());
 
             var prefix = publicBaseUrl + "/";
             return referencedUrls

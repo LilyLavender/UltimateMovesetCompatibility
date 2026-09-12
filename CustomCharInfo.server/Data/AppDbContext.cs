@@ -22,6 +22,7 @@ namespace CustomCharInfo.server.Data
         public DbSet<ReleaseState> ReleaseStates { get; set; }
         public DbSet<Series> Series { get; set; }
         public DbSet<BlogPost> BlogPosts { get; set; }
+        public DbSet<BannerImage> BannerImages { get; set; }
 
         // Users
         public DbSet<ApplicationUser> Users { get; set; }

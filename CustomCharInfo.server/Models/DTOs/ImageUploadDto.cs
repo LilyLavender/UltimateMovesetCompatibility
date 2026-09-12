@@ -19,4 +19,10 @@ namespace CustomCharInfo.server.Models.DTOs
         [Required]
         public IFormFile File { get; set; }
     }
+
+    public class BannerImageUploadDto
+    {
+        [Required]
+        public IFormFile File { get; set; }
+    }
 }

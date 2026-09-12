@@ -20,10 +20,15 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-// Get images
-const imageModules = import.meta.glob('@/assets/scrolling-banner-images/*.{jpg,jpeg,png,JPG,JPEG,PNG}', { eager: true })
-const imagePaths = Object.values(imageModules).map(m => m.default)
+import { ref, computed, onMounted } from 'vue'
+import api from '@/services/api'
+
+// Bundled fallback images, used if the banner-images API has nothing (or fails) so the hero never renders empty.
+const fallbackModules = import.meta.glob('@/assets/scrolling-banner-images/*.{jpg,jpeg,png,JPG,JPEG,PNG}', { eager: true })
+const fallbackPaths = Object.values(fallbackModules).map(m => m.default)
+
+const columns = ref([])
+const finalColNum = 5
 
 // Helper function to shuffle images
 function shuffle(array) {
@@ -35,17 +40,18 @@ function shuffle(array) {
   return result
 }
 
-// Shuffle images & triple array for smooth looping
-const shuffled = shuffle(imagePaths)
-const workingPaths = [...shuffled, ...shuffled, ...shuffled]
+function buildColumns(imagePaths) {
+  const shuffled = shuffle(imagePaths)
+  const workingPaths = [...shuffled, ...shuffled, ...shuffled]
 
-// Create columns
-const columns = []
-for (let i = 0; i < workingPaths.length; i += 3) {
-  columns.push([workingPaths[i], workingPaths[i + 1], workingPaths[i + 2]])
+  const built = []
+  for (let i = 0; i < workingPaths.length; i += 3) {
+    built.push([workingPaths[i], workingPaths[i + 1], workingPaths[i + 2]])
+  }
+  return { columns: built, workingPaths }
 }
-  
-const finalColNum = 5;
+
+let workingPaths = []
 
 // Append final extra columns
 const finalColumns = computed(() => {
@@ -56,14 +62,30 @@ const finalColumns = computed(() => {
     extraColumns.push([firstFew[i], firstFew[i + 1], firstFew[i + 2]])
   }
 
-  return [...columns, ...extraColumns]
+  return [...columns.value, ...extraColumns]
 })
 
 // Calculate percentage to scroll
 const scrollPercent = computed(() => {
-  const base = columns.length
+  const base = columns.value.length
   const total = base + finalColNum
-  return ((base / total) * 100).toFixed(2)
+  return total === 0 ? 0 : ((base / total) * 100).toFixed(2)
+})
+
+onMounted(async () => {
+  let imagePaths = fallbackPaths
+  try {
+    const res = await api.get('/banner-images')
+    if (res.data.length > 0) {
+      imagePaths = res.data.map(i => i.imageUrl)
+    }
+  } catch (err) {
+    console.error('Failed to load banner images, using bundled fallback:', err)
+  }
+
+  const built = buildColumns(imagePaths)
+  columns.value = built.columns
+  workingPaths = built.workingPaths
 })
 </script>
 

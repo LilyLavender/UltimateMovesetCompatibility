@@ -58,6 +58,22 @@
         <v-icon left>mdi-image-remove</v-icon>
         Image Garbage Collector
       </router-link>
+
+      <router-link
+        :to="{ name: 'BannerImageManager' }"
+        class="unvisitable ml-2 admin-link"
+      >
+        <v-icon left>mdi-image-multiple</v-icon>
+        Manage Banner Images
+      </router-link>
+
+      <router-link
+        :to="{ name: 'MovesetDeleteManager' }"
+        class="unvisitable ml-2 admin-link"
+      >
+        <v-icon left>mdi-delete-sweep</v-icon>
+        Delete Movesets
+      </router-link>
     </div>
 
     <!-- Action Log Dashboard -->

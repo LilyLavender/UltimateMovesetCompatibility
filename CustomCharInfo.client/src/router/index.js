@@ -52,6 +52,8 @@ import AdminPicks from '@/views/AdminPicks.vue';
 import AdminPasswordResetter from '@/views/AdminPasswordResetter.vue';
 import UserList from '@/views/UserList.vue';
 import ImageGarbageCollector from '@/views/ImageGarbageCollector.vue';
+import BannerImageManager from '@/views/BannerImageManager.vue';
+import MovesetDeleteManager from '@/views/MovesetDeleteManager.vue';
 
 const routes = [
   {
@@ -391,6 +393,20 @@ const routes = [
     name: 'ImageGarbageCollector',
     component: ImageGarbageCollector,
     meta: { title: 'Image Garbage Collector' },
+    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
+  },
+  {
+    path: '/banner-image-manager',
+    name: 'BannerImageManager',
+    component: BannerImageManager,
+    meta: { title: 'Banner Image Manager' },
+    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
+  },
+  {
+    path: '/moveset-delete-manager',
+    name: 'MovesetDeleteManager',
+    component: MovesetDeleteManager,
+    meta: { title: 'Moveset Delete Manager' },
     beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
   },
   {
