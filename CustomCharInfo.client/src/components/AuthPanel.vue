@@ -1,5 +1,5 @@
 <template>
-  <v-card class="pa-4" max-width="420px">
+  <v-card class="pa-4" :max-width="cardMaxWidth">
     <!-- Sign in/out/up -->
     <div>
       <!-- Sign in/up -->
@@ -131,8 +131,8 @@
         </router-link>
       </div>
 
-      <!-- My content + Admin Portal -->
-      <div v-if="user?.modderId || user?.userTypeId === UserType.Admin">
+      <!-- My content + My likes + Admin Portal -->
+      <div>
         <router-link
           v-if="user?.modderId"
           :to="{ name: 'MyContent' }"
@@ -140,6 +140,13 @@
         >
           <v-icon>mdi-view-list</v-icon>
           My content
+        </router-link>
+        <router-link
+          :to="{ name: 'MyLikes' }"
+          class="router-link unvisitable user-link"
+        >
+          <v-icon>mdi-heart</v-icon>
+          My likes
         </router-link>
         <router-link
           v-if="user?.userTypeId === UserType.Admin"
@@ -236,6 +243,10 @@ function extractErrorMessages(err) {
   // Fallback
   return ['An error occurred.']
 }
+
+const cardMaxWidth = computed(() =>
+  user.value?.modderId && user.value?.userTypeId === UserType.Admin ? '560px' : '420px'
+)
 
 const pendingApproval = ref(false)
 

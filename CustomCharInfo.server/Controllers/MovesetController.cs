@@ -36,6 +36,7 @@ namespace CustomCharInfo.server.Controllers
             [FromQuery] bool? upcomingOnly,
             [FromQuery] bool? recentOnly,
             [FromQuery] bool? betaOnly,
+            [FromQuery] string? likedByUserId = null,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = int.MaxValue
         )
@@ -89,6 +90,10 @@ namespace CustomCharInfo.server.Controllers
             if (modderId.HasValue)
                 query = query.Where(x =>
                     x.Moveset.MovesetModders.Any(mm => mm.ModderId == modderId));
+
+            if (!string.IsNullOrEmpty(likedByUserId))
+                query = query.Where(x =>
+                    _context.MovesetLikes.Any(ml => ml.MovesetId == x.Moveset.MovesetId && ml.UserId == likedByUserId));
 
             if (privateOnly.HasValue)
                 query = query.Where(x => x.Moveset.PrivateMoveset == privateOnly.Value);

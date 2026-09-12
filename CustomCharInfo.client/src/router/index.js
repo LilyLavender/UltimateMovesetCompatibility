@@ -43,6 +43,7 @@ import BlogPostForm from '@/components/BlogPostForm.vue';
 // User
 import AccountPage from '@/views/AccountPage.vue';
 import MyContentPage from '@/views/MyContentPage.vue';
+import MyLikesPage from '@/views/MyLikesPage.vue';
 import ResetPasswordPage from '@/views/ResetPasswordPage.vue';
 // Admin
 import AdminPortal from '@/views/AdminPortal.vue';
@@ -338,6 +339,13 @@ const routes = [
     name: 'MyContent',
     component: MyContentPage,
     meta: { title: 'My Content' },
+  },
+  {
+    path: '/my-likes',
+    name: 'MyLikes',
+    component: MyLikesPage,
+    meta: { title: 'My Likes' },
+    beforeEnter: createAuthGuard(() => true),
   },
   {
     path: '/admin-portal',
