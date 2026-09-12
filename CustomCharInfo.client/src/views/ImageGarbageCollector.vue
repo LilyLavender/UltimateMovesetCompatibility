@@ -48,11 +48,20 @@
     <div v-if="hasScanned" class="groups">
       <template v-for="group in topGroups" :key="group.name">
         <div v-for="sub in group.subGroups" :key="`${group.name}/${sub.name}`" class="sub-group">
-          <div class="sub-group-label">
+          <div
+            class="sub-group-label"
+            role="button"
+            tabindex="0"
+            @click="toggleGroup(`${group.name}/${sub.name}`, sub.unused)"
+            @keydown.enter="toggleGroup(`${group.name}/${sub.name}`, sub.unused)"
+          >
+            <v-icon size="18" class="mr-1">
+              {{ isCollapsed(`${group.name}/${sub.name}`, sub.unused) ? 'mdi-chevron-right' : 'mdi-chevron-down' }}
+            </v-icon>
             <span class="sub-group-path">{{ group.name }}/{{ sub.name ? sub.name + '/' : '' }}</span>
             <span class="sub-group-count">{{ sub.items.length }}{{ sub.unused > 0 ? ` (${sub.unused} unused)` : '' }}</span>
           </div>
-          <div class="tile-grid">
+          <div v-show="!isCollapsed(`${group.name}/${sub.name}`, sub.unused)" class="tile-grid">
             <div
               v-for="item in sub.items"
               :key="item.key"
@@ -178,6 +187,16 @@ const topGroups = computed(() => {
 
 const unusedCount = computed(() => images.value.filter(i => !i.inUse).length)
 const deletableCount = computed(() => images.value.filter(i => i.deletable).length)
+const collapsedOverrides = ref({})
+
+const isCollapsed = (key, unused) => {
+  if (key in collapsedOverrides.value) return collapsedOverrides.value[key]
+  return unused === 0
+}
+
+const toggleGroup = (key, unused) => {
+  collapsedOverrides.value = { ...collapsedOverrides.value, [key]: !isCollapsed(key, unused) }
+}
 
 const formatSize = (bytes) => {
   if (bytes < 1024) return `${bytes} B`
@@ -271,6 +290,14 @@ const deleteAllUnused = async () => {
   padding-bottom: 0.4em;
   border-bottom: 1px solid #333;
   margin-bottom: 0.75em;
+  cursor: pointer;
+  user-select: none;
+}
+.sub-group-label:hover {
+  border-bottom-color: #555;
+}
+.sub-group-label .v-icon {
+  align-self: center;
 }
 .sub-group-path {
   font-family: monospace;
