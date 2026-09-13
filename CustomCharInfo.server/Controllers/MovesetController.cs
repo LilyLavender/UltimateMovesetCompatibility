@@ -1003,7 +1003,9 @@ namespace CustomCharInfo.server.Controllers
             // CompatibilityReports have a Restrict FK to Moveset (AppDbContext.cs),
             // so they'd block this delete with a DbUpdateException unless removed first.
             // Everything else (MovesetLikes/Modders/Hooks/Articles/Dependencies) cascades via EF's default convention,
-            // confirmed in CascadeDeleteTests.
+            // confirmed in CascadeDeleteTests. Plugins (case 1, moveset-attached) cascade too, via an
+            // explicit OnDelete(Cascade) in AppDbContext since Plugin.MovesetId is nullable and EF's
+            // default for an optional FK is SetNull, not cascade.
             // ActionLogs referencing this moveset are left in place as an audit trail;
             // the frontend already tolerates a missing item there.
             using var transaction = await _context.Database.BeginTransactionAsync();

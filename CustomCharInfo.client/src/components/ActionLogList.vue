@@ -98,7 +98,7 @@ const isAdmin = ref(false)
 const filterEnabled = ref(true)
 
 const selectedAcceptanceStates = ref([1, 2, 3, 4])
-const selectedItemTypes = ref([1, 2, 3, 4])
+const selectedItemTypes = ref([1, 2, 3, 4, 5])
 
 const acceptanceStateOptions = [
   { id: 1, name: 'Pending Admin (Soft)' },
@@ -114,7 +114,8 @@ const itemTypeOptions = [
   { id: 1, name: 'Movesets' },
   { id: 2, name: 'User' },
   { id: 3, name: 'Series' },
-  { id: 4, name: 'Hooks' }
+  { id: 4, name: 'Hooks' },
+  { id: 5, name: 'Plugins' }
 ]
 
 const fetchUser = async () => {
@@ -158,7 +159,7 @@ const filterLogs = () => {
   const groupMap = new Map()
   for (const log of logs.value) {
     if (!enabledItemTypes.includes(log.itemType.itemTypeId)) continue
-    const key = `${log.itemType.itemTypeId}-${log.item?.movesetId ?? log.item?.modderId ?? log.item?.seriesId ?? log.item?.hookId ?? log.itemId}`
+    const key = `${log.itemType.itemTypeId}-${log.item?.movesetId ?? log.item?.modderId ?? log.item?.seriesId ?? log.item?.hookId ?? log.item?.pluginVersionId ?? log.itemId}`
     if (!groupMap.has(key)) groupMap.set(key, [])
     groupMap.get(key).push(log)
   }
@@ -182,8 +183,8 @@ const selectAllFilters = () => {
 const selectOnlyRelevant = () => {
   selectedAcceptanceStates.value = [1, 2, 3, 4]
   selectedItemTypes.value = isAdmin.value
-    ? [ItemType.Moveset, ItemType.Modder, ItemType.Series, ItemType.Hook]
-    : [ItemType.Moveset, ItemType.Modder, ItemType.Series]
+    ? [ItemType.Moveset, ItemType.Modder, ItemType.Series, ItemType.Hook, ItemType.Plugin]
+    : [ItemType.Moveset, ItemType.Modder, ItemType.Series, ItemType.Plugin]
 }
 
 watch(

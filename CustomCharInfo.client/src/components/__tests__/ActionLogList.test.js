@@ -53,10 +53,10 @@ describe('ActionLogList', () => {
       if (url === '/auth/me') return Promise.resolve({ data: { userTypeId: 1 } })
       return Promise.resolve({
         data: [
-          // Item 1: two logs, latest is state 2 (Pending Admin Hard) - visible by default.
+          // Item 1: two logs, latest is state 2 (Pending Admin Hard). Visible by default.
           logFor(1, 1, '2024-01-01'),
           logFor(1, 2, '2024-01-02'),
-          // Item 2: latest is state 5 (Accepted) - filtered out by the default "only relevant" view.
+          // Item 2: latest is state 5 (Accepted). Filtered out by the default "only relevant" view.
           logFor(2, 5, '2024-01-03'),
         ],
       })
@@ -104,7 +104,7 @@ describe('ActionLogList', () => {
     await flushPromises()
 
     const logsCall = api.get.mock.calls.filter(([url]) => url === '/logs').pop()
-    expect(logsCall[1].params.itemTypes).toEqual([1, 2, 3])
+    expect(logsCall[1].params.itemTypes).toEqual([1, 2, 3, 5])
   })
 
   it('"Only Relevant" includes hooks for an admin', async () => {
@@ -120,7 +120,7 @@ describe('ActionLogList', () => {
     await flushPromises()
 
     const logsCall = api.get.mock.calls.filter(([url]) => url === '/logs').pop()
-    expect(logsCall[1].params.itemTypes).toEqual([1, 2, 3, 4])
+    expect(logsCall[1].params.itemTypes).toEqual([1, 2, 3, 4, 5])
   })
 
   it('requests scoped logs for a given userId instead of viewAll', async () => {

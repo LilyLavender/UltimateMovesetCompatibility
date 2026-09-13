@@ -111,7 +111,7 @@
       </div>
 
       <!-- Signed-in (MODDER) actions -->
-      <div v-if="user?.modderId">
+      <div v-if="user?.modderId" class="actions-section">
         <!-- View profile -->
         <router-link
           :to="{ name: 'ModderDetail', params: { id: user.modderId } }"
@@ -129,18 +129,17 @@
           <v-icon>mdi-account-edit</v-icon>
           Edit my profile
         </router-link>
-      </div>
 
-      <!-- My content + My likes + Admin Portal -->
-      <div>
+        <!-- My content -->
         <router-link
-          v-if="user?.modderId"
           :to="{ name: 'MyContent' }"
           class="router-link unvisitable user-link"
         >
           <v-icon>mdi-view-list</v-icon>
           My content
         </router-link>
+
+        <!-- My likes -->
         <router-link
           :to="{ name: 'MyLikes' }"
           class="router-link unvisitable user-link"
@@ -148,6 +147,17 @@
           <v-icon>mdi-heart</v-icon>
           My likes
         </router-link>
+
+        <!-- Add plugin -->
+        <router-link
+          :to="{ name: 'AddPlugin' }"
+          class="router-link unvisitable user-link"
+        >
+          <v-icon>mdi-file-code</v-icon>
+          Submit a plugin
+        </router-link>
+
+        <!-- Admin portal -->
         <router-link
           v-if="user?.userTypeId === UserType.Admin"
           :to="{ name: 'AdminPortal' }"
@@ -310,6 +320,14 @@ onMounted(async () => {
   justify-content: center;
   gap: 0.6em;
   margin-bottom: 0.6em;
+}
+
+.actions-section {
+  flex-wrap: wrap;
+}
+
+.actions-section > * {
+  flex: 0 0 auto;
 }
 
 .user-link {

@@ -28,9 +28,9 @@ namespace CustomCharInfo.server.Controllers
         }
 
         // Determines whether the requester may view logs for the given item:
-        // admins may view anything; hooks are shared/unowned so any authenticated
-        // user may view them; everyone else must be the modder that owns the
-        // modder/moveset/series in question.
+        // admins may view anything;
+        // hooks are shared/unowned so any authenticated user may view them;
+        // everyone else must be the modder that owns the modder/moveset/series in question.
         private async Task<bool> CanViewItemLogsAsync(string requesterId, int itemTypeId, int itemId)
         {
             var requester = await _context.Users
@@ -60,6 +60,9 @@ namespace CustomCharInfo.server.Controllers
                     return await _context.Movesets
                         .AnyAsync(m => m.SeriesId == itemId &&
                             _context.MovesetModders.Any(mm => mm.ModderId == requester.ModderId && mm.MovesetId == m.MovesetId));
+                case 5: // Plugin
+                    return await _context.PluginVersions
+                        .AnyAsync(v => v.PluginVersionId == itemId && v.Plugin.OwnerModderId == requester.ModderId);
                 default:
                     return false;
             }
@@ -71,6 +74,7 @@ namespace CustomCharInfo.server.Controllers
             public Dictionary<int, (int Id, string Name)> Modders { get; set; } = new();
             public Dictionary<int, (int Id, string Name)> Series { get; set; } = new();
             public Dictionary<int, (int Id, string Offset)> Hooks { get; set; } = new();
+            public Dictionary<int, (int Id, string Label)> PluginVersions { get; set; } = new();
         }
 
         // Batches the item-detail lookups (moveset/modder/series/hook names) needed to
@@ -102,7 +106,13 @@ namespace CustomCharInfo.server.Controllers
                 .Select(h => new { h.HookId, h.Offset })
                 .ToDictionaryAsync(h => h.HookId, h => (h.HookId, h.Offset));
 
-            return new ItemLookups { Movesets = movesets, Modders = modders, Series = series, Hooks = hooks };
+            var pluginVersionIds = logs.Where(l => l.ItemTypeId == 5).Select(l => l.ItemId).Distinct().ToList();
+            var pluginVersions = await _context.PluginVersions
+                .Where(v => pluginVersionIds.Contains(v.PluginVersionId))
+                .Select(v => new { v.PluginVersionId, Label = v.Plugin.Name + " v" + v.VersionLabel })
+                .ToDictionaryAsync(v => v.PluginVersionId, v => (v.PluginVersionId, v.Label));
+
+            return new ItemLookups { Movesets = movesets, Modders = modders, Series = series, Hooks = hooks, PluginVersions = pluginVersions };
         }
 
         private static object? BuildItemDetails(ActionLog a, ItemLookups lookups)
@@ -128,6 +138,11 @@ namespace CustomCharInfo.server.Controllers
                 {
                     HookId = hook.Id,
                     Offset = hook.Offset
+                },
+                5 when lookups.PluginVersions.TryGetValue(a.ItemId, out var pluginVersion) => new
+                {
+                    PluginVersionId = pluginVersion.Id,
+                    Label = pluginVersion.Label
                 },
                 _ => null
             };
@@ -250,11 +265,18 @@ namespace CustomCharInfo.server.Controllers
                         .Distinct()
                         .ToListAsync();
 
+                    // Dependency/standalone plugins this modder owns (case 1 plugins are never logged)
+                    var ownedPluginVersionIds = await _context.PluginVersions
+                        .Where(v => v.Plugin.OwnerModderId == modderId)
+                        .Select(v => v.PluginVersionId)
+                        .ToListAsync();
+
                     query = query.Where(a =>
                         (a.ItemTypeId == 2 && a.ItemId == modderId) ||
                         (a.ItemTypeId == 1 && userMovesetIds.Contains(a.ItemId)) ||
                         (a.ItemTypeId == 3 && seriesIdsFromMovesets.Contains(a.ItemId)) ||
-                        (a.ItemTypeId == 4 && editedHookIds.Contains(a.ItemId))
+                        (a.ItemTypeId == 4 && editedHookIds.Contains(a.ItemId)) ||
+                        (a.ItemTypeId == 5 && ownedPluginVersionIds.Contains(a.ItemId))
                     );
                 }
                 else

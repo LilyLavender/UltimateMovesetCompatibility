@@ -23,6 +23,8 @@ namespace CustomCharInfo.server.Data
         public DbSet<Series> Series { get; set; }
         public DbSet<BlogPost> BlogPosts { get; set; }
         public DbSet<BannerImage> BannerImages { get; set; }
+        public DbSet<Plugin> Plugins { get; set; }
+        public DbSet<PluginVersion> PluginVersions { get; set; }
 
         // Users
         public DbSet<ApplicationUser> Users { get; set; }
@@ -162,6 +164,54 @@ namespace CustomCharInfo.server.Data
                 .HasMany(u => u.Users)
                 .WithOne(u => u.UserType)
                 .HasForeignKey(u => u.UserTypeId);
+
+            // Plugins
+            modelBuilder.Entity<Plugin>()
+                .HasOne(p => p.Moveset)
+                .WithMany()
+                .HasForeignKey(p => p.MovesetId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Plugin>()
+                .HasOne(p => p.Dependency)
+                .WithMany()
+                .HasForeignKey(p => p.DependencyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Plugin>()
+                .HasOne(p => p.OwnerModder)
+                .WithMany()
+                .HasForeignKey(p => p.OwnerModderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // A Plugin is attached to at most one of MovesetId/DependencyId (case 1 xor case 2);
+            // neither set means "other" (case 3).
+            modelBuilder.Entity<Plugin>()
+                .ToTable(t => t.HasCheckConstraint(
+                    "CK_Plugin_SingleAttachment",
+                    "(CASE WHEN \"MovesetId\" IS NOT NULL THEN 1 ELSE 0 END) + (CASE WHEN \"DependencyId\" IS NOT NULL THEN 1 ELSE 0 END) <= 1"));
+
+            modelBuilder.Entity<PluginVersion>()
+                .HasOne(pv => pv.Plugin)
+                .WithMany(p => p.PluginVersions)
+                .HasForeignKey(pv => pv.PluginId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<PluginVersion>()
+                .HasOne(pv => pv.SubmittedByUser)
+                .WithMany()
+                .HasForeignKey(pv => pv.SubmittedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Globally unique. One hash identifies exactly one build of one plugin,
+            // and is the lookup key for the public identify endpoint.
+            modelBuilder.Entity<PluginVersion>()
+                .HasIndex(pv => pv.Hash)
+                .IsUnique();
+
+            // ItemTypeId 5, following the same numbering as the AddHookItemType migration (id 4).
+            modelBuilder.Entity<ItemType>()
+                .HasData(new ItemType { ItemTypeId = 5, ItemTypeName = "Plugin" });
         }
     }
 }

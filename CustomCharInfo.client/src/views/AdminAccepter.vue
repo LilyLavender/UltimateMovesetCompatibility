@@ -27,7 +27,7 @@
             </div>
             <div class="d-flex ga-2">
               <v-btn
-                v-if="log.itemType.itemTypeId !== ItemType.Hook"
+                v-if="![ItemType.Hook, ItemType.Plugin].includes(log.itemType.itemTypeId)"
                 variant="flat"
                 :class="['action-btn', pendingUserTargetState(log) === AcceptanceState.PendingUserHard ? 'pending-btn-hard' : 'pending-btn-soft']"
                 style="width: 50%"
@@ -38,7 +38,7 @@
               <v-btn
                 variant="flat"
                 class="action-btn accept-btn"
-                :style="{ width: log.itemType.itemTypeId === ItemType.Hook ? '100%' : '50%' }"
+                :style="{ width: [ItemType.Hook, ItemType.Plugin].includes(log.itemType.itemTypeId) ? '100%' : '50%' }"
                 @click="prefillForm(log, AcceptanceState.Accepted)"
               >
                 Accepted
@@ -304,6 +304,7 @@ const itemTypeLabel = (id) => ({
   [ItemType.Modder]: 'Modder',
   [ItemType.Series]: 'Series',
   [ItemType.Hook]: 'Hook',
+  [ItemType.Plugin]: 'Plugin',
 })[id] ?? '?'
 
 const itemTypeIcon = (id) => ({
@@ -311,6 +312,7 @@ const itemTypeIcon = (id) => ({
   [ItemType.Modder]: 'mdi-account',
   [ItemType.Series]: 'mdi-view-list',
   [ItemType.Hook]: 'mdi-hook',
+  [ItemType.Plugin]: 'mdi-file-code',
 })[id] ?? 'mdi-help'
 
 const stateDotStyle = (id) => ({
@@ -329,9 +331,9 @@ const acceptanceStateDotStyle = (id) => ({
   }[id] ?? '#888',
 })
 
-const getItemId = (log) => log.item?.movesetId ?? log.item?.modderId ?? log.item?.seriesId ?? log.item?.hookId
+const getItemId = (log) => log.item?.movesetId ?? log.item?.modderId ?? log.item?.seriesId ?? log.item?.hookId ?? log.item?.pluginVersionId
 
-const getItemName = (log) => log.item?.moddedCharName ?? log.item?.name ?? log.item?.seriesName ?? (log.item?.offset ? `0x${log.item.offset}` : undefined) ?? '(deleted)'
+const getItemName = (log) => log.item?.moddedCharName ?? log.item?.name ?? log.item?.seriesName ?? (log.item?.offset ? `0x${log.item.offset}` : undefined) ?? log.item?.label ?? '(deleted)'
 
 const pendingUserTargetState = (log) =>
   log.acceptanceState.acceptanceStateId === AcceptanceState.PendingAdminHard
@@ -349,7 +351,7 @@ const fetchPendingAdminLogs = async () => {
     const res = await api.get('/logs', {
       params: {
         acceptanceStates: [AcceptanceState.PendingAdminSoft, AcceptanceState.PendingAdminHard],
-        itemTypes: [ItemType.Moveset, ItemType.Modder, ItemType.Series, ItemType.Hook],
+        itemTypes: [ItemType.Moveset, ItemType.Modder, ItemType.Series, ItemType.Hook, ItemType.Plugin],
         viewAll: true
       }
     })

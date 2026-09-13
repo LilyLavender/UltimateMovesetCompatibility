@@ -64,6 +64,28 @@
           </v-col>
         </v-row>
       </section>
+
+      <!-- Plugins -->
+      <section class="content-section">
+        <h2 class="section-title">Plugins</h2>
+        <p v-if="plugins.length === 0" class="empty-msg">No plugins yet.</p>
+        <v-list v-else class="plugin-list">
+          <v-list-item v-for="plugin in plugins" :key="plugin.pluginId" class="plugin-item">
+            <v-list-item-title>
+              {{ plugin.name }}
+              <span class="empty-msg">- {{ pluginAttachmentLabel(plugin) }}</span>
+            </v-list-item-title>
+            <div class="series-pills">
+              <span
+                v-for="pill in pluginVersionPills(plugin)"
+                :key="pill.label"
+                class="state-pill"
+                :style="{ backgroundColor: pill.color }"
+              >{{ pill.label }}</span>
+            </div>
+          </v-list-item>
+        </v-list>
+      </section>
     </template>
   </div>
 </template>
@@ -73,12 +95,14 @@ import { ref, onMounted } from 'vue'
 import api from '@/services/api'
 import MovesetCard from '@/components/MovesetCard.vue'
 import SeriesCard from '@/components/SeriesCard.vue'
+import { displayVersion } from '@/services/pluginVersion'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
 const loading = ref(true)
 const movesets = ref([])
 const userSeries = ref([])
+const plugins = ref([])
 const movesetStates = ref({})
 const seriesStates = ref({})
 
@@ -99,6 +123,7 @@ const PILL_LABELS = {
 }
 
 const PRIVATE_COLOR = 'rgb(241, 52, 52)'
+const CURRENT_COLOR = 'rgb(129, 199, 132)'
 
 function statusPillFor(stateId) {
   if (!PILL_LABELS[stateId]) return null
@@ -110,11 +135,26 @@ function pillsFor(stateId) {
   return pill ? [pill] : []
 }
 
+function pluginAttachmentLabel(plugin) {
+  if (plugin.movesetId) return `Moveset: ${plugin.movesetName}`
+  if (plugin.dependencyId) return `Dependency: ${plugin.dependencyName}`
+  return 'Standalone'
+}
+
+function pluginVersionPills(plugin) {
+  return (plugin.versions ?? []).map(v => {
+    const label = displayVersion(v.versionLabel)
+    if (v.isCurrent) return { label: `${label} (current)`, color: CURRENT_COLOR }
+    const pill = statusPillFor(v.acceptanceStateId)
+    return { label: pill ? `${label} - ${pill.label}` : label, color: pill?.color ?? '#555' }
+  })
+}
+
 onMounted(async () => {
   try {
     const user = (await api.get('/auth/me')).data
 
-    const [logsRes, movesetsRes] = await Promise.all([
+    const [logsRes, movesetsRes, pluginsRes] = await Promise.all([
       api.get('/logs', {
         params: {
           acceptanceStates: [1, 2, 3, 4, 5, 6, 7],
@@ -124,9 +164,13 @@ onMounted(async () => {
       user.modderId
         ? api.get('/movesets', { params: { modderId: user.modderId } })
         : Promise.resolve({ data: [] }),
+      user.modderId
+        ? api.get('/plugins/mine').catch(() => ({ data: [] }))
+        : Promise.resolve({ data: [] }),
     ])
 
     movesets.value = movesetsRes.data
+    plugins.value = pluginsRes.data
 
     const logs = logsRes.data
     const movesetLogMap = new Map()
@@ -231,6 +275,10 @@ onMounted(async () => {
   font-size: 0.7rem;
   white-space: nowrap;
 }
+
+/* Plugins */
+.plugin-list { background: transparent; }
+.plugin-item { margin-bottom: 0.5rem; }
 
 /* Series pills */
 .series-pills {

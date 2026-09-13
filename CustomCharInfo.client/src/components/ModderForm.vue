@@ -27,7 +27,7 @@
               label="Username"
               variant="outlined"
               class="disabled"
-              readonly
+              disabled
             >
               <template #details>
                 <span>

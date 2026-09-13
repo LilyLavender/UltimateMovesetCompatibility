@@ -81,6 +81,13 @@
             </router-link>
           </h3>
         </div>
+
+        <!-- Item (if plugin) -->
+        <div v-else-if="log.itemType.itemTypeId === ItemType.Plugin">
+          <h3>
+            Plugin: {{ log.item?.label ?? '(deleted)' }}
+          </h3>
+        </div>
       </v-col>
 
       <v-col cols="12" sm="6">

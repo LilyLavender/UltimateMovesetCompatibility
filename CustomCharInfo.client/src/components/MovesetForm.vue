@@ -611,6 +611,17 @@
         </v-list>
       </section>
 
+      <!-- Plugins (only available once the moveset exists) -->
+      <MovesetPluginsPanel
+        v-if="isEditMode && props.movesetId"
+        :moveset-id="props.movesetId"
+        :moveset-name="form.moddedCharName"
+      />
+      <section v-else>
+        <h2>Plugins</h2>
+        <p class="subheader">Save this moveset first, then attach its plugin(s) from the edit page.</p>
+      </section>
+
       <!-- Advanced Settings -->
       <section class="advanced-section">
         <h3
@@ -699,6 +710,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import api from '@/services/api'
 import ImageUploadField from '@/components/ImageUploadField.vue'
+import MovesetPluginsPanel from '@/components/MovesetPluginsPanel.vue'
 import thumbhUnknown from "@/assets/thumb_h_unknown.png"
 import movesetHeroUnknown from "@/assets/moveset_hero_unknown.png"
 import { GB_PAGE_URL, GB_WIP_URL, MODS_WIKI_URL, IMAGE_UPLOAD_SPECS } from '@/globals'

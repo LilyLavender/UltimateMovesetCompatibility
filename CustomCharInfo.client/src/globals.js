@@ -45,4 +45,5 @@ export const ItemType = Object.freeze({
   Modder: 2,
   Series: 3,
   Hook: 4,
+  Plugin: 5,
 })

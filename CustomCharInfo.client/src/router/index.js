@@ -33,6 +33,8 @@ import EditSeries from '@/views/EditSeries.vue';
 import RequestEditSeries from '@/views/RequestEditSeries.vue';
 // Tools
 import CompatibilityCheckPage from '@/views/CompatibilityCheckPage.vue';
+import PluginLookupPage from '@/views/PluginLookupPage.vue';
+import AddPluginPage from '@/views/AddPluginPage.vue';
 // Hooks
 import HooksPage from '@/views/HooksPage.vue';
 import AddHook from '@/views/AddHook.vue';
@@ -85,6 +87,19 @@ const routes = [
     name: 'CompatibilityCheck',
     component: CompatibilityCheckPage,
     meta: { title: 'Compatibility Check' },
+  },
+  {
+    path: '/plugin-lookup',
+    name: 'PluginLookup',
+    component: PluginLookupPage,
+    meta: { title: 'Plugin Lookup' },
+  },
+  {
+    path: '/plugins/add',
+    name: 'AddPlugin',
+    component: AddPluginPage,
+    meta: { title: 'Submit a Plugin' },
+    beforeEnter: createAuthGuard(user => user.userTypeId >= UserType.Modder),
   },
   {
     path: '/blog',

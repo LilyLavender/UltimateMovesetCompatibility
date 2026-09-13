@@ -32,6 +32,15 @@
         Compatibility check
       </router-link>
 
+      <!-- Plugin lookup -->
+      <router-link
+        :to="{ name: 'PluginLookup' }"
+        class="unvisitable text-decoration-none ml-5"
+      >
+        <i class="mdi mdi-file-search"></i>
+        Plugin lookup
+      </router-link>
+
       <!-- Add moveset -->
       <router-link
         v-if="user && user.userTypeId >= UserType.Modder"
