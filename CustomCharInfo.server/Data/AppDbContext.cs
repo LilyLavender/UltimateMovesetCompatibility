@@ -25,6 +25,7 @@ namespace CustomCharInfo.server.Data
         public DbSet<BannerImage> BannerImages { get; set; }
         public DbSet<Plugin> Plugins { get; set; }
         public DbSet<PluginVersion> PluginVersions { get; set; }
+        public DbSet<UnknownPluginHash> UnknownPluginHashes { get; set; }
 
         // Users
         public DbSet<ApplicationUser> Users { get; set; }
@@ -207,6 +208,10 @@ namespace CustomCharInfo.server.Data
             // and is the lookup key for the public identify endpoint.
             modelBuilder.Entity<PluginVersion>()
                 .HasIndex(pv => pv.Hash)
+                .IsUnique();
+
+            modelBuilder.Entity<UnknownPluginHash>()
+                .HasIndex(u => u.Hash)
                 .IsUnique();
 
             // ItemTypeId 5, following the same numbering as the AddHookItemType migration (id 4).

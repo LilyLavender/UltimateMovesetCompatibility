@@ -3,6 +3,7 @@ using System;
 using CustomCharInfo.server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CustomCharInfo.server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260913192550_AddPluginVersionCheckTracking")]
+    partial class AddPluginVersionCheckTracking
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -786,36 +789,6 @@ namespace CustomCharInfo.server.Migrations
                         .IsUnique();
 
                     b.ToTable("Series");
-                });
-
-            modelBuilder.Entity("CustomCharInfo.server.Models.UnknownPluginHash", b =>
-                {
-                    b.Property<int>("UnknownPluginHashId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("UnknownPluginHashId"));
-
-                    b.Property<int>("CheckCount")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("FirstCheckedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Hash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<DateTime>("LastCheckedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("UnknownPluginHashId");
-
-                    b.HasIndex("Hash")
-                        .IsUnique();
-
-                    b.ToTable("UnknownPluginHashes");
                 });
 
             modelBuilder.Entity("CustomCharInfo.server.Models.UserIpAddress", b =>

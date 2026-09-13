@@ -66,6 +66,8 @@ namespace CustomCharInfo.server.Models.DTOs
         public DateTime CreatedAt { get; set; }
         public int? AcceptanceStateId { get; set; }
         public string? AcceptanceStateName { get; set; }
+        public int CheckCount { get; set; }
+        public DateTime? LastCheckedAt { get; set; }
     }
 
     public class PluginDto
@@ -88,6 +90,14 @@ namespace CustomCharInfo.server.Models.DTOs
         public string Name { get; set; }
         public string? Description { get; set; }
         public string? DefaultLearnMoreUrl { get; set; }
+    }
+
+    public class UnknownPluginHashDto
+    {
+        public string Hash { get; set; }
+        public int CheckCount { get; set; }
+        public DateTime FirstCheckedAt { get; set; }
+        public DateTime LastCheckedAt { get; set; }
     }
 
     public class IdentifyPluginResultDto

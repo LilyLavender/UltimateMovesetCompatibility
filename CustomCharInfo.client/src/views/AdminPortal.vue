@@ -74,6 +74,14 @@
         <v-icon left>mdi-delete-sweep</v-icon>
         Delete Movesets
       </router-link>
+
+      <router-link
+        :to="{ name: 'AllPlugins' }"
+        class="unvisitable ml-2 admin-link"
+      >
+        <v-icon left>mdi-puzzle</v-icon>
+        All Plugins
+      </router-link>
     </div>
 
     <!-- Action Log Dashboard -->

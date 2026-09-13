@@ -57,6 +57,7 @@ import UserList from '@/views/UserList.vue';
 import ImageGarbageCollector from '@/views/ImageGarbageCollector.vue';
 import BannerImageManager from '@/views/BannerImageManager.vue';
 import MovesetDeleteManager from '@/views/MovesetDeleteManager.vue';
+import AllPluginsPage from '@/views/AllPluginsPage.vue';
 
 const routes = [
   {
@@ -430,6 +431,13 @@ const routes = [
     name: 'MovesetDeleteManager',
     component: MovesetDeleteManager,
     meta: { title: 'Moveset Delete Manager' },
+    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
+  },
+  {
+    path: '/all-plugins',
+    name: 'AllPlugins',
+    component: AllPluginsPage,
+    meta: { title: 'All Plugins' },
     beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
   },
   {

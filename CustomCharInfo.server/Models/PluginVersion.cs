@@ -25,6 +25,10 @@ namespace CustomCharInfo.server.Models
         // Cached, recomputed for the whole Plugin whenever a version is added. Never set directly by a user.
         public bool IsCurrent { get; set; }
 
+        // Incremented by PluginController.Identify on a successful, publicly-visible hash match.
+        public int CheckCount { get; set; }
+        public DateTime? LastCheckedAt { get; set; }
+
         [Required]
         public string SubmittedByUserId { get; set; }
         public ApplicationUser SubmittedByUser { get; set; }

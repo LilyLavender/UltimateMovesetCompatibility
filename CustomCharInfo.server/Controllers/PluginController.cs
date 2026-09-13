@@ -223,7 +223,9 @@ namespace CustomCharInfo.server.Controllers
                     Hash = v.Hash,
                     LearnMoreUrl = v.LearnMoreUrl,
                     IsCurrent = v.IsCurrent,
-                    CreatedAt = v.CreatedAt
+                    CreatedAt = v.CreatedAt,
+                    CheckCount = v.CheckCount,
+                    LastCheckedAt = v.LastCheckedAt
                 };
 
                 if (!isCase1)
@@ -516,8 +518,40 @@ namespace CustomCharInfo.server.Controllers
             return NoContent();
         }
 
-        // Public, unauthenticated. Never reveals pending/rejected entries, even to the submitter -
-        // status on those is checked via the My Plugins page instead.
+        // Only called for hashes that matched no PluginVersion at all.
+        // A blocked/pending match still exists in the system, so it isn't "unknown" and doesn't go through here.
+        private async Task RecordUnknownHashAsync(string hash)
+        {
+            var unknown = await _context.UnknownPluginHashes.FirstOrDefaultAsync(u => u.Hash == hash);
+            var now = DateTime.UtcNow;
+            if (unknown == null)
+            {
+                _context.UnknownPluginHashes.Add(new UnknownPluginHash
+                {
+                    Hash = hash,
+                    CheckCount = 1,
+                    FirstCheckedAt = now,
+                    LastCheckedAt = now
+                });
+            }
+            else
+            {
+                unknown.CheckCount++;
+                unknown.LastCheckedAt = now;
+            }
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+            {
+                // Concurrent Identify calls for the same brand-new hash both tried to insert. Harmless & skip this tick's count.
+            }
+        }
+
+        // Public, unauthenticated. Never reveals pending/rejected entries even to the submitter.
+        // Status on those is checked instead via the My Plugins page.
         [HttpGet("identify")]
         [AllowAnonymous]
         public async Task<ActionResult<IdentifyPluginResultDto>> Identify([FromQuery] string hash)
@@ -532,7 +566,11 @@ namespace CustomCharInfo.server.Controllers
                 .Include(v => v.Plugin).ThenInclude(p => p.PluginVersions)
                 .FirstOrDefaultAsync(v => v.Hash == normalized);
 
-            if (version == null) return NotFound();
+            if (version == null)
+            {
+                await RecordUnknownHashAsync(normalized);
+                return NotFound();
+            }
 
             var plugin = version.Plugin;
             bool isCase1 = plugin.MovesetId != null;
@@ -566,6 +604,10 @@ namespace CustomCharInfo.server.Controllers
 
             var currentSet = ResolveCurrentSet(visibleVersions);
 
+            version.CheckCount++;
+            version.LastCheckedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
             return Ok(new IdentifyPluginResultDto
             {
                 AttachmentType = plugin.MovesetId != null ? "Moveset" : plugin.DependencyId != null ? "Dependency" : "Other",
@@ -582,8 +624,9 @@ namespace CustomCharInfo.server.Controllers
             });
         }
 
-        // Lists every plugin the requester can see the status of: case-1 plugins on movesets
-        // they modder, plus case-2/3 plugins they own.
+        // Lists every plugin the requester can see the status of:
+        // case-1 plugins on movesets they mod,
+        // case-2/3 plugins they own.
         [HttpGet("mine")]
         [Authorize]
         public async Task<ActionResult<List<PluginDto>>> GetMyPlugins()
@@ -606,6 +649,50 @@ namespace CustomCharInfo.server.Controllers
             var result = new List<PluginDto>();
             foreach (var p in plugins)
                 result.Add(await ToDtoAsync(p));
+
+            return Ok(result);
+        }
+
+        // Admin-only listing of every plugin, for the "All Plugins" admin page.
+        // Shows check counts/dates across all plugins regardless of ownership or attachment type.
+        [HttpGet("all")]
+        [Authorize]
+        public async Task<ActionResult<List<PluginDto>>> GetAllPlugins()
+        {
+            var (_, isAdmin) = await GetRequesterAsync();
+            if (!isAdmin) return Forbid();
+
+            var plugins = await _context.Plugins
+                .Include(p => p.PluginVersions)
+                .Include(p => p.Moveset)
+                .Include(p => p.Dependency)
+                .ToListAsync();
+
+            var result = new List<PluginDto>();
+            foreach (var p in plugins)
+                result.Add(await ToDtoAsync(p));
+
+            return Ok(result);
+        }
+
+        // Admin-only listing of hashes checked via Identify that never matched anything registered.
+        [HttpGet("unknown-hashes")]
+        [Authorize]
+        public async Task<ActionResult<List<UnknownPluginHashDto>>> GetUnknownHashes()
+        {
+            var (_, isAdmin) = await GetRequesterAsync();
+            if (!isAdmin) return Forbid();
+
+            var result = await _context.UnknownPluginHashes
+                .OrderByDescending(u => u.LastCheckedAt)
+                .Select(u => new UnknownPluginHashDto
+                {
+                    Hash = u.Hash,
+                    CheckCount = u.CheckCount,
+                    FirstCheckedAt = u.FirstCheckedAt,
+                    LastCheckedAt = u.LastCheckedAt
+                })
+                .ToListAsync();
 
             return Ok(result);
         }
