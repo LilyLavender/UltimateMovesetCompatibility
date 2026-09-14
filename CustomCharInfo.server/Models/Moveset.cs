@@ -16,8 +16,8 @@ namespace CustomCharInfo.server.Models
 
         public int? SeriesId { get; set; }
 
-        [MaxLength(32)]
-        public string? SlottedId { get; set; }
+        [Required, MaxLength(32), RegularExpression(@"^\D+$", ErrorMessage = "SlottedId cannot contain digits.")]
+        public string SlottedId { get; set; }
 
         [MaxLength(32)]
         public string? ReplacementId { get; set; }

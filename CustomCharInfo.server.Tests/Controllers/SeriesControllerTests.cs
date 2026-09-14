@@ -187,7 +187,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         public async Task GetOneSeries_PrivateSeriesWithNoPublicMovesets_ReturnsForbidForStranger()
         {
             _db.Context.Series.Add(new Series { SeriesId = 1, SeriesName = "Hidden" });
-            _db.Context.Movesets.Add(new Moveset { MovesetId = 1, ModdedCharName = "Secret", VanillaCharInternalName = "mario", SeriesId = 1, PrivateMoveset = true, ReleaseStateId = 1 });
+            _db.Context.Movesets.Add(new Moveset { MovesetId = 1, ModdedCharName = "Secret", VanillaCharInternalName = "mario", SlottedId = "slotone", SeriesId = 1, PrivateMoveset = true, ReleaseStateId = 1 });
             _db.Context.SaveChanges();
 
             var controller = CreateController();

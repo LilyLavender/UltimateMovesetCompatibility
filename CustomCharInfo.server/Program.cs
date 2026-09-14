@@ -27,6 +27,14 @@ namespace CustomCharInfo.server
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(options =>
             {
+                // The full/internal doc is Development-only. Only "public" is ever generated in production.
+                if (builder.Environment.IsDevelopment())
+                {
+                    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "UMC API", Version = "v1" });
+                }
+                options.SwaggerDoc("public", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "UMC Public API", Version = "v1" });
+                options.DocInclusionPredicate((docName, apiDesc) =>
+                    docName == "v1" || apiDesc.GroupName == "public");
                 options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
                 {
                     Name = "Authorization",
@@ -128,6 +136,26 @@ namespace CustomCharInfo.server
                             Window = TimeSpan.FromMinutes(1),
                             QueueLimit = 0
                         }));
+
+                // Public API rate limiting, partitioned per client IP.
+                options.AddPolicy("public", httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 120,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueLimit = 0
+                        }));
+                options.AddPolicy("public-heavy", httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 30,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueLimit = 0
+                        }));
             });
 
             // Controllers
@@ -153,6 +181,16 @@ namespace CustomCharInfo.server
                           .AllowAnyHeader()
                           .AllowAnyMethod();
                 });
+
+                // Public API surface: anonymous, any origin, GET/POST only, no credentials.
+                // Applied per-action via [EnableCors("PublicApi")].
+                // The default policy above stays in effect for every authenticated/write route.
+                options.AddPolicy("PublicApi", policy =>
+                {
+                    policy.AllowAnyOrigin()
+                          .WithMethods("GET", "POST")
+                          .AllowAnyHeader();
+                });
             });
 
             var app = builder.Build();
@@ -160,8 +198,24 @@ namespace CustomCharInfo.server
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
-                app.UseSwaggerUI();
+                app.UseSwaggerUI(options =>
+                {
+                    options.SwaggerEndpoint("/swagger/v1/swagger.json", "UMC API");
+                    options.SwaggerEndpoint("/swagger/public/swagger.json", "UMC Public API");
+                });
                 app.MapOpenApi();
+            }
+            else
+            {
+                // Only the public doc/UI is exposed outside Development.
+                // The full internal doc stays dev-only
+                // (AddSwaggerGen above never registers a "v1" doc outside Development,
+                // so only /swagger/public/swagger.json can ever be generated here).
+                app.UseSwagger();
+                app.UseSwaggerUI(options =>
+                {
+                    options.SwaggerEndpoint("/swagger/public/swagger.json", "UMC Public API");
+                });
             }
             app.UseForwardedHeaders();
             app.UseCors();

@@ -4,7 +4,10 @@ using Microsoft.EntityFrameworkCore;
 using CustomCharInfo.server.Data;
 using CustomCharInfo.server.Models;
 using CustomCharInfo.server.Models.DTOs;
+using CustomCharInfo.server.Helpers;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.RateLimiting;
 using Npgsql;
 using System.Text.RegularExpressions;
 
@@ -165,9 +168,15 @@ namespace CustomCharInfo.server.Controllers
         // Public listing for a moveset's own (case-1) plugins - shown on the moveset's edit/detail pages.
         [HttpGet]
         [AllowAnonymous]
-        public async Task<ActionResult<List<PluginDto>>> GetPlugins([FromQuery] int? movesetId)
+        [EnableCors("PublicApi")]
+        [EnableRateLimiting("public")]
+        [ApiExplorerSettings(GroupName = "public")]
+        public async Task<ActionResult<List<PluginDto>>> GetPlugins([FromQuery] string moveset)
         {
-            if (movesetId == null) return BadRequest("movesetId is required.");
+            if (string.IsNullOrWhiteSpace(moveset)) return BadRequest("moveset is required.");
+
+            var movesetId = await MovesetLookup.ResolveMovesetIdAsync(_context, moveset);
+            if (movesetId == null) return NotFound("Moveset does not exist.");
 
             var plugins = await _context.Plugins
                 .Include(p => p.PluginVersions)
@@ -184,6 +193,9 @@ namespace CustomCharInfo.server.Controllers
         }
 
         [HttpGet("{id}")]
+        [EnableCors("PublicApi")]
+        [EnableRateLimiting("public")]
+        [ApiExplorerSettings(GroupName = "public")]
         public async Task<ActionResult<PluginDto>> GetPlugin(int id)
         {
             var plugin = await _context.Plugins
@@ -550,26 +562,23 @@ namespace CustomCharInfo.server.Controllers
             }
         }
 
-        // Public, unauthenticated. Never reveals pending/rejected entries even to the submitter.
-        // Status on those is checked instead via the My Plugins page.
-        [HttpGet("identify")]
-        [AllowAnonymous]
-        public async Task<ActionResult<IdentifyPluginResultDto>> Identify([FromQuery] string hash)
-        {
-            var normalized = hash?.Trim().ToLowerInvariant();
-            if (normalized == null || !HashPattern.IsMatch(normalized))
-                return BadRequest("Hash must be a 64-character hex SHA-256 digest.");
+        private const int MaxBatchIdentifyHashes = 50;
 
+        // Shared by Identify and IdentifyBatch. Assumes the hash is already normalized/format-validated.
+        // Never reveals pending/rejected entries even to the submitter.
+        // Status on those is instead checked on the My Plugins page.
+        private async Task<IdentifyPluginResultDto?> IdentifyOneAsync(string normalizedHash)
+        {
             var version = await _context.PluginVersions
                 .Include(v => v.Plugin).ThenInclude(p => p.Moveset)
                 .Include(v => v.Plugin).ThenInclude(p => p.Dependency)
                 .Include(v => v.Plugin).ThenInclude(p => p.PluginVersions)
-                .FirstOrDefaultAsync(v => v.Hash == normalized);
+                .FirstOrDefaultAsync(v => v.Hash == normalizedHash);
 
             if (version == null)
             {
-                await RecordUnknownHashAsync(normalized);
-                return NotFound();
+                await RecordUnknownHashAsync(normalizedHash);
+                return null;
             }
 
             var plugin = version.Plugin;
@@ -579,13 +588,13 @@ namespace CustomCharInfo.server.Controllers
             {
                 var movesetState = await LatestActionLogStateAsync(1, plugin.MovesetId!.Value);
                 if ((movesetState != null && BlockedStates.Contains(movesetState.Value)) || plugin.Moveset!.PrivateMoveset == true)
-                    return NotFound();
+                    return null;
             }
             else
             {
                 var versionState = await LatestActionLogStateAsync(5, version.PluginVersionId);
                 if (versionState == null || BlockedStates.Contains(versionState.Value))
-                    return NotFound();
+                    return null;
             }
 
             // For cases 2/3, "current" must only be resolved among publicly-visible versions,
@@ -608,12 +617,13 @@ namespace CustomCharInfo.server.Controllers
             version.LastCheckedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
-            return Ok(new IdentifyPluginResultDto
+            return new IdentifyPluginResultDto
             {
                 AttachmentType = plugin.MovesetId != null ? "Moveset" : plugin.DependencyId != null ? "Dependency" : "Other",
                 PluginName = plugin.Name,
                 PluginDescription = plugin.Description,
                 MovesetId = plugin.MovesetId,
+                MovesetSlottedId = plugin.Moveset?.SlottedId,
                 MovesetName = plugin.Moveset?.ModdedCharName,
                 DependencyId = plugin.DependencyId,
                 DependencyName = plugin.Dependency?.Name,
@@ -621,7 +631,56 @@ namespace CustomCharInfo.server.Controllers
                 IsCurrent = currentSet.Contains(version),
                 CurrentVersionLabel = currentSet.FirstOrDefault()?.VersionLabel,
                 LearnMoreUrl = version.LearnMoreUrl ?? plugin.DefaultLearnMoreUrl
-            });
+            };
+        }
+
+        // Public, unauthenticated.
+        // Never reveals pending/rejected entries even to the submitter.
+        // Status on those is instead checked on the My Plugins page.
+        [HttpGet("identify")]
+        [AllowAnonymous]
+        [EnableCors("PublicApi")]
+        [EnableRateLimiting("public-heavy")]
+        [ApiExplorerSettings(GroupName = "public")]
+        public async Task<ActionResult<IdentifyPluginResultDto>> Identify([FromQuery] string hash)
+        {
+            var normalized = hash?.Trim().ToLowerInvariant();
+            if (normalized == null || !HashPattern.IsMatch(normalized))
+                return BadRequest("Hash must be a 64-character hex SHA-256 digest.");
+
+            var result = await IdentifyOneAsync(normalized);
+            return result == null ? NotFound() : Ok(result);
+        }
+
+        // POST despite being read-only: a GET with up to 50 hashes in the query string is unwieldy,
+        // and there's no cookie-based auth here for CSRF to matter.
+        [HttpPost("identify/batch")]
+        [AllowAnonymous]
+        [EnableCors("PublicApi")]
+        [EnableRateLimiting("public-heavy")]
+        [ApiExplorerSettings(GroupName = "public")]
+        public async Task<ActionResult<List<BatchIdentifyResultDto>>> IdentifyBatch([FromBody] BatchIdentifyRequestDto dto)
+        {
+            if (dto?.Hashes == null || dto.Hashes.Count == 0)
+                return BadRequest("At least one hash is required.");
+            if (dto.Hashes.Count > MaxBatchIdentifyHashes)
+                return BadRequest($"At most {MaxBatchIdentifyHashes} hashes are allowed per request.");
+
+            var results = new List<BatchIdentifyResultDto>();
+            foreach (var hash in dto.Hashes)
+            {
+                var normalized = hash?.Trim().ToLowerInvariant();
+                if (normalized == null || !HashPattern.IsMatch(normalized))
+                {
+                    results.Add(new BatchIdentifyResultDto { Hash = hash, Found = false });
+                    continue;
+                }
+
+                var result = await IdentifyOneAsync(normalized);
+                results.Add(new BatchIdentifyResultDto { Hash = hash, Found = result != null, Result = result });
+            }
+
+            return Ok(results);
         }
 
         // Lists every plugin the requester can see the status of:

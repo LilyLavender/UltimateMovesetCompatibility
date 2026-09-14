@@ -9,6 +9,8 @@ using CustomCharInfo.server.Helpers;
 using SixLabors.ImageSharp;
 using Microsoft.AspNetCore.Authorization;
 using Npgsql;
+using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -31,6 +33,9 @@ namespace CustomCharInfo.server.Controllers
         }
 
         [HttpGet]
+        [EnableCors("PublicApi")]
+        [EnableRateLimiting("public")]
+        [ApiExplorerSettings(GroupName = "public")]
         public async Task<IActionResult> GetSeries(
             [FromQuery] bool? inSeriesList = false
         )
@@ -120,7 +125,33 @@ namespace CustomCharInfo.server.Controllers
             return Ok(seriesList);
         }
 
+        private const int MaxSearchResults = 20;
+
+        [HttpGet("search")]
+        [EnableCors("PublicApi")]
+        [EnableRateLimiting("public-heavy")]
+        [ApiExplorerSettings(GroupName = "public")]
+        public async Task<ActionResult<IEnumerable<object>>> SearchSeries([FromQuery] string q)
+        {
+            if (string.IsNullOrWhiteSpace(q))
+                return Ok(Array.Empty<object>());
+
+            var lowered = q.Trim().ToLower();
+            var results = await _context.Series
+                .AsNoTracking()
+                .Where(s => s.SeriesName.ToLower().Contains(lowered))
+                .OrderBy(s => s.SeriesName)
+                .Take(MaxSearchResults)
+                .Select(s => new { Id = s.SeriesId, Name = s.SeriesName })
+                .ToListAsync();
+
+            return Ok(results);
+        }
+
         [HttpGet("{id}")]
+        [EnableCors("PublicApi")]
+        [EnableRateLimiting("public")]
+        [ApiExplorerSettings(GroupName = "public")]
         public async Task<ActionResult<ReturnSeriesDto>> GetOneSeries(int id)
         {
             var userId = _userManager.GetUserId(User);

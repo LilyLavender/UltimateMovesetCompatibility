@@ -1070,6 +1070,11 @@ const submit = async () => {
     }
   }
 
+  if (/\d/.test(form.value.slottedId)) {
+    alert('Slotted ID cannot contain digits.')
+    return
+  }
+
   // Ensure slottedId/replacementId fallback
   if (form.value.slottedId && !form.value.replacementId) {
     form.value.replacementId = form.value.slottedId

@@ -87,6 +87,7 @@ namespace CustomCharInfo.server.Tests.Controllers
                 MovesetId = 1,
                 ModdedCharName = "Test",
                 VanillaCharInternalName = "mario",
+                SlottedId = "slotone",
                 ReleaseStateId = 1,
                 ThumbhImageUrl = $"{PublicBaseUrl}/uploads/moveset-ui/referenced.png",
             });
@@ -141,6 +142,7 @@ namespace CustomCharInfo.server.Tests.Controllers
                 MovesetId = 1,
                 ModdedCharName = "Test",
                 VanillaCharInternalName = "mario",
+                SlottedId = "slotone",
                 ReleaseStateId = 1,
                 ThumbhImageUrl = $"{PublicBaseUrl}/uploads/moveset-ui/now-referenced.png",
             });

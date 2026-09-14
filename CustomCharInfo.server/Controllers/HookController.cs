@@ -9,6 +9,8 @@ using SixLabors.ImageSharp;
 using Microsoft.AspNetCore.Authorization;
 using CustomCharInfo.server.Helpers;
 using Npgsql;
+using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -27,6 +29,9 @@ namespace CustomCharInfo.server.Controllers
         }
 
         [HttpGet]
+        [EnableCors("PublicApi")]
+        [EnableRateLimiting("public")]
+        [ApiExplorerSettings(GroupName = "public")]
         public async Task<ActionResult<IEnumerable<HookDto>>> GetHooks()
         {
             var hooks = await _context.Hooks
@@ -44,7 +49,33 @@ namespace CustomCharInfo.server.Controllers
             return Ok(hooks);
         }
 
+        private const int MaxSearchResults = 20;
+
+        [HttpGet("search")]
+        [EnableCors("PublicApi")]
+        [EnableRateLimiting("public-heavy")]
+        [ApiExplorerSettings(GroupName = "public")]
+        public async Task<ActionResult<IEnumerable<object>>> SearchHooks([FromQuery] string q)
+        {
+            if (string.IsNullOrWhiteSpace(q))
+                return Ok(Array.Empty<object>());
+
+            var lowered = q.Trim().ToLower();
+            var results = await _context.Hooks
+                .AsNoTracking()
+                .Where(h => h.Description.ToLower().Contains(lowered) || h.Offset.ToLower().Contains(lowered))
+                .OrderBy(h => h.Description)
+                .Take(MaxSearchResults)
+                .Select(h => new { Id = h.HookId, Name = h.Description })
+                .ToListAsync();
+
+            return Ok(results);
+        }
+
         [HttpGet("{id}")]
+        [EnableCors("PublicApi")]
+        [EnableRateLimiting("public")]
+        [ApiExplorerSettings(GroupName = "public")]
         public async Task<ActionResult<HookDto>> GetHook(int id)
         {
             var hook = await _context.Hooks

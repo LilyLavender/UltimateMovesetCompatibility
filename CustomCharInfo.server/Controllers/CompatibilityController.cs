@@ -3,7 +3,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using CustomCharInfo.server.Data;
 using CustomCharInfo.server.Models;
+using CustomCharInfo.server.Helpers;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -21,11 +24,19 @@ namespace CustomCharInfo.server.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetReports([FromQuery] int movesetId1, [FromQuery] int movesetId2)
+        [EnableCors("PublicApi")]
+        [EnableRateLimiting("public")]
+        [ApiExplorerSettings(GroupName = "public")]
+        public async Task<IActionResult> GetReports([FromQuery] string moveset1, [FromQuery] string moveset2)
         {
+            var movesetId1 = await MovesetLookup.ResolveMovesetIdAsync(_context, moveset1);
+            var movesetId2 = await MovesetLookup.ResolveMovesetIdAsync(_context, moveset2);
+            if (movesetId1 == null || movesetId2 == null)
+                return NotFound("One or both movesets do not exist.");
+
             var (lo, hi) = movesetId1 < movesetId2
-                ? (movesetId1, movesetId2)
-                : (movesetId2, movesetId1);
+                ? (movesetId1.Value, movesetId2.Value)
+                : (movesetId2.Value, movesetId1.Value);
 
             var reports = await _context.CompatibilityReports
                 .Where(r => r.MovesetId1 == lo && r.MovesetId2 == hi)
@@ -44,10 +55,17 @@ namespace CustomCharInfo.server.Controllers
             });
         }
 
-        // Returns all pairs that involve movesetId, with vote counts per partner
+        // Returns all pairs that involve moveset, with vote counts per partner
         [HttpGet("summary")]
-        public async Task<IActionResult> GetSummaryForMoveset([FromQuery] int movesetId)
+        [EnableCors("PublicApi")]
+        [EnableRateLimiting("public")]
+        [ApiExplorerSettings(GroupName = "public")]
+        public async Task<IActionResult> GetSummaryForMoveset([FromQuery] string moveset)
         {
+            var movesetId = await MovesetLookup.ResolveMovesetIdAsync(_context, moveset);
+            if (movesetId == null)
+                return NotFound("Moveset does not exist.");
+
             var reports = await _context.CompatibilityReports
                 .Where(r => r.MovesetId1 == movesetId || r.MovesetId2 == movesetId)
                 .ToListAsync();
@@ -62,6 +80,125 @@ namespace CustomCharInfo.server.Controllers
                 });
 
             return Ok(result);
+        }
+
+        private const int MaxPredictMovesets = 10;
+        private static readonly string[] SeverityOrder = { "compatible", "warning", "predicted-incompat", "incompatible" };
+
+        // N-way predicted compatibility, ported from CompatibilityCheckPage.vue's runCheck
+        [HttpGet("predict")]
+        [EnableCors("PublicApi")]
+        [EnableRateLimiting("public-heavy")]
+        [ApiExplorerSettings(GroupName = "public")]
+        public async Task<IActionResult> PredictCompatibility([FromQuery] string movesets)
+        {
+            if (string.IsNullOrWhiteSpace(movesets))
+                return BadRequest("movesets is required.");
+
+            var tokens = movesets.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (tokens.Length < 2)
+                return BadRequest("At least two movesets are required.");
+            if (tokens.Length > MaxPredictMovesets)
+                return BadRequest($"At most {MaxPredictMovesets} movesets are allowed per request.");
+
+            var ids = new List<int>();
+            foreach (var token in tokens)
+            {
+                var resolved = await MovesetLookup.ResolveMovesetIdAsync(_context, token);
+                if (resolved == null)
+                    return NotFound($"Moveset '{token}' does not exist.");
+                ids.Add(resolved.Value);
+            }
+            if (ids.Distinct().Count() != ids.Count)
+                return BadRequest("Duplicate movesets in request.");
+
+            var movesetData = await _context.Movesets
+                .Where(m => ids.Contains(m.MovesetId))
+                .Select(m => new
+                {
+                    m.MovesetId,
+                    m.SlottedId,
+                    m.SlotsStart,
+                    m.SlotsEnd,
+                    m.VanillaCharInternalName,
+                    Hooks = m.MovesetHooks.Select(mh => new { mh.HookId, StatusName = mh.Hook.HookableStatus.Name }).ToList(),
+                    Articles = m.MovesetArticles.Select(ma => new { ma.ArticleId }).ToList()
+                })
+                .ToListAsync();
+            var byId = movesetData.ToDictionary(m => m.MovesetId);
+
+            static bool SlotsOverlap(int? aStart, int? aEnd, int? bStart, int? bEnd)
+            {
+                int aS = aStart ?? 0, aE = aEnd ?? 0, bS = bStart ?? 0, bE = bEnd ?? 0;
+                if (aS == 0 && aE == 0 && bS == 0 && bE == 0) return false;
+                return aS <= bE && bS <= aE;
+            }
+
+            int SeverityRank(string s) => Array.IndexOf(SeverityOrder, s);
+
+            var pairs = new List<object>();
+            var overallSeverity = "compatible";
+
+            for (int i = 0; i < ids.Count; i++)
+            {
+                for (int j = i + 1; j < ids.Count; j++)
+                {
+                    var a = byId[ids[i]];
+                    var b = byId[ids[j]];
+
+                    var pairSeverity = "compatible";
+                    void Escalate(string sev)
+                    {
+                        if (SeverityRank(sev) > SeverityRank(pairSeverity)) pairSeverity = sev;
+                    }
+
+                    var conflictingHookIds = new List<int>();
+                    foreach (var hookA in a.Hooks)
+                    {
+                        if (!b.Hooks.Any(h => h.HookId == hookA.HookId)) continue;
+                        conflictingHookIds.Add(hookA.HookId);
+                        var statusName = (hookA.StatusName ?? "").ToLower();
+                        if (statusName.Contains("more than once"))
+                            Escalate("warning");
+                        else if (statusName.Contains("once"))
+                            Escalate("incompatible");
+                        else
+                            Escalate("predicted-incompat");
+                    }
+
+                    var conflictingArticleIds = new List<int>();
+                    bool sameChar = a.VanillaCharInternalName == b.VanillaCharInternalName;
+                    bool slotsOverlap = SlotsOverlap(a.SlotsStart, a.SlotsEnd, b.SlotsStart, b.SlotsEnd);
+                    foreach (var artA in a.Articles)
+                    {
+                        if (!b.Articles.Any(x => x.ArticleId == artA.ArticleId)) continue;
+                        if (sameChar)
+                        {
+                            conflictingArticleIds.Add(artA.ArticleId);
+                            Escalate("incompatible");
+                        }
+                        else if (slotsOverlap)
+                        {
+                            conflictingArticleIds.Add(artA.ArticleId);
+                            Escalate("warning");
+                        }
+                    }
+
+                    pairs.Add(new
+                    {
+                        Moveset1 = new { MovesetId = a.MovesetId, a.SlottedId },
+                        Moveset2 = new { MovesetId = b.MovesetId, b.SlottedId },
+                        Severity = pairSeverity,
+                        ConflictingHookIds = conflictingHookIds,
+                        ConflictingArticleIds = conflictingArticleIds
+                    });
+
+                    if (SeverityRank(pairSeverity) > SeverityRank(overallSeverity))
+                        overallSeverity = pairSeverity;
+                }
+            }
+
+            return Ok(new { Pairs = pairs, OverallSeverity = overallSeverity });
         }
 
         [HttpPost]

@@ -8,6 +8,9 @@ using CustomCharInfo.server.Helpers;
 
 using SixLabors.ImageSharp;
 using Microsoft.AspNetCore.Authorization;
+using Npgsql;
+using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -26,6 +29,9 @@ namespace CustomCharInfo.server.Controllers
         }
 
         [HttpGet]
+        [EnableCors("PublicApi")]
+        [EnableRateLimiting("public")]
+        [ApiExplorerSettings(GroupName = "public")]
         public async Task<ActionResult<IEnumerable<object>>> GetMovesets(
             [FromQuery] int? seriesId,
             [FromQuery] int? releaseStateId,
@@ -219,7 +225,68 @@ namespace CustomCharInfo.server.Controllers
             return Ok(movesets);
         }
 
+        private const int MaxSearchResults = 20;
+
+        // Minimal-shape autocomplete: SlottedId + MovesetId + name,
+        // so results plug directly into compatibility/plugins/predict without a second lookup.
+        [HttpGet("search")]
+        [EnableCors("PublicApi")]
+        [EnableRateLimiting("public-heavy")]
+        [ApiExplorerSettings(GroupName = "public")]
+        public async Task<ActionResult<IEnumerable<object>>> SearchMovesets([FromQuery] string q)
+        {
+            if (string.IsNullOrWhiteSpace(q))
+                return Ok(Array.Empty<object>());
+
+            var userId = _userManager.GetUserId(User);
+            var user = userId != null
+                ? await _context.Users
+                    .Select(u => new { u.Id, u.UserTypeId, u.ModderId })
+                    .FirstOrDefaultAsync(u => u.Id == userId)
+                : null;
+
+            bool isAdmin = user?.UserTypeId == 3;
+            int? currentModderId = user?.ModderId;
+            var blockedStates = new[] { 2, 4, 6 };
+            var lowered = q.Trim().ToLower();
+
+            var query = _context.Movesets
+                .AsNoTracking()
+                .Where(m => m.ModdedCharName.ToLower().Contains(lowered))
+                .Select(m => new
+                {
+                    m.MovesetId,
+                    m.SlottedId,
+                    m.ModdedCharName,
+                    m.PrivateMoveset,
+                    IsOwner = currentModderId != null && m.MovesetModders.Any(mm => mm.ModderId == currentModderId),
+                    LatestLogState = _context.ActionLogs
+                        .Where(a => a.ItemTypeId == 1 && a.ItemId == m.MovesetId)
+                        .OrderByDescending(a => a.CreatedAt)
+                        .Select(a => (int?)a.AcceptanceStateId)
+                        .FirstOrDefault()
+                });
+
+            if (!isAdmin)
+            {
+                query = query.Where(x =>
+                    (x.PrivateMoveset != true || x.IsOwner)
+                    && (x.LatestLogState == null || !blockedStates.Contains(x.LatestLogState.Value) || x.IsOwner));
+            }
+
+            var results = await query
+                .OrderBy(x => x.ModdedCharName)
+                .Take(MaxSearchResults)
+                .Select(x => new { x.MovesetId, x.SlottedId, Name = x.ModdedCharName })
+                .ToListAsync();
+
+            return Ok(results);
+        }
+
         [HttpGet("slot-grid")]
+        [EnableCors("PublicApi")]
+        [EnableRateLimiting("public")]
+        [ApiExplorerSettings(GroupName = "public")]
         public async Task<ActionResult> GetSlotGrid()
         {
             var blockedStates = new[] { 2, 4, 6 };
@@ -271,6 +338,9 @@ namespace CustomCharInfo.server.Controllers
         }
 
         [HttpGet("report")]
+        [EnableCors("PublicApi")]
+        [EnableRateLimiting("public-heavy")]
+        [ApiExplorerSettings(GroupName = "public")]
         public async Task<ActionResult<IEnumerable<object>>> GetMovesetsReport()
         {
             var userId = _userManager.GetUserId(User);
@@ -399,6 +469,9 @@ namespace CustomCharInfo.server.Controllers
         }
 
         [HttpGet("{idOrSlottedId}")]
+        [EnableCors("PublicApi")]
+        [EnableRateLimiting("public")]
+        [ApiExplorerSettings(GroupName = "public")]
         public async Task<ActionResult<MovesetDetailDto>> GetMoveset(string idOrSlottedId)
         {
             var userId = _userManager.GetUserId(User);
@@ -409,12 +482,13 @@ namespace CustomCharInfo.server.Controllers
                 : null;
 
             bool isNumericId = int.TryParse(idOrSlottedId, out int movesetId);
+            var loweredSlottedId = idOrSlottedId.ToLower();
 
             var moveset = await _context.Movesets
                         .Where(m =>
                            isNumericId
                                ? m.MovesetId == movesetId
-                               : m.SlottedId == idOrSlottedId
+                               : m.SlottedId.ToLower() == loweredSlottedId
                         )
                 .Select(m => new MovesetDetailDto
                 {
@@ -587,6 +661,15 @@ namespace CustomCharInfo.server.Controllers
             if (dto.ModderIds == null || !dto.ModderIds.Any())
                 return BadRequest("At least one ModderId is required.");
 
+            if (string.IsNullOrWhiteSpace(dto.SlottedId) || dto.SlottedId.Any(char.IsDigit))
+                return BadRequest("SlottedId is required and cannot contain digits.");
+
+            var normalizedSlottedId = dto.SlottedId.Trim();
+            var slottedIdTaken = await _context.Movesets
+                .AnyAsync(m => m.SlottedId.ToLower() == normalizedSlottedId.ToLower());
+            if (slottedIdTaken)
+                return Conflict("A moveset with this SlottedId already exists.");
+
             var moveset = new Moveset
             {
                 ModdedCharName = dto.ModdedCharName,
@@ -633,7 +716,16 @@ namespace CustomCharInfo.server.Controllers
             };
 
             _context.Movesets.Add(moveset);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+            {
+                // The AnyAsync check above is check-then-act; this catches a genuine race against
+                // the unique index on SlottedId as a backstop.
+                return Conflict("A moveset with this SlottedId already exists.");
+            }
 
             // Log action
             int newState = userFromId.UserTypeId == 3 ? 7 : 2;
@@ -764,6 +856,15 @@ namespace CustomCharInfo.server.Controllers
             {
                 return BadRequest("DependencyIds, Hooks, and Articles must be present (even if empty).");
             }
+
+            if (string.IsNullOrWhiteSpace(dto.SlottedId) || dto.SlottedId.Any(char.IsDigit))
+                return BadRequest("SlottedId is required and cannot contain digits.");
+
+            var normalizedSlottedId = dto.SlottedId.Trim();
+            var slottedIdTaken = await _context.Movesets
+                .AnyAsync(m => m.MovesetId != id && m.SlottedId.ToLower() == normalizedSlottedId.ToLower());
+            if (slottedIdTaken)
+                return Conflict("A moveset with this SlottedId already exists.");
 
             bool keyDetailsChanged =
                 moveset.ModdedCharName != dto.ModdedCharName ||
@@ -981,7 +1082,16 @@ namespace CustomCharInfo.server.Controllers
                 CreatedAt = DateTime.UtcNow
             });
 
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+            {
+                // The AnyAsync check above is check-then-act; this catches a genuine race against
+                // the unique index on SlottedId as a backstop.
+                return Conflict("A moveset with this SlottedId already exists.");
+            }
 
             return NoContent();
         }

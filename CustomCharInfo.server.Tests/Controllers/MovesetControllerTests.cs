@@ -25,6 +25,20 @@ namespace CustomCharInfo.server.Tests.Controllers
             return controller;
         }
 
+        // SlottedId can't contain digits, so a letters-only value is derived from the test moveset id
+        // to keep it unique across AddMoveset calls in the same test.
+        private static string SlottedIdFor(int id)
+        {
+            var n = id;
+            var suffix = "";
+            do
+            {
+                suffix = (char)('a' + (n % 26)) + suffix;
+                n /= 26;
+            } while (n > 0);
+            return "slot" + suffix;
+        }
+
         private Moveset AddMoveset(int id, string name, int releaseStateId = 1, bool isPrivate = false, bool? adminPick = null, DateOnly? releaseDate = null)
         {
             var moveset = new Moveset
@@ -32,6 +46,7 @@ namespace CustomCharInfo.server.Tests.Controllers
                 MovesetId = id,
                 ModdedCharName = name,
                 VanillaCharInternalName = "mario",
+                SlottedId = SlottedIdFor(id),
                 ReleaseStateId = releaseStateId,
                 PrivateMoveset = isPrivate,
                 AdminPick = adminPick,
@@ -218,12 +233,27 @@ namespace CustomCharInfo.server.Tests.Controllers
         public async Task GetMoveset_BySlottedId_FindsMoveset()
         {
             var moveset = AddMoveset(1, "SlotBased");
-            moveset.SlottedId = "abc123";
+            moveset.SlottedId = "lloyd";
             _db.Context.SaveChanges();
 
             var controller = CreateController();
 
-            var result = await controller.GetMoveset("abc123");
+            var result = await controller.GetMoveset("lloyd");
+
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            Assert.NotNull(ok.Value);
+        }
+
+        [Fact]
+        public async Task GetMoveset_BySlottedId_IsCaseInsensitive()
+        {
+            var moveset = AddMoveset(1, "SlotBased");
+            moveset.SlottedId = "Lloyd";
+            _db.Context.SaveChanges();
+
+            var controller = CreateController();
+
+            var result = await controller.GetMoveset("lloyd");
 
             var ok = Assert.IsType<OkObjectResult>(result.Result);
             Assert.NotNull(ok.Value);
@@ -347,6 +377,51 @@ namespace CustomCharInfo.server.Tests.Controllers
             Assert.Empty(_db.Context.CompatibilityReports);
             // The other moveset in the pairing survives, only its report row is gone.
             Assert.NotNull(await _db.Context.Movesets.FindAsync(2));
+        }
+
+        [Fact]
+        public async Task SearchMovesets_CaseInsensitiveMatch_ReturnsSlottedIdAndMovesetId()
+        {
+            AddMoveset(1, "Lloyd Irving");
+
+            var controller = CreateController();
+            var result = await controller.SearchMovesets("lloyd");
+
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            var results = ((IEnumerable<object>)ok.Value!).ToList();
+            var item = Assert.Single(results);
+            Assert.Equal(1, Prop<int>(item, "MovesetId"));
+            Assert.Equal(SlottedIdFor(1), Prop<string>(item, "SlottedId"));
+            Assert.Equal("Lloyd Irving", Prop<string>(item, "Name"));
+        }
+
+        [Fact]
+        public async Task SearchMovesets_ExcludesBlockedAndPrivateMovesets()
+        {
+            AddMoveset(1, "Visible Match");
+            var blocked = AddMoveset(2, "Blocked Match");
+            SeedData.AddActionLog(_db.Context, blocked.MovesetId, acceptanceStateId: 6, DateTime.UtcNow, userId: "log-author");
+            var privateMoveset = AddMoveset(3, "Private Match", isPrivate: true);
+
+            var controller = CreateController();
+            var result = await controller.SearchMovesets("match");
+
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            var results = ((IEnumerable<object>)ok.Value!).ToList();
+            var item = Assert.Single(results);
+            Assert.Equal("Visible Match", Prop<string>(item, "Name"));
+        }
+
+        [Fact]
+        public async Task SearchMovesets_NoQuery_ReturnsEmpty()
+        {
+            AddMoveset(1, "Something");
+
+            var controller = CreateController();
+            var result = await controller.SearchMovesets("");
+
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            Assert.Empty((IEnumerable<object>)ok.Value!);
         }
     }
 }

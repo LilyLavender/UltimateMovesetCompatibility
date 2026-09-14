@@ -33,6 +33,14 @@
           Privacy Policy
         </router-link>
       </div>
+      <div>
+        <router-link
+          :to="{ name: 'ApiPage' }"
+          class="unvisitable"
+        >
+          API
+        </router-link>
+      </div>
     </div>
   </v-footer>
 </template>

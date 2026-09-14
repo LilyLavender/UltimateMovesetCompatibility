@@ -94,7 +94,7 @@ const generatedName = computed(() => {
 async function loadPlugins() {
   loading.value = true
   try {
-    const res = await api.get('/plugins', { params: { movesetId: props.movesetId } })
+    const res = await api.get('/plugins', { params: { moveset: props.movesetId } })
     plugins.value = res.data
   } catch {
     plugins.value = []

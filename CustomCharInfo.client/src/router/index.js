@@ -13,6 +13,7 @@ import ModderCreditGuide from '@/views/ModderCreditGuide.vue';
 import OpenSourcePage from '@/views/OpenSourcePage.vue';
 import PrivacyPolicyPage from '@/views/PrivacyPolicyPage.vue';
 import ForgotPasswordPage from '@/views/ForgotPasswordPage.vue';
+import ApiPage from '@/views/ApiPage.vue';
 // Movesets
 import MovesetsPage from '@/views/MovesetsPage.vue';
 import MovesetsListPage from '@/views/MovesetsListPage.vue';
@@ -487,6 +488,12 @@ const routes = [
     name: 'PrivacyPolicyPage',
     component: PrivacyPolicyPage,
     meta: { title: 'Privacy Policy' },
+  },
+  {
+    path: '/api',
+    name: 'ApiPage',
+    component: ApiPage,
+    meta: { title: 'Public API' },
   },
   {
     path: '/forgot-password',

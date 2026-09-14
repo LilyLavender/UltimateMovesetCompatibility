@@ -106,6 +106,7 @@ namespace CustomCharInfo.server.Models.DTOs
         public string PluginName { get; set; }
         public string? PluginDescription { get; set; }
         public int? MovesetId { get; set; }
+        public string? MovesetSlottedId { get; set; }
         public string? MovesetName { get; set; }
         public int? DependencyId { get; set; }
         public string? DependencyName { get; set; }
@@ -113,5 +114,18 @@ namespace CustomCharInfo.server.Models.DTOs
         public bool IsCurrent { get; set; }
         public string? CurrentVersionLabel { get; set; }
         public string? LearnMoreUrl { get; set; }
+    }
+
+    public class BatchIdentifyRequestDto
+    {
+        [Required]
+        public List<string> Hashes { get; set; }
+    }
+
+    public class BatchIdentifyResultDto
+    {
+        public string Hash { get; set; }
+        public bool Found { get; set; }
+        public IdentifyPluginResultDto? Result { get; set; }
     }
 }

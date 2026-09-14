@@ -90,8 +90,8 @@ namespace CustomCharInfo.server.Tests.Controllers
             var owner = SeedData.AddUser(_db.Context, "modder-user", userTypeId: 2, modderId: 20);
             SeedData.AddModder(_db.Context, 20, owner.Id, "MyModder");
 
-            _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 1, ModdedCharName = "Owned", VanillaCharInternalName = "mario", ReleaseStateId = 1 });
-            _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 2, ModdedCharName = "NotOwned", VanillaCharInternalName = "mario", ReleaseStateId = 1 });
+            _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 1, ModdedCharName = "Owned", VanillaCharInternalName = "mario", SlottedId = "slotone", ReleaseStateId = 1 });
+            _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 2, ModdedCharName = "NotOwned", VanillaCharInternalName = "mario", SlottedId = "slottwo", ReleaseStateId = 1 });
             _db.Context.MovesetModders.Add(new Models.MovesetModder { MovesetId = 1, ModderId = 20, SortOrder = 0 });
             _db.Context.SaveChanges();
 
@@ -171,7 +171,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         {
             var owner = SeedData.AddUser(_db.Context, "modder-user", userTypeId: 2, modderId: 20);
             SeedData.AddModder(_db.Context, 20, owner.Id, "MyModder");
-            _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 1, ModdedCharName = "NotOwned", VanillaCharInternalName = "mario", ReleaseStateId = 1 });
+            _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 1, ModdedCharName = "NotOwned", VanillaCharInternalName = "mario", SlottedId = "slotone", ReleaseStateId = 1 });
             _db.Context.SaveChanges();
 
             var controller = CreateController(owner.Id);
@@ -255,7 +255,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         public async Task GetActionLog_NoAuthenticatedUser_ReturnsForbid()
         {
             var author = SeedData.AddUser(_db.Context, "author-1", userTypeId: 1);
-            _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 1, ModdedCharName = "Some Moveset", VanillaCharInternalName = "mario", ReleaseStateId = 1 });
+            _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 1, ModdedCharName = "Some Moveset", VanillaCharInternalName = "mario", SlottedId = "slotone", ReleaseStateId = 1 });
             _db.Context.SaveChanges();
             var log = SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: 1, DateTime.UtcNow, userId: author.Id);
 
@@ -283,7 +283,7 @@ namespace CustomCharInfo.server.Tests.Controllers
             var author = SeedData.AddUser(_db.Context, "author-1", userTypeId: 1);
             author.Email = "author@example.com";
             SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
-            _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 1, ModdedCharName = "Some Moveset", VanillaCharInternalName = "mario", ReleaseStateId = 1 });
+            _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 1, ModdedCharName = "Some Moveset", VanillaCharInternalName = "mario", SlottedId = "slotone", ReleaseStateId = 1 });
             _db.Context.SaveChanges();
             var log = SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: 1, DateTime.UtcNow, userId: author.Id);
 
@@ -303,7 +303,7 @@ namespace CustomCharInfo.server.Tests.Controllers
             var author = SeedData.AddUser(_db.Context, "author-1", userTypeId: 1);
             var owner = SeedData.AddUser(_db.Context, "modder-user", userTypeId: 2, modderId: 20);
             SeedData.AddModder(_db.Context, 20, owner.Id, "MyModder");
-            _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 1, ModdedCharName = "Some Moveset", VanillaCharInternalName = "mario", ReleaseStateId = 1 });
+            _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 1, ModdedCharName = "Some Moveset", VanillaCharInternalName = "mario", SlottedId = "slotone", ReleaseStateId = 1 });
             _db.Context.MovesetModders.Add(new Models.MovesetModder { MovesetId = 1, ModderId = 20, SortOrder = 0 });
             _db.Context.SaveChanges();
             var log = SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: 1, DateTime.UtcNow, userId: author.Id);

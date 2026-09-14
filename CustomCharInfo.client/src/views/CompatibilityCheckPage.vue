@@ -284,58 +284,55 @@ const statusName = (id) => hookableStatuses.value.find(s => s.hookableStatusId =
 const isOnceOnly = (id) => statusName(id).toLowerCase().includes('once')
 const isMultiOk = (id) => statusName(id).toLowerCase().includes('more than once')
 
-const slotsOverlap = (a, b) => {
-  const aS = a.slotsStart ?? 0, aE = a.slotsEnd ?? 0
-  const bS = b.slotsStart ?? 0, bE = b.slotsEnd ?? 0
-  if (!aS && !aE && !bS && !bE) return false
-  return aS <= bE && bS <= aE
-}
-
 const runCheck = async () => {
   if (selection.value.length < 2) return
   checking.value = true
   result.value = null
 
   try {
-    const [resA, resB, reportsRes] = await Promise.all([
+    const [resA, resB, reportsRes, predictRes] = await Promise.all([
       api.get(`/movesets/${selection.value[0].movesetId}`),
       api.get(`/movesets/${selection.value[1].movesetId}`),
       api.get('/compatibility', {
-        params: { movesetId1: selection.value[0].movesetId, movesetId2: selection.value[1].movesetId }
-      }).catch(() => ({ data: { compatibleCount: 0, incompatibleCount: 0, userVote: null } }))
+        params: { moveset1: selection.value[0].movesetId, moveset2: selection.value[1].movesetId }
+      }).catch(() => ({ data: { compatibleCount: 0, incompatibleCount: 0, userVote: null } })),
+      api.get('/compatibility/predict', {
+        params: { movesets: `${selection.value[0].movesetId},${selection.value[1].movesetId}` }
+      })
     ])
 
     const a = resA.data
     const b = resB.data
     reports.value = reportsRes.data
 
-    const issues = []
-    const conflictingHookIds = new Set()
-    const conflictingArticleIds = new Set()
+    // The predict endpoint is the source of truth for which hooks/articles conflict and the overall severity.
+    // Message text is built here from data already in `a`/`b`.
+    const pair = predictRes.data.pairs[0]
+    const conflictingHookIds = new Set(pair.conflictingHookIds)
+    const conflictingArticleIds = new Set(pair.conflictingArticleIds)
 
-    for (const mhA of (a.movesetHooks ?? [])) {
-      const mhB = (b.movesetHooks ?? []).find(h => h.hook.hookId === mhA.hook.hookId)
-      if (!mhB) continue
+    const issues = []
+
+    for (const hookId of conflictingHookIds) {
+      const mhA = (a.movesetHooks ?? []).find(h => h.hook.hookId === hookId)
+      if (!mhA) continue
       const sid = mhA.hook.hookableStatusId
-      conflictingHookIds.add(mhA.hook.hookId)
-      if (isOnceOnly(sid)) {
-        issues.push({ severity: 'incompatible', message: `Both movesets use hook 0x${mhA.hook.offset} - this hook can only be used once and will cause a crash.` })
-      } else if (isMultiOk(sid)) {
+      if (isMultiOk(sid)) {
         issues.push({ severity: 'warning', message: `Both movesets use hook 0x${mhA.hook.offset}. This hook supports multiple uses, but too many at the same offset may still cause issues.` })
+      } else if (isOnceOnly(sid)) {
+        issues.push({ severity: 'incompatible', message: `Both movesets use hook 0x${mhA.hook.offset} - this hook can only be used once and will cause a crash.` })
       } else {
         issues.push({ severity: 'predicted-incompat', message: `Both movesets use hook 0x${mhA.hook.offset}. This hook's behavior with multiple users is untested. It will likely crash.` })
       }
     }
 
-    for (const maA of (a.movesetArticles ?? [])) {
-      const maB = (b.movesetArticles ?? []).find(art => art.article.articleId === maA.article.articleId)
-      if (!maB) continue
-      const sameChar = a.vanillaChar?.vanillaCharInternalName === b.vanillaChar?.vanillaCharInternalName
+    const sameChar = a.vanillaChar?.vanillaCharInternalName === b.vanillaChar?.vanillaCharInternalName
+    for (const articleId of conflictingArticleIds) {
+      const maA = (a.movesetArticles ?? []).find(art => art.article.articleId === articleId)
+      if (!maA) continue
       if (sameChar) {
-        conflictingArticleIds.add(maA.article.articleId)
         issues.push({ severity: 'incompatible', message: `Both movesets are on ${a.vanillaChar?.displayName ?? 'the same character'} and clone the same article (${maA.article.vanillaCharInternalName}_${maA.article.articleName}). The article will not work correctly.` })
-      } else if (slotsOverlap(a, b)) {
-        conflictingArticleIds.add(maA.article.articleId)
+      } else {
         issues.push({ severity: 'warning', message: `Both movesets clone the article ${maA.article.vanillaCharInternalName}_${maA.article.articleName} and use overlapping slots. It's recommended to switch the slots of one moveset to reduce article conflicts.` })
       }
     }
@@ -364,7 +361,7 @@ watch(
       // Fetch vote summaries for the selected moveset
       try {
         const res = await api.get('/compatibility/summary', {
-          params: { movesetId: selection.value[0].movesetId }
+          params: { moveset: selection.value[0].movesetId }
         })
         const map = new Map()
         for (const entry of res.data) {

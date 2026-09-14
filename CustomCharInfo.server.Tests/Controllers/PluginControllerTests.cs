@@ -32,13 +32,28 @@ namespace CustomCharInfo.server.Tests.Controllers
             return controller;
         }
 
+        // SlottedId can't contain digits, so a letters-only value is derived from the test moveset id
+        // to keep it unique across AddMoveset calls in the same test.
+        private static string SlottedIdFor(int id)
+        {
+            var n = id;
+            var suffix = "";
+            do
+            {
+                suffix = (char)('a' + (n % 26)) + suffix;
+                n /= 26;
+            } while (n > 0);
+            return "slot" + suffix;
+        }
+
         private Moveset AddMoveset(int movesetId)
         {
             var moveset = new Moveset
             {
                 MovesetId = movesetId,
                 ModdedCharName = "Test Char",
-                VanillaCharInternalName = "mario"
+                VanillaCharInternalName = "mario",
+                SlottedId = SlottedIdFor(movesetId)
             };
             _db.Context.Movesets.Add(moveset);
             _db.Context.SaveChanges();
@@ -202,6 +217,75 @@ namespace CustomCharInfo.server.Tests.Controllers
             var ok = Assert.IsType<OkObjectResult>(result.Result);
             var body = Assert.IsType<IdentifyPluginResultDto>(ok.Value);
             Assert.Equal("Other", body.AttachmentType);
+        }
+
+        [Fact]
+        public async Task IdentifyBatch_MixedKnownAndUnknown_ReturnsPerHashResultsInOrder()
+        {
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
+            var controller = CreateController("user-1");
+            await controller.CreatePlugin(BaseDto(Hash1));
+            var pluginVersionId = _db.Context.PluginVersions.Single().PluginVersionId;
+            SeedData.AddActionLog(_db.Context, pluginVersionId, acceptanceStateId: 7, DateTime.UtcNow.AddMinutes(1), "log-author", itemTypeId: 5);
+
+            var result = await controller.IdentifyBatch(new BatchIdentifyRequestDto { Hashes = new List<string> { Hash1, Hash2 } });
+
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            var body = Assert.IsType<List<BatchIdentifyResultDto>>(ok.Value);
+            Assert.Equal(2, body.Count);
+            Assert.Equal(Hash1, body[0].Hash);
+            Assert.True(body[0].Found);
+            Assert.NotNull(body[0].Result);
+            Assert.Equal(Hash2, body[1].Hash);
+            Assert.False(body[1].Found);
+            Assert.Null(body[1].Result);
+        }
+
+        [Fact]
+        public async Task IdentifyBatch_UnknownHash_LogsToUnknownPluginHashes()
+        {
+            var controller = CreateController();
+
+            await controller.IdentifyBatch(new BatchIdentifyRequestDto { Hashes = new List<string> { Hash1 } });
+
+            var unknown = Assert.Single(_db.Context.UnknownPluginHashes);
+            Assert.Equal(Hash1, unknown.Hash);
+            Assert.Equal(1, unknown.CheckCount);
+        }
+
+        [Fact]
+        public async Task IdentifyBatch_InvalidHashFormat_MarkedNotFoundWithoutLogging()
+        {
+            var controller = CreateController();
+
+            var result = await controller.IdentifyBatch(new BatchIdentifyRequestDto { Hashes = new List<string> { "not-a-valid-hash" } });
+
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            var body = Assert.IsType<List<BatchIdentifyResultDto>>(ok.Value);
+            Assert.False(body[0].Found);
+            Assert.Empty(_db.Context.UnknownPluginHashes);
+        }
+
+        [Fact]
+        public async Task IdentifyBatch_TooManyHashes_ReturnsBadRequest()
+        {
+            var controller = CreateController();
+            var hashes = Enumerable.Range(0, 51).Select(i => new string(char.ToLower((char)('a' + i % 26)), 64)).ToList();
+
+            var result = await controller.IdentifyBatch(new BatchIdentifyRequestDto { Hashes = hashes });
+
+            Assert.IsType<BadRequestObjectResult>(result.Result);
+        }
+
+        [Fact]
+        public async Task IdentifyBatch_NoHashes_ReturnsBadRequest()
+        {
+            var controller = CreateController();
+
+            var result = await controller.IdentifyBatch(new BatchIdentifyRequestDto { Hashes = new List<string>() });
+
+            Assert.IsType<BadRequestObjectResult>(result.Result);
         }
 
         [Fact]

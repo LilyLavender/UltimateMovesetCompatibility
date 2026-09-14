@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using CustomCharInfo.server.Data;
 using CustomCharInfo.server.Models;
+using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.RateLimiting;
 
 using SixLabors.ImageSharp;
 
@@ -10,6 +12,9 @@ namespace CustomCharInfo.server.Controllers
 {
     [ApiController]
     [Route("api/")]
+    [EnableCors("PublicApi")]
+    [EnableRateLimiting("public")]
+    [ApiExplorerSettings(GroupName = "public")]
     public class LookupController : ControllerBase
     {
         private readonly AppDbContext _context;
