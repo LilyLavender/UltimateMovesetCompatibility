@@ -4,7 +4,6 @@
 
     <p class="mb-4 helper-text">
       Lists every image uploaded to R2, showing which ones are still referenced by either a moveset, series, blog post, modder profile, or banner image.
-      Does not show images uploaded in the last 48 hours. 
     </p>
 
     <!-- Controls -->
@@ -26,10 +25,10 @@
             class="btn delete-btn"
             @click="deleteAllUnused"
             :loading="deleting"
-            :disabled="deletableCount === 0"
+            :disabled="unusedCount === 0"
           >
             <v-icon class="mr-1">mdi-delete</v-icon>
-            Delete Unused Images ({{ deletableCount }})
+            Delete Unused Images ({{ unusedCount }})
           </v-btn>
         </div>
       </v-col>
@@ -39,9 +38,6 @@
       <template v-if="unusedCount === 0">All images are used. You're good.</template>
       <template v-else>
         {{ images.length }} {{ pluralize(images.length, 'image') }} found, {{ unusedCount }} unused.
-        <span v-if="deletableCount < unusedCount">
-          ({{ unusedCount - deletableCount }} too recent to delete yet.)
-        </span>
       </template>
     </p>
 
@@ -69,9 +65,9 @@
               :style="{ width: tileSize(item).w + 'px' }"
             >
               <div class="tile-img-box" :style="{ height: tileSize(item).h + 'px' }">
-                <div v-if="!item.inUse" class="tile-warning" :class="{ 'tile-warning--recent': !item.deletable }">
+                <div v-if="!item.inUse" class="tile-warning">
                   <v-icon size="14" class="mr-1">mdi-alert</v-icon>
-                  {{ item.deletable ? 'Unused' : 'Unused, too recent' }}
+                  Unused
                 </div>
                 <a :href="item.url" target="_blank" rel="noopener">
                   <img
@@ -186,7 +182,6 @@ const topGroups = computed(() => {
 })
 
 const unusedCount = computed(() => images.value.filter(i => !i.inUse).length)
-const deletableCount = computed(() => images.value.filter(i => i.deletable).length)
 const collapsedOverrides = ref({})
 
 const isCollapsed = (key, unused) => {
@@ -221,7 +216,7 @@ const scan = async () => {
 }
 
 const deleteAllUnused = async () => {
-  const keys = images.value.filter(i => i.deletable).map(i => i.key)
+  const keys = images.value.filter(i => !i.inUse).map(i => i.key)
   if (!confirm(`Permanently delete ${keys.length} unused ${pluralize(keys.length, 'image')} from R2? This cannot be undone.`)) return
 
   deleting.value = true
@@ -347,10 +342,6 @@ const deleteAllUnused = async () => {
   font-weight: 600;
   color: #1a1a1a;
   background-color: rgba(255, 179, 0, 0.9);
-}
-.tile-warning--recent {
-  color: #e2e2e2;
-  background-color: rgba(60, 60, 60, 0.85);
 }
 
 .tile-info {
