@@ -78,7 +78,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
-        public async Task Scan_ReturnsAllImages_FlaggingInUseAndDeletableCorrectly()
+        public async Task Scan_ReturnsAllImages_FlaggingInUseCorrectly()
         {
             SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
 
@@ -109,16 +109,13 @@ namespace CustomCharInfo.server.Tests.Controllers
 
             var referenced = items.Single(x => Prop<string>(x, "Key") == "uploads/moveset-ui/referenced.png");
             Assert.True(Prop<bool>(referenced, "InUse"));
-            Assert.False(Prop<bool>(referenced, "Deletable"));
             Assert.Equal($"{PublicBaseUrl}/uploads/moveset-ui/referenced.png", Prop<string>(referenced, "Url"));
 
             var recentOrphan = items.Single(x => Prop<string>(x, "Key") == "uploads/moveset-ui/recent-orphan.png");
             Assert.False(Prop<bool>(recentOrphan, "InUse"));
-            Assert.False(Prop<bool>(recentOrphan, "Deletable"));
 
             var oldOrphan = items.Single(x => Prop<string>(x, "Key") == "uploads/moveset-ui/old-orphan.png");
             Assert.False(Prop<bool>(oldOrphan, "InUse"));
-            Assert.True(Prop<bool>(oldOrphan, "Deletable"));
         }
 
         [Fact]

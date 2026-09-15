@@ -21,11 +21,7 @@ namespace CustomCharInfo.server.Controllers
 
         private readonly IConfiguration _config;
 
-        // Objects newer than this are never deletable even if unreferenced,
-        // so an image mid-flight in the upload-then-attach flow isn't deleted out from under a save that hasn't completed yet.
-        private static readonly TimeSpan GracePeriod = TimeSpan.FromHours(48);
-
-        private sealed record ScannedImage(string Key, string Url, long SizeBytes, DateTime LastModified, bool InUse, bool Deletable);
+        private sealed record ScannedImage(string Key, string Url, long SizeBytes, DateTime LastModified, bool InUse);
 
         public ImageGarbageCollectionController(AppDbContext context, UserManager<ApplicationUser> userManager, IAmazonS3 s3, IConfiguration config)
         {
@@ -66,7 +62,7 @@ namespace CustomCharInfo.server.Controllers
 
             // Re-derive which keys are actually deletable rather than trusting the client-supplied list
             var deletableKeys = (await ScanAllAsync())
-                .Where(i => i.Deletable)
+                .Where(i => !i.InUse)
                 .Select(i => i.Key)
                 .ToHashSet();
             var toDelete = keys.Where(deletableKeys.Contains).ToList();
@@ -108,15 +104,13 @@ namespace CustomCharInfo.server.Controllers
 
             var referencedKeys = await GetReferencedKeysAsync(publicBaseUrl);
             var allObjects = await ListAllObjectsAsync(bucket);
-            var cutoff = DateTime.UtcNow - GracePeriod;
 
             return allObjects
                 .OrderBy(o => o.Key)
                 .Select(o =>
                 {
                     var inUse = referencedKeys.Contains(o.Key);
-                    var deletable = !inUse && o.LastModified.ToUniversalTime() < cutoff;
-                    return new ScannedImage(o.Key, $"{publicBaseUrl}/{o.Key}", o.Size, o.LastModified, inUse, deletable);
+                    return new ScannedImage(o.Key, $"{publicBaseUrl}/{o.Key}", o.Size, o.LastModified, inUse);
                 })
                 .ToList();
         }
