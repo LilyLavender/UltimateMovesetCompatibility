@@ -1,6 +1,43 @@
-@CustomCharInfo.server_HostAddress = http://localhost:5191
+@host = http://localhost:5191
+@token = paste-a-jwt-here
 
-GET {{CustomCharInfo.server_HostAddress}}/weatherforecast/
+### Public: lookups
+GET {{host}}/api/releasestates
 Accept: application/json
 
-###
+### Public: list movesets
+GET {{host}}/api/movesets?sort=releaseDate
+Accept: application/json
+
+### Public: one moveset by SlottedId or id
+GET {{host}}/api/movesets/mario
+Accept: application/json
+
+### Public: search
+GET {{host}}/api/movesets/search?q=mar
+Accept: application/json
+
+### Public: predicted compatibility (ids or SlottedIds)
+GET {{host}}/api/compatibility/predict?movesets=1,2
+Accept: application/json
+
+### Public: identify a plugin by SHA-256 hash
+GET {{host}}/api/plugins/identify?hash=0000000000000000000000000000000000000000000000000000000000000000
+Accept: application/json
+
+### Auth: login
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "you@example.com",
+  "password": "your-password"
+}
+
+### Auth: current user
+GET {{host}}/api/auth/me
+Authorization: Bearer {{token}}
+
+### Auth: my action logs
+GET {{host}}/api/logs
+Authorization: Bearer {{token}}

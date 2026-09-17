@@ -29,7 +29,6 @@ CustomCharInfo.client/coverage/
 /*.md
 !/README.md
 .claude/
-*.rb
 *.sql
 backups/
 docs/
