@@ -50,7 +50,8 @@
             hide-details
           />
           <div v-else class="preview-box">
-            <!-- eslint-disable-next-line vue/no-v-html. Content is DOMPurify-sanitized -->
+            <!-- Content is DOMPurify-sanitized -->
+            <!-- eslint-disable-next-line vue/no-v-html -->
             <div v-if="renderedPreview" class="preview-content" v-html="renderedPreview" />
             <span v-else class="preview-empty">Nothing to preview.</span>
           </div>
@@ -81,6 +82,9 @@ import DOMPurify from 'dompurify'
 import api from '@/services/api'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import { useImageUpload, isStagedFile } from '@/composables/useImageUpload'
+import { useNotify } from '@/composables/useNotify'
+
+const notify = useNotify()
 
 const router = useRouter()
 
@@ -100,7 +104,7 @@ const { uploadIfNeeded } = useImageUpload('/upload/blog-image')
 
 const submit = async () => {
   if (!form.value.blogTitle?.trim() || !form.value.blogText?.trim()) {
-    alert('Blog Title and Blog Text are required.')
+    notify.warning('Blog Title and Blog Text are required.')
     return
   }
 
@@ -122,7 +126,7 @@ const submit = async () => {
     newId = res.data.blogPostId
   } catch (err) {
     console.error('Submit failed:', JSON.stringify(err.response?.data) || err.message)
-    alert('Failed to post blog.\n\n' + (JSON.stringify(err.response?.data) || err.message))
+    notify.error('Failed to post blog.', err)
     isSubmitting.value = false
     uploadStatus.value = ''
     return
@@ -138,10 +142,7 @@ const submit = async () => {
         'Image upload failed after blog post creation:',
         JSON.stringify(err.response?.data) || err.message
       )
-      alert(
-        'Blog post created, but the image failed to upload.\n\n' +
-          (JSON.stringify(err.response?.data) || err.message)
-      )
+      notify.error('Blog post created, but the image failed to upload.', err)
     }
   }
 

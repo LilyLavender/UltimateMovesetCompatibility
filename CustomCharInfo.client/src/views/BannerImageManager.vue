@@ -50,6 +50,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/services/api'
+import { useNotify } from '@/composables/useNotify'
+
+const notify = useNotify()
 
 const images = ref([])
 const loaded = ref(false)
@@ -66,7 +69,7 @@ const loadImages = async () => {
     loaded.value = true
   } catch (err) {
     console.error('Failed to load banner images:', err)
-    alert('Failed to load banner images.')
+    notify.error('Failed to load banner images.')
   }
 }
 
@@ -86,7 +89,7 @@ const onFileSelected = async (event) => {
     await loadImages()
   } catch (err) {
     console.error('Failed to upload banner image:', err)
-    alert(err.response?.data || 'Failed to upload banner image.')
+    notify.error('Failed to upload banner image.', err)
   } finally {
     uploading.value = false
   }
@@ -101,7 +104,7 @@ const deleteImage = async (item) => {
     images.value = images.value.filter((i) => i.bannerImageId !== item.bannerImageId)
   } catch (err) {
     console.error('Failed to delete banner image:', err)
-    alert('Failed to delete banner image.')
+    notify.error('Failed to delete banner image.')
   } finally {
     deletingId.value = null
   }

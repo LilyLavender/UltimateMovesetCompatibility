@@ -407,6 +407,9 @@ import thumbhUnknown from '@/assets/thumb_h_unknown.png'
 import movesetHeroUnknown from '@/assets/moveset_hero_unknown.png'
 import { IMAGE_UPLOAD_SPECS } from '@/globals'
 import { dateOnlyStringToLocalDate, localDateToDateOnlyString } from '@/services/dateOnly'
+import { useNotify } from '@/composables/useNotify'
+
+const notify = useNotify()
 
 const props = defineProps({
   mode: { type: String, default: 'add' },
@@ -580,11 +583,11 @@ const submit = async () => {
 
   // Validate slots
   if (isNaN(slotsStart) || isNaN(slotsEnd) || slotsStart < 8 || slotsEnd > 255) {
-    alert('Please ensure Start Slot and End Slot are between 8 and 255.')
+    notify.warning('Please ensure Start Slot and End Slot are between 8 and 255.')
     return
   }
   if (slotsStart > slotsEnd) {
-    alert('Please ensure End Slot is greater than Start Slot.')
+    notify.warning('Please ensure End Slot is greater than Start Slot.')
     return
   }
 
@@ -592,7 +595,7 @@ const submit = async () => {
   const user = await api.get('/auth/me')
   if (!form.value.modderIds.includes(user.data.modderId)) {
     if (!isEditMode.value) {
-      alert('You cannot save a moveset you do not own.')
+      notify.warning('You cannot save a moveset you do not own.')
       return
     }
     const confirmed = window.confirm(
@@ -612,13 +615,13 @@ const submit = async () => {
 
   for (const field of requiredFields) {
     if (!form.value[field] && form.value[field] !== 0) {
-      alert(`Field "${field}" is required.`)
+      notify.warning(`Field "${field}" is required.`)
       return
     }
   }
 
   if (/\d/.test(form.value.slottedId)) {
-    alert('Slotted ID cannot contain digits.')
+    notify.warning('Slotted ID cannot contain digits.')
     return
   }
 
@@ -645,10 +648,7 @@ const submit = async () => {
       })
     } catch (err) {
       console.error('Image upload failed:', JSON.stringify(err.response?.data) || err.message)
-      alert(
-        'Failed to upload image(s). Please check the file and try again.\n\n' +
-          (JSON.stringify(err.response?.data) || err.message)
-      )
+      notify.error('Failed to upload image(s). Please check the file and try again.', err)
       isSubmitting.value = false
       uploadStatus.value = ''
       return
@@ -661,10 +661,7 @@ const submit = async () => {
       router.push(`/moveset/${props.movesetId}`)
     } catch (err) {
       console.error('Submit failed:', JSON.stringify(err.response?.data) || err.message)
-      alert(
-        'Failed to save moveset. Please check the form and try again.\n\n' +
-          (JSON.stringify(err.response?.data) || err.message)
-      )
+      notify.error('Failed to save moveset. Please check the form and try again.', err)
     } finally {
       isSubmitting.value = false
       uploadStatus.value = ''
@@ -693,10 +690,7 @@ const submit = async () => {
     newId = res.data.movesetId
   } catch (err) {
     console.error('Submit failed:', JSON.stringify(err.response?.data) || err.message)
-    alert(
-      'Failed to save moveset. Please check the form and try again.\n\n' +
-        (JSON.stringify(err.response?.data) || err.message)
-    )
+    notify.error('Failed to save moveset. Please check the form and try again.', err)
     isSubmitting.value = false
     uploadStatus.value = ''
     return
@@ -722,9 +716,9 @@ const submit = async () => {
         'Image upload failed after moveset creation:',
         JSON.stringify(err.response?.data) || err.message
       )
-      alert(
-        'Moveset created, but the image(s) failed to upload. You can add them later by editing the moveset.\n\n' +
-          (JSON.stringify(err.response?.data) || err.message)
+      notify.error(
+        'Moveset created, but the image(s) failed to upload. You can add them later by editing the moveset.',
+        err
       )
     }
   }

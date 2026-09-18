@@ -44,6 +44,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
+import { useNotify } from '@/composables/useNotify'
+
+const notify = useNotify()
 
 const movesets = ref([])
 const loaded = ref(false)
@@ -65,7 +68,7 @@ const loadMovesets = async () => {
     loaded.value = true
   } catch (err) {
     console.error('Failed to load movesets:', err)
-    alert('Failed to load movesets.')
+    notify.error('Failed to load movesets.')
   }
 }
 
@@ -83,7 +86,7 @@ const deleteMoveset = async (item) => {
     movesets.value = movesets.value.filter((m) => m.movesetId !== item.movesetId)
   } catch (err) {
     console.error('Failed to delete moveset:', err)
-    alert('Failed to delete moveset.')
+    notify.error('Failed to delete moveset.')
   } finally {
     deletingId.value = null
   }

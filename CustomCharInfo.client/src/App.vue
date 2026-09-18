@@ -5,6 +5,7 @@
     <Footer />
 
     <MobileWarning />
+    <AppSnackbar />
   </v-app>
 </template>
 
@@ -12,6 +13,7 @@
 import Header from '@/components/SiteHeader.vue'
 import Footer from '@/components/SiteFooter.vue'
 import MobileWarning from '@/components/MobileWarning.vue'
+import AppSnackbar from '@/components/AppSnackbar.vue'
 
 import { watch } from 'vue'
 import { useRoute } from 'vue-router'

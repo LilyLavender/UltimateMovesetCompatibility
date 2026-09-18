@@ -71,6 +71,9 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/services/api'
+import { useNotify } from '@/composables/useNotify'
+
+const notify = useNotify()
 
 const props = defineProps({
   mode: { type: String, default: 'add' },
@@ -123,11 +126,11 @@ watch(offsetInput, (val) => {
 const submit = async () => {
   // Validation
   if (!form.value.offset) {
-    alert('Offset is required')
+    notify.warning('Offset is required')
     return
   }
   if (!form.value.description) {
-    alert('Description is required')
+    notify.warning('Description is required')
     return
   }
 
@@ -142,11 +145,11 @@ const submit = async () => {
     router.push('/hooks')
   } catch (err) {
     if (err.response?.status === 409) {
-      alert(`A hook with offset 0x${form.value.offset} already exists.`)
+      notify.warning(`A hook with offset 0x${form.value.offset} already exists.`)
       return
     }
     console.error('Submit failed:', JSON.stringify(err.response?.data) || err.message)
-    alert('Failed to save hook.\n\n' + (JSON.stringify(err.response?.data) || err.message))
+    notify.error('Failed to save hook.', err)
   }
 }
 </script>

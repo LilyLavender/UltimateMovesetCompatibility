@@ -103,6 +103,9 @@
 import { ref, computed } from 'vue'
 import api from '@/services/api'
 import { IMAGE_UPLOAD_SPECS } from '@/globals'
+import { useNotify } from '@/composables/useNotify'
+
+const notify = useNotify()
 
 const scanning = ref(false)
 const deleting = ref(false)
@@ -215,7 +218,7 @@ const scan = async () => {
     hasScanned.value = true
   } catch (err) {
     console.error('Failed to scan images:', err)
-    alert('Failed to scan images.')
+    notify.error('Failed to scan images.')
   } finally {
     scanning.value = false
   }
@@ -238,11 +241,11 @@ const deleteAllUnused = async () => {
       `Deleted ${deleted.length} image(s). Skipped: ${skipped.length}. Failed: ${failed.length}.`
     )
     if (failed.length)
-      alert(`${failed.length} image(s) failed to delete. Check the console for details.`)
+      notify.error(`${failed.length} image(s) failed to delete. Check the console for details.`)
     await scan()
   } catch (err) {
     console.error('Failed to delete images:', err)
-    alert('Failed to delete images.')
+    notify.error('Failed to delete images.')
   } finally {
     deleting.value = false
   }

@@ -64,6 +64,9 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 import MovesetList from '@/components/MovesetList.vue'
+import { useNotify } from '@/composables/useNotify'
+
+const notify = useNotify()
 
 const movesets = ref([])
 const selectedMovesetId = ref(null)
@@ -111,10 +114,10 @@ const saveAdminPicks = async () => {
   try {
     const idsToSend = Array.from(adminPicksIds.value)
     await api.post('/movesets/set-admin-picks', idsToSend)
-    alert('Admin picks updated successfully!')
+    notify.success('Admin picks updated successfully!')
   } catch (err) {
     console.error('Failed to save admin picks:', err)
-    alert('Failed to save admin picks. Please try again.')
+    notify.error('Failed to save admin picks. Please try again.', err)
   } finally {
     saving.value = false
   }

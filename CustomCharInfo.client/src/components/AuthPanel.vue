@@ -156,6 +156,9 @@ import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { UserType, ItemType, AcceptanceState } from '@/globals'
+import { useNotify } from '@/composables/useNotify'
+
+const notify = useNotify()
 
 const authStore = useAuthStore()
 const user = computed(() => authStore.user)
@@ -170,7 +173,7 @@ const register = async () => {
   try {
     errorMsgs.value = []
     await authStore.register(email.value, password.value)
-    alert('Registered! You can now log in.')
+    notify.success('Registered! You can now log in.')
   } catch (err) {
     console.error('Register Failed:', err)
     errorMsgs.value = extractErrorMessages(err)
@@ -193,12 +196,12 @@ const updateUsername = async () => {
     await api.put(`/auth/edit-username`, {
       newUserName: editedUsername.value,
     })
-    alert('Username updated successfully!')
+    notify.success('Username updated successfully!')
     await authStore.fetchCurrentUser()
     editProfileForm.value = false
   } catch (err) {
     console.error('Failed to update username:', err)
-    alert('Failed to update username.')
+    notify.error('Failed to update username.')
   }
 }
 

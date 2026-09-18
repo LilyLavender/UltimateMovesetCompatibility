@@ -76,6 +76,9 @@ import api from '@/services/api'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import { IMAGE_UPLOAD_SPECS } from '@/globals'
 import { useImageUpload, isStagedFile } from '@/composables/useImageUpload'
+import { useNotify } from '@/composables/useNotify'
+
+const notify = useNotify()
 
 const props = defineProps({
   mode: { type: String, default: 'add' },
@@ -157,10 +160,7 @@ const submit = async () => {
       })
     } catch (err) {
       console.error('Image upload failed:', JSON.stringify(err.response?.data) || err.message)
-      alert(
-        'Failed to upload image. Please check the file and try again.\n\n' +
-          (JSON.stringify(err.response?.data) || err.message)
-      )
+      notify.error('Failed to upload image. Please check the file and try again.', err)
       isSubmitting.value = false
       uploadStatus.value = ''
       return
@@ -172,14 +172,11 @@ const submit = async () => {
       router.push('/series')
     } catch (err) {
       if (err.response?.status === 409) {
-        alert('A series with this name already exists.')
+        notify.warning('A series with this name already exists.')
         return
       }
       console.error('Submit failed:', JSON.stringify(err.response?.data) || err.message)
-      alert(
-        'Failed to save series. Please check the form and try again.\n\n' +
-          (JSON.stringify(err.response?.data) || err.message)
-      )
+      notify.error('Failed to save series. Please check the form and try again.', err)
     } finally {
       isSubmitting.value = false
       uploadStatus.value = ''
@@ -202,13 +199,10 @@ const submit = async () => {
     newId = res.data.seriesId
   } catch (err) {
     if (err.response?.status === 409) {
-      alert('A series with this name already exists.')
+      notify.warning('A series with this name already exists.')
     } else {
       console.error('Submit failed:', JSON.stringify(err.response?.data) || err.message)
-      alert(
-        'Failed to save series. Please check the form and try again.\n\n' +
-          (JSON.stringify(err.response?.data) || err.message)
-      )
+      notify.error('Failed to save series. Please check the form and try again.', err)
     }
     isSubmitting.value = false
     uploadStatus.value = ''
@@ -228,9 +222,9 @@ const submit = async () => {
         'Image upload failed after series creation:',
         JSON.stringify(err.response?.data) || err.message
       )
-      alert(
-        'Series created, but the image failed to upload. You can add it later by editing the series.\n\n' +
-          (JSON.stringify(err.response?.data) || err.message)
+      notify.error(
+        'Series created, but the image failed to upload. You can add it later by editing the series.',
+        err
       )
     }
   }
