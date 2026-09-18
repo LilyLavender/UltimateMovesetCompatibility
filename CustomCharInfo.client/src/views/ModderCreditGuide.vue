@@ -5,28 +5,28 @@
     <div class="content">
       <h2>Primary Creators Only</h2>
       <p>
-        Only include modders who made significant, direct contributions to the moveset itself.
-        Aim for no more than three or four credits total.
-        A single main author is the most common case.
+        Only include modders who made significant, direct contributions to the moveset itself. Aim
+        for no more than three or four credits total. A single main author is the most common case.
       </p>
 
       <h2>Examples of Who to Include</h2>
       <p>
-        The modder who did the majority of the work (moveset design, coding, etc).
-        If the coding and animations were handled by two different people, both should be credited.
-        Co-leads on a collaborative project both belong here.
+        The modder who did the majority of the work (moveset design, coding, etc). If the coding and
+        animations were handled by two different people, both should be credited. Co-leads on a
+        collaborative project both belong here.
       </p>
 
       <h2>Examples of Who to Leave Out</h2>
       <p>
-        Someone who gave feedback, tested the moveset, or contributed a single asset.
-        Anyone whose involvement was minor or indirect shouldn't be credited on UMC. Leave that for the mod page.
-        While their contributions are appreciated, including only the main authors helps keep UMC clean and concise.
+        Someone who gave feedback, tested the moveset, or contributed a single asset. Anyone whose
+        involvement was minor or indirect shouldn't be credited on UMC. Leave that for the mod page.
+        While their contributions are appreciated, including only the main authors helps keep UMC
+        clean and concise.
       </p>
 
       <p class="closing">
-        If you're unsure, ask yourself: would this moveset look or function meaningfully different at first glance without their work?
-        If not, they probably don't need to be listed.
+        If you're unsure, ask yourself: would this moveset look or function meaningfully different
+        at first glance without their work? If not, they probably don't need to be listed.
       </p>
     </div>
   </v-container>

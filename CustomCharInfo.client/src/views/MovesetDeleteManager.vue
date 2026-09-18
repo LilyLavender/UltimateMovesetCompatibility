@@ -3,7 +3,8 @@
     <h1 class="mb-5 page-title no-select">Moveset Delete Manager</h1>
 
     <p class="mb-4 helper-text">
-      Permanently deletes a moveset and everything tied to it. Action log history is kept for audit purposes.
+      Permanently deletes a moveset and everything tied to it. Action log history is kept for audit
+      purposes.
     </p>
 
     <v-text-field
@@ -28,8 +29,8 @@
         </div>
         <v-btn
           class="delete-btn"
-          @click="deleteMoveset(item)"
           :loading="deletingId === item.movesetId"
+          @click="deleteMoveset(item)"
         >
           <v-icon class="mr-1">mdi-delete</v-icon>
           Delete
@@ -43,6 +44,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
+import { useNotify } from '@/composables/useNotify'
+
+const notify = useNotify()
 
 const movesets = ref([])
 const loaded = ref(false)
@@ -54,7 +58,7 @@ const pluralize = (count, singular, plural = `${singular}s`) => (count === 1 ? s
 const filtered = computed(() => {
   const term = search.value?.trim().toLowerCase()
   if (!term) return movesets.value
-  return movesets.value.filter(m => m.moddedCharName.toLowerCase().includes(term))
+  return movesets.value.filter((m) => m.moddedCharName.toLowerCase().includes(term))
 })
 
 const loadMovesets = async () => {
@@ -64,20 +68,25 @@ const loadMovesets = async () => {
     loaded.value = true
   } catch (err) {
     console.error('Failed to load movesets:', err)
-    alert('Failed to load movesets.')
+    notify.error('Failed to load movesets.')
   }
 }
 
 const deleteMoveset = async (item) => {
-  if (!confirm(`Permanently delete "${item.moddedCharName}"? This will also delete its likes, compatibility reports, and modder/hook/article/dependency listings. This cannot be undone.`)) return
+  if (
+    !confirm(
+      `Permanently delete "${item.moddedCharName}"? This will also delete its likes, compatibility reports, and modder/hook/article/dependency listings. This cannot be undone.`
+    )
+  )
+    return
 
   deletingId.value = item.movesetId
   try {
     await api.delete(`/movesets/${item.movesetId}`)
-    movesets.value = movesets.value.filter(m => m.movesetId !== item.movesetId)
+    movesets.value = movesets.value.filter((m) => m.movesetId !== item.movesetId)
   } catch (err) {
     console.error('Failed to delete moveset:', err)
-    alert('Failed to delete moveset.')
+    notify.error('Failed to delete moveset.')
   } finally {
     deletingId.value = null
   }

@@ -48,9 +48,8 @@ namespace CustomCharInfo.server.Controllers
                 .FirstOrDefaultAsync();
 
             var modderId = userInfo?.ModderId;
-            var isAdmin = userInfo?.UserTypeId == 3;
-            var blockedStates = new[] { 2, 4, 6 };
-
+            var isAdmin = userInfo?.UserTypeId == UserTypes.Admin;
+            
             // All series user has a moveset from
             var movesetSeriesIds = modderId != null
                 ? await _context.MovesetModders
@@ -63,7 +62,7 @@ namespace CustomCharInfo.server.Controllers
             // Get the most recent ActionLog for each series
             var latestLogs = await _context.ActionLogs
                 .Where(log =>
-                    log.ItemTypeId == 3 &&
+                    log.ItemTypeId == ItemTypes.Series &&
                     movesetSeriesIds.Contains(log.ItemId))
                 .GroupBy(log => log.ItemId)
                 .Select(g => g.OrderByDescending(l => l.CreatedAt).First())
@@ -72,7 +71,7 @@ namespace CustomCharInfo.server.Controllers
             // Only allow edit if latest log for series is pending user action
             var editableSeriesIds = latestLogs
                 .Where(log =>
-                    log.AcceptanceStateId == 3 || log.AcceptanceStateId == 4)
+                    AcceptanceStates.PendingUser.Contains(log.AcceptanceStateId))
                 .Select(log => log.ItemId)
                 .ToHashSet();
 
@@ -92,9 +91,9 @@ namespace CustomCharInfo.server.Controllers
                     MovesetCount = _context.Movesets.Count(m =>
                         m.SeriesId == s.SeriesId &&
                         m.PrivateMoveset != true &&
-                        (isAdmin || !blockedStates.Contains(
+                        (isAdmin || !AcceptanceStates.Blocked.Contains(
                             _context.ActionLogs
-                                .Where(a => a.ItemTypeId == 1 && a.ItemId == m.MovesetId)
+                                .Where(a => a.ItemTypeId == ItemTypes.Moveset && a.ItemId == m.MovesetId)
                                 .OrderByDescending(a => a.CreatedAt)
                                 .Select(a => a.AcceptanceStateId)
                                 .FirstOrDefault()
@@ -158,10 +157,9 @@ namespace CustomCharInfo.server.Controllers
             var user = userId != null
                 ? await _context.Users.FindAsync(userId)
                 : null;
-            var isAdmin = user?.UserTypeId == 3;
+            var isAdmin = user.IsAdmin();
             var modderId = user?.ModderId;
-            var blockedStates = new[] { 2, 4, 6 };
-
+            
             // Check if series exists
             var seriesExists = await _context.Series.AnyAsync(s => s.SeriesId == id);
             if (!seriesExists)
@@ -190,9 +188,9 @@ namespace CustomCharInfo.server.Controllers
                     MovesetCount = _context.Movesets.Count(m =>
                         m.SeriesId == s.SeriesId &&
                         m.PrivateMoveset != true &&
-                        (isAdmin || !blockedStates.Contains(
+                        (isAdmin || !AcceptanceStates.Blocked.Contains(
                             _context.ActionLogs
-                                .Where(a => a.ItemTypeId == 1 && a.ItemId == m.MovesetId)
+                                .Where(a => a.ItemTypeId == ItemTypes.Moveset && a.ItemId == m.MovesetId)
                                 .OrderByDescending(a => a.CreatedAt)
                                 .Select(a => a.AcceptanceStateId)
                                 .FirstOrDefault()
@@ -207,10 +205,8 @@ namespace CustomCharInfo.server.Controllers
         [Authorize]
         public async Task<IActionResult> CreateSeries([FromBody] UpdateSeriesDto dto)
         {
-            // Make sure user is modder
-            var userId = _userManager.GetUserId(User);
-            var userFromId = await _context.Users.FindAsync(userId);
-            if (userFromId == null || userFromId.UserTypeId < 2)
+            var userFromId = await _userManager.GetRequesterAsync(_context, User);
+            if (!userFromId.IsModder())
                 return Forbid();
 
             if (string.IsNullOrWhiteSpace(dto.SeriesName))
@@ -244,14 +240,14 @@ namespace CustomCharInfo.server.Controllers
 
             // Log action
             var user = await _userManager.Users
-                .Where(u => u.Id == userId)
+                .Where(u => u.Id == userFromId.Id)
                 .Select(u => new { u.ModderId, u.UserTypeId })
                 .SingleOrDefaultAsync();
-            int newState = user?.UserTypeId == 3 ? 7 : 2;
+            int newState = user?.UserTypeId == UserTypes.Admin ? AcceptanceStates.AutoAccepted : AcceptanceStates.PendingAdminHard;
             _context.ActionLogs.Add(new ActionLog
             {
-                UserId = userId,
-                ItemTypeId = 3,
+                UserId = userFromId.Id,
+                ItemTypeId = ItemTypes.Series,
                 ItemId = series.SeriesId,
                 AcceptanceStateId = newState,
                 Notes = dto.Notes ?? "",
@@ -271,9 +267,8 @@ namespace CustomCharInfo.server.Controllers
         [HttpPatch("{id}/image")]
         public async Task<IActionResult> PatchSeriesImage(int id, [FromBody] SeriesImageDto dto)
         {
-            var userId = _userManager.GetUserId(User);
-            var userFromId = await _context.Users.FindAsync(userId);
-            if (userFromId == null || userFromId.UserTypeId < 2)
+            var userFromId = await _userManager.GetRequesterAsync(_context, User);
+            if (!userFromId.IsModder())
                 return Forbid();
 
             var series = await _context.Series.FindAsync(id);
@@ -292,9 +287,8 @@ namespace CustomCharInfo.server.Controllers
         [Authorize]
         public async Task<IActionResult> RequestSeriesEdit(int id, [FromBody] RequestEditSeriesDto dto)
         {
-            var userId = _userManager.GetUserId(User);
-            var userFromId = await _context.Users.FindAsync(userId);
-            if (userFromId == null || userFromId.UserTypeId < 2)
+            var userFromId = await _userManager.GetRequesterAsync(_context, User);
+            if (!userFromId.IsModder())
                 return Forbid();
 
             var modderId = userFromId.ModderId;
@@ -315,10 +309,10 @@ namespace CustomCharInfo.server.Controllers
 
             var log = new ActionLog
             {
-                UserId = userId,
-                ItemTypeId = 3,
+                UserId = userFromId.Id,
+                ItemTypeId = ItemTypes.Series,
                 ItemId = id,
-                AcceptanceStateId = 1,
+                AcceptanceStateId = AcceptanceStates.PendingAdminSoft,
                 Notes = dto.Notes,
                 CreatedAt = DateTime.UtcNow
             };
@@ -333,10 +327,8 @@ namespace CustomCharInfo.server.Controllers
         [Authorize]
         public async Task<IActionResult> UpdateSeries(int id, UpdateSeriesDto dto)
         {
-            // Make sure user is modder
-            var userId = _userManager.GetUserId(User);
-            var userFromId = await _context.Users.FindAsync(userId);
-            if (userFromId == null || userFromId.UserTypeId < 2)
+            var userFromId = await _userManager.GetRequesterAsync(_context, User);
+            if (!userFromId.IsModder())
                 return Forbid();
 
             var existingSeries = await _context.Series.FindAsync(id);
@@ -345,12 +337,12 @@ namespace CustomCharInfo.server.Controllers
 
             // Find latest log for this series
             var latestLog = await _context.ActionLogs
-                .Where(a => a.ItemTypeId == 3 && a.ItemId == id)
+                .Where(a => a.ItemTypeId == ItemTypes.Series && a.ItemId == id)
                 .OrderByDescending(a => a.CreatedAt)
                 .FirstOrDefaultAsync();
 
-            // Only allow editing if latest state is 3 or 4
-            if (latestLog is null || (latestLog.AcceptanceStateId != 3 && latestLog.AcceptanceStateId != 4))
+            // Edits are only accepted while an admin has handed the series back to the user.
+            if (latestLog is null || !AcceptanceStates.PendingUser.Contains(latestLog.AcceptanceStateId))
                 return Forbid();
 
             if (string.IsNullOrWhiteSpace(dto.SeriesName))
@@ -380,20 +372,20 @@ namespace CustomCharInfo.server.Controllers
 
             // Calculate new acceptance state
             var user = await _userManager.Users
-                .Where(u => u.Id == userId)
+                .Where(u => u.Id == userFromId.Id)
                 .Select(u => new { u.ModderId, u.UserTypeId })
                 .SingleOrDefaultAsync();
 
             int newState;
-            if (user?.UserTypeId == 3) { newState = 7; }
-            else if (latestLog.AcceptanceStateId == 3) { newState = 1; }
-            else if (latestLog.AcceptanceStateId == 4) { newState = 2; }
+            if (user?.UserTypeId == UserTypes.Admin) { newState = AcceptanceStates.AutoAccepted; }
+            else if (latestLog.AcceptanceStateId == AcceptanceStates.PendingUserSoft) { newState = AcceptanceStates.PendingAdminSoft; }
+            else if (latestLog.AcceptanceStateId == AcceptanceStates.PendingUserHard) { newState = AcceptanceStates.PendingAdminHard; }
             else { return Forbid(); }
 
             _context.ActionLogs.Add(new ActionLog
             {
-                UserId = userId,
-                ItemTypeId = 3,
+                UserId = userFromId.Id,
+                ItemTypeId = ItemTypes.Series,
                 ItemId = id,
                 AcceptanceStateId = newState,
                 Notes = dto.Notes ?? "",
@@ -416,10 +408,8 @@ namespace CustomCharInfo.server.Controllers
         [Authorize]
         public async Task<IActionResult> DeleteSeries(int id)
         {
-            // Make sure user is admin
-            var userId = _userManager.GetUserId(User);
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null || user.UserTypeId != 3)
+            var user = await _userManager.GetRequesterAsync(_context, User);
+            if (!user.IsAdmin())
                 return Forbid();
 
             var series = await _context.Series.FindAsync(id);

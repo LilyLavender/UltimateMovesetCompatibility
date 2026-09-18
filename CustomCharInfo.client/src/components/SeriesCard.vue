@@ -7,8 +7,10 @@
       <v-img
         :src="getFullImageUrl(series.seriesIconUrl)"
         :alt="`${series.seriesName} Series Icon`"
-        height="64" max-height="64"
-        width="64" max-width="64"
+        height="64"
+        max-height="64"
+        width="64"
+        max-width="64"
       />
       <div>
         <v-card-title class="p-0">{{ series.seriesName }}</v-card-title>
@@ -40,10 +42,9 @@ const props = defineProps({
     type: String,
     required: true,
   },
-});
+})
 
-const getFullImageUrl = (path) =>
-  path?.startsWith("/") ? `${props.apiUrl}${path}` : path;
+const getFullImageUrl = (path) => (path?.startsWith('/') ? `${props.apiUrl}${path}` : path)
 </script>
 
 <style scoped>

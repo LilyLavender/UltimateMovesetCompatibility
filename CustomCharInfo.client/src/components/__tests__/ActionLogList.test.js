@@ -74,10 +74,7 @@ describe('ActionLogList', () => {
     api.get.mockImplementation((url) => {
       if (url === '/auth/me') return Promise.resolve({ data: { userTypeId: 1 } })
       return Promise.resolve({
-        data: [
-          logFor(1, 2, '2024-01-01'),
-          logFor(2, 5, '2024-01-03'),
-        ],
+        data: [logFor(1, 2, '2024-01-01'), logFor(2, 5, '2024-01-03')],
       })
     })
 
@@ -85,7 +82,10 @@ describe('ActionLogList', () => {
     await flushPromises()
     expect(wrapper.findAllComponents(ActionLogGroup)).toHaveLength(1)
 
-    await wrapper.findAll('button').find(b => b.text() === 'Enable All').trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'Enable All')
+      .trigger('click')
     await flushPromises()
 
     expect(wrapper.findAllComponents(ActionLogGroup)).toHaveLength(2)
@@ -100,7 +100,10 @@ describe('ActionLogList', () => {
     const wrapper = mountList()
     await flushPromises()
 
-    await wrapper.findAll('button').find(b => b.text() === 'Only Relevant').trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'Only Relevant')
+      .trigger('click')
     await flushPromises()
 
     const logsCall = api.get.mock.calls.filter(([url]) => url === '/logs').pop()
@@ -116,7 +119,10 @@ describe('ActionLogList', () => {
     const wrapper = mountList()
     await flushPromises()
 
-    await wrapper.findAll('button').find(b => b.text() === 'Only Relevant').trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'Only Relevant')
+      .trigger('click')
     await flushPromises()
 
     const logsCall = api.get.mock.calls.filter(([url]) => url === '/logs').pop()

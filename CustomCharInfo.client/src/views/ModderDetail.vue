@@ -10,17 +10,33 @@
         <div class="social-links">
           <v-tooltip v-if="modder?.gamebananaId" location="bottom">
             <template #activator="{ props: tip }">
-              <a v-bind="tip" :href="`${GB_MEMBER_URL}${modder.gamebananaId}`" class="social-link" target="_blank" rel="noopener">
-                <img src="https://images.gamebanana.com/img/ico/games/banana.gif" class="social-icon-img" alt="GameBanana" />
+              <a
+                v-bind="tip"
+                :href="`${GB_MEMBER_URL}${modder.gamebananaId}`"
+                class="social-link"
+                target="_blank"
+                rel="noopener"
+              >
+                <img
+                  src="https://images.gamebanana.com/img/ico/games/banana.gif"
+                  class="social-icon-img"
+                  alt="GameBanana"
+                />
               </a>
             </template>
-            <span class="tooltip-label">GameBanana <v-icon size="x-small">mdi-open-in-new</v-icon></span>
+            <span class="tooltip-label"
+              >GameBanana <v-icon size="x-small">mdi-open-in-new</v-icon></span
+            >
           </v-tooltip>
 
           <v-tooltip v-if="modder?.discordUsername && !modder?.problematic" location="bottom">
             <template #activator="{ props: tip }">
-              <span v-bind="tip" class="social-link" @click="copyDiscord" role="button">
-                <img src="https://cdn.simpleicons.org/discord/5865F2" class="social-icon-img" alt="Discord" />
+              <span v-bind="tip" class="social-link" role="button" @click="copyDiscord">
+                <img
+                  src="https://cdn.simpleicons.org/discord/5865F2"
+                  class="social-icon-img"
+                  alt="Discord"
+                />
               </span>
             </template>
             <span class="tooltip-label">
@@ -31,45 +47,77 @@
 
           <v-tooltip v-if="modder?.twitterUsername" location="bottom">
             <template #activator="{ props: tip }">
-              <a v-bind="tip" :href="`https://x.com/${modder.twitterUsername}`" class="social-link" target="_blank" rel="noopener">
-                <img src="https://cdn.simpleicons.org/x/ffffff" class="social-icon-img" alt="Twitter" />
+              <a
+                v-bind="tip"
+                :href="`https://x.com/${modder.twitterUsername}`"
+                class="social-link"
+                target="_blank"
+                rel="noopener"
+              >
+                <img
+                  src="https://cdn.simpleicons.org/x/ffffff"
+                  class="social-icon-img"
+                  alt="Twitter"
+                />
               </a>
             </template>
-            <span class="tooltip-label">@{{ modder.twitterUsername }} <v-icon size="x-small">mdi-open-in-new</v-icon></span>
+            <span class="tooltip-label"
+              >@{{ modder.twitterUsername }} <v-icon size="x-small">mdi-open-in-new</v-icon></span
+            >
           </v-tooltip>
 
           <v-tooltip v-if="modder?.blueskyHandle" location="bottom">
             <template #activator="{ props: tip }">
-              <a v-bind="tip" :href="`https://bsky.app/profile/${modder.blueskyHandle}`" class="social-link" target="_blank" rel="noopener">
-                <img src="https://cdn.simpleicons.org/bluesky/0085FF" class="social-icon-img" alt="Bluesky" />
+              <a
+                v-bind="tip"
+                :href="`https://bsky.app/profile/${modder.blueskyHandle}`"
+                class="social-link"
+                target="_blank"
+                rel="noopener"
+              >
+                <img
+                  src="https://cdn.simpleicons.org/bluesky/0085FF"
+                  class="social-icon-img"
+                  alt="Bluesky"
+                />
               </a>
             </template>
-            <span class="tooltip-label">{{ modder.blueskyHandle }} <v-icon size="x-small">mdi-open-in-new</v-icon></span>
+            <span class="tooltip-label"
+              >{{ modder.blueskyHandle }} <v-icon size="x-small">mdi-open-in-new</v-icon></span
+            >
           </v-tooltip>
 
           <v-tooltip v-if="modder?.githubUsername" location="bottom">
             <template #activator="{ props: tip }">
-              <a v-bind="tip" :href="`https://github.com/${modder.githubUsername}`" class="social-link" target="_blank" rel="noopener">
-                <img src="https://cdn.simpleicons.org/github/ffffff" class="social-icon-img" alt="GitHub" />
+              <a
+                v-bind="tip"
+                :href="`https://github.com/${modder.githubUsername}`"
+                class="social-link"
+                target="_blank"
+                rel="noopener"
+              >
+                <img
+                  src="https://cdn.simpleicons.org/github/ffffff"
+                  class="social-icon-img"
+                  alt="GitHub"
+                />
               </a>
             </template>
-            <span class="tooltip-label">@{{ modder.githubUsername }} <v-icon size="x-small">mdi-open-in-new</v-icon></span>
+            <span class="tooltip-label"
+              >@{{ modder.githubUsername }} <v-icon size="x-small">mdi-open-in-new</v-icon></span
+            >
           </v-tooltip>
         </div>
       </v-col>
       <v-col cols="10">
         <div class="title-container">
           <h1 class="page-title">{{ modder?.name }}</h1>
-          <v-icon 
-            v-if="modderIsAdmin"
-            class="admin-display"
-          >
-            mdi-shield-account
-          </v-icon>
+          <v-icon v-if="modderIsAdmin" class="admin-display"> mdi-shield-account </v-icon>
         </div>
         <p v-if="modder?.problematic" class="problematic-warning">
           <v-icon>mdi-alert</v-icon>
-          This user has been deemed problematic by the community. Please be careful when interacting with them and do your own research on their actions.
+          This user has been deemed problematic by the community. Please be careful when interacting
+          with them and do your own research on their actions.
         </p>
         <p v-else class="bio">{{ modder?.bio }}</p>
       </v-col>
@@ -86,7 +134,7 @@
 
 <script setup>
 import { onMounted, ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useHead } from '@unhead/vue'
 import axios from 'axios'
 import api from '@/services/api'
@@ -94,29 +142,30 @@ import MovesetList from '@/components/MovesetList.vue'
 import { GB_MEMBER_URL } from '@/globals'
 import { compareDateOnlyStrings } from '@/services/dateOnly'
 
-const apiUrl = import.meta.env.VITE_API_URL
-
 const route = useRoute()
+const router = useRouter()
 const modderId = route.params.id
 
 const modder = ref(null)
 
-useHead(computed(() => {
-  const name = modder.value?.name
-  const description = name
-    ? `View ${name}'s movesets on Ultimate Moveset Compatibility.`
-    : 'View information on Super Smash Bros. Ultimate custom movesets.'
-  return {
-    title: name ? `UMC | ${name}` : 'UMC',
-    meta: [
-      { name: 'description', content: description },
-      { property: 'og:title', content: name ?? 'Ultimate Moveset Compatibility' },
-      { property: 'og:description', content: description },
-      { name: 'twitter:title', content: name ?? 'Ultimate Moveset Compatibility' },
-      { name: 'twitter:description', content: description },
-    ],
-  }
-}))
+useHead(
+  computed(() => {
+    const name = modder.value?.name
+    const description = name
+      ? `View ${name}'s movesets on Ultimate Moveset Compatibility.`
+      : 'View information on Super Smash Bros. Ultimate custom movesets.'
+    return {
+      title: name ? `UMC | ${name}` : 'UMC',
+      meta: [
+        { name: 'description', content: description },
+        { property: 'og:title', content: name ?? 'Ultimate Moveset Compatibility' },
+        { property: 'og:description', content: description },
+        { name: 'twitter:title', content: name ?? 'Ultimate Moveset Compatibility' },
+        { name: 'twitter:description', content: description },
+      ],
+    }
+  })
+)
 const movesets = ref([])
 const modderPfpUrl = ref(null)
 const modderIsAdmin = ref(false)
@@ -125,9 +174,13 @@ const discordCopied = ref(false)
 const copyDiscord = async () => {
   try {
     await navigator.clipboard.writeText(modder.value.discordUsername)
-  } catch {}
+  } catch {
+    // Clipboard access can be denied; the copied indicator still shows so the user can copy by hand.
+  }
   discordCopied.value = true
-  setTimeout(() => { discordCopied.value = false }, 2000)
+  setTimeout(() => {
+    discordCopied.value = false
+  }, 2000)
 }
 
 onMounted(async () => {
@@ -144,7 +197,7 @@ onMounted(async () => {
     // and filter client-side by modder name.
     const movesetRes = await api.get('movesets')
     movesets.value = movesetRes.data
-      .filter(m => m.modders.includes(modder.value.name))
+      .filter((m) => m.modders.includes(modder.value.name))
       .sort((a, b) => compareDateOnlyStrings(a.releaseDate, b.releaseDate))
 
     if (modder.value.pfpUrl) {
@@ -167,7 +220,7 @@ onMounted(async () => {
         query: {
           httpCode: '404 Not Found',
           reason: 'This modder page is not available.',
-        }
+        },
       })
     }
   }
@@ -216,7 +269,7 @@ onMounted(async () => {
   z-index: 10;
   font-size: 4.5em;
   margin: -16px 0.25em -16px -0.25em;
-  filter: drop-shadow(5px 4px 3px #000000c0)
+  filter: drop-shadow(5px 4px 3px #000000c0);
 }
 
 i.admin-display {
@@ -259,7 +312,8 @@ i.admin-display {
   padding-top: 0.5em;
 }
 
-.modder-pfp, .modder-pfp-null {
+.modder-pfp,
+.modder-pfp-null {
   z-index: 20;
   position: relative;
   width: 128px;

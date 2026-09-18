@@ -12,21 +12,21 @@ namespace CustomCharInfo.server.Tests.TestHelpers
         public static void SeedLookups(AppDbContext context)
         {
             context.ReleaseStates.AddRange(
-                new ReleaseState { ReleaseStateId = 1, ReleaseStateName = "Released" },
-                new ReleaseState { ReleaseStateId = 4, ReleaseStateName = "Beta" }
+                new ReleaseState { ReleaseStateId = ReleaseStates.Released, ReleaseStateName = "Released" },
+                new ReleaseState { ReleaseStateId = ReleaseStates.OpenBeta, ReleaseStateName = "Open Beta" }
             );
 
             context.ItemTypes.AddRange(
-                new ItemType { ItemTypeId = 1, ItemTypeName = "Moveset" },
-                new ItemType { ItemTypeId = 2, ItemTypeName = "Modder" },
-                new ItemType { ItemTypeId = 3, ItemTypeName = "Series" },
-                new ItemType { ItemTypeId = 4, ItemTypeName = "Hook" }
+                new ItemType { ItemTypeId = ItemTypes.Moveset, ItemTypeName = "Moveset" },
+                new ItemType { ItemTypeId = ItemTypes.Modder, ItemTypeName = "Modder" },
+                new ItemType { ItemTypeId = ItemTypes.Series, ItemTypeName = "Series" },
+                new ItemType { ItemTypeId = ItemTypes.Hook, ItemTypeName = "Hook" }
             );
 
             context.Set<UserType>().AddRange(
-                new UserType { UserTypeId = 1, UserTypeName = "User" },
-                new UserType { UserTypeId = 2, UserTypeName = "Modder" },
-                new UserType { UserTypeId = 3, UserTypeName = "Admin" }
+                new UserType { UserTypeId = UserTypes.User, UserTypeName = "User" },
+                new UserType { UserTypeId = UserTypes.Modder, UserTypeName = "Modder" },
+                new UserType { UserTypeId = UserTypes.Admin, UserTypeName = "Admin" }
             );
 
             context.VanillaChars.Add(new VanillaChar { VanillaCharInternalName = "mario", DisplayName = "Mario" });
@@ -34,16 +34,16 @@ namespace CustomCharInfo.server.Tests.TestHelpers
             context.SaveChanges();
 
             // Generic actor for action logs that don't need to attribute a specific user.
-            AddUser(context, "log-author", userTypeId: 1);
+            AddUser(context, "log-author", userTypeId: UserTypes.User);
 
             context.AcceptanceStates.AddRange(
-                new AcceptanceState { AcceptanceStateId = 1, AcceptanceStateName = "Submitted" },
-                new AcceptanceState { AcceptanceStateId = 2, AcceptanceStateName = "Pending" },
-                new AcceptanceState { AcceptanceStateId = 3, AcceptanceStateName = "Accepted" },
-                new AcceptanceState { AcceptanceStateId = 4, AcceptanceStateName = "PendingRejected" },
-                new AcceptanceState { AcceptanceStateId = 5, AcceptanceStateName = "Approved" },
-                new AcceptanceState { AcceptanceStateId = 6, AcceptanceStateName = "Rejected" },
-                new AcceptanceState { AcceptanceStateId = 7, AcceptanceStateName = "AdminApproved" }
+                new AcceptanceState { AcceptanceStateId = AcceptanceStates.PendingAdminSoft, AcceptanceStateName = "Pending Admin Action (Soft)" },
+                new AcceptanceState { AcceptanceStateId = AcceptanceStates.PendingAdminHard, AcceptanceStateName = "Pending Admin Action (Hard)" },
+                new AcceptanceState { AcceptanceStateId = AcceptanceStates.PendingUserSoft, AcceptanceStateName = "Pending User Action (Soft)" },
+                new AcceptanceState { AcceptanceStateId = AcceptanceStates.PendingUserHard, AcceptanceStateName = "Pending User Action (Hard)" },
+                new AcceptanceState { AcceptanceStateId = AcceptanceStates.Accepted, AcceptanceStateName = "Accepted" },
+                new AcceptanceState { AcceptanceStateId = AcceptanceStates.Rejected, AcceptanceStateName = "Rejected" },
+                new AcceptanceState { AcceptanceStateId = AcceptanceStates.AutoAccepted, AcceptanceStateName = "Auto-Accepted" }
             );
 
             context.SaveChanges();
@@ -71,7 +71,7 @@ namespace CustomCharInfo.server.Tests.TestHelpers
             return modder;
         }
 
-        public static ActionLog AddActionLog(AppDbContext context, int itemId, int acceptanceStateId, DateTime createdAt, string userId, int itemTypeId = 1)
+        public static ActionLog AddActionLog(AppDbContext context, int itemId, int acceptanceStateId, DateTime createdAt, string userId, int itemTypeId = ItemTypes.Moveset)
         {
             var log = new ActionLog
             {

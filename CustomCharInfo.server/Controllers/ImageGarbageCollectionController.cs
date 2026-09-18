@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using CustomCharInfo.server.Data;
 using CustomCharInfo.server.Models;
+using CustomCharInfo.server.Helpers;
 using Amazon.S3;
 using Amazon.S3.Model;
 
@@ -33,9 +34,8 @@ namespace CustomCharInfo.server.Controllers
 
         private async Task<ApplicationUser?> GetAdminUserAsync()
         {
-            var userId = _userManager.GetUserId(User);
-            var user = await _context.Users.FindAsync(userId);
-            return user != null && user.UserTypeId == 3 ? user : null;
+            var user = await _userManager.GetRequesterAsync(_context, User);
+            return user.IsAdmin() ? user : null;
         }
 
         [HttpGet("scan")]

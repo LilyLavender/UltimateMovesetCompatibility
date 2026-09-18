@@ -3,18 +3,14 @@
     <h1 class="mb-5 page-title no-select">Image Garbage Collector</h1>
 
     <p class="mb-4 helper-text">
-      Lists every image uploaded to R2, showing which ones are still referenced by either a moveset, series, blog post, modder profile, or banner image.
+      Lists every image uploaded to R2, showing which ones are still referenced by either a moveset,
+      series, blog post, modder profile, or banner image.
     </p>
 
     <!-- Controls -->
     <v-row class="mb-4" align="center">
       <v-col cols="12" sm="6">
-        <v-btn
-          color="primary"
-          class="btn"
-          @click="scan"
-          :loading="scanning"
-        >
+        <v-btn color="primary" class="btn" :loading="scanning" @click="scan">
           <v-icon class="mr-1">mdi-magnify</v-icon>
           Scan Images
         </v-btn>
@@ -23,9 +19,9 @@
         <div class="d-flex justify-sm-end">
           <v-btn
             class="btn delete-btn"
-            @click="deleteAllUnused"
             :loading="deleting"
             :disabled="unusedCount === 0"
+            @click="deleteAllUnused"
           >
             <v-icon class="mr-1">mdi-delete</v-icon>
             Delete Unused Images ({{ unusedCount }})
@@ -52,10 +48,18 @@
             @keydown.enter="toggleGroup(`${group.name}/${sub.name}`, sub.unused)"
           >
             <v-icon size="18" class="mr-1">
-              {{ isCollapsed(`${group.name}/${sub.name}`, sub.unused) ? 'mdi-chevron-right' : 'mdi-chevron-down' }}
+              {{
+                isCollapsed(`${group.name}/${sub.name}`, sub.unused)
+                  ? 'mdi-chevron-right'
+                  : 'mdi-chevron-down'
+              }}
             </v-icon>
-            <span class="sub-group-path">{{ group.name }}/{{ sub.name ? sub.name + '/' : '' }}</span>
-            <span class="sub-group-count">{{ sub.items.length }}{{ sub.unused > 0 ? ` (${sub.unused} unused)` : '' }}</span>
+            <span class="sub-group-path"
+              >{{ group.name }}/{{ sub.name ? sub.name + '/' : '' }}</span
+            >
+            <span class="sub-group-count"
+              >{{ sub.items.length }}{{ sub.unused > 0 ? ` (${sub.unused} unused)` : '' }}</span
+            >
           </div>
           <div v-show="!isCollapsed(`${group.name}/${sub.name}`, sub.unused)" class="tile-grid">
             <div
@@ -82,7 +86,8 @@
               <div class="tile-info">
                 <div class="tile-name" :title="item.fileName">{{ item.displayName }}</div>
                 <div class="tile-date">
-                  <v-icon size="14" class="mr-1">mdi-clock-outline</v-icon>{{ formatDate(item.lastModified) }}
+                  <v-icon size="14" class="mr-1">mdi-clock-outline</v-icon
+                  >{{ formatDate(item.lastModified) }}
                 </div>
                 <div class="tile-meta">{{ formatSize(item.sizeBytes) }}</div>
               </div>
@@ -98,6 +103,9 @@
 import { ref, computed } from 'vue'
 import api from '@/services/api'
 import { IMAGE_UPLOAD_SPECS } from '@/globals'
+import { useNotify } from '@/composables/useNotify'
+
+const notify = useNotify()
 
 const scanning = ref(false)
 const deleting = ref(false)
@@ -139,7 +147,8 @@ const pluralize = (count, singular, plural = `${singular}s`) => (count === 1 ? s
 
 // e.g. "moveset_hero_b353767d-1a60-4d7a-b968-61723d947d9c.png" -> prefix "moveset_hero",
 // rest "b353767d-1a60-4d7a-b968-61723d947d9c.png" (see UploadController.cs's fileName build).
-const GUID_SUFFIX_RE = /^(.*?)_?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z0-9]+)$/i
+const GUID_SUFFIX_RE =
+  /^(.*?)_?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z0-9]+)$/i
 
 const parseKey = (key) => {
   const withoutUploads = key.startsWith('uploads/') ? key.slice('uploads/'.length) : key
@@ -172,7 +181,7 @@ const topGroups = computed(() => {
         .map(([subName, items]) => ({
           name: subName,
           items: items.sort((a, b) => new Date(a.lastModified) - new Date(b.lastModified)),
-          unused: items.filter(i => !i.inUse).length,
+          unused: items.filter((i) => !i.inUse).length,
         }))
         .sort((a, b) => a.name.localeCompare(b.name))
       const total = subGroups.reduce((sum, s) => sum + s.items.length, 0)
@@ -181,7 +190,7 @@ const topGroups = computed(() => {
     .sort((a, b) => a.name.localeCompare(b.name))
 })
 
-const unusedCount = computed(() => images.value.filter(i => !i.inUse).length)
+const unusedCount = computed(() => images.value.filter((i) => !i.inUse).length)
 const collapsedOverrides = ref({})
 
 const isCollapsed = (key, unused) => {
@@ -209,26 +218,34 @@ const scan = async () => {
     hasScanned.value = true
   } catch (err) {
     console.error('Failed to scan images:', err)
-    alert('Failed to scan images.')
+    notify.error('Failed to scan images.')
   } finally {
     scanning.value = false
   }
 }
 
 const deleteAllUnused = async () => {
-  const keys = images.value.filter(i => !i.inUse).map(i => i.key)
-  if (!confirm(`Permanently delete ${keys.length} unused ${pluralize(keys.length, 'image')} from R2? This cannot be undone.`)) return
+  const keys = images.value.filter((i) => !i.inUse).map((i) => i.key)
+  if (
+    !confirm(
+      `Permanently delete ${keys.length} unused ${pluralize(keys.length, 'image')} from R2? This cannot be undone.`
+    )
+  )
+    return
 
   deleting.value = true
   try {
     const res = await api.post('/admin/image-gc/execute', keys)
     const { deleted, failed, skipped } = res.data
-    console.log(`Deleted ${deleted.length} image(s). Skipped: ${skipped.length}. Failed: ${failed.length}.`)
-    if (failed.length) alert(`${failed.length} image(s) failed to delete. Check the console for details.`)
+    console.log(
+      `Deleted ${deleted.length} image(s). Skipped: ${skipped.length}. Failed: ${failed.length}.`
+    )
+    if (failed.length)
+      notify.error(`${failed.length} image(s) failed to delete. Check the console for details.`)
     await scan()
   } catch (err) {
     console.error('Failed to delete images:', err)
-    alert('Failed to delete images.')
+    notify.error('Failed to delete images.')
   } finally {
     deleting.value = false
   }

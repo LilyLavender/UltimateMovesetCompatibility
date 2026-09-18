@@ -9,19 +9,9 @@
             <h1>Notification Dashboard</h1>
 
             <div class="d-flex ga-2">
-              <v-btn
-                size="small"
-                variant="tonal"
-                @click="selectAllFilters"
-              >
-                Enable All
-              </v-btn>
+              <v-btn size="small" variant="tonal" @click="selectAllFilters"> Enable All </v-btn>
 
-              <v-btn
-                size="small"
-                variant="tonal"
-                @click="selectOnlyRelevant"
-              >
+              <v-btn size="small" variant="tonal" @click="selectOnlyRelevant">
                 Only Relevant
               </v-btn>
             </div>
@@ -31,8 +21,8 @@
         <!-- Acceptance States -->
         <v-col cols="12" sm="5">
           <v-select
-            variant="outlined"
             v-model="selectedAcceptanceStates"
+            variant="outlined"
             :items="acceptanceStateOptions"
             item-title="name"
             item-value="id"
@@ -46,8 +36,8 @@
         <!-- Item Types -->
         <v-col cols="12" sm="3">
           <v-select
-            variant="outlined"
             v-model="selectedItemTypes"
+            variant="outlined"
             :items="itemTypeOptions"
             item-title="name"
             item-value="id"
@@ -61,12 +51,8 @@
 
       <!-- Logs -->
       <v-row v-if="filteredGroups.length">
-        <v-col
-          v-for="group in filteredGroups"
-          :key="group.key"
-          cols="12"
-        >
-          <ActionLogGroup :logs="group.logs" :isAdmin="isAdmin && !userId" />
+        <v-col v-for="group in filteredGroups" :key="group.key" cols="12">
+          <ActionLogGroup :logs="group.logs" :is-admin="isAdmin && !userId" />
         </v-col>
       </v-row>
       <p v-else>No logs found.</p>
@@ -78,17 +64,24 @@
 import { ref, onMounted, watch } from 'vue'
 import api from '@/services/api'
 import ActionLogGroup from '@/components/ActionLogGroup.vue'
-import { UserType, ItemType } from '@/globals'
+import {
+  UserType,
+  ItemType,
+  AcceptanceState,
+  PENDING_ADMIN_STATES,
+  PENDING_USER_STATES,
+  ALL_ACCEPTANCE_STATES,
+} from '@/globals'
 
 const props = defineProps({
   viewAll: {
     type: Boolean,
-    default: false
+    default: false,
   },
   userId: {
     type: String,
-    default: null
-  }
+    default: null,
+  },
 })
 
 const logs = ref([])
@@ -97,25 +90,25 @@ const user = ref(null)
 const isAdmin = ref(false)
 const filterEnabled = ref(true)
 
-const selectedAcceptanceStates = ref([1, 2, 3, 4])
-const selectedItemTypes = ref([1, 2, 3, 4, 5])
+const selectedAcceptanceStates = ref([...PENDING_ADMIN_STATES, ...PENDING_USER_STATES])
+const selectedItemTypes = ref(Object.values(ItemType))
 
 const acceptanceStateOptions = [
-  { id: 1, name: 'Pending Admin (Soft)' },
-  { id: 2, name: 'Pending Admin (Hard)' },
-  { id: 3, name: 'Pending User (Soft)' },
-  { id: 4, name: 'Pending User (Hard)' },
-  { id: 5, name: 'Accepted' },
-  { id: 6, name: 'Rejected' },
-  { id: 7, name: 'Auto-Accepted' }
+  { id: AcceptanceState.PendingAdminSoft, name: 'Pending Admin (Soft)' },
+  { id: AcceptanceState.PendingAdminHard, name: 'Pending Admin (Hard)' },
+  { id: AcceptanceState.PendingUserSoft, name: 'Pending User (Soft)' },
+  { id: AcceptanceState.PendingUserHard, name: 'Pending User (Hard)' },
+  { id: AcceptanceState.Accepted, name: 'Accepted' },
+  { id: AcceptanceState.Rejected, name: 'Rejected' },
+  { id: AcceptanceState.AutoAccepted, name: 'Auto-Accepted' },
 ]
 
 const itemTypeOptions = [
-  { id: 1, name: 'Movesets' },
-  { id: 2, name: 'User' },
-  { id: 3, name: 'Series' },
-  { id: 4, name: 'Hooks' },
-  { id: 5, name: 'Plugins' }
+  { id: ItemType.Moveset, name: 'Movesets' },
+  { id: ItemType.Modder, name: 'User' },
+  { id: ItemType.Series, name: 'Series' },
+  { id: ItemType.Hook, name: 'Hooks' },
+  { id: ItemType.Plugin, name: 'Plugins' },
 ]
 
 const fetchUser = async () => {
@@ -131,8 +124,8 @@ const fetchUser = async () => {
 const fetchLogs = async () => {
   try {
     const params = {
-      acceptanceStates: [1, 2, 3, 4, 5, 6, 7],
-      itemTypes: selectedItemTypes.value
+      acceptanceStates: ALL_ACCEPTANCE_STATES,
+      itemTypes: selectedItemTypes.value,
     }
 
     if (props.userId) {
@@ -168,7 +161,8 @@ const filterLogs = () => {
   for (const [key, groupLogs] of groupMap) {
     groupLogs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     const latest = groupLogs[0]
-    if (filterEnabled.value && !enabledStates.includes(latest.acceptanceState.acceptanceStateId)) continue
+    if (filterEnabled.value && !enabledStates.includes(latest.acceptanceState.acceptanceStateId))
+      continue
     groups.push({ key, logs: groupLogs })
   }
 
@@ -177,8 +171,8 @@ const filterLogs = () => {
 
 // Filter helpers
 const selectAllFilters = () => {
-  selectedAcceptanceStates.value = acceptanceStateOptions.map(s => s.id)
-  selectedItemTypes.value = itemTypeOptions.map(t => t.id)
+  selectedAcceptanceStates.value = acceptanceStateOptions.map((s) => s.id)
+  selectedItemTypes.value = itemTypeOptions.map((t) => t.id)
 }
 const selectOnlyRelevant = () => {
   selectedAcceptanceStates.value = [1, 2, 3, 4]

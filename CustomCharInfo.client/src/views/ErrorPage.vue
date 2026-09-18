@@ -7,7 +7,7 @@
 </template>
 
 <script setup>
-const props = defineProps({
+defineProps({
   httpCode: {
     type: String,
     default: '404 Error',
@@ -19,7 +19,7 @@ const props = defineProps({
   extra: {
     type: String,
     default: '',
-  }
+  },
 })
 </script>
 

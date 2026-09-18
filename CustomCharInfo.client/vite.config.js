@@ -5,14 +5,11 @@ import path from 'path'
 
 export default defineConfig({
   base: '/UltimateMovesetCompatibility/',
-  plugins: [
-    vue(),
-    vuetify({ autoImport: true }),
-  ],
+  plugins: [vue(), vuetify({ autoImport: true })],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
-    }
+      '@': path.resolve(__dirname, './src'),
+    },
   },
   test: {
     environment: 'jsdom',
@@ -22,5 +19,5 @@ export default defineConfig({
         inline: ['vuetify'],
       },
     },
-  }
+  },
 })

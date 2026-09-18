@@ -7,11 +7,12 @@
 
       <!-- Community note -->
       <blockquote class="community-note">
-        <strong>A reminder:</strong> someone's contributions to this community, no matter how celebrated, don't reflect their value as a person. Please treat people accordingly.
+        <strong>A reminder:</strong> someone's contributions to this community, no matter how
+        celebrated, don't reflect their value as a person. Please treat people accordingly.
       </blockquote>
 
       <!-- Action Log -->
-      <v-card class="pa-4" width="1020px" v-if="isLoggedIn">
+      <v-card v-if="isLoggedIn" class="pa-4" width="1020px">
         <div>
           <ActionLogList />
         </div>

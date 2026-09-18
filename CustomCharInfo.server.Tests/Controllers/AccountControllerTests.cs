@@ -84,7 +84,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task Login_WrongPassword_ReturnsUnauthorized()
         {
-            var user = SeedData.AddUser(_db.Context, "user-1", userTypeId: 1);
+            var user = SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
             user.Email = "user@x.com";
             _db.Context.SaveChanges();
 
@@ -102,7 +102,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task Login_CorrectCredentials_ReturnsTokenAndPersistsRefreshToken()
         {
-            var user = SeedData.AddUser(_db.Context, "user-1", userTypeId: 1);
+            var user = SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
             user.Email = "user@x.com";
             _db.Context.SaveChanges();
 
@@ -121,7 +121,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task Refresh_ExpiredToken_ReturnsUnauthorized()
         {
-            var user = SeedData.AddUser(_db.Context, "user-1", userTypeId: 1);
+            var user = SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
             user.Email = "user@x.com";
             _db.Context.RefreshTokens.Add(new RefreshToken
             {
@@ -144,7 +144,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task Refresh_ValidToken_RotatesAndRevokesOld()
         {
-            var user = SeedData.AddUser(_db.Context, "user-1", userTypeId: 1);
+            var user = SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
             user.Email = "user@x.com";
             _db.Context.RefreshTokens.Add(new RefreshToken
             {
@@ -183,7 +183,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task GetCurrentUser_LinkedModder_IncludesModderId()
         {
-            var user = SeedData.AddUser(_db.Context, "user-1", userTypeId: 2);
+            var user = SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder);
             SeedData.AddModder(_db.Context, 5, user.Id, "SomeModder");
 
             var userManager = MockUserManagerFactory.Create(users: _db.Context.Users);
@@ -212,7 +212,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task GeneratePasswordReset_NonAdmin_ReturnsForbid()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
             var userManager = MockUserManagerFactory.Create("user-1", _db.Context.Users);
 
             var controller = CreateController(userManager, "user-1");
@@ -225,7 +225,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task GeneratePasswordReset_Admin_TargetNotFound_ReturnsNotFound()
         {
-            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
             var userManager = MockUserManagerFactory.Create("admin-1", _db.Context.Users);
             userManager.Setup(m => m.FindByIdAsync("missing")).ReturnsAsync((ApplicationUser?)null);
 

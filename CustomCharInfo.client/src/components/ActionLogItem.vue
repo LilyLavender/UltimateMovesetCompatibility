@@ -63,11 +63,7 @@
         <div v-else-if="log.itemType.itemTypeId === ItemType.Hook">
           <h3>
             Hook:
-            <router-link
-              v-if="log.item?.hookId"
-              :to="{ name: 'Hooks' }"
-              class="unvisitable"
-            >
+            <router-link v-if="log.item?.hookId" :to="{ name: 'Hooks' }" class="unvisitable">
               0x{{ log.item.offset }}
             </router-link>
             <span v-else>{{ log.item?.offset ? `0x${log.item.offset}` : '(deleted)' }}</span>
@@ -84,9 +80,7 @@
 
         <!-- Item (if plugin) -->
         <div v-else-if="log.itemType.itemTypeId === ItemType.Plugin">
-          <h3>
-            Plugin: {{ log.item?.label ?? '(deleted)' }}
-          </h3>
+          <h3>Plugin: {{ log.item?.label ?? '(deleted)' }}</h3>
         </div>
       </v-col>
 
@@ -127,19 +121,27 @@ import { format } from 'date-fns'
 import { ItemType, AcceptanceState } from '@/globals'
 
 const props = defineProps({
-  log: Object,
-  isAdmin: Boolean
+  log: { type: Object, required: true },
+  isAdmin: Boolean,
 })
 
 const formatDate = (date) => {
   return format(new Date(date), 'PPpp')
 }
 
-const pendingUser = computed(() => [AcceptanceState.PendingUserSoft, AcceptanceState.PendingUserHard].includes(props.log.acceptanceState.acceptanceStateId))
+const pendingUser = computed(() =>
+  [AcceptanceState.PendingUserSoft, AcceptanceState.PendingUserHard].includes(
+    props.log.acceptanceState.acceptanceStateId
+  )
+)
 
 const parsedDiff = computed(() => {
   if (!props.log.diff) return []
-  try { return JSON.parse(props.log.diff) } catch { return [] }
+  try {
+    return JSON.parse(props.log.diff)
+  } catch {
+    return []
+  }
 })
 
 const acceptanceStyle = computed(() => {
@@ -157,7 +159,7 @@ const acceptanceStyle = computed(() => {
   return {
     backgroundColor: bgColors[id],
     color: 'rgb(20, 20, 20)',
-    fontWeight: 'bold'
+    fontWeight: 'bold',
   }
 })
 </script>

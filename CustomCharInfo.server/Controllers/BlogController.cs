@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using CustomCharInfo.server.Data;
 using CustomCharInfo.server.Models;
+using CustomCharInfo.server.Helpers;
 using CustomCharInfo.server.Models.DTOs;
 
 using SixLabors.ImageSharp;
@@ -48,10 +49,8 @@ namespace CustomCharInfo.server.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateBlogPost(CreateBlogPostDto dto)
         {
-            // Make sure user is admin
-            var userId = _userManager.GetUserId(User);
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null || user.UserTypeId != 3)
+            var user = await _userManager.GetRequesterAsync(_context, User);
+            if (!user.IsAdmin())
                 return Forbid();
 
             var blogPost = new BlogPost
@@ -59,7 +58,7 @@ namespace CustomCharInfo.server.Controllers
                 BlogTitle = dto.BlogTitle,
                 BlogText = dto.BlogText,
                 BlogImageUrl = dto.BlogImageUrl,
-                UserId = userId,
+                UserId = user.Id,
                 PostedDate = DateTime.UtcNow
             };
 
@@ -75,9 +74,8 @@ namespace CustomCharInfo.server.Controllers
         [HttpPatch("{id}/image")]
         public async Task<IActionResult> PatchBlogPostImage(int id, [FromBody] BlogPostImageDto dto)
         {
-            var userId = _userManager.GetUserId(User);
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null || user.UserTypeId != 3)
+            var user = await _userManager.GetRequesterAsync(_context, User);
+            if (!user.IsAdmin())
                 return Forbid();
 
             var blogPost = await _context.BlogPosts.FindAsync(id);

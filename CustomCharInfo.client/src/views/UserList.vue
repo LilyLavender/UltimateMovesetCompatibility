@@ -18,12 +18,7 @@
     <!-- Only ApplicationUser -->
     <section class="mb-8">
       <h2>Users without Modder profile</h2>
-      <v-data-table
-        class="dark-table"
-        :items="onlyUsers"
-        :headers="userHeaders"
-        item-key="id"
-      />
+      <v-data-table class="dark-table" :items="onlyUsers" :headers="userHeaders" item-key="id" />
     </section>
 
     <!-- Only Modders -->
@@ -40,60 +35,60 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import api from "@/services/api";
+import { ref, onMounted } from 'vue'
+import api from '@/services/api'
 
-const onlyUsers = ref([]);
-const onlyModders = ref([]);
-const inBoth = ref([]);
+const onlyUsers = ref([])
+const onlyModders = ref([])
+const inBoth = ref([])
 
 // Table headers
 const userHeaders = [
-  { title: "ID", key: "id" },
-  { title: "UserName", key: "userName" },
-  { title: "Email", key: "email" },
-  { title: "UserType", key: "userTypeId" },
-  { title: "ModderId", key: "modderId" },
-  { title: "Last Active", key: "lastActiveAt" },
-  { title: "Last IP", key: "lastIp" },
-  { title: "IP Count", key: "ipCount" },
-];
+  { title: 'ID', key: 'id' },
+  { title: 'UserName', key: 'userName' },
+  { title: 'Email', key: 'email' },
+  { title: 'UserType', key: 'userTypeId' },
+  { title: 'ModderId', key: 'modderId' },
+  { title: 'Last Active', key: 'lastActiveAt' },
+  { title: 'Last IP', key: 'lastIp' },
+  { title: 'IP Count', key: 'ipCount' },
+]
 
 const modderHeaders = [
-  { title: "ModderId", key: "modderId" },
-  { title: "Name", key: "name" },
-  { title: "Bio", key: "bio" },
-  { title: "GamebananaId", key: "gamebananaId" },
-  { title: "UserId", key: "userId" },
-  { title: "DiscordUsername", key: "discordUsername" },
-];
+  { title: 'ModderId', key: 'modderId' },
+  { title: 'Name', key: 'name' },
+  { title: 'Bio', key: 'bio' },
+  { title: 'GamebananaId', key: 'gamebananaId' },
+  { title: 'UserId', key: 'userId' },
+  { title: 'DiscordUsername', key: 'discordUsername' },
+]
 
 const bothHeaders = [
-  { title: "User ID", key: "user.id" },
-  { title: "UserName", key: "user.userName" },
-  { title: "Email", key: "user.email" },
-  { title: "UserType", key: "user.userTypeId" },
-  { title: "ModderId", key: "user.modderId" },
-  { title: "Modder Name", key: "modder.name" },
-  { title: "Bio", key: "modder.bio" },
-  { title: "GamebananaId", key: "modder.gamebananaId" },
-  { title: "DiscordUsername", key: "modder.discordUsername" },
-  { title: "Last Active", key: "user.lastActiveAt" },
-  { title: "Last IP", key: "user.lastIp" },
-  { title: "IP Count", key: "user.ipCount" },
-];
+  { title: 'User ID', key: 'user.id' },
+  { title: 'UserName', key: 'user.userName' },
+  { title: 'Email', key: 'user.email' },
+  { title: 'UserType', key: 'user.userTypeId' },
+  { title: 'ModderId', key: 'user.modderId' },
+  { title: 'Modder Name', key: 'modder.name' },
+  { title: 'Bio', key: 'modder.bio' },
+  { title: 'GamebananaId', key: 'modder.gamebananaId' },
+  { title: 'DiscordUsername', key: 'modder.discordUsername' },
+  { title: 'Last Active', key: 'user.lastActiveAt' },
+  { title: 'Last IP', key: 'user.lastIp' },
+  { title: 'IP Count', key: 'user.ipCount' },
+]
 
 // Fetch all users on mount
 onMounted(async () => {
   try {
-    const res = await api.get("/users");
-    onlyUsers.value = res.data.onlyUsers;
-    onlyModders.value = res.data.onlyModders;
-    inBoth.value = res.data.inBoth;
+    const res = await api.get('/users')
+    onlyUsers.value = res.data.onlyUsers
+    onlyModders.value = res.data.onlyModders
+    inBoth.value = res.data.inBoth
   } catch (err) {
-    console.error("Failed to fetch users:", err);
+    console.error('Failed to fetch users:', err)
   }
-});
+})
 </script>
 
 <style scoped>

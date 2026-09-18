@@ -9,22 +9,20 @@
       <section>
         <!-- Add mode intro para -->
         <p v-if="!isEditMode" class="mb-3">
-          Please do not upload series that are meant to be private. Instead, set the series of your private moveset to &quot;Super Smash Bros.&quot;
+          Please do not upload series that are meant to be private. Instead, set the series of your
+          private moveset to &quot;Super Smash Bros.&quot;
         </p>
         <p class="mb-3">
-          For information on image hosting in UMC, see <router-link 
-            to="/image-hosting"
-            class="unvisitable"
-            target="_blank"
-            >here</router-link>.
+          For information on image hosting in UMC, see
+          <router-link to="/image-hosting" class="unvisitable" target="_blank">here</router-link>.
         </p>
 
         <v-row>
           <!-- Series Name -->
           <v-col cols="12" sm="4">
             <v-text-field
-              variant="outlined"
               v-model="form.seriesName"
+              variant="outlined"
               label="Series Name"
               :error="!!nameError"
               :error-messages="nameError"
@@ -48,9 +46,9 @@
       <!-- Notes + Submit -->
       <div class="d-flex align-start ga-3 justify-end">
         <v-textarea
+          v-model="form.notes"
           variant="outlined"
           density="compact"
-          v-model="form.notes"
           :label="isEditMode ? 'Editing notes' : 'Submission notes'"
           placeholder="Optional, shown to admins only."
           rows="1"
@@ -59,10 +57,10 @@
           class="notes-field"
         />
         <v-btn
-          @click="submit"
           class="btn submit-button mt-1"
           :loading="isSubmitting"
           :disabled="isSubmitting"
+          @click="submit"
         >
           {{ uploadStatus || (isEditMode ? 'Save' : 'Add Series') }}
         </v-btn>
@@ -73,20 +71,21 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import api from '@/services/api'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import { IMAGE_UPLOAD_SPECS } from '@/globals'
+import { useImageUpload, isStagedFile } from '@/composables/useImageUpload'
+import { useNotify } from '@/composables/useNotify'
+
+const notify = useNotify()
 
 const props = defineProps({
-  mode: { type: String },
-  seriesId: { type: Number }
+  mode: { type: String, default: 'add' },
+  seriesId: { type: Number, default: null },
 })
 
-const emit = defineEmits(['submitted'])
-
 const isEditMode = computed(() => props.mode === 'edit')
-const route = useRoute()
 const router = useRouter()
 
 const series = ref(null)
@@ -96,7 +95,6 @@ const form = ref({
   notes: '',
 })
 
-const showSeparateIds = ref(false)
 const nameError = ref('')
 const isSubmitting = ref(false)
 const uploadStatus = ref('')
@@ -118,7 +116,7 @@ onMounted(async () => {
       series.value = res.data
       Object.assign(form.value, res.data)
       originalName.value = res.data.seriesName
-      document.title = `UMC | Editing ${series.value?.seriesName}`; // sets page title
+      document.title = `UMC | Editing ${series.value?.seriesName}` // sets page title
     } catch (err) {
       console.error(err)
       router.replace({ name: 'ErrorPage', query: { http: 404, reason: 'Series not found' } })
@@ -134,28 +132,14 @@ const validateSeriesName = () => {
 
   if (isEditMode.value && name === originalName.value) return
 
-  const conflict = allSeries.value.find(s =>
-    s.seriesName.toLowerCase() === name.toLowerCase()
-  )
+  const conflict = allSeries.value.find((s) => s.seriesName.toLowerCase() === name.toLowerCase())
 
   if (conflict) {
     nameError.value = 'A series with this name already exists.'
   }
 }
 
-const uploadImageIfNeeded = async (value, type, itemName) => {
-  if (!(value instanceof File)) return value
-
-  const formData = new FormData()
-  formData.append('File', value)
-  formData.append('Type', type)
-  formData.append('ItemName', itemName || 'unnamed')
-
-  const res = await api.post('/upload/moveset-image', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
-  return res.data.url
-}
+const { uploadIfNeeded } = useImageUpload()
 
 const submit = async () => {
   // Validation
@@ -170,10 +154,13 @@ const submit = async () => {
     // Edit mode: the series already exists, so upload first (as before) and save in one request.
     uploadStatus.value = 'Uploading image...'
     try {
-      form.value.seriesIconUrl = await uploadImageIfNeeded(form.value.seriesIconUrl, 'series_icon', form.value.seriesName)
+      form.value.seriesIconUrl = await uploadIfNeeded(form.value.seriesIconUrl, {
+        type: 'series_icon',
+        itemName: form.value.seriesName,
+      })
     } catch (err) {
-      console.error("Image upload failed:", JSON.stringify(err.response?.data) || err.message)
-      alert("Failed to upload image. Please check the file and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+      console.error('Image upload failed:', JSON.stringify(err.response?.data) || err.message)
+      notify.error('Failed to upload image. Please check the file and try again.', err)
       isSubmitting.value = false
       uploadStatus.value = ''
       return
@@ -185,11 +172,11 @@ const submit = async () => {
       router.push('/series')
     } catch (err) {
       if (err.response?.status === 409) {
-        alert('A series with this name already exists.')
+        notify.warning('A series with this name already exists.')
         return
       }
-      console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
-      alert("Failed to save series. Please check the form and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+      console.error('Submit failed:', JSON.stringify(err.response?.data) || err.message)
+      notify.error('Failed to save series. Please check the form and try again.', err)
     } finally {
       isSubmitting.value = false
       uploadStatus.value = ''
@@ -200,7 +187,7 @@ const submit = async () => {
   // Create mode: no series exists yet to attach an image to, so an upload failure or a save
   // failure after upload would otherwise orphan the image in R2 with nothing referencing it.
   // Create the series first (without a staged file), then upload and attach the image after.
-  const stagedIcon = form.value.seriesIconUrl instanceof File ? form.value.seriesIconUrl : null
+  const stagedIcon = isStagedFile(form.value.seriesIconUrl) ? form.value.seriesIconUrl : null
   const payload = { ...form.value }
   if (stagedIcon) payload.seriesIconUrl = null
 
@@ -212,10 +199,10 @@ const submit = async () => {
     newId = res.data.seriesId
   } catch (err) {
     if (err.response?.status === 409) {
-      alert('A series with this name already exists.')
+      notify.warning('A series with this name already exists.')
     } else {
-      console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
-      alert("Failed to save series. Please check the form and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+      console.error('Submit failed:', JSON.stringify(err.response?.data) || err.message)
+      notify.error('Failed to save series. Please check the form and try again.', err)
     }
     isSubmitting.value = false
     uploadStatus.value = ''
@@ -225,11 +212,20 @@ const submit = async () => {
   if (stagedIcon) {
     uploadStatus.value = 'Uploading image...'
     try {
-      const seriesIconUrl = await uploadImageIfNeeded(stagedIcon, 'series_icon', form.value.seriesName)
+      const seriesIconUrl = await uploadIfNeeded(stagedIcon, {
+        type: 'series_icon',
+        itemName: form.value.seriesName,
+      })
       await api.patch(`/series/${newId}/image`, { seriesIconUrl })
     } catch (err) {
-      console.error("Image upload failed after series creation:", JSON.stringify(err.response?.data) || err.message)
-      alert("Series created, but the image failed to upload. You can add it later by editing the series.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+      console.error(
+        'Image upload failed after series creation:',
+        JSON.stringify(err.response?.data) || err.message
+      )
+      notify.error(
+        'Series created, but the image failed to upload. You can add it later by editing the series.',
+        err
+      )
     }
   }
 
@@ -238,10 +234,7 @@ const submit = async () => {
   router.push('/series')
 }
 
-watch(
-  () => form.value.seriesName,
-  validateSeriesName
-)
+watch(() => form.value.seriesName, validateSeriesName)
 </script>
 
 <style scoped>

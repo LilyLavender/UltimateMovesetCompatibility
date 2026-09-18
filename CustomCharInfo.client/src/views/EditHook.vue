@@ -1,5 +1,5 @@
 <template>
-  <HookForm mode="edit" :hookId="parseInt(route.params.hookId)" />
+  <HookForm mode="edit" :hook-id="parseInt(route.params.hookId)" />
 </template>
 
 <script setup>

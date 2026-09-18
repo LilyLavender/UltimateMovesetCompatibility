@@ -13,23 +13,27 @@
         :class="{
           'ms-card--selected': isSelected(m),
           'ms-card--dimmed': selection.length >= 2 && !isSelected(m),
-          'ms-card--vote-preview': selection.length === 1 && !isSelected(m) && !pairSummary(m.movesetId),
+          'ms-card--vote-preview':
+            selection.length === 1 && !isSelected(m) && !pairSummary(m.movesetId),
         }"
-        :style="{ '--bg-color': (selection.length === 1 && !isSelected(m)) ? '#808080' : `#${normalizedBgColor(m)}` }"
+        :style="{
+          '--bg-color':
+            selection.length === 1 && !isSelected(m) ? '#808080' : `#${normalizedBgColor(m)}`,
+        }"
         @click="toggleSelect(m)"
       >
         <div class="ms-card__thumb" :style="thumbStyle(m)" />
         <div class="ms-card__overlay" :style="overlayStyle(m)" />
-        <span class="ms-card__name">{{ m.moddedCharName }}<span v-if="m.subtitle" class="ms-card__subtitle"> ({{ m.subtitle }})</span></span>
+        <span class="ms-card__name"
+          >{{ m.moddedCharName
+          }}<span v-if="m.subtitle" class="ms-card__subtitle"> ({{ m.subtitle }})</span></span
+        >
         <!-- Vote bar: shown when one moveset is selected and this card has vote data -->
         <div
           v-if="selection.length === 1 && !isSelected(m) && pairSummary(m.movesetId)"
           class="ms-card__vote-bar"
         >
-          <div
-            class="ms-card__vote-bar-compat"
-            :style="{ width: compatPct(m.movesetId) + '%' }"
-          />
+          <div class="ms-card__vote-bar-compat" :style="{ width: compatPct(m.movesetId) + '%' }" />
           <div class="ms-card__vote-bar-incompat" />
         </div>
       </button>
@@ -71,7 +75,10 @@
           <v-icon class="community-banner-icon">{{ communityBannerIcon }}</v-icon>
           <div class="community-banner-body">
             <span class="community-banner-text">{{ communityBannerText }}</span>
-            <span class="community-banner-sub">{{ reports.compatibleCount }} compatible · {{ reports.incompatibleCount }} not compatible</span>
+            <span class="community-banner-sub"
+              >{{ reports.compatibleCount }} compatible · {{ reports.incompatibleCount }} not
+              compatible</span
+            >
           </div>
         </div>
         <p v-else class="community-no-votes">No community reports yet for this combination.</p>
@@ -82,15 +89,22 @@
           <div class="report-btn-row">
             <v-btn
               :class="['report-btn', reports.userVote === true ? 'report-btn--active-compat' : '']"
-              size="small" variant="tonal"
-              @click="submitReport(true)" :loading="reportLoading"
+              size="small"
+              variant="tonal"
+              :loading="reportLoading"
+              @click="submitReport(true)"
             >
               <v-icon start>mdi-thumb-up-outline</v-icon> Works Together
             </v-btn>
             <v-btn
-              :class="['report-btn', reports.userVote === false ? 'report-btn--active-incompat' : '']"
-              size="small" variant="tonal"
-              @click="submitReport(false)" :loading="reportLoading"
+              :class="[
+                'report-btn',
+                reports.userVote === false ? 'report-btn--active-incompat' : '',
+              ]"
+              size="small"
+              variant="tonal"
+              :loading="reportLoading"
+              @click="submitReport(false)"
             >
               <v-icon start>mdi-thumb-down-outline</v-icon> Doesn't Work
             </v-btn>
@@ -100,13 +114,26 @@
       </div>
 
       <!-- Moveset comparison panel -->
-      <div class="compare-panel" v-if="result.a && result.b">
+      <div v-if="result.a && result.b" class="compare-panel">
         <div class="compare-col">
-          <div class="compare-header"><strong>{{ result.a.moddedCharName }}<span v-if="result.a.subtitle" class="compare-subtitle"> ({{ result.a.subtitle }})</span></strong></div>
+          <div class="compare-header">
+            <strong
+              >{{ result.a.moddedCharName
+              }}<span v-if="result.a.subtitle" class="compare-subtitle">
+                ({{ result.a.subtitle }})</span
+              ></strong
+            >
+          </div>
           <div class="compare-meta">
-            <img v-if="result.a.vanillaChar" :src="iconUrl(result.a.vanillaChar.vanillaCharInternalName)" class="meta-char-icon" />
+            <img
+              v-if="result.a.vanillaChar"
+              :src="iconUrl(result.a.vanillaChar.vanillaCharInternalName)"
+              class="meta-char-icon"
+            />
             {{ result.a.vanillaChar?.displayName ?? '-' }}
-            <span v-if="result.a.slotsStart != null" class="meta-slots">(c{{ pad(result.a.slotsStart) }}–c{{ pad(result.a.slotsEnd) }})</span>
+            <span v-if="result.a.slotsStart != null" class="meta-slots"
+              >(c{{ pad(result.a.slotsStart) }}–c{{ pad(result.a.slotsEnd) }})</span
+            >
           </div>
           <div class="compare-section">
             <span class="compare-label">Articles ({{ result.a.movesetArticles.length }})</span>
@@ -114,9 +141,16 @@
               <li
                 v-for="ma in result.a.movesetArticles"
                 :key="ma.article.articleId"
-                :class="{ 'compare-conflict': result.conflictingArticleIds.has(ma.article.articleId) }"
+                :class="{
+                  'compare-conflict': result.conflictingArticleIds.has(ma.article.articleId),
+                }"
               >
-                <v-icon v-if="result.conflictingArticleIds.has(ma.article.articleId)" size="x-small" class="conflict-icon">mdi-alert</v-icon>
+                <v-icon
+                  v-if="result.conflictingArticleIds.has(ma.article.articleId)"
+                  size="x-small"
+                  class="conflict-icon"
+                  >mdi-alert</v-icon
+                >
                 {{ ma.article.vanillaCharInternalName }}_{{ ma.article.articleName }}
               </li>
               <li v-if="!result.a.movesetArticles.length" class="compare-none">none</li>
@@ -130,7 +164,12 @@
                 :key="mh.hook.hookId"
                 :class="{ 'compare-conflict': result.conflictingHookIds.has(mh.hook.hookId) }"
               >
-                <v-icon v-if="result.conflictingHookIds.has(mh.hook.hookId)" size="x-small" class="conflict-icon">mdi-alert</v-icon>
+                <v-icon
+                  v-if="result.conflictingHookIds.has(mh.hook.hookId)"
+                  size="x-small"
+                  class="conflict-icon"
+                  >mdi-alert</v-icon
+                >
                 0x{{ mh.hook.offset }}
               </li>
               <li v-if="!result.a.movesetHooks.length" class="compare-none">none</li>
@@ -141,11 +180,24 @@
         <div class="compare-divider" />
 
         <div class="compare-col">
-          <div class="compare-header"><strong>{{ result.b.moddedCharName }}<span v-if="result.b.subtitle" class="compare-subtitle"> ({{ result.b.subtitle }})</span></strong></div>
+          <div class="compare-header">
+            <strong
+              >{{ result.b.moddedCharName
+              }}<span v-if="result.b.subtitle" class="compare-subtitle">
+                ({{ result.b.subtitle }})</span
+              ></strong
+            >
+          </div>
           <div class="compare-meta">
-            <img v-if="result.b.vanillaChar" :src="iconUrl(result.b.vanillaChar.vanillaCharInternalName)" class="meta-char-icon" />
+            <img
+              v-if="result.b.vanillaChar"
+              :src="iconUrl(result.b.vanillaChar.vanillaCharInternalName)"
+              class="meta-char-icon"
+            />
             {{ result.b.vanillaChar?.displayName ?? '-' }}
-            <span v-if="result.b.slotsStart != null" class="meta-slots">(c{{ pad(result.b.slotsStart) }}–c{{ pad(result.b.slotsEnd) }})</span>
+            <span v-if="result.b.slotsStart != null" class="meta-slots"
+              >(c{{ pad(result.b.slotsStart) }}–c{{ pad(result.b.slotsEnd) }})</span
+            >
           </div>
           <div class="compare-section">
             <span class="compare-label">Articles ({{ result.b.movesetArticles.length }})</span>
@@ -153,9 +205,16 @@
               <li
                 v-for="ma in result.b.movesetArticles"
                 :key="ma.article.articleId"
-                :class="{ 'compare-conflict': result.conflictingArticleIds.has(ma.article.articleId) }"
+                :class="{
+                  'compare-conflict': result.conflictingArticleIds.has(ma.article.articleId),
+                }"
               >
-                <v-icon v-if="result.conflictingArticleIds.has(ma.article.articleId)" size="x-small" class="conflict-icon">mdi-alert</v-icon>
+                <v-icon
+                  v-if="result.conflictingArticleIds.has(ma.article.articleId)"
+                  size="x-small"
+                  class="conflict-icon"
+                  >mdi-alert</v-icon
+                >
                 {{ ma.article.vanillaCharInternalName }}_{{ ma.article.articleName }}
               </li>
               <li v-if="!result.b.movesetArticles.length" class="compare-none">none</li>
@@ -169,7 +228,12 @@
                 :key="mh.hook.hookId"
                 :class="{ 'compare-conflict': result.conflictingHookIds.has(mh.hook.hookId) }"
               >
-                <v-icon v-if="result.conflictingHookIds.has(mh.hook.hookId)" size="x-small" class="conflict-icon">mdi-alert</v-icon>
+                <v-icon
+                  v-if="result.conflictingHookIds.has(mh.hook.hookId)"
+                  size="x-small"
+                  class="conflict-icon"
+                  >mdi-alert</v-icon
+                >
                 0x{{ mh.hook.offset }}
               </li>
               <li v-if="!result.b.movesetHooks.length" class="compare-none">none</li>
@@ -184,10 +248,15 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import api from '@/services/api'
+import { ItemType, ReleaseState, RELEASE_STATE_NAMES, ALL_ACCEPTANCE_STATES } from '@/globals'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
-const ALLOWED_STATES = new Set(['Released', 'Pending Update', 'Open Beta'])
+const ALLOWED_STATES = new Set(
+  [ReleaseState.Released, ReleaseState.PendingUpdate, ReleaseState.OpenBeta].map(
+    (id) => RELEASE_STATE_NAMES[id]
+  )
+)
 const COMMUNITY_MIN_VOTES = 3
 const COMMUNITY_THRESHOLD = 0.65
 
@@ -208,14 +277,13 @@ const reports = ref({ compatibleCount: 0, incompatibleCount: 0, userVote: null }
 const pairSummaries = ref(new Map())
 
 const visibleMovesets = computed(() =>
-  movesets.value.filter(m =>
-    !m.privateMoveset &&
-    !hardHeldIds.value.has(m.movesetId) &&
-    ALLOWED_STATES.has(m.releaseState)
+  movesets.value.filter(
+    (m) =>
+      !m.privateMoveset && !hardHeldIds.value.has(m.movesetId) && ALLOWED_STATES.has(m.releaseState)
   )
 )
 
-const isSelected = (m) => selection.value.some(s => s.movesetId === m.movesetId)
+const isSelected = (m) => selection.value.some((s) => s.movesetId === m.movesetId)
 
 const pairSummary = (movesetId) => pairSummaries.value.get(movesetId) ?? null
 
@@ -227,7 +295,7 @@ const compatPct = (movesetId) => {
 }
 
 const toggleSelect = (m) => {
-  const idx = selection.value.findIndex(s => s.movesetId === m.movesetId)
+  const idx = selection.value.findIndex((s) => s.movesetId === m.movesetId)
   if (idx !== -1) {
     selection.value.splice(idx, 1)
     result.value = null
@@ -239,14 +307,6 @@ const toggleSelect = (m) => {
     return
   }
   selection.value.push(m)
-}
-
-const deselect = (m) => {
-  const idx = selection.value.findIndex(s => s.movesetId === m.movesetId)
-  if (idx !== -1) {
-    selection.value.splice(idx, 1)
-    result.value = null
-  }
 }
 
 const thumbStyle = (m) => {
@@ -269,18 +329,25 @@ const normalizedBgColor = (m) => {
 
 const overlayStyle = (m) => {
   if (selection.value.length === 1 && !isSelected(m)) {
-    return { background: 'linear-gradient(to right, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.02) 100%)' }
+    return {
+      background:
+        'linear-gradient(to right, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.02) 100%)',
+    }
   }
   const c = normalizedBgColor(m)
-  return { background: `linear-gradient(to right, #${c}f2 0%, #${c}c8 50%, #${c}50 80%, #${c}10 100%)` }
+  return {
+    background: `linear-gradient(to right, #${c}f2 0%, #${c}c8 50%, #${c}50 80%, #${c}10 100%)`,
+  }
 }
 
-function pad(n) { return String(n).padStart(3, '0') }
+function pad(n) {
+  return String(n).padStart(3, '0')
+}
 function iconUrl(internalName) {
   return `${import.meta.env.BASE_URL}vanilla-stock-icons/chara_2_${internalName}.png`
 }
 
-const statusName = (id) => hookableStatuses.value.find(s => s.hookableStatusId === id)?.name ?? ''
+const statusName = (id) => hookableStatuses.value.find((s) => s.hookableStatusId === id)?.name ?? ''
 const isOnceOnly = (id) => statusName(id).toLowerCase().includes('once')
 const isMultiOk = (id) => statusName(id).toLowerCase().includes('more than once')
 
@@ -293,12 +360,17 @@ const runCheck = async () => {
     const [resA, resB, reportsRes, predictRes] = await Promise.all([
       api.get(`/movesets/${selection.value[0].movesetId}`),
       api.get(`/movesets/${selection.value[1].movesetId}`),
-      api.get('/compatibility', {
-        params: { moveset1: selection.value[0].movesetId, moveset2: selection.value[1].movesetId }
-      }).catch(() => ({ data: { compatibleCount: 0, incompatibleCount: 0, userVote: null } })),
+      api
+        .get('/compatibility', {
+          params: {
+            moveset1: selection.value[0].movesetId,
+            moveset2: selection.value[1].movesetId,
+          },
+        })
+        .catch(() => ({ data: { compatibleCount: 0, incompatibleCount: 0, userVote: null } })),
       api.get('/compatibility/predict', {
-        params: { movesets: `${selection.value[0].movesetId},${selection.value[1].movesetId}` }
-      })
+        params: { movesets: `${selection.value[0].movesetId},${selection.value[1].movesetId}` },
+      }),
     ])
 
     const a = resA.data
@@ -314,26 +386,42 @@ const runCheck = async () => {
     const issues = []
 
     for (const hookId of conflictingHookIds) {
-      const mhA = (a.movesetHooks ?? []).find(h => h.hook.hookId === hookId)
+      const mhA = (a.movesetHooks ?? []).find((h) => h.hook.hookId === hookId)
       if (!mhA) continue
       const sid = mhA.hook.hookableStatusId
       if (isMultiOk(sid)) {
-        issues.push({ severity: 'warning', message: `Both movesets use hook 0x${mhA.hook.offset}. This hook supports multiple uses, but too many at the same offset may still cause issues.` })
+        issues.push({
+          severity: 'warning',
+          message: `Both movesets use hook 0x${mhA.hook.offset}. This hook supports multiple uses, but too many at the same offset may still cause issues.`,
+        })
       } else if (isOnceOnly(sid)) {
-        issues.push({ severity: 'incompatible', message: `Both movesets use hook 0x${mhA.hook.offset} - this hook can only be used once and will cause a crash.` })
+        issues.push({
+          severity: 'incompatible',
+          message: `Both movesets use hook 0x${mhA.hook.offset} - this hook can only be used once and will cause a crash.`,
+        })
       } else {
-        issues.push({ severity: 'predicted-incompat', message: `Both movesets use hook 0x${mhA.hook.offset}. This hook's behavior with multiple users is untested. It will likely crash.` })
+        issues.push({
+          severity: 'predicted-incompat',
+          message: `Both movesets use hook 0x${mhA.hook.offset}. This hook's behavior with multiple users is untested. It will likely crash.`,
+        })
       }
     }
 
-    const sameChar = a.vanillaChar?.vanillaCharInternalName === b.vanillaChar?.vanillaCharInternalName
+    const sameChar =
+      a.vanillaChar?.vanillaCharInternalName === b.vanillaChar?.vanillaCharInternalName
     for (const articleId of conflictingArticleIds) {
-      const maA = (a.movesetArticles ?? []).find(art => art.article.articleId === articleId)
+      const maA = (a.movesetArticles ?? []).find((art) => art.article.articleId === articleId)
       if (!maA) continue
       if (sameChar) {
-        issues.push({ severity: 'incompatible', message: `Both movesets are on ${a.vanillaChar?.displayName ?? 'the same character'} and clone the same article (${maA.article.vanillaCharInternalName}_${maA.article.articleName}). The article will not work correctly.` })
+        issues.push({
+          severity: 'incompatible',
+          message: `Both movesets are on ${a.vanillaChar?.displayName ?? 'the same character'} and clone the same article (${maA.article.vanillaCharInternalName}_${maA.article.articleName}). The article will not work correctly.`,
+        })
       } else {
-        issues.push({ severity: 'warning', message: `Both movesets clone the article ${maA.article.vanillaCharInternalName}_${maA.article.articleName} and use overlapping slots. It's recommended to switch the slots of one moveset to reduce article conflicts.` })
+        issues.push({
+          severity: 'warning',
+          message: `Both movesets clone the article ${maA.article.vanillaCharInternalName}_${maA.article.articleName} and use overlapping slots. It's recommended to switch the slots of one moveset to reduce article conflicts.`,
+        })
       }
     }
 
@@ -341,9 +429,10 @@ const runCheck = async () => {
   } catch {
     result.value = {
       issues: [{ severity: 'error', message: 'Failed to load moveset data. Please try again.' }],
-      a: null, b: null,
+      a: null,
+      b: null,
       conflictingHookIds: new Set(),
-      conflictingArticleIds: new Set()
+      conflictingArticleIds: new Set(),
     }
   } finally {
     checking.value = false
@@ -352,8 +441,8 @@ const runCheck = async () => {
 
 // Watch the actual IDs so replacing selection[1] triggers a re-check
 watch(
-  () => selection.value.map(s => s.movesetId).join(','),
-  async (val) => {
+  () => selection.value.map((s) => s.movesetId).join(','),
+  async () => {
     if (selection.value.length === 2) {
       runCheck()
     } else if (selection.value.length === 1) {
@@ -361,11 +450,14 @@ watch(
       // Fetch vote summaries for the selected moveset
       try {
         const res = await api.get('/compatibility/summary', {
-          params: { moveset: selection.value[0].movesetId }
+          params: { moveset: selection.value[0].movesetId },
         })
         const map = new Map()
         for (const entry of res.data) {
-          map.set(entry.movesetId, { compatibleCount: entry.compatibleCount, incompatibleCount: entry.incompatibleCount })
+          map.set(entry.movesetId, {
+            compatibleCount: entry.compatibleCount,
+            incompatibleCount: entry.incompatibleCount,
+          })
         }
         pairSummaries.value = map
       } catch {
@@ -382,9 +474,9 @@ watch(
 const autoSeverity = computed(() => {
   if (!result.value) return null
   const issues = result.value.issues
-  if (issues.some(i => i.severity === 'incompatible')) return 'incompatible'
-  if (issues.some(i => i.severity === 'predicted-incompat')) return 'predicted-incompat'
-  if (issues.some(i => i.severity === 'warning')) return 'warning'
+  if (issues.some((i) => i.severity === 'incompatible')) return 'incompatible'
+  if (issues.some((i) => i.severity === 'predicted-incompat')) return 'predicted-incompat'
+  if (issues.some((i) => i.severity === 'warning')) return 'warning'
   return 'compatible'
 })
 
@@ -393,11 +485,11 @@ const communitySignal = computed(() => {
   if (total < COMMUNITY_MIN_VOTES) return null
   const ratio = reports.value.compatibleCount / total
   if (ratio >= COMMUNITY_THRESHOLD) return 'compatible'
-  if (ratio <= (1 - COMMUNITY_THRESHOLD)) return 'incompatible'
+  if (ratio <= 1 - COMMUNITY_THRESHOLD) return 'incompatible'
   return null
 })
 
-const autoAsSignal = (s) => (s === 'compatible' || s === 'warning') ? 'compatible' : 'incompatible'
+const autoAsSignal = (s) => (s === 'compatible' || s === 'warning' ? 'compatible' : 'incompatible')
 
 const finalSeverity = computed(() => {
   const auto = autoSeverity.value
@@ -415,22 +507,26 @@ const finalSeverity = computed(() => {
   return auto
 })
 
-const communityFactored = computed(() =>
-  communitySignal.value !== null && communitySignal.value !== autoAsSignal(autoSeverity.value)
+const communityFactored = computed(
+  () => communitySignal.value !== null && communitySignal.value !== autoAsSignal(autoSeverity.value)
 )
 
 const communityNote = computed(() => {
   const total = reports.value.compatibleCount + reports.value.incompatibleCount
-  if (communitySignal.value === 'compatible') return `${reports.value.compatibleCount} of ${total} users report it works.`
-  if (communitySignal.value === 'incompatible') return `${reports.value.incompatibleCount} of ${total} users report issues.`
+  if (communitySignal.value === 'compatible')
+    return `${reports.value.compatibleCount} of ${total} users report it works.`
+  if (communitySignal.value === 'incompatible')
+    return `${reports.value.incompatibleCount} of ${total} users report issues.`
   return ''
 })
 
 const totalVotes = computed(() => reports.value.compatibleCount + reports.value.incompatibleCount)
 
 const communityBannerClass = computed(() => {
-  if (reports.value.compatibleCount > reports.value.incompatibleCount) return 'community-banner--compat'
-  if (reports.value.incompatibleCount > reports.value.compatibleCount) return 'community-banner--incompat'
+  if (reports.value.compatibleCount > reports.value.incompatibleCount)
+    return 'community-banner--compat'
+  if (reports.value.incompatibleCount > reports.value.compatibleCount)
+    return 'community-banner--incompat'
   return 'community-banner--neutral'
 })
 
@@ -441,24 +537,47 @@ const communityBannerIcon = computed(() => {
 })
 
 const communityBannerText = computed(() => {
-  if (reports.value.compatibleCount > reports.value.incompatibleCount) return 'Users are reporting this combination as compatible'
-  if (reports.value.incompatibleCount > reports.value.compatibleCount) return 'Users are reporting this combination as not compatible'
+  if (reports.value.compatibleCount > reports.value.incompatibleCount)
+    return 'Users are reporting this combination as compatible'
+  if (reports.value.incompatibleCount > reports.value.compatibleCount)
+    return 'Users are reporting this combination as not compatible'
   return 'Community reports are evenly split'
 })
 
 const VERDICT_MAP = {
-  compatible:            { cls: 'verdict--good',             icon: 'mdi-check-circle',   text: 'Most likely compatible. No Issues Detected' },
-  warning:               { cls: 'verdict--warn',             icon: 'mdi-alert',           text: 'Compatible with Caveats' },
-  'predicted-incompat':  { cls: 'verdict--predicted-bad',    icon: 'mdi-alert-circle',    text: 'Likely Not Compatible' },
-  incompatible:          { cls: 'verdict--bad',              icon: 'mdi-close-circle',    text: 'Not Compatible' },
-  'community-compat':    { cls: 'verdict--community-compat', icon: 'mdi-account-check',   text: 'Users Report Compatible' },
-  'community-incompat':  { cls: 'verdict--community-incompat', icon: 'mdi-account-cancel', text: 'Users Report Issues' },
+  compatible: {
+    cls: 'verdict--good',
+    icon: 'mdi-check-circle',
+    text: 'Most likely compatible. No Issues Detected',
+  },
+  warning: { cls: 'verdict--warn', icon: 'mdi-alert', text: 'Compatible with Caveats' },
+  'predicted-incompat': {
+    cls: 'verdict--predicted-bad',
+    icon: 'mdi-alert-circle',
+    text: 'Likely Not Compatible',
+  },
+  incompatible: { cls: 'verdict--bad', icon: 'mdi-close-circle', text: 'Not Compatible' },
+  'community-compat': {
+    cls: 'verdict--community-compat',
+    icon: 'mdi-account-check',
+    text: 'Users Report Compatible',
+  },
+  'community-incompat': {
+    cls: 'verdict--community-incompat',
+    icon: 'mdi-account-cancel',
+    text: 'Users Report Issues',
+  },
 }
 
 const finalVerdictClass = computed(() => VERDICT_MAP[finalSeverity.value]?.cls ?? '')
-const finalVerdictIcon  = computed(() => VERDICT_MAP[finalSeverity.value]?.icon ?? 'mdi-help-circle')
-const finalVerdictText  = computed(() => VERDICT_MAP[finalSeverity.value]?.text ?? '')
-const severityIcon = (s) => ({ incompatible: 'mdi-close-circle', 'predicted-incompat': 'mdi-alert-circle', warning: 'mdi-alert' }[s] ?? 'mdi-information')
+const finalVerdictIcon = computed(() => VERDICT_MAP[finalSeverity.value]?.icon ?? 'mdi-help-circle')
+const finalVerdictText = computed(() => VERDICT_MAP[finalSeverity.value]?.text ?? '')
+const severityIcon = (s) =>
+  ({
+    incompatible: 'mdi-close-circle',
+    'predicted-incompat': 'mdi-alert-circle',
+    warning: 'mdi-alert',
+  })[s] ?? 'mdi-information'
 
 const submitReport = async (isCompatible) => {
   if (!result.value || selection.value.length < 2) return
@@ -467,10 +586,12 @@ const submitReport = async (isCompatible) => {
     const res = await api.post('/compatibility', {
       movesetId1: selection.value[0].movesetId,
       movesetId2: selection.value[1].movesetId,
-      isCompatible
+      isCompatible,
     })
     reports.value = res.data
-  } catch { /**/ } finally {
+  } catch {
+    /**/
+  } finally {
     reportLoading.value = false
   }
 }
@@ -482,7 +603,9 @@ onMounted(async () => {
       api.get('/movesets'),
       api.get('/hookablestatuses'),
       api.get('/auth/me'),
-      api.get('/logs', { params: { acceptanceStates: [1, 2, 3, 4, 5, 6, 7], itemTypes: [1] } })
+      api.get('/logs', {
+        params: { acceptanceStates: ALL_ACCEPTANCE_STATES, itemTypes: [ItemType.Moveset] },
+      }),
     ])
     if (msRes.status === 'fulfilled') movesets.value = msRes.value.data
     if (statusRes.status === 'fulfilled') hookableStatuses.value = statusRes.value.data
@@ -514,8 +637,14 @@ onMounted(async () => {
   padding: 2rem 1.5rem 4rem;
 }
 
-.page-title { font-size: 4em; margin-bottom: 0.15em; }
-.subtitle { color: #aaa; margin-bottom: 1.5rem; }
+.page-title {
+  font-size: 4em;
+  margin-bottom: 0.15em;
+}
+.subtitle {
+  color: #aaa;
+  margin-bottom: 1.5rem;
+}
 
 /* ── Selection bar ── */
 .selection-status {
@@ -541,10 +670,17 @@ onMounted(async () => {
   font-size: 0.88em;
 }
 
-.slot-empty { color: #555; font-style: italic; font-size: 0.88em; }
+.slot-empty {
+  color: #555;
+  font-style: italic;
+  font-size: 0.88em;
+}
 
 /* ── Grid ── */
-.loading-msg { color: #888; padding: 1rem 0; }
+.loading-msg {
+  color: #888;
+  padding: 1rem 0;
+}
 
 .moveset-grid {
   display: flex;
@@ -564,13 +700,24 @@ onMounted(async () => {
   overflow: hidden;
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.18s, border-radius 0.18s, box-shadow 0.18s, opacity 0.18s, filter 0.18s;
+  transition:
+    border-color 0.18s,
+    border-radius 0.18s,
+    box-shadow 0.18s,
+    opacity 0.18s,
+    filter 0.18s;
   flex-shrink: 0;
   outline: none;
 }
 
-.ms-card:hover:not(.ms-card--dimmed) { filter: brightness(0.9); border-radius: 11px; }
-.ms-card--dimmed { opacity: 0.35; cursor: default; }
+.ms-card:hover:not(.ms-card--dimmed) {
+  filter: brightness(0.9);
+  border-radius: 11px;
+}
+.ms-card--dimmed {
+  opacity: 0.35;
+  cursor: default;
+}
 
 .ms-card--selected {
   border-color: #ffffff;
@@ -585,8 +732,16 @@ onMounted(async () => {
   text-shadow: 0 0px 2px #ffffff60;
 }
 
-.ms-card__thumb { position: absolute; inset: 0; z-index: 0; }
-.ms-card__overlay { position: absolute; inset: 0; z-index: 1; }
+.ms-card__thumb {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.ms-card__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
 
 .ms-card__name {
   position: absolute;
@@ -651,11 +806,35 @@ onMounted(async () => {
   font-size: 1.05em;
 }
 
-.compare-col { flex: 1; padding: 0.875rem 1rem; min-width: 0; }
-.compare-header { margin-bottom: 0.2rem; }
-.compare-header strong { font-size: 1em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
-.compare-subtitle { font-size: 0.75em; opacity: 0.6; font-weight: normal; }
-.compare-meta { font-size: 0.9em; color: #aaa; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.compare-col {
+  flex: 1;
+  padding: 0.875rem 1rem;
+  min-width: 0;
+}
+.compare-header {
+  margin-bottom: 0.2rem;
+}
+.compare-header strong {
+  font-size: 1em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+.compare-subtitle {
+  font-size: 0.75em;
+  opacity: 0.6;
+  font-weight: normal;
+}
+.compare-meta {
+  font-size: 0.9em;
+  color: #aaa;
+  margin-bottom: 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
 
 .meta-char-icon {
   width: 22px;
@@ -664,10 +843,26 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
-.meta-slots { color: #777; }
-.compare-divider { width: 1px; background-color: #2a2a2a; margin: 0.5rem 0; flex-shrink: 0; }
-.compare-section { margin-bottom: 0.5rem; }
-.compare-label { font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.04em; color: #666; display: block; margin-bottom: 0.2rem; }
+.meta-slots {
+  color: #777;
+}
+.compare-divider {
+  width: 1px;
+  background-color: #2a2a2a;
+  margin: 0.5rem 0;
+  flex-shrink: 0;
+}
+.compare-section {
+  margin-bottom: 0.5rem;
+}
+.compare-label {
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #666;
+  display: block;
+  margin-bottom: 0.2rem;
+}
 
 .compare-list {
   list-style: none;
@@ -694,7 +889,11 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
-.compare-none { color: #555; font-style: italic; font-family: inherit; }
+.compare-none {
+  color: #555;
+  font-style: italic;
+  font-family: inherit;
+}
 
 /* ── Verdict ── */
 .verdict-banner {
@@ -708,19 +907,61 @@ onMounted(async () => {
   margin-bottom: 1.25rem;
 }
 
-.verdict-body { display: flex; flex-direction: column; gap: 0.1rem; }
-.verdict-text { line-height: 1.2; }
-.verdict-note { font-size: 0.72em; font-weight: normal; opacity: 0.8; }
-.verdict-icon { font-size: 1.4em; flex-shrink: 0; }
+.verdict-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.verdict-text {
+  line-height: 1.2;
+}
+.verdict-note {
+  font-size: 0.72em;
+  font-weight: normal;
+  opacity: 0.8;
+}
+.verdict-icon {
+  font-size: 1.4em;
+  flex-shrink: 0;
+}
 
-.verdict--good              { background-color: #1b3a1b; color: #81c784; border: 1px solid #388e3c; }
-.verdict--warn              { background-color: #3a2f00; color: #ffd54f; border: 1px solid #f9a825; }
-.verdict--predicted-bad     { background-color: #2e1f00; color: #ffb74d; border: 1px solid #e65100; }
-.verdict--bad               { background-color: #3a1010; color: #ef9a9a; border: 1px solid #c62828; }
-.verdict--community-compat  { background-color: #0d2e2e; color: #80cbc4; border: 1px solid #00897b; }
-.verdict--community-incompat { background-color: #2a1030; color: #ce93d8; border: 1px solid #8e24aa; }
+.verdict--good {
+  background-color: #1b3a1b;
+  color: #81c784;
+  border: 1px solid #388e3c;
+}
+.verdict--warn {
+  background-color: #3a2f00;
+  color: #ffd54f;
+  border: 1px solid #f9a825;
+}
+.verdict--predicted-bad {
+  background-color: #2e1f00;
+  color: #ffb74d;
+  border: 1px solid #e65100;
+}
+.verdict--bad {
+  background-color: #3a1010;
+  color: #ef9a9a;
+  border: 1px solid #c62828;
+}
+.verdict--community-compat {
+  background-color: #0d2e2e;
+  color: #80cbc4;
+  border: 1px solid #00897b;
+}
+.verdict--community-incompat {
+  background-color: #2a1030;
+  color: #ce93d8;
+  border: 1px solid #8e24aa;
+}
 
-.issues-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.75rem; }
+.issues-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.75rem;
+}
 
 .issue-item {
   display: flex;
@@ -732,11 +973,26 @@ onMounted(async () => {
   line-height: 1.5;
 }
 
-.issue-icon { margin-top: 2px; flex-shrink: 0; }
-.issue-item--incompatible     { background-color: #2a0a0a; color: #ef9a9a; }
-.issue-item--predicted-incompat { background-color: #271500; color: #ffcc80; }
-.issue-item--warning          { background-color: #1e1a00; color: #fff176; }
-.issue-item--error            { background-color: #1a1a1a; color: #ccc; }
+.issue-icon {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.issue-item--incompatible {
+  background-color: #2a0a0a;
+  color: #ef9a9a;
+}
+.issue-item--predicted-incompat {
+  background-color: #271500;
+  color: #ffcc80;
+}
+.issue-item--warning {
+  background-color: #1e1a00;
+  color: #fff176;
+}
+.issue-item--error {
+  background-color: #1a1a1a;
+  color: #ccc;
+}
 
 /* ── Community ── */
 .community-section {
@@ -759,7 +1015,10 @@ onMounted(async () => {
   font-weight: bold;
 }
 
-.community-banner-icon { font-size: 1.2em; flex-shrink: 0; }
+.community-banner-icon {
+  font-size: 1.2em;
+  flex-shrink: 0;
+}
 
 .community-banner-body {
   display: flex;
@@ -767,14 +1026,37 @@ onMounted(async () => {
   gap: 0.1rem;
 }
 
-.community-banner-text { font-size: 0.92em; line-height: 1.2; }
-.community-banner-sub  { font-size: 0.75em; font-weight: normal; opacity: 0.8; }
+.community-banner-text {
+  font-size: 0.92em;
+  line-height: 1.2;
+}
+.community-banner-sub {
+  font-size: 0.75em;
+  font-weight: normal;
+  opacity: 0.8;
+}
 
-.community-banner--compat   { background-color: #1b3a1b; color: #81c784; border: 1px solid #388e3c; }
-.community-banner--incompat { background-color: #3a1010; color: #ef9a9a; border: 1px solid #c62828; }
-.community-banner--neutral  { background-color: #2a2a1a; color: #ffd54f; border: 1px solid #f9a825; }
+.community-banner--compat {
+  background-color: #1b3a1b;
+  color: #81c784;
+  border: 1px solid #388e3c;
+}
+.community-banner--incompat {
+  background-color: #3a1010;
+  color: #ef9a9a;
+  border: 1px solid #c62828;
+}
+.community-banner--neutral {
+  background-color: #2a2a1a;
+  color: #ffd54f;
+  border: 1px solid #f9a825;
+}
 
-.community-no-votes { font-size: 0.85em; color: #555; margin: 0; }
+.community-no-votes {
+  font-size: 0.85em;
+  color: #555;
+  margin: 0;
+}
 
 .community-vote-row {
   display: flex;
@@ -782,19 +1064,47 @@ onMounted(async () => {
   gap: 0.4rem;
 }
 
-.report-label { font-size: 0.82em; color: #888; }
+.report-label {
+  font-size: 0.82em;
+  color: #888;
+}
 
-.report-btn-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.report-btn-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
 
-.report-btn--active-compat   { background-color: #2e7d32 !important; color: #fff !important; }
-.report-btn--active-incompat { background-color: #c62828 !important; color: #fff !important; }
+.report-btn--active-compat {
+  background-color: #2e7d32 !important;
+  color: #fff !important;
+}
+.report-btn--active-incompat {
+  background-color: #c62828 !important;
+  color: #fff !important;
+}
 
-.vote-note { font-size: 0.78em; color: #666; margin: 0; }
-.sign-in-note { font-size: 0.82em; color: #555; }
+.vote-note {
+  font-size: 0.78em;
+  color: #666;
+  margin: 0;
+}
+.sign-in-note {
+  font-size: 0.82em;
+  color: #555;
+}
 
 @media (max-width: 680px) {
-  .ms-card { width: calc(33.333% - 4px); }
-  .compare-panel { flex-direction: column; }
-  .compare-divider { width: auto; height: 1px; margin: 0; }
+  .ms-card {
+    width: calc(33.333% - 4px);
+  }
+  .compare-panel {
+    flex-direction: column;
+  }
+  .compare-divider {
+    width: auto;
+    height: 1px;
+    margin: 0;
+  }
 }
 </style>

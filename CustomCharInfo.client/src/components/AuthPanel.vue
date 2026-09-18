@@ -8,11 +8,9 @@
         <v-text-field v-model="email" label="Email" variant="outlined" />
         <v-text-field v-model="password" label="Password" type="password" variant="outlined">
           <template #details>
-            <router-link 
-            to="/forgot-password"
-            class="offsite unvisitable"
-            target="_blank"
-            >Forgot Password?</router-link>
+            <router-link to="/forgot-password" class="offsite unvisitable" target="_blank"
+              >Forgot Password?</router-link
+            >
           </template>
         </v-text-field>
 
@@ -38,7 +36,9 @@
       <!-- Username -->
       <div v-else-if="user">
         <div class="d-flex mb-2">
-          <p>You are logged in as <code>{{ user.userName }}</code></p>
+          <p>
+            You are logged in as <code>{{ user.userName }}</code>
+          </p>
         </div>
       </div>
     </div>
@@ -48,19 +48,14 @@
       <!-- Signed-in (ANY) actions -->
       <div>
         <!-- Logout button -->
-        <v-btn @click="logout" class="user-link">
+        <v-btn class="user-link" @click="logout">
           <v-icon>mdi-logout</v-icon>
           Log out
         </v-btn>
 
         <!-- Change username -->
-        <v-btn @click="editProfileForm = !editProfileForm" class="user-link">
-          <v-icon
-            class="rotate-toggle"
-            :class="{ rotated: editProfileForm }"
-          >
-            mdi-cog
-          </v-icon>
+        <v-btn class="user-link" @click="editProfileForm = !editProfileForm">
+          <v-icon class="rotate-toggle" :class="{ rotated: editProfileForm }"> mdi-cog </v-icon>
           Change username
         </v-btn>
       </div>
@@ -70,7 +65,7 @@
         <div v-show="editProfileForm">
           <div class="d-flex mb-2 align-center">
             <!-- Text -->
-            <v-text-field 
+            <v-text-field
               v-model="editedUsername"
               label="New Username"
               class="mr-3 w-75"
@@ -79,10 +74,7 @@
             />
 
             <!-- Button -->
-            <v-btn 
-              @click="updateUsername"
-              class="user-link"
-            >
+            <v-btn class="user-link" @click="updateUsername">
               <v-icon>mdi-account-check</v-icon>
               Update
             </v-btn>
@@ -93,10 +85,7 @@
       <!-- Signed-in (USER) actions -->
       <div v-if="!user?.modderId && !pendingApproval">
         <!-- apply for modder -->
-        <router-link
-          :to="{ name: 'ApplyModder' }"
-          class="router-link unvisitable user-link"
-        >
+        <router-link :to="{ name: 'ApplyModder' }" class="router-link unvisitable user-link">
           <v-icon>mdi-account-plus</v-icon>
           Apply for modder
         </router-link>
@@ -131,28 +120,19 @@
         </router-link>
 
         <!-- My content -->
-        <router-link
-          :to="{ name: 'MyContent' }"
-          class="router-link unvisitable user-link"
-        >
+        <router-link :to="{ name: 'MyContent' }" class="router-link unvisitable user-link">
           <v-icon>mdi-view-list</v-icon>
           My content
         </router-link>
 
         <!-- My likes -->
-        <router-link
-          :to="{ name: 'MyLikes' }"
-          class="router-link unvisitable user-link"
-        >
+        <router-link :to="{ name: 'MyLikes' }" class="router-link unvisitable user-link">
           <v-icon>mdi-heart</v-icon>
           My likes
         </router-link>
 
         <!-- Add plugin -->
-        <router-link
-          :to="{ name: 'AddPlugin' }"
-          class="router-link unvisitable user-link"
-        >
+        <router-link :to="{ name: 'AddPlugin' }" class="router-link unvisitable user-link">
           <v-icon>mdi-file-code</v-icon>
           Submit a plugin
         </router-link>
@@ -176,6 +156,9 @@ import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { UserType, ItemType, AcceptanceState } from '@/globals'
+import { useNotify } from '@/composables/useNotify'
+
+const notify = useNotify()
 
 const authStore = useAuthStore()
 const user = computed(() => authStore.user)
@@ -190,9 +173,9 @@ const register = async () => {
   try {
     errorMsgs.value = []
     await authStore.register(email.value, password.value)
-    alert('Registered! You can now log in.')
+    notify.success('Registered! You can now log in.')
   } catch (err) {
-    console.error("Register Failed:", err)
+    console.error('Register Failed:', err)
     errorMsgs.value = extractErrorMessages(err)
   }
 }
@@ -203,7 +186,7 @@ const login = async () => {
     await authStore.login(email.value, password.value)
     await checkPendingApproval()
   } catch (err) {
-    console.error("Login Failed:", err)
+    console.error('Login Failed:', err)
     errorMsgs.value = extractErrorMessages(err)
   }
 }
@@ -211,14 +194,14 @@ const login = async () => {
 const updateUsername = async () => {
   try {
     await api.put(`/auth/edit-username`, {
-      newUserName: editedUsername.value
+      newUserName: editedUsername.value,
     })
-    alert('Username updated successfully!')
+    notify.success('Username updated successfully!')
     await authStore.fetchCurrentUser()
     editProfileForm.value = false
   } catch (err) {
-    console.error("Failed to update username:", err)
-    alert('Failed to update username.')
+    console.error('Failed to update username:', err)
+    notify.error('Failed to update username.')
   }
 }
 
@@ -231,7 +214,7 @@ const logout = async () => {
 function extractErrorMessages(err) {
   // ASP.NET Identity validation errors (array)
   if (Array.isArray(err.response?.data)) {
-    return err.response.data.map(e => e.description || e.message || String(e))
+    return err.response.data.map((e) => e.description || e.message || String(e))
   }
 
   // ASP.NET ProblemDetails / custom object
@@ -265,16 +248,21 @@ async function checkPendingApproval() {
   pendingApproval.value = false
   try {
     const logsRes = await api.get('/logs', {
-      params: { userId: user.value.id }
+      params: { userId: user.value.id },
     })
     const logs = logsRes.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    const latestLog = logs.find(log => log.itemType.itemTypeId === ItemType.Modder)
+    const latestLog = logs.find((log) => log.itemType.itemTypeId === ItemType.Modder)
 
-    if (latestLog && [AcceptanceState.PendingAdminHard, AcceptanceState.PendingUserHard].includes(latestLog.acceptanceState.acceptanceStateId)) {
+    if (
+      latestLog &&
+      [AcceptanceState.PendingAdminHard, AcceptanceState.PendingUserHard].includes(
+        latestLog.acceptanceState.acceptanceStateId
+      )
+    ) {
       pendingApproval.value = true
     }
   } catch (err) {
-    console.error("Failed to fetch action logs:", err)
+    console.error('Failed to fetch action logs:', err)
   }
 }
 

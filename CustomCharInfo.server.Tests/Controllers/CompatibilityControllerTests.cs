@@ -37,7 +37,7 @@ namespace CustomCharInfo.server.Tests.Controllers
                 SlottedId = slottedId,
                 SlotsStart = slotsStart,
                 SlotsEnd = slotsEnd,
-                ReleaseStateId = 1
+                ReleaseStateId = ReleaseStates.Released
             };
             _db.Context.Movesets.Add(moveset);
             _db.Context.SaveChanges();
@@ -83,10 +83,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task PredictCompatibility_HookUsableMoreThanOnce_ReturnsWarning()
         {
-            // Regression test for the frontend bug:
-            // "usable more than once" contains the substring "once",
-            // so a naive "once"-first check misclassifies it as incompatible.
-            var status = AddHookableStatus(1, "Usable more than once");
+            var status = AddHookableStatus(HookableStatuses.MoreThanOnce, "Can be hooked more than once");
             var hook = AddHook(1, status.HookableStatusId);
             var a = AddMoveset(1, "aone");
             var b = AddMoveset(2, "btwo");
@@ -106,7 +103,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task PredictCompatibility_HookOnceOnly_ReturnsIncompatible()
         {
-            var status = AddHookableStatus(1, "Usable once");
+            var status = AddHookableStatus(HookableStatuses.OnlyOnce, "Can only be hooked once");
             var hook = AddHook(1, status.HookableStatusId);
             var a = AddMoveset(1, "aone");
             var b = AddMoveset(2, "btwo");
@@ -122,9 +119,9 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
-        public async Task PredictCompatibility_UnmatchedHookStatus_ReturnsPredictedIncompat()
+        public async Task PredictCompatibility_UntestedHook_ReturnsPredictedIncompat()
         {
-            var status = AddHookableStatus(1, "Unknown behavior");
+            var status = AddHookableStatus(HookableStatuses.Untested, "Untested");
             var hook = AddHook(1, status.HookableStatusId);
             var a = AddMoveset(1, "aone");
             var b = AddMoveset(2, "btwo");

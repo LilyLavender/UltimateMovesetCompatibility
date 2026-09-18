@@ -15,12 +15,7 @@
         class="hidden-file-input"
         @change="handleFileChange"
       />
-      <img
-        v-if="previewSrc"
-        :src="previewSrc"
-        class="preview-img"
-        :style="previewStyle"
-      />
+      <img v-if="previewSrc" :src="previewSrc" class="preview-img" :style="previewStyle" />
       <span v-else class="empty-hint">Click or drop an image here</span>
 
       <div class="dropzone-hint">
@@ -35,12 +30,12 @@
       variant="outlined"
       density="compact"
       :model-value="urlInputValue"
-      @update:model-value="handleUrlInput"
       label="Or paste an image link"
       placeholder="https://example.com/image.png"
       hide-details
       clearable
       class="mt-2 url-input"
+      @update:model-value="handleUrlInput"
       @click="$event.stopPropagation()"
     />
 
@@ -87,7 +82,10 @@ const previewSrc = computed(() => {
 const urlInputValue = computed(() => (typeof props.modelValue === 'string' ? props.modelValue : ''))
 
 const previewStyle = computed(() => ({
-  maxHeight: typeof props.previewMaxHeight === 'number' ? `${props.previewMaxHeight}px` : props.previewMaxHeight,
+  maxHeight:
+    typeof props.previewMaxHeight === 'number'
+      ? `${props.previewMaxHeight}px`
+      : props.previewMaxHeight,
 }))
 
 const revokeObjectUrl = () => {
@@ -114,7 +112,9 @@ const checkDimensions = (file) => {
     img.onload = () => {
       URL.revokeObjectURL(url)
       if (img.naturalWidth !== props.requiredWidth || img.naturalHeight !== props.requiredHeight) {
-        reject(`Image must be exactly ${props.requiredWidth}x${props.requiredHeight}px (got ${img.naturalWidth}x${img.naturalHeight}px).`)
+        reject(
+          `Image must be exactly ${props.requiredWidth}x${props.requiredHeight}px (got ${img.naturalWidth}x${img.naturalHeight}px).`
+        )
       } else {
         resolve()
       }

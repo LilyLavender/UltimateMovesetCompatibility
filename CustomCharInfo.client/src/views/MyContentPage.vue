@@ -12,26 +12,24 @@
         <h2 class="section-title">Movesets</h2>
         <p v-if="movesets.length === 0" class="empty-msg">No movesets yet.</p>
         <div v-else class="moveset-grid">
-          <div
-            v-for="moveset in movesets"
-            :key="moveset.movesetId"
-            class="moveset-wrapper"
-          >
+          <div v-for="moveset in movesets" :key="moveset.movesetId" class="moveset-wrapper">
             <MovesetCard :moveset="moveset" />
             <div
-              class="pill-overlay"
               v-if="statusPillFor(movesetStates[moveset.movesetId]) || moveset.privateMoveset"
+              class="pill-overlay"
             >
               <span
                 v-if="statusPillFor(movesetStates[moveset.movesetId])"
                 class="state-pill"
                 :style="{ backgroundColor: statusPillFor(movesetStates[moveset.movesetId]).color }"
-              >{{ statusPillFor(movesetStates[moveset.movesetId]).label }}</span>
+                >{{ statusPillFor(movesetStates[moveset.movesetId]).label }}</span
+              >
               <span
                 v-if="moveset.privateMoveset"
                 class="state-pill"
                 :style="{ backgroundColor: PRIVATE_COLOR }"
-              >Private</span>
+                >Private</span
+              >
             </div>
           </div>
         </div>
@@ -42,13 +40,8 @@
         <h2 class="section-title">Series</h2>
         <p v-if="userSeries.length === 0" class="empty-msg">No series yet.</p>
         <v-row v-else>
-          <v-col
-            v-for="s in userSeries"
-            :key="s.seriesId"
-            cols="6"
-            sm="4"
-          >
-            <SeriesCard :series="s" :apiUrl="apiUrl">
+          <v-col v-for="s in userSeries" :key="s.seriesId" cols="6" sm="4">
+            <SeriesCard :series="s" :api-url="apiUrl">
               <template #subtitle>
                 <div class="series-pills">
                   <span
@@ -56,8 +49,12 @@
                     :key="pill.label"
                     class="state-pill"
                     :style="{ backgroundColor: pill.color }"
-                  >{{ pill.label }}</span>
-                  <span v-if="!pillsFor(seriesStates[s.seriesId]).length" class="series-pill-spacer" />
+                    >{{ pill.label }}</span
+                  >
+                  <span
+                    v-if="!pillsFor(seriesStates[s.seriesId]).length"
+                    class="series-pill-spacer"
+                  />
                 </div>
               </template>
             </SeriesCard>
@@ -81,7 +78,8 @@
                 :key="pill.label"
                 class="state-pill"
                 :style="{ backgroundColor: pill.color }"
-              >{{ pill.label }}</span>
+                >{{ pill.label }}</span
+              >
             </div>
           </v-list-item>
         </v-list>
@@ -93,6 +91,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/services/api'
+import { AcceptanceState, ItemType, ALL_ACCEPTANCE_STATES } from '@/globals'
 import MovesetCard from '@/components/MovesetCard.vue'
 import SeriesCard from '@/components/SeriesCard.vue'
 import { displayVersion } from '@/services/pluginVersion'
@@ -107,19 +106,19 @@ const movesetStates = ref({})
 const seriesStates = ref({})
 
 const PILL_COLORS = {
-  1: 'rgb(187, 224, 236)',
-  2: 'rgb(52, 194, 241)',
-  3: 'rgb(241, 241, 142)',
-  4: 'rgb(241, 241, 52)',
-  6: 'rgb(241, 52, 52)',
+  [AcceptanceState.PendingAdminSoft]: 'rgb(187, 224, 236)',
+  [AcceptanceState.PendingAdminHard]: 'rgb(52, 194, 241)',
+  [AcceptanceState.PendingUserSoft]: 'rgb(241, 241, 142)',
+  [AcceptanceState.PendingUserHard]: 'rgb(241, 241, 52)',
+  [AcceptanceState.Rejected]: 'rgb(241, 52, 52)',
 }
 
 const PILL_LABELS = {
-  1: 'Pending Admin Action (Soft)',
-  2: 'Pending Admin Action (Hard)',
-  3: 'Pending User Action (Soft)',
-  4: 'Pending User Action (Hard)',
-  6: 'Rejected',
+  [AcceptanceState.PendingAdminSoft]: 'Pending Admin Action (Soft)',
+  [AcceptanceState.PendingAdminHard]: 'Pending Admin Action (Hard)',
+  [AcceptanceState.PendingUserSoft]: 'Pending User Action (Soft)',
+  [AcceptanceState.PendingUserHard]: 'Pending User Action (Hard)',
+  [AcceptanceState.Rejected]: 'Rejected',
 }
 
 const PRIVATE_COLOR = 'rgb(241, 52, 52)'
@@ -142,7 +141,7 @@ function pluginAttachmentLabel(plugin) {
 }
 
 function pluginVersionPills(plugin) {
-  return (plugin.versions ?? []).map(v => {
+  return (plugin.versions ?? []).map((v) => {
     const label = displayVersion(v.versionLabel)
     if (v.isCurrent) return { label: `${label} (current)`, color: CURRENT_COLOR }
     const pill = statusPillFor(v.acceptanceStateId)
@@ -157,8 +156,8 @@ onMounted(async () => {
     const [logsRes, movesetsRes, pluginsRes] = await Promise.all([
       api.get('/logs', {
         params: {
-          acceptanceStates: [1, 2, 3, 4, 5, 6, 7],
-          itemTypes: [1, 3],
+          acceptanceStates: ALL_ACCEPTANCE_STATES,
+          itemTypes: [ItemType.Moveset, ItemType.Series],
         },
       }),
       user.modderId
@@ -200,9 +199,9 @@ onMounted(async () => {
     const seriesIds = [...seriesLogMap.keys()]
     if (seriesIds.length > 0) {
       const results = await Promise.all(
-        seriesIds.map(id => api.get(`/series/${id}`).catch(() => null))
+        seriesIds.map((id) => api.get(`/series/${id}`).catch(() => null))
       )
-      userSeries.value = results.filter(r => r?.data).map(r => r.data)
+      userSeries.value = results.filter((r) => r?.data).map((r) => r.data)
       for (const [id, log] of seriesLogMap) {
         seriesStates.value[id] = log.acceptanceState?.acceptanceStateId
       }
@@ -277,8 +276,12 @@ onMounted(async () => {
 }
 
 /* Plugins */
-.plugin-list { background: transparent; }
-.plugin-item { margin-bottom: 0.5rem; }
+.plugin-list {
+  background: transparent;
+}
+.plugin-item {
+  margin-bottom: 0.5rem;
+}
 
 /* Series pills */
 .series-pills {

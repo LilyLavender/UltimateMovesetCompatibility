@@ -23,9 +23,9 @@ namespace CustomCharInfo.server.Tests.Data
         [Fact]
         public async Task DeletingMoveset_RemovesMovesetModderRow()
         {
-            var user = SeedData.AddUser(_db.Context, "modder-user", userTypeId: 2, modderId: 1);
+            var user = SeedData.AddUser(_db.Context, "modder-user", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, user.Id, "SomeModder");
-            var moveset = new Moveset { MovesetId = 1, ModdedCharName = "Test", VanillaCharInternalName = "mario", SlottedId = "slotone", ReleaseStateId = 1 };
+            var moveset = new Moveset { MovesetId = 1, ModdedCharName = "Test", VanillaCharInternalName = "mario", SlottedId = "slotone", ReleaseStateId = ReleaseStates.Released };
             _db.Context.Movesets.Add(moveset);
             _db.Context.MovesetModders.Add(new MovesetModder { MovesetId = 1, ModderId = 1, SortOrder = 0 });
             await _db.Context.SaveChangesAsync();
@@ -39,10 +39,10 @@ namespace CustomCharInfo.server.Tests.Data
         [Fact]
         public async Task DeletingMoveset_RemovesMovesetHookRow()
         {
-            _db.Context.HookableStatuses.Add(new HookableStatus { HookableStatusId = 1, Name = "Confirmed" });
-            var hook = new Hook { HookId = 1, Offset = "0x1", Description = "Test hook", HookableStatusId = 1 };
+            _db.Context.HookableStatuses.Add(new HookableStatus { HookableStatusId = HookableStatuses.Untested, Name = "Confirmed" });
+            var hook = new Hook { HookId = 1, Offset = "0x1", Description = "Test hook", HookableStatusId = HookableStatuses.Untested };
             _db.Context.Hooks.Add(hook);
-            var moveset = new Moveset { MovesetId = 1, ModdedCharName = "Test", VanillaCharInternalName = "mario", SlottedId = "slotone", ReleaseStateId = 1 };
+            var moveset = new Moveset { MovesetId = 1, ModdedCharName = "Test", VanillaCharInternalName = "mario", SlottedId = "slotone", ReleaseStateId = ReleaseStates.Released };
             _db.Context.Movesets.Add(moveset);
             await _db.Context.SaveChangesAsync();
             _db.Context.MovesetHooks.Add(new MovesetHook { MovesetId = 1, HookId = 1 });
@@ -61,7 +61,7 @@ namespace CustomCharInfo.server.Tests.Data
         {
             var article = new Article { ArticleId = 1, VanillaCharInternalName = "mario", ArticleName = "Cape" };
             _db.Context.Articles.Add(article);
-            var moveset = new Moveset { MovesetId = 1, ModdedCharName = "Test", VanillaCharInternalName = "mario", SlottedId = "slotone", ReleaseStateId = 1 };
+            var moveset = new Moveset { MovesetId = 1, ModdedCharName = "Test", VanillaCharInternalName = "mario", SlottedId = "slotone", ReleaseStateId = ReleaseStates.Released };
             _db.Context.Movesets.Add(moveset);
             await _db.Context.SaveChangesAsync();
             _db.Context.MovesetArticles.Add(new MovesetArticle { MovesetId = 1, ArticleId = 1, ModdedName = "Cape", SortOrder = 0 });
@@ -78,7 +78,7 @@ namespace CustomCharInfo.server.Tests.Data
         {
             var dependency = new Dependency { DependencyId = 1, Name = "SomeLib", DownloadLink = "http://example.com" };
             _db.Context.Dependencies.Add(dependency);
-            var moveset = new Moveset { MovesetId = 1, ModdedCharName = "Test", VanillaCharInternalName = "mario", SlottedId = "slotone", ReleaseStateId = 1 };
+            var moveset = new Moveset { MovesetId = 1, ModdedCharName = "Test", VanillaCharInternalName = "mario", SlottedId = "slotone", ReleaseStateId = ReleaseStates.Released };
             _db.Context.Movesets.Add(moveset);
             await _db.Context.SaveChangesAsync();
             _db.Context.MovesetDependencies.Add(new MovesetDependency { MovesetId = 1, DependencyId = 1 });

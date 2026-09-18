@@ -8,12 +8,7 @@
 
     <v-row class="mb-4" align="center">
       <v-col cols="12" sm="6">
-        <v-btn
-          color="primary"
-          class="btn"
-          @click="fileInput?.click()"
-          :loading="uploading"
-        >
+        <v-btn color="primary" class="btn" :loading="uploading" @click="fileInput?.click()">
           <v-icon class="mr-1">mdi-upload</v-icon>
           Upload Image
         </v-btn>
@@ -41,8 +36,8 @@
         <v-btn
           class="delete-btn"
           block
-          @click="deleteImage(item)"
           :loading="deletingId === item.bannerImageId"
+          @click="deleteImage(item)"
         >
           <v-icon class="mr-1">mdi-delete</v-icon>
           Delete
@@ -55,6 +50,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/services/api'
+import { useNotify } from '@/composables/useNotify'
+
+const notify = useNotify()
 
 const images = ref([])
 const loaded = ref(false)
@@ -71,7 +69,7 @@ const loadImages = async () => {
     loaded.value = true
   } catch (err) {
     console.error('Failed to load banner images:', err)
-    alert('Failed to load banner images.')
+    notify.error('Failed to load banner images.')
   }
 }
 
@@ -91,7 +89,7 @@ const onFileSelected = async (event) => {
     await loadImages()
   } catch (err) {
     console.error('Failed to upload banner image:', err)
-    alert(err.response?.data || 'Failed to upload banner image.')
+    notify.error('Failed to upload banner image.', err)
   } finally {
     uploading.value = false
   }
@@ -103,10 +101,10 @@ const deleteImage = async (item) => {
   deletingId.value = item.bannerImageId
   try {
     await api.delete(`/admin/banner-images/${item.bannerImageId}`)
-    images.value = images.value.filter(i => i.bannerImageId !== item.bannerImageId)
+    images.value = images.value.filter((i) => i.bannerImageId !== item.bannerImageId)
   } catch (err) {
     console.error('Failed to delete banner image:', err)
-    alert('Failed to delete banner image.')
+    notify.error('Failed to delete banner image.')
   } finally {
     deletingId.value = null
   }

@@ -32,6 +32,20 @@ export const AcceptanceState = Object.freeze({
   AutoAccepted: 7,
 })
 
+// Groups for "is it one of these" checks. Mirror AcceptanceStates.* on the backend.
+export const PENDING_ADMIN_STATES = [
+  AcceptanceState.PendingAdminSoft,
+  AcceptanceState.PendingAdminHard,
+]
+export const PENDING_USER_STATES = [
+  AcceptanceState.PendingUserSoft,
+  AcceptanceState.PendingUserHard,
+]
+export const SOFT_STATES = [AcceptanceState.PendingAdminSoft, AcceptanceState.PendingUserSoft]
+export const HARD_STATES = [AcceptanceState.PendingAdminHard, AcceptanceState.PendingUserHard]
+export const ANY_ACCEPTED_STATES = [AcceptanceState.Accepted, AcceptanceState.AutoAccepted]
+export const ALL_ACCEPTANCE_STATES = Object.values(AcceptanceState)
+
 // AcceptanceState values under which a moveset/modder/series is hidden from non-owners
 export const BLOCKED_ACCEPTANCE_STATES = [
   AcceptanceState.PendingAdminHard,
@@ -46,4 +60,30 @@ export const ItemType = Object.freeze({
   Series: 3,
   Hook: 4,
   Plugin: 5,
+})
+
+// Mirrors ReleaseState.ReleaseStateId server-side (seeded in ReleaseState lookup table)
+export const ReleaseState = Object.freeze({
+  Released: 1,
+  Upcoming: 2,
+  PendingUpdate: 3,
+  OpenBeta: 4,
+  Deprecated: 5,
+})
+
+// Display names as stored in the lookup table.
+// Some list endpoints return only the name, so views that filter on it compare against these.
+export const RELEASE_STATE_NAMES = Object.freeze({
+  [ReleaseState.Released]: 'Released',
+  [ReleaseState.Upcoming]: 'Upcoming',
+  [ReleaseState.PendingUpdate]: 'Pending Update',
+  [ReleaseState.OpenBeta]: 'Open Beta',
+  [ReleaseState.Deprecated]: 'Deprecated',
+})
+
+// Mirrors HookableStatus.HookableStatusId server-side (seeded in HookableStatus lookup table)
+export const HookableStatus = Object.freeze({
+  Untested: 1,
+  OnlyOnce: 2,
+  MoreThanOnce: 3,
 })

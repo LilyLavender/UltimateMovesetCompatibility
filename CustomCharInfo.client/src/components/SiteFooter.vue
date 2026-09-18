@@ -3,43 +3,31 @@
     <div class="footer-flex">
       <div class="no-select">
         &copy; {{ new Date().getFullYear() }}
-        <a 
+        <a
           href="https://github.com/LilyLavender/UltimateMovesetCompatibility?tab=readme-ov-file#credits"
           class="offsite unvisitable"
-          target="_blank" rel="noopener"
-        >Ultimate Moveset Compatibility Development Team</a>
+          target="_blank"
+          rel="noopener"
+          >Ultimate Moveset Compatibility Development Team</a
+        >
       </div>
       <div>
-        <router-link
-          :to="{ name: 'AboutPage' }"
-          class="unvisitable question"
-        >
+        <router-link :to="{ name: 'AboutPage' }" class="unvisitable question">
           About UMC
         </router-link>
       </div>
       <div>
-        <router-link
-          :to="{ name: 'PhotoSubmissions' }"
-          class="unvisitable"
-        >
+        <router-link :to="{ name: 'PhotoSubmissions' }" class="unvisitable">
           Photo Submissions
         </router-link>
       </div>
       <div>
-        <router-link
-          :to="{ name: 'PrivacyPolicyPage' }"
-          class="unvisitable"
-        >
+        <router-link :to="{ name: 'PrivacyPolicyPage' }" class="unvisitable">
           Privacy Policy
         </router-link>
       </div>
       <div>
-        <router-link
-          :to="{ name: 'ApiPage' }"
-          class="unvisitable"
-        >
-          API
-        </router-link>
+        <router-link :to="{ name: 'ApiPage' }" class="unvisitable"> API </router-link>
       </div>
     </div>
   </v-footer>

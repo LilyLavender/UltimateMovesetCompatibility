@@ -36,13 +36,7 @@
 
         <!-- Button -->
         <v-col cols="12" sm="2">
-          <v-btn
-            color="primary"
-            block
-            :loading="loading"
-            type="submit"
-            class="btn"
-          >
+          <v-btn color="primary" block :loading="loading" type="submit" class="btn">
             Reset Password
           </v-btn>
         </v-col>
@@ -78,7 +72,7 @@ const submit = async () => {
     await api.post('/auth/reset-password', {
       userId: route.query.userId,
       token: route.query.token,
-      newPassword: password.value
+      newPassword: password.value,
     })
 
     success.value = true

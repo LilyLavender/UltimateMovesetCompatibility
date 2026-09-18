@@ -77,7 +77,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         public async Task CreatePlugin_MovesetAttached_ByNonModder_ReturnsForbid()
         {
             AddMoveset(1);
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             var controller = CreateController("user-1");
 
@@ -93,7 +93,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         public async Task CreatePlugin_MovesetAttached_ByModder_IsLiveWithNoActionLog()
         {
             AddMoveset(1);
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             AddModderToMoveset(1, 1);
             var controller = CreateController("user-1");
@@ -112,7 +112,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task CreatePlugin_Standalone_AnyModder_CreatesHardPendingLog()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             var controller = CreateController("user-1");
 
@@ -127,7 +127,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task CreatePlugin_Standalone_ByAdmin_IsAutoAcceptedButStillLogged()
         {
-            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3, modderId: 1);
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "admin-1", "Admin One");
             var controller = CreateController("admin-1");
 
@@ -141,7 +141,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         public async Task CreatePlugin_BothMovesetAndDependencySet_ReturnsBadRequest()
         {
             AddMoveset(1);
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             var controller = CreateController("user-1");
 
@@ -157,7 +157,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task CreatePlugin_DuplicateHash_ReturnsConflict()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             var controller = CreateController("user-1");
 
@@ -172,7 +172,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         public async Task Identify_MovesetAttached_VisibleImmediately()
         {
             AddMoveset(1);
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             AddModderToMoveset(1, 1);
             var controller = CreateController("user-1");
@@ -191,7 +191,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task Identify_StandalonePending_NotVisible()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             var controller = CreateController("user-1");
             await controller.CreatePlugin(BaseDto(Hash1));
@@ -204,13 +204,13 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task Identify_StandaloneAccepted_BecomesVisible()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             var controller = CreateController("user-1");
             await controller.CreatePlugin(BaseDto(Hash1));
 
             var pluginVersionId = _db.Context.PluginVersions.Single().PluginVersionId;
-            SeedData.AddActionLog(_db.Context, pluginVersionId, acceptanceStateId: 7, DateTime.UtcNow.AddMinutes(1), "log-author", itemTypeId: 5);
+            SeedData.AddActionLog(_db.Context, pluginVersionId, acceptanceStateId: AcceptanceStates.AutoAccepted, DateTime.UtcNow.AddMinutes(1), "log-author", itemTypeId: ItemTypes.Plugin);
 
             var result = await controller.Identify(Hash1);
 
@@ -222,12 +222,12 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task IdentifyBatch_MixedKnownAndUnknown_ReturnsPerHashResultsInOrder()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             var controller = CreateController("user-1");
             await controller.CreatePlugin(BaseDto(Hash1));
             var pluginVersionId = _db.Context.PluginVersions.Single().PluginVersionId;
-            SeedData.AddActionLog(_db.Context, pluginVersionId, acceptanceStateId: 7, DateTime.UtcNow.AddMinutes(1), "log-author", itemTypeId: 5);
+            SeedData.AddActionLog(_db.Context, pluginVersionId, acceptanceStateId: AcceptanceStates.AutoAccepted, DateTime.UtcNow.AddMinutes(1), "log-author", itemTypeId: ItemTypes.Plugin);
 
             var result = await controller.IdentifyBatch(new BatchIdentifyRequestDto { Hashes = new List<string> { Hash1, Hash2 } });
 
@@ -291,7 +291,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task AddPluginVersion_ByVersionMethod_RecomputesCurrent()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             var controller = CreateController("user-1");
             var created = await controller.CreatePlugin(BaseDto(Hash1));
@@ -313,7 +313,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task UpdatePluginVersion_Standalone_ByNonAdmin_ReturnsForbid()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             var controller = CreateController("user-1");
             var created = await controller.CreatePlugin(BaseDto(Hash1));
@@ -329,7 +329,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         public async Task CreatePlugin_SecondMovesetPlugin_HigherVersionBecomesCurrentAcrossSiblings()
         {
             AddMoveset(1);
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             AddModderToMoveset(1, 1);
             var controller = CreateController("user-1");
@@ -355,7 +355,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         public async Task DeletePlugin_RemovingCurrentMovesetPlugin_PromotesRemainingSibling()
         {
             AddMoveset(1);
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             AddModderToMoveset(1, 1);
             var controller = CreateController("user-1");
@@ -382,7 +382,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         public async Task AddPluginVersion_OnMovesetPlugin_ReturnsBadRequest()
         {
             AddMoveset(1);
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             AddModderToMoveset(1, 1);
             var controller = CreateController("user-1");
@@ -401,7 +401,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         public async Task DeletePluginVersion_OnMovesetPlugin_ReturnsBadRequest()
         {
             AddMoveset(1);
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             AddModderToMoveset(1, 1);
             var controller = CreateController("user-1");
@@ -421,7 +421,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         public async Task UpdatePluginVersion_OnMovesetPlugin_ReturnsBadRequest()
         {
             AddMoveset(1);
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             AddModderToMoveset(1, 1);
             var controller = CreateController("user-1");
@@ -440,14 +440,14 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task UpdatePluginVersion_Standalone_ByAdmin_Succeeds()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             var creatorController = CreateController("user-1");
             var created = await creatorController.CreatePlugin(BaseDto(Hash1));
             var pluginId = ((PluginDto)((CreatedAtActionResult)created.Result!).Value!).PluginId;
             var versionId = _db.Context.PluginVersions.Single().PluginVersionId;
 
-            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3, modderId: 2);
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin, modderId: 2);
             SeedData.AddModder(_db.Context, 2, "admin-1", "Admin One");
             var adminController = CreateController("admin-1");
 
@@ -460,7 +460,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task SearchPlugins_Standalone_ReturnsOnlyOtherPlugins()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             var controller = CreateController("user-1");
             await controller.CreatePlugin(BaseDto(Hash1));
@@ -482,7 +482,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task AddPluginVersion_TiedVersionNumbers_AreBothCurrentTogether()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             var controller = CreateController("user-1");
 
@@ -518,7 +518,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task CreatePlugin_VersionLabelWithVPrefix_IsNormalized()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             var controller = CreateController("user-1");
 
@@ -530,7 +530,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task CreatePlugin_FreeformVersionLabel_IsAccepted()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
             var controller = CreateController("user-1");
 

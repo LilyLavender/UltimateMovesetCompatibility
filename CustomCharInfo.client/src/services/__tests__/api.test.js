@@ -70,7 +70,11 @@ describe('api response interceptor (401 refresh flow)', () => {
     // network call, instead of relying on jsdom's XHR to reach a live server.
     const originalAdapter = api.defaults.adapter
     api.defaults.adapter = vi.fn().mockResolvedValue({
-      data: 'retried-ok', status: 200, statusText: 'OK', headers: {}, config: {},
+      data: 'retried-ok',
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: {},
     })
 
     try {

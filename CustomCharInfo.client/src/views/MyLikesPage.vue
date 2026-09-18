@@ -9,11 +9,7 @@
     <template v-else>
       <p v-if="movesets.length === 0" class="empty-msg">You haven't liked any movesets yet.</p>
       <div v-else class="moveset-grid">
-        <MovesetCard
-          v-for="moveset in movesets"
-          :key="moveset.movesetId"
-          :moveset="moveset"
-        />
+        <MovesetCard v-for="moveset in movesets" :key="moveset.movesetId" :moveset="moveset" />
       </div>
     </template>
   </div>

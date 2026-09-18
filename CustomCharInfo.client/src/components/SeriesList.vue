@@ -33,8 +33,8 @@
       </v-col>
       <v-col cols="12" sm="3">
         <v-select
-          variant="outlined"
           v-model="sortBy"
+          variant="outlined"
           :items="['Alphabetical', 'Most Movesets']"
           label="Sort by"
           density="compact"
@@ -44,13 +44,8 @@
     </v-row>
 
     <v-row>
-      <v-col
-        v-for="s in filteredAndSortedSeries"
-        :key="s.seriesId"
-        cols="6"
-        sm="3"
-      >
-        <SeriesCard :series="s" :apiUrl="apiUrl" />
+      <v-col v-for="s in filteredAndSortedSeries" :key="s.seriesId" cols="6" sm="3">
+        <SeriesCard :series="s" :api-url="apiUrl" />
       </v-col>
     </v-row>
   </v-container>
@@ -60,7 +55,7 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 import SeriesCard from './SeriesCard.vue'
-import { UserType } from '@/globals'
+import { UserType, ItemType, ALL_ACCEPTANCE_STATES } from '@/globals'
 
 const series = ref([])
 const blockedSeriesIds = ref(new Set())
@@ -72,9 +67,17 @@ const user = ref(null)
 onMounted(async () => {
   const [seriesRes] = await Promise.all([
     api.get('/series', { params: { inSeriesList: true } }),
-    api.get('/auth/me').then(r => { user.value = r.data }).catch(() => {}),
-    api.get('/logs', { params: { acceptanceStates: [1, 2, 3, 4, 5, 6, 7], itemTypes: [3] } })
-      .then(r => {
+    api
+      .get('/auth/me')
+      .then((r) => {
+        user.value = r.data
+      })
+      .catch(() => {}),
+    api
+      .get('/logs', {
+        params: { acceptanceStates: ALL_ACCEPTANCE_STATES, itemTypes: [ItemType.Series] },
+      })
+      .then((r) => {
         const latestPerSeries = new Map()
         for (const log of r.data) {
           const id = log.item?.seriesId
@@ -96,10 +99,10 @@ onMounted(async () => {
 })
 
 const filteredAndSortedSeries = computed(() => {
-  let result = series.value.filter(s => !blockedSeriesIds.value.has(s.seriesId))
+  let result = series.value.filter((s) => !blockedSeriesIds.value.has(s.seriesId))
 
   if (showOnlyWithMovesets.value) {
-    result = result.filter(s => s.movesetCount > 0)
+    result = result.filter((s) => s.movesetCount > 0)
   }
 
   if (sortBy.value === 'Alphabetical') {

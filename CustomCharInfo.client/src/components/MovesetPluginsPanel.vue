@@ -33,10 +33,17 @@
           </v-col>
           <template v-if="pluginForm.hash && !pluginForm.duplicate">
             <v-col cols="12" sm="6">
-              <v-text-field variant="outlined" v-model="pluginForm.versionLabel" label="Version" placeholder="e.g. 1.0.0" />
+              <v-text-field
+                v-model="pluginForm.versionLabel"
+                variant="outlined"
+                label="Version"
+                placeholder="e.g. 1.0.0"
+              />
             </v-col>
             <v-col cols="12" sm="2" class="justify-content-center">
-              <v-btn @click="submitPluginForm" class="btn add-button" :loading="savingPlugin">Add Plugin</v-btn>
+              <v-btn class="btn add-button" :loading="savingPlugin" @click="submitPluginForm"
+                >Add Plugin</v-btn
+              >
             </v-col>
             <v-col v-if="pluginFormError" cols="12" sm="10" class="d-flex align-center">
               <span class="text-red">{{ pluginFormError }}</span>
@@ -51,11 +58,12 @@
     <v-list v-else>
       <v-list-item v-for="plugin in plugins" :key="plugin.pluginId">
         <v-list-item-title>
-          {{ displayVersion(plugin.versions[0].versionLabel) }}{{ plugin.versions[0].isCurrent ? ' (current)' : '' }}
+          {{ displayVersion(plugin.versions[0].versionLabel)
+          }}{{ plugin.versions[0].isCurrent ? ' (current)' : '' }}
           <span class="hook-usage-dim">{{ plugin.versions[0].hash }}</span>
         </v-list-item-title>
         <template #append>
-          <v-icon @click="deletePlugin(plugin)" class="delete-icon">mdi-delete</v-icon>
+          <v-icon class="delete-icon" @click="deletePlugin(plugin)">mdi-delete</v-icon>
         </template>
       </v-list-item>
     </v-list>
@@ -70,7 +78,7 @@ import { normalizeVersionLabel, displayVersion } from '@/services/pluginVersion'
 
 const props = defineProps({
   movesetId: { type: [Number, String], required: true },
-  movesetName: { type: String, default: '' }
+  movesetName: { type: String, default: '' },
 })
 
 const plugins = ref([])
@@ -81,7 +89,10 @@ const savingPlugin = ref(false)
 const pluginFormError = ref(null)
 
 const emptyPluginForm = () => ({
-  file: null, hash: null, duplicate: null, versionLabel: ''
+  file: null,
+  hash: null,
+  duplicate: null,
+  versionLabel: '',
 })
 const pluginForm = ref(emptyPluginForm())
 
@@ -139,7 +150,9 @@ async function deletePlugin(plugin) {
   try {
     await api.delete(`/plugins/${plugin.pluginId}`)
     await loadPlugins()
-  } catch { /**/ }
+  } catch {
+    /**/
+  }
 }
 
 watch(() => props.movesetId, loadPlugins)

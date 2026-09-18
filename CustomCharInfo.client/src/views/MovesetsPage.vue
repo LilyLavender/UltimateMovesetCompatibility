@@ -6,19 +6,13 @@
     <!-- Actions -->
     <div class="mb-5 pb-5 d-flex justify-center">
       <!-- View table -->
-      <router-link
-        :to="{ name: 'MovesetsList' }"
-        class="unvisitable text-decoration-none"
-      >
+      <router-link :to="{ name: 'MovesetsList' }" class="unvisitable text-decoration-none">
         <i class="mdi mdi-arrow-right-bottom"></i>
         Moveset table
       </router-link>
 
       <!-- View slot grid -->
-      <router-link
-        :to="{ name: 'SlotGrid' }"
-        class="unvisitable text-decoration-none ml-5"
-      >
+      <router-link :to="{ name: 'SlotGrid' }" class="unvisitable text-decoration-none ml-5">
         <i class="mdi mdi-grid"></i>
         Slot grid
       </router-link>
@@ -33,10 +27,7 @@
       </router-link>
 
       <!-- Plugin lookup -->
-      <router-link
-        :to="{ name: 'PluginLookup' }"
-        class="unvisitable text-decoration-none ml-5"
-      >
+      <router-link :to="{ name: 'PluginLookup' }" class="unvisitable text-decoration-none ml-5">
         <i class="mdi mdi-file-search"></i>
         Plugin lookup
       </router-link>
@@ -53,7 +44,7 @@
     </div>
 
     <!-- Moveset List -->
-    <MovesetList showControls />
+    <MovesetList show-controls />
   </div>
 </template>
 
@@ -70,6 +61,4 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

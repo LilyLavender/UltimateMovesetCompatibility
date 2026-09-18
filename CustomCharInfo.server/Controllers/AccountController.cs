@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CustomCharInfo.server.Data;
 using CustomCharInfo.server.Models;
+using CustomCharInfo.server.Helpers;
 using CustomCharInfo.server.Models.DTOs;
 using Microsoft.AspNetCore.Identity;
 using System.IdentityModel.Tokens.Jwt;
@@ -46,7 +47,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableRateLimiting("auth")]
         public async Task<IActionResult> Register(RegisterDto dto)
         {
-            var user = new ApplicationUser { UserName = dto.Email, Email = dto.Email, UserTypeId = 1 };
+            var user = new ApplicationUser { UserName = dto.Email, Email = dto.Email, UserTypeId = UserTypes.User };
             var result = await _userManager.CreateAsync(user, dto.Password);
             if (!result.Succeeded)
                 return BadRequest(result.Errors);
@@ -160,7 +161,7 @@ namespace CustomCharInfo.server.Controllers
             if (modder == null)
             {
                 var modderIdFuture = await _context.ActionLogs
-                    .Where(a => a.UserId == user.Id && a.ItemTypeId == 2)
+                    .Where(a => a.UserId == user.Id && a.ItemTypeId == ItemTypes.Modder)
                     .OrderBy(a => a.CreatedAt)
                     .Select(a => (int?)a.ItemId)
                     .FirstOrDefaultAsync();
@@ -211,7 +212,7 @@ namespace CustomCharInfo.server.Controllers
                 var modderIdFromLogs = await _context.ActionLogs
                     .Where(a =>
                         a.UserId == user.Id &&
-                        a.ItemTypeId == 2
+                        a.ItemTypeId == ItemTypes.Modder
                     )
                     .OrderBy(a => a.CreatedAt)
                     .Select(a => (int?)a.ItemId)
@@ -230,21 +231,21 @@ namespace CustomCharInfo.server.Controllers
                 // Preserve acceptance state
                 var latestLog = await _context.ActionLogs
                     .Where(a =>
-                        a.ItemTypeId == 2 &&
+                        a.ItemTypeId == ItemTypes.Modder &&
                         a.ItemId == modder.ModderId
                     )
                     .OrderByDescending(a => a.CreatedAt)
                     .FirstOrDefaultAsync();
 
                 int newState =
-                    latestLog?.AcceptanceStateId is 2 or 4
+                    latestLog != null && AcceptanceStates.Hard.Contains(latestLog.AcceptanceStateId)
                         ? latestLog.AcceptanceStateId
-                        : 1;
+                        : AcceptanceStates.PendingAdminSoft;
 
                 _context.ActionLogs.Add(new ActionLog
                 {
                     UserId = user.Id,
-                    ItemTypeId = 2,
+                    ItemTypeId = ItemTypes.Modder,
                     ItemId = modder.ModderId,
                     AcceptanceStateId = newState,
                     Notes = "",
@@ -261,10 +262,8 @@ namespace CustomCharInfo.server.Controllers
         [HttpPost("generate-password-reset")]
         public async Task<ActionResult> GeneratePasswordReset([FromBody] ForgotPasswordDto dto)
         {
-            // Make sure user is admin
-            var signedInUserId = _userManager.GetUserId(User);
-            var user = await _context.Users.FindAsync(signedInUserId);
-            if (user == null || user.UserTypeId != 3)
+            var user = await _userManager.GetRequesterAsync(_context, User);
+            if (!user.IsAdmin())
                 return Forbid();
 
             var userToReset = await _userManager.FindByIdAsync(dto.UserId);

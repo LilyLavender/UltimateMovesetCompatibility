@@ -3,89 +3,59 @@
     <h1 class="mb-4 page-title no-select">Admin Portal</h1>
 
     <div class="admin-links">
-      <router-link
-        :to="{ name: 'AdminAccepter' }"
-        class="unvisitable ml-2 admin-link"
-      >
+      <router-link :to="{ name: 'AdminAccepter' }" class="unvisitable ml-2 admin-link">
         <v-icon left>mdi-shield-check</v-icon>
         Action Log Manager
       </router-link>
 
-      <router-link
-        :to="{ name: 'NotificationSimulator' }"
-        class="unvisitable ml-2 admin-link"
-      >
+      <router-link :to="{ name: 'NotificationSimulator' }" class="unvisitable ml-2 admin-link">
         <v-icon left>mdi-bell-cog</v-icon>
         Notification Simulator
       </router-link>
 
-      <router-link
-        :to="{ name: 'AdminPicks' }"
-        class="unvisitable ml-2 admin-link"
-      >
+      <router-link :to="{ name: 'AdminPicks' }" class="unvisitable ml-2 admin-link">
         <v-icon left>mdi-account-check</v-icon>
         Admin Picks
       </router-link>
 
-      <router-link
-        :to="{ name: 'AddBlogPost' }"
-        class="unvisitable ml-2 admin-link"
-      >
+      <router-link :to="{ name: 'AddBlogPost' }" class="unvisitable ml-2 admin-link">
         <v-icon left>mdi-post</v-icon>
         Add blog post
       </router-link>
 
-      <router-link
-        :to="{ name: 'UserList' }"
-        class="unvisitable ml-2 admin-link"
-      >
+      <router-link :to="{ name: 'UserList' }" class="unvisitable ml-2 admin-link">
         <v-icon left>mdi-account-group</v-icon>
         All users
       </router-link>
 
-      <router-link
-        :to="{ name: 'AdminPasswordResetter' }"
-        class="unvisitable ml-2 admin-link"
-      >
+      <router-link :to="{ name: 'AdminPasswordResetter' }" class="unvisitable ml-2 admin-link">
         <v-icon left>mdi-account-lock-open</v-icon>
         Reset passwords
       </router-link>
 
-      <router-link
-        :to="{ name: 'ImageGarbageCollector' }"
-        class="unvisitable ml-2 admin-link"
-      >
+      <router-link :to="{ name: 'ImageGarbageCollector' }" class="unvisitable ml-2 admin-link">
         <v-icon left>mdi-image-remove</v-icon>
         Image Garbage Collector
       </router-link>
 
-      <router-link
-        :to="{ name: 'BannerImageManager' }"
-        class="unvisitable ml-2 admin-link"
-      >
+      <router-link :to="{ name: 'BannerImageManager' }" class="unvisitable ml-2 admin-link">
         <v-icon left>mdi-image-multiple</v-icon>
         Manage Banner Images
       </router-link>
 
-      <router-link
-        :to="{ name: 'MovesetDeleteManager' }"
-        class="unvisitable ml-2 admin-link"
-      >
+      <router-link :to="{ name: 'MovesetDeleteManager' }" class="unvisitable ml-2 admin-link">
         <v-icon left>mdi-delete-sweep</v-icon>
         Delete Movesets
       </router-link>
 
-      <router-link
-        :to="{ name: 'AllPlugins' }"
-        class="unvisitable ml-2 admin-link"
-      >
+      <router-link :to="{ name: 'AllPlugins' }" class="unvisitable ml-2 admin-link">
         <v-icon left>mdi-puzzle</v-icon>
         All Plugins
       </router-link>
     </div>
 
     <!-- Action Log Dashboard -->
-    <ActionLogList viewAll class="mt-5" />
+    <ActionLogList view-all class="mt-5" />
   </v-container>
 </template>
 

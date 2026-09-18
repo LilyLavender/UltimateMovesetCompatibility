@@ -1,11 +1,7 @@
 <template>
   <div class="hero-scroller no-select">
     <div class="scroller-track" :style="{ '--scroll-end': `-${scrollPercent}%` }">
-      <div
-        class="image-column"
-        v-for="(column, index) in finalColumns"
-        :key="index"
-      >
+      <div v-for="(column, index) in finalColumns" :key="index" class="image-column">
         <img
           v-for="(img, i) in column"
           :key="i"
@@ -24,8 +20,11 @@ import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 
 // Bundled fallback images, used if the banner-images API has nothing (or fails) so the hero never renders empty.
-const fallbackModules = import.meta.glob('@/assets/scrolling-banner-images/*.{jpg,jpeg,png,JPG,JPEG,PNG}', { eager: true })
-const fallbackPaths = Object.values(fallbackModules).map(m => m.default)
+const fallbackModules = import.meta.glob(
+  '@/assets/scrolling-banner-images/*.{jpg,jpeg,png,JPG,JPEG,PNG}',
+  { eager: true }
+)
+const fallbackPaths = Object.values(fallbackModules).map((m) => m.default)
 
 const columns = ref([])
 const finalColNum = 5
@@ -77,7 +76,7 @@ onMounted(async () => {
   try {
     const res = await api.get('/banner-images')
     if (res.data.length > 0) {
-      imagePaths = res.data.map(i => i.imageUrl)
+      imagePaths = res.data.map((i) => i.imageUrl)
     }
   } catch (err) {
     console.error('Failed to load banner images, using bundled fallback:', err)
@@ -100,7 +99,7 @@ onMounted(async () => {
 }
 
 .hero-scroller::after {
-  content: "";
+  content: '';
   position: absolute;
   bottom: 0;
   left: 0;
@@ -120,7 +119,7 @@ onMounted(async () => {
     rgba(0, 0, 0, 0.63) 64%,
     rgba(0, 0, 0, 0.58) 67%,
     rgba(0, 0, 0, 0.54) 68%,
-    rgba(0, 0, 0, 0.50) 70%,
+    rgba(0, 0, 0, 0.5) 70%,
     rgba(0, 0, 0, 0.46) 72%,
     rgba(0, 0, 0, 0.42) 74%,
     rgba(0, 0, 0, 0.38) 75%,
@@ -132,7 +131,7 @@ onMounted(async () => {
     rgba(0, 0, 0, 0.13) 85%,
     rgba(0, 0, 0, 0.08) 87%,
     rgba(0, 0, 0, 0.04) 91%,
-    rgba(0, 0, 0, 0.00) 100%
+    rgba(0, 0, 0, 0) 100%
   );
   pointer-events: none;
   z-index: 2;

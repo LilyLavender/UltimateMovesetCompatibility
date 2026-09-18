@@ -29,7 +29,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task PatchBlogPostImage_Admin_FillsEmptyImage()
         {
-            var admin = SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            var admin = SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
             _db.Context.BlogPosts.Add(new BlogPost { BlogPostId = 1, BlogTitle = "Title", BlogText = "Text", UserId = admin.Id, PostedDate = DateTime.UtcNow });
             _db.Context.SaveChanges();
             var controller = CreateController(admin.Id);
@@ -44,7 +44,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task PatchBlogPostImage_AlreadySet_ReturnsConflict()
         {
-            var admin = SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            var admin = SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
             _db.Context.BlogPosts.Add(new BlogPost { BlogPostId = 1, BlogTitle = "Title", BlogText = "Text", UserId = admin.Id, PostedDate = DateTime.UtcNow, BlogImageUrl = "/uploads/existing.png" });
             _db.Context.SaveChanges();
             var controller = CreateController(admin.Id);
@@ -57,7 +57,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task PatchBlogPostImage_NonAdmin_ReturnsForbid()
         {
-            var user = SeedData.AddUser(_db.Context, "user-1", userTypeId: 1);
+            var user = SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
             _db.Context.BlogPosts.Add(new BlogPost { BlogPostId = 1, BlogTitle = "Title", BlogText = "Text", UserId = user.Id, PostedDate = DateTime.UtcNow });
             _db.Context.SaveChanges();
             var controller = CreateController(user.Id);

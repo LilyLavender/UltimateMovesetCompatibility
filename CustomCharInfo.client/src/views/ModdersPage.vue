@@ -58,7 +58,7 @@ onMounted(async () => {
   modders.value = res.data
 
   const fetches = modders.value
-    .filter(m => !m.pfpUrl && m.gamebananaId)
+    .filter((m) => !m.pfpUrl && m.gamebananaId)
     .map(async (m) => {
       try {
         const r = await axios.get(

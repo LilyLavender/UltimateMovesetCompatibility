@@ -9,8 +9,8 @@
         <!-- Blog Title -->
         <v-col cols="12">
           <v-text-field
-            variant="outlined"
             v-model="form.blogTitle"
+            variant="outlined"
             label="Post Title"
             hide-details
           />
@@ -24,33 +24,35 @@
               <button
                 class="tab-btn"
                 :class="{ active: tab === 'write' }"
-                @click="tab = 'write'"
                 type="button"
-              >Write</button>
+                @click="tab = 'write'"
+              >
+                Write
+              </button>
               <button
                 class="tab-btn"
                 :class="{ active: tab === 'preview' }"
-                @click="tab = 'preview'"
                 type="button"
-              >Preview</button>
+                @click="tab = 'preview'"
+              >
+                Preview
+              </button>
             </div>
           </div>
 
           <v-textarea
             v-if="tab === 'write'"
-            variant="outlined"
             v-model="form.blogText"
+            variant="outlined"
             placeholder="Markdown is supported."
             auto-grow
             rows="5"
             hide-details
           />
           <div v-else class="preview-box">
-            <div
-              v-if="renderedPreview"
-              v-html="renderedPreview"
-              class="preview-content"
-            />
+            <!-- Content is DOMPurify-sanitized -->
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <div v-if="renderedPreview" class="preview-content" v-html="renderedPreview" />
             <span v-else class="preview-empty">Nothing to preview.</span>
           </div>
         </v-col>
@@ -65,12 +67,7 @@
 
     <!-- Submit -->
     <div class="d-flex justify-end">
-      <v-btn
-        @click="submit"
-        class="submit-button"
-        :loading="isSubmitting"
-        :disabled="isSubmitting"
-      >
+      <v-btn class="submit-button" :loading="isSubmitting" :disabled="isSubmitting" @click="submit">
         {{ uploadStatus || 'Add Blog Post' }}
       </v-btn>
     </div>
@@ -84,6 +81,10 @@ import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import api from '@/services/api'
 import ImageUploadField from '@/components/ImageUploadField.vue'
+import { useImageUpload, isStagedFile } from '@/composables/useImageUpload'
+import { useNotify } from '@/composables/useNotify'
+
+const notify = useNotify()
 
 const router = useRouter()
 
@@ -99,21 +100,11 @@ const form = ref({
 
 const renderedPreview = computed(() => DOMPurify.sanitize(marked.parse(form.value.blogText || '')))
 
-const uploadImageIfNeeded = async (value) => {
-  if (!(value instanceof File)) return value
-
-  const formData = new FormData()
-  formData.append('File', value)
-
-  const res = await api.post('/upload/blog-image', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
-  return res.data.url
-}
+const { uploadIfNeeded } = useImageUpload('/upload/blog-image')
 
 const submit = async () => {
   if (!form.value.blogTitle?.trim() || !form.value.blogText?.trim()) {
-    alert("Blog Title and Blog Text are required.")
+    notify.warning('Blog Title and Blog Text are required.')
     return
   }
 
@@ -121,21 +112,21 @@ const submit = async () => {
   // upload would otherwise orphan the image in R2 with nothing referencing it. Create the post
   // first (without a staged file), then upload and attach the image after.
   isSubmitting.value = true
-  const stagedImage = form.value.blogImageUrl instanceof File ? form.value.blogImageUrl : null
+  const stagedImage = isStagedFile(form.value.blogImageUrl) ? form.value.blogImageUrl : null
 
   uploadStatus.value = 'Posting...'
 
   let newId
   try {
-    const res = await api.post("/blog", {
+    const res = await api.post('/blog', {
       blogTitle: form.value.blogTitle,
       blogText: form.value.blogText,
       blogImageUrl: stagedImage ? null : form.value.blogImageUrl,
     })
     newId = res.data.blogPostId
   } catch (err) {
-    console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
-    alert("Failed to post blog.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+    console.error('Submit failed:', JSON.stringify(err.response?.data) || err.message)
+    notify.error('Failed to post blog.', err)
     isSubmitting.value = false
     uploadStatus.value = ''
     return
@@ -144,17 +135,20 @@ const submit = async () => {
   if (stagedImage) {
     uploadStatus.value = 'Uploading image...'
     try {
-      const blogImageUrl = await uploadImageIfNeeded(stagedImage)
+      const blogImageUrl = await uploadIfNeeded(stagedImage)
       await api.patch(`/blog/${newId}/image`, { blogImageUrl })
     } catch (err) {
-      console.error("Image upload failed after blog post creation:", JSON.stringify(err.response?.data) || err.message)
-      alert("Blog post created, but the image failed to upload.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+      console.error(
+        'Image upload failed after blog post creation:',
+        JSON.stringify(err.response?.data) || err.message
+      )
+      notify.error('Blog post created, but the image failed to upload.', err)
     }
   }
 
   isSubmitting.value = false
   uploadStatus.value = ''
-  router.push("/blog")
+  router.push('/blog')
 }
 </script>
 
@@ -202,7 +196,9 @@ h1 {
   padding: 4px 14px;
   font-size: 0.85rem;
   cursor: pointer;
-  transition: background 150ms, color 150ms;
+  transition:
+    background 150ms,
+    color 150ms;
 }
 .tab-btn:hover {
   background: #2e2e2e;
