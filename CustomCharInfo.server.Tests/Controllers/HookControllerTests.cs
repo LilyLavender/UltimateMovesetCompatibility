@@ -14,7 +14,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         public HookControllerTests()
         {
             SeedData.SeedLookups(_db.Context);
-            _db.Context.HookableStatuses.Add(new HookableStatus { HookableStatusId = 1, Name = "Confirmed" });
+            _db.Context.HookableStatuses.Add(new HookableStatus { HookableStatusId = HookableStatuses.Untested, Name = "Untested" });
             _db.Context.SaveChanges();
         }
 
@@ -31,10 +31,10 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task CreateHook_NonModder_ReturnsForbid()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
             var controller = CreateController("user-1");
 
-            var result = await controller.CreateHook(new CreateHookDto { Offset = "0x1234", Description = "Test", HookableStatusId = 1 });
+            var result = await controller.CreateHook(new CreateHookDto { Offset = "0x1234", Description = "Test", HookableStatusId = HookableStatuses.Untested });
 
             Assert.IsType<ForbidResult>(result.Result);
         }
@@ -42,10 +42,10 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task CreateHook_Modder_PersistsHook()
         {
-            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: UserTypes.Modder);
             var controller = CreateController("modder-1");
 
-            var result = await controller.CreateHook(new CreateHookDto { Offset = "0x1234", Description = "Test", HookableStatusId = 1 });
+            var result = await controller.CreateHook(new CreateHookDto { Offset = "0x1234", Description = "Test", HookableStatusId = HookableStatuses.Untested });
 
             Assert.IsType<CreatedAtActionResult>(result.Result);
             Assert.Single(_db.Context.Hooks);
@@ -54,10 +54,10 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task CreateHook_Modder_WritesActionLogAsPendingAdminSoft()
         {
-            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: UserTypes.Modder);
             var controller = CreateController("modder-1");
 
-            await controller.CreateHook(new CreateHookDto { Offset = "0x1234", Description = "Test", HookableStatusId = 1 });
+            await controller.CreateHook(new CreateHookDto { Offset = "0x1234", Description = "Test", HookableStatusId = HookableStatuses.Untested });
 
             var log = Assert.Single(_db.Context.ActionLogs);
             Assert.Equal(4, log.ItemTypeId);
@@ -69,11 +69,11 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task CreateHook_DuplicateOffset_ReturnsConflict()
         {
-            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: UserTypes.Modder);
             var controller = CreateController("modder-1");
-            await controller.CreateHook(new CreateHookDto { Offset = "0x1234", Description = "Test", HookableStatusId = 1 });
+            await controller.CreateHook(new CreateHookDto { Offset = "0x1234", Description = "Test", HookableStatusId = HookableStatuses.Untested });
 
-            var result = await controller.CreateHook(new CreateHookDto { Offset = "0x1234", Description = "Different description", HookableStatusId = 1 });
+            var result = await controller.CreateHook(new CreateHookDto { Offset = "0x1234", Description = "Different description", HookableStatusId = HookableStatuses.Untested });
 
             Assert.IsType<ConflictObjectResult>(result.Result);
             Assert.Single(_db.Context.Hooks);
@@ -82,10 +82,10 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task CreateHook_Admin_StillWritesActionLogAsPendingAdminSoft()
         {
-            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
             var controller = CreateController("admin-1");
 
-            await controller.CreateHook(new CreateHookDto { Offset = "0x1234", Description = "Test", HookableStatusId = 1 });
+            await controller.CreateHook(new CreateHookDto { Offset = "0x1234", Description = "Test", HookableStatusId = HookableStatuses.Untested });
 
             var log = Assert.Single(_db.Context.ActionLogs);
             Assert.Equal(4, log.ItemTypeId);
@@ -95,7 +95,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task UpdateHook_UnknownId_ReturnsNotFound()
         {
-            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: UserTypes.Modder);
             var controller = CreateController("modder-1");
 
             var result = await controller.UpdateHook(999, new UpdateHookDto { Description = "New" });
@@ -106,8 +106,8 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task UpdateHook_PartialDto_OnlyUpdatesProvidedFields()
         {
-            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
-            _db.Context.Hooks.Add(new Hook { HookId = 1, Offset = "0x1", Description = "Old", HookableStatusId = 1 });
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: UserTypes.Modder);
+            _db.Context.Hooks.Add(new Hook { HookId = 1, Offset = "0x1", Description = "Old", HookableStatusId = HookableStatuses.Untested });
             _db.Context.SaveChanges();
 
             var controller = CreateController("modder-1");
@@ -130,8 +130,8 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task UpdateHook_UsesSubmittedNotes_NotAHardcodedDefault()
         {
-            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
-            _db.Context.Hooks.Add(new Hook { HookId = 1, Offset = "0x1", Description = "Old", HookableStatusId = 1 });
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: UserTypes.Modder);
+            _db.Context.Hooks.Add(new Hook { HookId = 1, Offset = "0x1", Description = "Old", HookableStatusId = HookableStatuses.Untested });
             _db.Context.SaveChanges();
 
             var controller = CreateController("modder-1");
@@ -145,8 +145,8 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task UpdateHook_NoNotesSubmitted_LogsEmptyNotes()
         {
-            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
-            _db.Context.Hooks.Add(new Hook { HookId = 1, Offset = "0x1", Description = "Old", HookableStatusId = 1 });
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: UserTypes.Modder);
+            _db.Context.Hooks.Add(new Hook { HookId = 1, Offset = "0x1", Description = "Old", HookableStatusId = HookableStatuses.Untested });
             _db.Context.SaveChanges();
 
             var controller = CreateController("modder-1");
@@ -160,8 +160,8 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task DeleteHook_NonAdmin_ReturnsForbid()
         {
-            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
-            _db.Context.Hooks.Add(new Hook { HookId = 1, Offset = "0x1", Description = "ToDelete", HookableStatusId = 1 });
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: UserTypes.Modder);
+            _db.Context.Hooks.Add(new Hook { HookId = 1, Offset = "0x1", Description = "ToDelete", HookableStatusId = HookableStatuses.Untested });
             _db.Context.SaveChanges();
 
             var controller = CreateController("modder-1");
@@ -174,8 +174,8 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task DeleteHook_Admin_RemovesHook()
         {
-            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
-            _db.Context.Hooks.Add(new Hook { HookId = 1, Offset = "0x1", Description = "ToDelete", HookableStatusId = 1 });
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
+            _db.Context.Hooks.Add(new Hook { HookId = 1, Offset = "0x1", Description = "ToDelete", HookableStatusId = HookableStatuses.Untested });
             _db.Context.SaveChanges();
 
             var controller = CreateController("admin-1");

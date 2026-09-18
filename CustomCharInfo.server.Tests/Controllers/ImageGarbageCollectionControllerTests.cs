@@ -69,7 +69,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task Scan_NonAdmin_ReturnsForbid()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
             var controller = CreateController("user-1");
 
             var result = await controller.Scan();
@@ -80,7 +80,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task Scan_ReturnsAllImages_FlaggingInUseCorrectly()
         {
-            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
 
             _db.Context.Movesets.Add(new Moveset
             {
@@ -88,7 +88,7 @@ namespace CustomCharInfo.server.Tests.Controllers
                 ModdedCharName = "Test",
                 VanillaCharInternalName = "mario",
                 SlottedId = "slotone",
-                ReleaseStateId = 1,
+                ReleaseStateId = ReleaseStates.Released,
                 ThumbhImageUrl = $"{PublicBaseUrl}/uploads/moveset-ui/referenced.png",
             });
             _db.Context.SaveChanges();
@@ -121,7 +121,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task Execute_NonAdmin_ReturnsForbid()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
             var controller = CreateController("user-1");
 
             var result = await controller.Execute(new List<string> { "uploads/moveset-ui/old-orphan.png" });
@@ -132,7 +132,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task Execute_DeletesOnlyStillOrphanedKeys_SkipsNowReferencedKeys()
         {
-            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
 
             _db.Context.Movesets.Add(new Moveset
             {
@@ -140,7 +140,7 @@ namespace CustomCharInfo.server.Tests.Controllers
                 ModdedCharName = "Test",
                 VanillaCharInternalName = "mario",
                 SlottedId = "slotone",
-                ReleaseStateId = 1,
+                ReleaseStateId = ReleaseStates.Released,
                 ThumbhImageUrl = $"{PublicBaseUrl}/uploads/moveset-ui/now-referenced.png",
             });
             _db.Context.SaveChanges();

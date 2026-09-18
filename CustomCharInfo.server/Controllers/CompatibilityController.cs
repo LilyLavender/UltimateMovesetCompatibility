@@ -121,7 +121,7 @@ namespace CustomCharInfo.server.Controllers
                     m.SlotsStart,
                     m.SlotsEnd,
                     m.VanillaCharInternalName,
-                    Hooks = m.MovesetHooks.Select(mh => new { mh.HookId, StatusName = mh.Hook.HookableStatus.Name }).ToList(),
+                    Hooks = m.MovesetHooks.Select(mh => new { mh.HookId, mh.Hook.HookableStatusId }).ToList(),
                     Articles = m.MovesetArticles.Select(ma => new { ma.ArticleId }).ToList()
                 })
                 .ToListAsync();
@@ -157,10 +157,9 @@ namespace CustomCharInfo.server.Controllers
                     {
                         if (!b.Hooks.Any(h => h.HookId == hookA.HookId)) continue;
                         conflictingHookIds.Add(hookA.HookId);
-                        var statusName = (hookA.StatusName ?? "").ToLower();
-                        if (statusName.Contains("more than once"))
+                        if (hookA.HookableStatusId == HookableStatuses.MoreThanOnce)
                             Escalate("warning");
-                        else if (statusName.Contains("once"))
+                        else if (hookA.HookableStatusId == HookableStatuses.OnlyOnce)
                             Escalate("incompatible");
                         else
                             Escalate("predicted-incompat");

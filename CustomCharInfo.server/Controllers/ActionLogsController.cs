@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CustomCharInfo.server.Data;
 using CustomCharInfo.server.Models;
+using CustomCharInfo.server.Helpers;
 using CustomCharInfo.server.Models.DTOs;
 using Microsoft.AspNetCore.Identity;
 using System.IdentityModel.Tokens.Jwt;
@@ -40,10 +41,10 @@ namespace CustomCharInfo.server.Controllers
             if (requester == null)
                 return false;
 
-            if (requester.UserTypeId == 3) // Admin
+            if (requester.UserTypeId == UserTypes.Admin)
                 return true;
 
-            if (itemTypeId == 4) // Hook
+            if (itemTypeId == ItemTypes.Hook)
                 return true;
 
             if (requester.ModderId == null)
@@ -51,16 +52,16 @@ namespace CustomCharInfo.server.Controllers
 
             switch (itemTypeId)
             {
-                case 2: // Modder
+                case ItemTypes.Modder:
                     return requester.ModderId == itemId;
-                case 1: // Moveset
+                case ItemTypes.Moveset:
                     return await _context.MovesetModders
                         .AnyAsync(mm => mm.ModderId == requester.ModderId && mm.MovesetId == itemId);
-                case 3: // Series
+                case ItemTypes.Series:
                     return await _context.Movesets
                         .AnyAsync(m => m.SeriesId == itemId &&
                             _context.MovesetModders.Any(mm => mm.ModderId == requester.ModderId && mm.MovesetId == m.MovesetId));
-                case 5: // Plugin
+                case ItemTypes.Plugin:
                     return await _context.PluginVersions
                         .AnyAsync(v => v.PluginVersionId == itemId && v.Plugin.OwnerModderId == requester.ModderId);
                 default:
@@ -81,10 +82,10 @@ namespace CustomCharInfo.server.Controllers
         // render a set of action logs, so callers avoid N+1 queries per log.
         private async Task<ItemLookups> BuildItemLookupsAsync(IEnumerable<ActionLog> logs)
         {
-            var modderIds = logs.Where(l => l.ItemTypeId == 2).Select(l => l.ItemId).Distinct().ToList();
-            var movesetIds = logs.Where(l => l.ItemTypeId == 1).Select(l => l.ItemId).Distinct().ToList();
-            var seriesIds = logs.Where(l => l.ItemTypeId == 3).Select(l => l.ItemId).Distinct().ToList();
-            var hookIds = logs.Where(l => l.ItemTypeId == 4).Select(l => l.ItemId).Distinct().ToList();
+            var modderIds = logs.Where(l => l.ItemTypeId == ItemTypes.Modder).Select(l => l.ItemId).Distinct().ToList();
+            var movesetIds = logs.Where(l => l.ItemTypeId == ItemTypes.Moveset).Select(l => l.ItemId).Distinct().ToList();
+            var seriesIds = logs.Where(l => l.ItemTypeId == ItemTypes.Series).Select(l => l.ItemId).Distinct().ToList();
+            var hookIds = logs.Where(l => l.ItemTypeId == ItemTypes.Hook).Select(l => l.ItemId).Distinct().ToList();
 
             var modders = await _context.Modders
                 .Where(m => modderIds.Contains(m.ModderId))
@@ -106,7 +107,7 @@ namespace CustomCharInfo.server.Controllers
                 .Select(h => new { h.HookId, h.Offset })
                 .ToDictionaryAsync(h => h.HookId, h => (h.HookId, h.Offset));
 
-            var pluginVersionIds = logs.Where(l => l.ItemTypeId == 5).Select(l => l.ItemId).Distinct().ToList();
+            var pluginVersionIds = logs.Where(l => l.ItemTypeId == ItemTypes.Plugin).Select(l => l.ItemId).Distinct().ToList();
             var pluginVersions = await _context.PluginVersions
                 .Where(v => pluginVersionIds.Contains(v.PluginVersionId))
                 .Select(v => new { v.PluginVersionId, Label = v.Plugin.Name + " v" + v.VersionLabel })
@@ -200,7 +201,7 @@ namespace CustomCharInfo.server.Controllers
             if (requester == null)
                 return Forbid();
 
-            bool isAdmin = requester.UserTypeId == 3;
+            bool isAdmin = requester.UserTypeId == UserTypes.Admin;
 
             // Only admins may view all logs
             if (viewAll && !isAdmin)
@@ -236,7 +237,7 @@ namespace CustomCharInfo.server.Controllers
                 if (modderId == null)
                 {
                     extraModderItemIds = await _context.ActionLogs
-                        .Where(log => log.UserId == effectiveUserId && log.ItemTypeId == 2)
+                        .Where(log => log.UserId == effectiveUserId && log.ItemTypeId == ItemTypes.Modder)
                         .Select(log => log.ItemId)
                         .Distinct()
                         .ToListAsync();
@@ -245,7 +246,7 @@ namespace CustomCharInfo.server.Controllers
                 // Hooks are shared/unowned - a user can see a hook's logs if they've submitted a
                 // log entry for it before (i.e. they've created or edited it at some point).
                 var editedHookIds = await _context.ActionLogs
-                    .Where(log => log.UserId == effectiveUserId && log.ItemTypeId == 4)
+                    .Where(log => log.UserId == effectiveUserId && log.ItemTypeId == ItemTypes.Hook)
                     .Select(log => log.ItemId)
                     .Distinct()
                     .ToListAsync();
@@ -272,18 +273,18 @@ namespace CustomCharInfo.server.Controllers
                         .ToListAsync();
 
                     query = query.Where(a =>
-                        (a.ItemTypeId == 2 && a.ItemId == modderId) ||
-                        (a.ItemTypeId == 1 && userMovesetIds.Contains(a.ItemId)) ||
-                        (a.ItemTypeId == 3 && seriesIdsFromMovesets.Contains(a.ItemId)) ||
-                        (a.ItemTypeId == 4 && editedHookIds.Contains(a.ItemId)) ||
-                        (a.ItemTypeId == 5 && ownedPluginVersionIds.Contains(a.ItemId))
+                        (a.ItemTypeId == ItemTypes.Modder && a.ItemId == modderId) ||
+                        (a.ItemTypeId == ItemTypes.Moveset && userMovesetIds.Contains(a.ItemId)) ||
+                        (a.ItemTypeId == ItemTypes.Series && seriesIdsFromMovesets.Contains(a.ItemId)) ||
+                        (a.ItemTypeId == ItemTypes.Hook && editedHookIds.Contains(a.ItemId)) ||
+                        (a.ItemTypeId == ItemTypes.Plugin && ownedPluginVersionIds.Contains(a.ItemId))
                     );
                 }
                 else
                 {
                     query = query.Where(a =>
-                        (a.ItemTypeId == 2 && extraModderItemIds.Contains(a.ItemId)) ||
-                        (a.ItemTypeId == 4 && editedHookIds.Contains(a.ItemId))
+                        (a.ItemTypeId == ItemTypes.Modder && extraModderItemIds.Contains(a.ItemId)) ||
+                        (a.ItemTypeId == ItemTypes.Hook && editedHookIds.Contains(a.ItemId))
                     );
                 }
             }
@@ -327,7 +328,7 @@ namespace CustomCharInfo.server.Controllers
 
             var isAdmin = await _context.Users
                 .Where(u => u.Id == requesterId)
-                .Select(u => u.UserTypeId == 3)
+                .Select(u => u.UserTypeId == UserTypes.Admin)
                 .FirstOrDefaultAsync();
 
             var logsRaw = await _context.ActionLogs
@@ -351,10 +352,8 @@ namespace CustomCharInfo.server.Controllers
         [Authorize]
         public async Task<ActionResult<ActionLogDto>> CreateActionLog(ActionLogDto dto)
         {
-            // Make sure user is admin
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null || user.UserTypeId != 3)
+            var user = await _userManager.GetRequesterAsync(_context, User);
+            if (!user.IsAdmin())
                 return Forbid();
 
             // Send ActionLog
@@ -372,16 +371,16 @@ namespace CustomCharInfo.server.Controllers
 
             // Associate user to modder IF NOT ALREADY
             var originalSubmitterId = await _context.ActionLogs
-                    .Where(a => a.ItemTypeId == 2 && a.ItemId == dto.ItemId)
+                    .Where(a => a.ItemTypeId == ItemTypes.Modder && a.ItemId == dto.ItemId)
                     .OrderBy(a => a.CreatedAt)
                     .Select(a => a.UserId)
                     .FirstOrDefaultAsync();
             var originalUser = await _context.Users.FindAsync(originalSubmitterId);
             if (
-                dto.ItemTypeId == 2 // Editing modder
-                && dto.AcceptanceStateId == 5 // Accepting
+                dto.ItemTypeId == ItemTypes.Modder
+                && dto.AcceptanceStateId == AcceptanceStates.Accepted
                 && !string.IsNullOrEmpty(originalSubmitterId) // If original submitter exists
-                && originalUser?.UserTypeId == 1 // Original user isn't already a modder
+                && originalUser?.UserTypeId == UserTypes.User
             ) {
                 var modder = await _context.Modders.FindAsync(dto.ItemId);
 
@@ -396,9 +395,9 @@ namespace CustomCharInfo.server.Controllers
                         originalUser.ModderId = dto.ItemId;
                     }
 
-                    if (originalUser.UserTypeId != 2)
+                    if (originalUser.UserTypeId != UserTypes.Modder)
                     {
-                        originalUser.UserTypeId = 2;
+                        originalUser.UserTypeId = UserTypes.Modder;
                     }
 
                     _context.Users.Update(originalUser);
@@ -439,7 +438,7 @@ namespace CustomCharInfo.server.Controllers
 
             var isAdmin = await _context.Users
                 .Where(u => u.Id == requesterId)
-                .Select(u => u.UserTypeId == 3)
+                .Select(u => u.UserTypeId == UserTypes.Admin)
                 .FirstOrDefaultAsync();
 
             var lookups = await BuildItemLookupsAsync(new[] { actionLog });

@@ -29,7 +29,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task CreateModder_AlreadyAModder_ReturnsBadRequest()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
             var controller = CreateController("user-1");
 
             var result = await controller.CreateModder(new CreateModderDto());
@@ -40,8 +40,8 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task CreateModder_HasPendingApplication_ReturnsConflict()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 1);
-            SeedData.AddActionLog(_db.Context, itemId: 999, acceptanceStateId: 2, DateTime.UtcNow, userId: "user-1", itemTypeId: 2);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
+            SeedData.AddActionLog(_db.Context, itemId: 999, acceptanceStateId: AcceptanceStates.PendingAdminHard, DateTime.UtcNow, userId: "user-1", itemTypeId: ItemTypes.Modder);
 
             var controller = CreateController("user-1");
 
@@ -53,7 +53,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task CreateModder_NewApplicant_CreatesModderAndSubmittedLog()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
             var controller = CreateController("user-1");
 
             var result = await controller.CreateModder(new CreateModderDto { Bio = "Hello" });
@@ -68,9 +68,9 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task UpdateModder_UnrelatedUser_ReturnsForbid()
         {
-            SeedData.AddUser(_db.Context, "owner-1", userTypeId: 2, modderId: 1);
+            SeedData.AddUser(_db.Context, "owner-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, "owner-1", "Owner");
-            SeedData.AddUser(_db.Context, "stranger-1", userTypeId: 1);
+            SeedData.AddUser(_db.Context, "stranger-1", userTypeId: UserTypes.User);
 
             var controller = CreateController("stranger-1");
 
@@ -82,7 +82,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task UpdateModder_Owner_UpdatesProfile()
         {
-            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: 2, modderId: 1);
+            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, owner.Id, "Owner");
 
             var controller = CreateController(owner.Id);
@@ -97,9 +97,9 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task UpdateModder_RejectedProfile_ReturnsForbid()
         {
-            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: 2, modderId: 1);
+            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, owner.Id, "Owner");
-            SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: 6, DateTime.UtcNow, userId: owner.Id, itemTypeId: 2);
+            SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: AcceptanceStates.Rejected, DateTime.UtcNow, userId: owner.Id, itemTypeId: ItemTypes.Modder);
 
             var controller = CreateController(owner.Id);
 
@@ -111,9 +111,9 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task UpdateModder_Admin_UsesAdminApprovedState()
         {
-            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: 2, modderId: 1);
+            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, owner.Id, "Owner");
-            var admin = SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            var admin = SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
 
             var controller = CreateController(admin.Id);
 
@@ -126,7 +126,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task DeleteModder_NonAdmin_ReturnsForbid()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 2);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder);
             _db.Context.Modders.Add(new Modder { ModderId = 1, UserId = "user-1", Name = "ToDelete" });
             _db.Context.SaveChanges();
 
@@ -140,8 +140,8 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task DeleteModder_Admin_RemovesModder()
         {
-            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
-            SeedData.AddUser(_db.Context, "target-1", userTypeId: 2);
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
+            SeedData.AddUser(_db.Context, "target-1", userTypeId: UserTypes.Modder);
             _db.Context.Modders.Add(new Modder { ModderId = 1, UserId = "target-1", Name = "ToDelete" });
             _db.Context.SaveChanges();
 
@@ -166,9 +166,9 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task GetModder_BlockedForNonAdminStranger()
         {
-            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: 2, modderId: 1);
+            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: UserTypes.Modder, modderId: 1);
             SeedData.AddModder(_db.Context, 1, owner.Id, "Owner");
-            SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: 6, DateTime.UtcNow, userId: owner.Id, itemTypeId: 2);
+            SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: AcceptanceStates.Rejected, DateTime.UtcNow, userId: owner.Id, itemTypeId: ItemTypes.Modder);
 
             var controller = CreateController();
 
@@ -192,7 +192,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task ModderIsAdmin_AdminUser_ReturnsTrue()
         {
-            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3, modderId: 42);
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin, modderId: 42);
 
             var controller = CreateController();
 

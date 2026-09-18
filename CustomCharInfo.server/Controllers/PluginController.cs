@@ -21,8 +21,7 @@ namespace CustomCharInfo.server.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
 
         // Same set used in MovesetController to decide whether an item's latest ActionLog state means "not publicly visible yet".
-        private static readonly int[] BlockedStates = { 2, 4, 6 };
-
+        
         private static readonly Regex HashPattern = new("^[0-9a-f]{64}$", RegexOptions.Compiled);
 
         // Matches a run of 2+ dot-separated numeric groups anywhere in a string.
@@ -39,10 +38,8 @@ namespace CustomCharInfo.server.Controllers
 
         private async Task<(ApplicationUser? user, bool isAdmin)> GetRequesterAsync()
         {
-            var userId = _userManager.GetUserId(User);
-            if (userId == null) return (null, false);
-            var user = await _context.Users.FindAsync(userId);
-            return (user, user?.UserTypeId == 3);
+            var user = await _userManager.GetRequesterAsync(_context, User);
+            return (user, user.IsAdmin());
         }
 
         // Version labels are free text ("Beta 2.0", "3.0.2 (standalone)", "4.0.10-beta.0.1" are all valid).
@@ -157,9 +154,9 @@ namespace CustomCharInfo.server.Controllers
             _context.ActionLogs.Add(new ActionLog
             {
                 UserId = userId,
-                ItemTypeId = 5,
+                ItemTypeId = ItemTypes.Plugin,
                 ItemId = pluginVersionId,
-                AcceptanceStateId = isAdmin ? 7 : 2,
+                AcceptanceStateId = isAdmin ? AcceptanceStates.AutoAccepted : AcceptanceStates.PendingAdminHard,
                 Notes = notes ?? "",
                 CreatedAt = DateTime.UtcNow
             });
@@ -244,7 +241,7 @@ namespace CustomCharInfo.server.Controllers
                 {
                     var log = await _context.ActionLogs
                         .Include(a => a.AcceptanceState)
-                        .Where(a => a.ItemTypeId == 5 && a.ItemId == v.PluginVersionId)
+                        .Where(a => a.ItemTypeId == ItemTypes.Plugin && a.ItemId == v.PluginVersionId)
                         .OrderByDescending(a => a.CreatedAt)
                         .FirstOrDefaultAsync();
                     versionDto.AcceptanceStateId = log?.AcceptanceStateId;
@@ -586,14 +583,14 @@ namespace CustomCharInfo.server.Controllers
 
             if (isCase1)
             {
-                var movesetState = await LatestActionLogStateAsync(1, plugin.MovesetId!.Value);
-                if ((movesetState != null && BlockedStates.Contains(movesetState.Value)) || plugin.Moveset!.PrivateMoveset == true)
+                var movesetState = await LatestActionLogStateAsync(ItemTypes.Moveset, plugin.MovesetId!.Value);
+                if ((movesetState != null && AcceptanceStates.Blocked.Contains(movesetState.Value)) || plugin.Moveset!.PrivateMoveset == true)
                     return null;
             }
             else
             {
-                var versionState = await LatestActionLogStateAsync(5, version.PluginVersionId);
-                if (versionState == null || BlockedStates.Contains(versionState.Value))
+                var versionState = await LatestActionLogStateAsync(ItemTypes.Plugin, version.PluginVersionId);
+                if (versionState == null || AcceptanceStates.Blocked.Contains(versionState.Value))
                     return null;
             }
 
@@ -605,8 +602,8 @@ namespace CustomCharInfo.server.Controllers
                 var visibleIds = new List<int>();
                 foreach (var v in plugin.PluginVersions)
                 {
-                    var state = await LatestActionLogStateAsync(5, v.PluginVersionId);
-                    if (state != null && !BlockedStates.Contains(state.Value)) visibleIds.Add(v.PluginVersionId);
+                    var state = await LatestActionLogStateAsync(ItemTypes.Plugin, v.PluginVersionId);
+                    if (state != null && !AcceptanceStates.Blocked.Contains(state.Value)) visibleIds.Add(v.PluginVersionId);
                 }
                 visibleVersions = plugin.PluginVersions.Where(v => visibleIds.Contains(v.PluginVersionId));
             }

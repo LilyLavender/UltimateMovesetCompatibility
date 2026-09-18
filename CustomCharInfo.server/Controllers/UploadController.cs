@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
 using CustomCharInfo.server.Data;
 using CustomCharInfo.server.Models;
+using CustomCharInfo.server.Helpers;
 using CustomCharInfo.server.Models.DTOs;
 
 using SixLabors.ImageSharp;
@@ -63,10 +64,8 @@ namespace CustomCharInfo.server.Controllers
         [Authorize]
         public async Task<IActionResult> UploadMovesetImage([FromForm] ImageUploadDto dto)
         {
-            // Make sure user is modder
-            var userId = _userManager.GetUserId(User);
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null || user.UserTypeId < 2)
+            var user = await _userManager.GetRequesterAsync(_context, User);
+            if (!user.IsModder())
                 return Forbid();
 
             if (dto.File == null || string.IsNullOrWhiteSpace(dto.Type))
@@ -114,10 +113,8 @@ namespace CustomCharInfo.server.Controllers
         [Authorize]
         public async Task<IActionResult> UploadBlogImage([FromForm] BlogImageUploadDto dto)
         {
-            // Make sure user is modder
-            var userId = _userManager.GetUserId(User);
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null || user.UserTypeId < 2)
+            var user = await _userManager.GetRequesterAsync(_context, User);
+            if (!user.IsModder())
                 return Forbid();
 
             if (dto.File == null || dto.File.Length == 0)

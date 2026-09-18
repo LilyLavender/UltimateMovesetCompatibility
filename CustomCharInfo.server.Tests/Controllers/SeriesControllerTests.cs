@@ -29,7 +29,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task CreateSeries_NonModder_ReturnsForbid()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
             var controller = CreateController("user-1");
 
             var result = await controller.CreateSeries(new UpdateSeriesDto { SeriesName = "New Series" });
@@ -40,7 +40,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task CreateSeries_Modder_CreatesSeriesAndSubmittedLog()
         {
-            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: UserTypes.Modder);
             var controller = CreateController("modder-1");
 
             var result = await controller.CreateSeries(new UpdateSeriesDto { SeriesName = "New Series" });
@@ -55,7 +55,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task CreateSeries_Admin_UsesAdminApprovedState()
         {
-            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
             var controller = CreateController("admin-1");
 
             await controller.CreateSeries(new UpdateSeriesDto { SeriesName = "Admin Series" });
@@ -67,7 +67,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task CreateSeries_DuplicateName_ReturnsConflict()
         {
-            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: UserTypes.Modder);
             _db.Context.Series.Add(new Series { SeriesId = 1, SeriesName = "Existing" });
             _db.Context.SaveChanges();
 
@@ -81,7 +81,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task PatchSeriesImage_FillsEmptyIcon()
         {
-            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: UserTypes.Modder);
             _db.Context.Series.Add(new Series { SeriesId = 1, SeriesName = "Original" });
             _db.Context.SaveChanges();
             var controller = CreateController("modder-1");
@@ -97,7 +97,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task PatchSeriesImage_AlreadySet_ReturnsConflict()
         {
-            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: UserTypes.Modder);
             _db.Context.Series.Add(new Series { SeriesId = 1, SeriesName = "Original", SeriesIconUrl = "/uploads/existing.png" });
             _db.Context.SaveChanges();
             var controller = CreateController("modder-1");
@@ -112,7 +112,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task PatchSeriesImage_NonModder_ReturnsForbid()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
             _db.Context.Series.Add(new Series { SeriesId = 1, SeriesName = "Original" });
             _db.Context.SaveChanges();
             var controller = CreateController("user-1");
@@ -125,10 +125,10 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task UpdateSeries_NotYetActionable_ReturnsForbid()
         {
-            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: UserTypes.Modder);
             _db.Context.Series.Add(new Series { SeriesId = 1, SeriesName = "Original" });
             _db.Context.SaveChanges();
-            SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: 1, DateTime.UtcNow, userId: "modder-1", itemTypeId: 3);
+            SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: AcceptanceStates.PendingAdminSoft, DateTime.UtcNow, userId: "modder-1", itemTypeId: ItemTypes.Series);
 
             var controller = CreateController("modder-1");
 
@@ -140,10 +140,10 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task UpdateSeries_AfterAcceptance_UpdatesAndLogsDiff()
         {
-            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: UserTypes.Modder);
             _db.Context.Series.Add(new Series { SeriesId = 1, SeriesName = "Original" });
             _db.Context.SaveChanges();
-            SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: 3, DateTime.UtcNow, userId: "modder-1", itemTypeId: 3);
+            SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: AcceptanceStates.PendingUserSoft, DateTime.UtcNow, userId: "modder-1", itemTypeId: ItemTypes.Series);
 
             var controller = CreateController("modder-1");
 
@@ -157,7 +157,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task DeleteSeries_NonAdmin_ReturnsForbid()
         {
-            SeedData.AddUser(_db.Context, "modder-1", userTypeId: 2);
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: UserTypes.Modder);
             _db.Context.Series.Add(new Series { SeriesId = 1, SeriesName = "ToDelete" });
             _db.Context.SaveChanges();
 
@@ -171,7 +171,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task DeleteSeries_Admin_RemovesSeries()
         {
-            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
             _db.Context.Series.Add(new Series { SeriesId = 1, SeriesName = "ToDelete" });
             _db.Context.SaveChanges();
 
@@ -187,7 +187,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         public async Task GetOneSeries_PrivateSeriesWithNoPublicMovesets_ReturnsForbidForStranger()
         {
             _db.Context.Series.Add(new Series { SeriesId = 1, SeriesName = "Hidden" });
-            _db.Context.Movesets.Add(new Moveset { MovesetId = 1, ModdedCharName = "Secret", VanillaCharInternalName = "mario", SlottedId = "slotone", SeriesId = 1, PrivateMoveset = true, ReleaseStateId = 1 });
+            _db.Context.Movesets.Add(new Moveset { MovesetId = 1, ModdedCharName = "Secret", VanillaCharInternalName = "mario", SlottedId = "slotone", SeriesId = 1, PrivateMoveset = true, ReleaseStateId = ReleaseStates.Released });
             _db.Context.SaveChanges();
 
             var controller = CreateController();

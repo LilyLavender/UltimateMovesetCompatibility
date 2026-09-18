@@ -28,22 +28,19 @@ namespace CustomCharInfo.server.Controllers
         [HttpGet("public")]
         public async Task<ActionResult> GetPublicModders()
         {
-            var acceptedStates = new[] { 5, 7 };
-            var blockedStates = new[] { 2, 4, 6 };
-
             var modders = await _context.Modders
                 .Where(m =>
                     // Not problematic
                     m.User.Problematic != true &&
                     // Has been accepted at some point
                     _context.ActionLogs.Any(a =>
-                        a.ItemTypeId == 2 && a.ItemId == m.ModderId &&
-                        acceptedStates.Contains(a.AcceptanceStateId)
+                        a.ItemTypeId == ItemTypes.Modder && a.ItemId == m.ModderId &&
+                        AcceptanceStates.AnyAccepted.Contains(a.AcceptanceStateId)
                     ) &&
                     // Latest modder log is not blocked
-                    !blockedStates.Contains(
+                    !AcceptanceStates.Blocked.Contains(
                         _context.ActionLogs
-                            .Where(a => a.ItemTypeId == 2 && a.ItemId == m.ModderId)
+                            .Where(a => a.ItemTypeId == ItemTypes.Modder && a.ItemId == m.ModderId)
                             .OrderByDescending(a => a.CreatedAt)
                             .Select(a => a.AcceptanceStateId)
                             .FirstOrDefault()
@@ -51,9 +48,9 @@ namespace CustomCharInfo.server.Controllers
                     // Has at least one public, non-hardheld moveset
                     m.MovesetModders.Any(mm =>
                         mm.Moveset.PrivateMoveset != true &&
-                        !blockedStates.Contains(
+                        !AcceptanceStates.Blocked.Contains(
                             _context.ActionLogs
-                                .Where(a => a.ItemTypeId == 1 && a.ItemId == mm.Moveset.MovesetId)
+                                .Where(a => a.ItemTypeId == ItemTypes.Moveset && a.ItemId == mm.Moveset.MovesetId)
                                 .OrderByDescending(a => a.CreatedAt)
                                 .Select(a => a.AcceptanceStateId)
                                 .FirstOrDefault()
@@ -67,12 +64,12 @@ namespace CustomCharInfo.server.Controllers
                     m.Bio,
                     m.GamebananaId,
                     m.PfpUrl,
-                    IsAdmin = m.User != null && m.User.UserTypeId == 3,
+                    IsAdmin = m.User != null && m.User.UserTypeId == UserTypes.Admin,
                     MovesetCount = m.MovesetModders.Count(mm =>
                         mm.Moveset.PrivateMoveset != true &&
-                        !blockedStates.Contains(
+                        !AcceptanceStates.Blocked.Contains(
                             _context.ActionLogs
-                                .Where(a => a.ItemTypeId == 1 && a.ItemId == mm.Moveset.MovesetId)
+                                .Where(a => a.ItemTypeId == ItemTypes.Moveset && a.ItemId == mm.Moveset.MovesetId)
                                 .OrderByDescending(a => a.CreatedAt)
                                 .Select(a => a.AcceptanceStateId)
                                 .FirstOrDefault()
@@ -89,29 +86,27 @@ namespace CustomCharInfo.server.Controllers
         [HttpGet]
         public async Task<ActionResult> GetModders()
         {
-            var userId = _userManager.GetUserId(User);
-            var userFromId = await _context.Users.FindAsync(userId);
-            if (userFromId == null || userFromId.UserTypeId < 2)
+            var userFromId = await _userManager.GetRequesterAsync(_context, User);
+            if (!userFromId.IsModder())
                 return Unauthorized();
         
-            var blockedStates = new[] { 2, 4, 6 };
-        
+                    
             var moddersQuery = _context.Modders
                 .Include(m => m.User)
                 .Select(m => new
                 {
                     Modder = m,
                     LatestLog = _context.ActionLogs
-                        .Where(l => l.ItemTypeId == 2 && l.ItemId == m.ModderId)
+                        .Where(l => l.ItemTypeId == ItemTypes.Modder && l.ItemId == m.ModderId)
                         .OrderByDescending(l => l.CreatedAt)
                         .FirstOrDefault()
                 });
         
             // Filter out blocked modders
-            if (userFromId.UserTypeId != 3)
+            if (userFromId.UserTypeId != UserTypes.Admin)
             {
                 moddersQuery = moddersQuery
-                    .Where(x => x.LatestLog == null || !blockedStates.Contains(x.LatestLog.AcceptanceStateId));
+                    .Where(x => x.LatestLog == null || !AcceptanceStates.Blocked.Contains(x.LatestLog.AcceptanceStateId));
             }
         
             var modders = await moddersQuery
@@ -141,8 +136,7 @@ namespace CustomCharInfo.server.Controllers
                 ? await _context.Users.FindAsync(userId)
                 : null;
 
-            var blockedStates = new[] { 2, 4, 6 };
-
+            
             var modderQuery = _context.Modders
                 .Include(m => m.User)
                 .Where(m => m.ModderId == id)
@@ -150,17 +144,17 @@ namespace CustomCharInfo.server.Controllers
                 {
                     Modder = m,
                     LatestLog = _context.ActionLogs
-                        .Where(l => l.ItemTypeId == 2 && l.ItemId == m.ModderId)
+                        .Where(l => l.ItemTypeId == ItemTypes.Modder && l.ItemId == m.ModderId)
                         .OrderByDescending(l => l.CreatedAt)
                         .FirstOrDefault()
                 });
 
             // Filter out blocked modders
-            if (userFromId?.UserTypeId != 3)
+            if (userFromId?.UserTypeId != UserTypes.Admin)
             {
                 modderQuery = modderQuery.Where(x =>
                     x.LatestLog == null ||
-                    !blockedStates.Contains(x.LatestLog.AcceptanceStateId)
+                    !AcceptanceStates.Blocked.Contains(x.LatestLog.AcceptanceStateId)
                 );
             }
 
@@ -201,7 +195,7 @@ namespace CustomCharInfo.server.Controllers
                 return Ok(new { isAdmin = false });
             }
 
-            bool isAdmin = user.UserTypeId == 3;
+            bool isAdmin = user.UserTypeId == UserTypes.Admin;
             return Ok(new { isAdmin });
         }
 
@@ -225,8 +219,8 @@ namespace CustomCharInfo.server.Controllers
             // Check for existing modder application
             var hasPendingApplication = await _context.ActionLogs.AnyAsync(a =>
                 a.UserId == userId &&
-                a.ItemTypeId == 2 &&
-                (a.AcceptanceStateId == 2 || a.AcceptanceStateId == 4)
+                a.ItemTypeId == ItemTypes.Modder &&
+                AcceptanceStates.Hard.Contains(a.AcceptanceStateId)
             );
 
             if (hasPendingApplication)
@@ -251,9 +245,9 @@ namespace CustomCharInfo.server.Controllers
             _context.ActionLogs.Add(new ActionLog
             {
                 UserId = userId,
-                ItemTypeId = 2,
+                ItemTypeId = ItemTypes.Modder,
                 ItemId = modder.ModderId,
-                AcceptanceStateId = 2,
+                AcceptanceStateId = AcceptanceStates.PendingAdminHard,
                 Notes = dto.Notes ?? "",
                 CreatedAt = DateTime.UtcNow
             });
@@ -279,20 +273,20 @@ namespace CustomCharInfo.server.Controllers
             bool isOwner = user.ModderId == id;
 
             bool isOriginalSubmitter = await _context.ActionLogs
-                .Where(a => a.ItemTypeId == 2 && a.ItemId == id)
+                .Where(a => a.ItemTypeId == ItemTypes.Modder && a.ItemId == id)
                 .OrderBy(a => a.CreatedAt)
                 .Select(a => a.UserId)
                 .FirstOrDefaultAsync() == userId;
 
-            if (!(isOwner || isOriginalSubmitter || user.UserTypeId == 3))
+            if (!(isOwner || isOriginalSubmitter || user.UserTypeId == UserTypes.Admin))
                 return Forbid("You are not authorized to edit this modder profile.");
 
             var latestLog = await _context.ActionLogs
-                .Where(a => a.ItemTypeId == 2 && a.ItemId == id)
+                .Where(a => a.ItemTypeId == ItemTypes.Modder && a.ItemId == id)
                 .OrderByDescending(a => a.CreatedAt)
                 .FirstOrDefaultAsync();
 
-            if (latestLog?.AcceptanceStateId == 6)
+            if (latestLog?.AcceptanceStateId == AcceptanceStates.Rejected)
                 return Forbid("This modder profile has been rejected and cannot be edited.");
 
             var modder = await _context.Modders.FindAsync(id);
@@ -332,14 +326,16 @@ namespace CustomCharInfo.server.Controllers
                 ("GithubUsername",  snapGithub,   dto.GithubUsername),
             });
 
-            int newState = user.UserTypeId == 3
-                ? 7
-                : (latestLog?.AcceptanceStateId == 2 || latestLog?.AcceptanceStateId == 4) ? 2 : 1;
+            int newState = user.UserTypeId == UserTypes.Admin
+                ? AcceptanceStates.AutoAccepted
+                : latestLog != null && AcceptanceStates.Hard.Contains(latestLog.AcceptanceStateId)
+                    ? AcceptanceStates.PendingAdminHard
+                    : AcceptanceStates.PendingAdminSoft;
 
             _context.ActionLogs.Add(new ActionLog
             {
                 UserId = userId,
-                ItemTypeId = 2,
+                ItemTypeId = ItemTypes.Modder,
                 ItemId = id,
                 AcceptanceStateId = newState,
                 Notes = dto.Notes ?? "",
@@ -353,12 +349,11 @@ namespace CustomCharInfo.server.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> DeleteModder(int id)
         {
-            // Make sure user is admin
-            var userId = _userManager.GetUserId(User);
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null || user.UserTypeId != 3)
+            var user = await _userManager.GetRequesterAsync(_context, User);
+            if (!user.IsAdmin())
                 return Forbid();
 
             var modder = await _context.Modders.FindAsync(id);

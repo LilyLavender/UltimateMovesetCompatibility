@@ -54,9 +54,8 @@ namespace CustomCharInfo.server.Controllers
                     .FirstOrDefaultAsync(u => u.Id == userId)
                 : null;
 
-            var blockedStates = new[] { 2, 4, 6 };
-
-            bool isAdmin = user?.UserTypeId == 3;
+            
+            bool isAdmin = user?.UserTypeId == UserTypes.Admin;
             int? currentModderId = user?.ModderId;
 
             var query = _context.Movesets
@@ -74,7 +73,7 @@ namespace CustomCharInfo.server.Controllers
                     Moveset = m,
 
                     LatestLog = _context.ActionLogs
-                        .Where(a => a.ItemTypeId == 1 && a.ItemId == m.MovesetId)
+                        .Where(a => a.ItemTypeId == ItemTypes.Moveset && a.ItemId == m.MovesetId)
                         .OrderByDescending(a => a.CreatedAt)
                         .FirstOrDefault(),
 
@@ -108,7 +107,7 @@ namespace CustomCharInfo.server.Controllers
                 query = query.Where(x => (bool)x.Moveset.AdminPick);
 
             if (betaOnly == true)
-                query = query.Where(x => x.Moveset.ReleaseStateId == 4);
+                query = query.Where(x => x.Moveset.ReleaseStateId == ReleaseStates.OpenBeta);
 
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
@@ -123,7 +122,7 @@ namespace CustomCharInfo.server.Controllers
             {
                 query = query.Where(x =>
                     x.LatestLog == null
-                    || !blockedStates.Contains(x.LatestLog.AcceptanceStateId)
+                    || !AcceptanceStates.Blocked.Contains(x.LatestLog.AcceptanceStateId)
                     || x.IsOwner
                     || (modderId.HasValue && x.Moveset.MovesetModders.Any(mm => mm.ModderId == modderId))
                 );
@@ -245,10 +244,9 @@ namespace CustomCharInfo.server.Controllers
                     .FirstOrDefaultAsync(u => u.Id == userId)
                 : null;
 
-            bool isAdmin = user?.UserTypeId == 3;
+            bool isAdmin = user?.UserTypeId == UserTypes.Admin;
             int? currentModderId = user?.ModderId;
-            var blockedStates = new[] { 2, 4, 6 };
-            var lowered = q.Trim().ToLower();
+                        var lowered = q.Trim().ToLower();
 
             var query = _context.Movesets
                 .AsNoTracking()
@@ -261,7 +259,7 @@ namespace CustomCharInfo.server.Controllers
                     m.PrivateMoveset,
                     IsOwner = currentModderId != null && m.MovesetModders.Any(mm => mm.ModderId == currentModderId),
                     LatestLogState = _context.ActionLogs
-                        .Where(a => a.ItemTypeId == 1 && a.ItemId == m.MovesetId)
+                        .Where(a => a.ItemTypeId == ItemTypes.Moveset && a.ItemId == m.MovesetId)
                         .OrderByDescending(a => a.CreatedAt)
                         .Select(a => (int?)a.AcceptanceStateId)
                         .FirstOrDefault()
@@ -271,7 +269,7 @@ namespace CustomCharInfo.server.Controllers
             {
                 query = query.Where(x =>
                     (x.PrivateMoveset != true || x.IsOwner)
-                    && (x.LatestLogState == null || !blockedStates.Contains(x.LatestLogState.Value) || x.IsOwner));
+                    && (x.LatestLogState == null || !AcceptanceStates.Blocked.Contains(x.LatestLogState.Value) || x.IsOwner));
             }
 
             var results = await query
@@ -289,8 +287,7 @@ namespace CustomCharInfo.server.Controllers
         [ApiExplorerSettings(GroupName = "public")]
         public async Task<ActionResult> GetSlotGrid()
         {
-            var blockedStates = new[] { 2, 4, 6 };
-
+            
             var rows = await _context.Movesets
                 .AsNoTracking()
                 .Select(m => new
@@ -304,7 +301,7 @@ namespace CustomCharInfo.server.Controllers
                     SlotsEnd = m.SlotsEnd ?? 0,
                     IsPrivate = m.PrivateMoveset == true,
                     LatestState = _context.ActionLogs
-                        .Where(a => a.ItemTypeId == 1 && a.ItemId == m.MovesetId)
+                        .Where(a => a.ItemTypeId == ItemTypes.Moveset && a.ItemId == m.MovesetId)
                         .OrderByDescending(a => a.CreatedAt)
                         .Select(a => (int?)a.AcceptanceStateId)
                         .FirstOrDefault()
@@ -312,7 +309,7 @@ namespace CustomCharInfo.server.Controllers
                 .ToListAsync();
 
             var result = rows
-                .Where(m => m.LatestState == null || !blockedStates.Contains(m.LatestState.Value))
+                .Where(m => m.LatestState == null || !AcceptanceStates.Blocked.Contains(m.LatestState.Value))
                 .GroupBy(m => new { m.VanillaCharInternalName, m.VanillaDisplayName })
                 .OrderBy(g => g.Key.VanillaDisplayName)
                 .Select(g => new
@@ -350,9 +347,8 @@ namespace CustomCharInfo.server.Controllers
                     .FirstOrDefaultAsync(u => u.Id == userId)
                 : null;
 
-            var blockedStates = new[] { 2, 4, 6 };
-
-            var isAdmin = user?.UserTypeId == 3;
+            
+            var isAdmin = user?.UserTypeId == UserTypes.Admin;
             var userModderId = user?.ModderId;
 
             var query = _context.Movesets
@@ -370,7 +366,7 @@ namespace CustomCharInfo.server.Controllers
                     Moveset = m,
 
                     LatestLog = _context.ActionLogs
-                        .Where(a => a.ItemTypeId == 1 && a.ItemId == m.MovesetId)
+                        .Where(a => a.ItemTypeId == ItemTypes.Moveset && a.ItemId == m.MovesetId)
                         .OrderByDescending(a => a.CreatedAt)
                         .FirstOrDefault(),
 
@@ -379,11 +375,11 @@ namespace CustomCharInfo.server.Controllers
                 })
                 .AsQueryable();
 
-            if (user == null || user.UserTypeId != 3)
+            if (user == null || user.UserTypeId != UserTypes.Admin)
             {
                 query = query.Where(x =>
                     x.LatestLog == null ||
-                    !blockedStates.Contains(x.LatestLog.AcceptanceStateId) ||
+                    !AcceptanceStates.Blocked.Contains(x.LatestLog.AcceptanceStateId) ||
                     x.IsOwner
                 );
             }
@@ -618,23 +614,22 @@ namespace CustomCharInfo.server.Controllers
                 && moveset.MovesetModders.Any(mm => mm.Modder.ModderId == user.ModderId);
 
             // Hide if private
-            if ((bool)moveset.PrivateMoveset && user?.UserTypeId != 3 && !isOwner)
+            if ((bool)moveset.PrivateMoveset && user?.UserTypeId != UserTypes.Admin && !isOwner)
                 return NotFound();
 
             // Find latest log
             var latestLog = await _context.ActionLogs
-                .Where(a => a.ItemTypeId == 1 && a.ItemId == moveset.MovesetId)
+                .Where(a => a.ItemTypeId == ItemTypes.Moveset && a.ItemId == moveset.MovesetId)
                 .OrderByDescending(a => a.CreatedAt)
                 .FirstOrDefaultAsync();
 
-            var blockedStates = new[] { 2, 4, 6 };
-
+            
             // Enforce rules
-            if (user?.UserTypeId != 3)
+            if (user?.UserTypeId != UserTypes.Admin)
             {
                 if (
                     latestLog != null
-                    && blockedStates.Contains(latestLog.AcceptanceStateId)
+                    && AcceptanceStates.Blocked.Contains(latestLog.AcceptanceStateId)
                     && !isOwner
                 )
                 {
@@ -652,10 +647,8 @@ namespace CustomCharInfo.server.Controllers
         [HttpPost]
         public async Task<ActionResult<Moveset>> PostMoveset(CreateMovesetDto dto)
         {
-            // Make sure user is modder
-            var userId = _userManager.GetUserId(User);
-            var userFromId = await _context.Users.FindAsync(userId);
-            if (userFromId == null || userFromId.UserTypeId < 2)
+            var userFromId = await _userManager.GetRequesterAsync(_context, User);
+            if (!userFromId.IsModder())
                 return Forbid();
 
             if (dto.ModderIds == null || !dto.ModderIds.Any())
@@ -728,11 +721,11 @@ namespace CustomCharInfo.server.Controllers
             }
 
             // Log action
-            int newState = userFromId.UserTypeId == 3 ? 7 : 2;
+            int newState = userFromId.IsAdmin() ? AcceptanceStates.AutoAccepted : AcceptanceStates.PendingAdminHard;
             _context.ActionLogs.Add(new ActionLog
             {
-                UserId = userId,
-                ItemTypeId = 1,
+                UserId = userFromId.Id,
+                ItemTypeId = ItemTypes.Moveset,
                 ItemId = moveset.MovesetId,
                 AcceptanceStateId = newState,
                 Notes = dto.Notes ?? "",
@@ -753,8 +746,7 @@ namespace CustomCharInfo.server.Controllers
         [HttpPatch("{id}/images")]
         public async Task<IActionResult> PatchMovesetImages(int id, [FromBody] MovesetImagesDto dto)
         {
-            var userId = _userManager.GetUserId(User);
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _userManager.GetRequesterAsync(_context, User);
             if (user == null)
                 return Forbid();
 
@@ -765,7 +757,7 @@ namespace CustomCharInfo.server.Controllers
                 return NotFound();
 
             bool isOwner = user.ModderId != null && moveset.MovesetModders.Any(mm => mm.ModderId == user.ModderId);
-            if (!isOwner && user.UserTypeId != 3)
+            if (!isOwner && !user.IsAdmin())
                 return Forbid();
 
             if (dto.ThumbhImageUrl != null)
@@ -790,10 +782,8 @@ namespace CustomCharInfo.server.Controllers
         [HttpPost("set-admin-picks")]
         public async Task<IActionResult> SetAdminPicks([FromBody] List<int> adminPickIds)
         {
-            // Make sure user is admin
-            var userId = _userManager.GetUserId(User);
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null || user.UserTypeId != 3)
+            var user = await _userManager.GetRequesterAsync(_context, User);
+            if (!user.IsAdmin())
                 return Forbid();
 
             adminPickIds ??= new List<int>();
@@ -843,7 +833,7 @@ namespace CustomCharInfo.server.Controllers
                 return Forbid();
 
             var latestLog = await _context.ActionLogs
-                .Where(a => a.ItemTypeId == 1 && a.ItemId == id)
+                .Where(a => a.ItemTypeId == ItemTypes.Moveset && a.ItemId == id)
                 .OrderByDescending(a => a.CreatedAt)
                 .FirstOrDefaultAsync();
 
@@ -1013,16 +1003,17 @@ namespace CustomCharInfo.server.Controllers
                 .ToList();
 
             // Log action
+            // Rejected stays rejected until an admin acts; admins auto-accept; key-field edits and already-hidden items go hard; everything else is soft.
             int newState =
-            latestLog?.AcceptanceStateId == 6
-                ? 6 // stay rejected
-                : user?.UserTypeId == 3
-                    ? 7 // admin auto-accept
-                    : keyDetailsChanged
-                        ? 2 // hard admin
-                        : (latestLog?.AcceptanceStateId == 2 || latestLog?.AcceptanceStateId == 4)
-                            ? 2 // stay hard
-                            : 1; // soft admin
+                latestLog?.AcceptanceStateId == AcceptanceStates.Rejected
+                    ? AcceptanceStates.Rejected
+                    : user?.UserTypeId == UserTypes.Admin
+                        ? AcceptanceStates.AutoAccepted
+                        : keyDetailsChanged
+                            ? AcceptanceStates.PendingAdminHard
+                            : latestLog != null && AcceptanceStates.Hard.Contains(latestLog.AcceptanceStateId)
+                                ? AcceptanceStates.PendingAdminHard
+                                : AcceptanceStates.PendingAdminSoft;
 
             var newModders = string.Join(", ", (dto.ModderIds ?? new())
                 .Select(mid => modderNameMap.TryGetValue(mid, out var n) ? n : mid.ToString())
@@ -1074,7 +1065,7 @@ namespace CustomCharInfo.server.Controllers
             _context.ActionLogs.Add(new ActionLog
             {
                 UserId = userId,
-                ItemTypeId = 1,
+                ItemTypeId = ItemTypes.Moveset,
                 ItemId = id,
                 AcceptanceStateId = newState,
                 Notes = dto.Notes ?? "",
@@ -1100,10 +1091,8 @@ namespace CustomCharInfo.server.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteMoveset(int id)
         {
-            // Make sure user is admin
-            var userId = _userManager.GetUserId(User);
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null || user.UserTypeId != 3)
+            var user = await _userManager.GetRequesterAsync(_context, User);
+            if (!user.IsAdmin())
                 return Forbid();
 
             var moveset = await _context.Movesets.FindAsync(id);

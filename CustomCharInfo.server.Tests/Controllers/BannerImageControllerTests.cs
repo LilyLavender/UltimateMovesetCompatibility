@@ -79,7 +79,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task UploadBannerImage_NonAdmin_ReturnsForbid()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
             var controller = CreateController("user-1");
 
             var result = await controller.UploadBannerImage(new BannerImageUploadDto { File = MakePngFile() });
@@ -90,7 +90,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task UploadBannerImage_InvalidExtension_ReturnsBadRequest()
         {
-            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
             var controller = CreateController("admin-1");
 
             var result = await controller.UploadBannerImage(new BannerImageUploadDto { File = MakePngFile("banner.txt") });
@@ -101,7 +101,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task UploadBannerImage_Admin_UploadsToR2AndCreatesRow()
         {
-            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
             _s3.Setup(s => s.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new PutObjectResponse());
 
@@ -122,7 +122,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task DeleteBannerImage_NonAdmin_ReturnsForbid()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
             var banner = new BannerImage { ImageUrl = $"{PublicBaseUrl}/uploads/banner-images/a.png", CreatedAt = DateTime.UtcNow };
             _db.Context.BannerImages.Add(banner);
             _db.Context.SaveChanges();
@@ -137,7 +137,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task DeleteBannerImage_MissingId_ReturnsNotFound()
         {
-            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
             var controller = CreateController("admin-1");
 
             var result = await controller.DeleteBannerImage(999);
@@ -148,7 +148,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task DeleteBannerImage_Admin_DeletesFromR2AndRemovesRow()
         {
-            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
             var banner = new BannerImage { ImageUrl = $"{PublicBaseUrl}/uploads/banner-images/a.png", CreatedAt = DateTime.UtcNow };
             _db.Context.BannerImages.Add(banner);
             _db.Context.SaveChanges();

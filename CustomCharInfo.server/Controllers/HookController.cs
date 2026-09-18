@@ -105,7 +105,7 @@ namespace CustomCharInfo.server.Controllers
             _context.ActionLogs.Add(new ActionLog
             {
                 UserId = userId,
-                ItemTypeId = 4,
+                ItemTypeId = ItemTypes.Hook,
                 ItemId = hookId,
                 AcceptanceStateId = acceptanceStateId,
                 Notes = notes,
@@ -118,10 +118,8 @@ namespace CustomCharInfo.server.Controllers
         [Authorize]
         public async Task<ActionResult<CreateHookDto>> CreateHook(CreateHookDto dto)
         {
-            // Make sure user is modder
-            var userId = _userManager.GetUserId(User);
-            var userFromId = await _context.Users.FindAsync(userId);
-            if (userFromId == null || userFromId.UserTypeId < 2)
+            var userFromId = await _userManager.GetRequesterAsync(_context, User);
+            if (!userFromId.IsModder())
                 return Forbid();
 
             if (await _context.Hooks.AnyAsync(h => h.Offset == dto.Offset))
@@ -153,7 +151,7 @@ namespace CustomCharInfo.server.Controllers
                 ("HookableStatusId", null, hook.HookableStatusId),
             });
 
-            LogHookAction(userId, hook.HookId, acceptanceStateId: 1, dto.Notes ?? "", diff);
+            LogHookAction(userFromId.Id, hook.HookId, acceptanceStateId: AcceptanceStates.PendingAdminSoft, dto.Notes ?? "", diff);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetHook), new { id = hook.HookId }, hook);
@@ -163,10 +161,8 @@ namespace CustomCharInfo.server.Controllers
         [Authorize]
         public async Task<IActionResult> UpdateHook(int id, UpdateHookDto dto)
         {
-            // Make sure user is modder
-            var userId = _userManager.GetUserId(User);
-            var userFromId = await _context.Users.FindAsync(userId);
-            if (userFromId == null || userFromId.UserTypeId < 2)
+            var userFromId = await _userManager.GetRequesterAsync(_context, User);
+            if (!userFromId.IsModder())
                 return Forbid();
 
             var hook = await _context.Hooks.FindAsync(id);
@@ -193,7 +189,7 @@ namespace CustomCharInfo.server.Controllers
                 ("HookableStatusId", snapHookableStatusId, hook.HookableStatusId),
             });
 
-            LogHookAction(userId, hook.HookId, acceptanceStateId: 1, dto.Notes ?? "", diff);
+            LogHookAction(userFromId.Id, hook.HookId, acceptanceStateId: AcceptanceStates.PendingAdminSoft, dto.Notes ?? "", diff);
             try
             {
                 await _context.SaveChangesAsync();
@@ -210,10 +206,8 @@ namespace CustomCharInfo.server.Controllers
         [Authorize]
         public async Task<IActionResult> DeleteHook(int id)
         {
-            // Make sure user is admin
-            var userId = _userManager.GetUserId(User);
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null || user.UserTypeId != 3)
+            var user = await _userManager.GetRequesterAsync(_context, User);
+            if (!user.IsAdmin())
                 return Forbid();
 
             var hook = await _context.Hooks.FindAsync(id);
@@ -227,7 +221,7 @@ namespace CustomCharInfo.server.Controllers
                 ("HookableStatusId", hook.HookableStatusId, null),
             });
 
-            LogHookAction(userId, hook.HookId, acceptanceStateId: 5, "Deleted hook", diff);
+            LogHookAction(user.Id, hook.HookId, acceptanceStateId: AcceptanceStates.Accepted, "Deleted hook", diff);
             _context.Hooks.Remove(hook);
             await _context.SaveChangesAsync();
 

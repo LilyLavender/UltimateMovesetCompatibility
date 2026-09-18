@@ -1,4 +1,5 @@
 using CustomCharInfo.server.Controllers;
+using CustomCharInfo.server.Models;
 using CustomCharInfo.server.Tests.TestHelpers;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
@@ -28,7 +29,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task GetAllUsers_NonAdmin_ReturnsForbid()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
             var controller = CreateController("user-1");
 
             var result = await controller.GetAllUsers();
@@ -39,18 +40,18 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task GetAllUsers_PartitionsUsersAndModdersCorrectly()
         {
-            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
 
             // In both: a user linked to a modder
-            var linkedUser = SeedData.AddUser(_db.Context, "linked-1", userTypeId: 2, modderId: 10);
+            var linkedUser = SeedData.AddUser(_db.Context, "linked-1", userTypeId: UserTypes.Modder, modderId: 10);
             SeedData.AddModder(_db.Context, 10, linkedUser.Id, "LinkedModder");
 
             // Only a user, no modder
-            SeedData.AddUser(_db.Context, "solo-user-1", userTypeId: 1);
+            SeedData.AddUser(_db.Context, "solo-user-1", userTypeId: UserTypes.User);
 
             // Only a modder, no user pointing at it (simulates the ApplicationUser.ModderId cache
             // desyncing from Modder.UserId - see ActionLogsController.cs's sync comment)
-            var orphanOwner = SeedData.AddUser(_db.Context, "orphan-owner-1", userTypeId: 1);
+            var orphanOwner = SeedData.AddUser(_db.Context, "orphan-owner-1", userTypeId: UserTypes.User);
             SeedData.AddModder(_db.Context, 20, orphanOwner.Id, "OrphanModder");
 
             var controller = CreateController("admin-1");

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using CustomCharInfo.server.Data;
 using CustomCharInfo.server.Models;
+using CustomCharInfo.server.Helpers;
 
 using SixLabors.ImageSharp;
 using Microsoft.AspNetCore.Authorization;
@@ -27,10 +28,8 @@ namespace CustomCharInfo.server.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllUsers()
         {
-            // Make sure user is admin
-            var userId = _userManager.GetUserId(User);
-            var currentUser = await _context.Users.FindAsync(userId);
-            if (currentUser == null || currentUser.UserTypeId != 3)
+            var currentUser = await _userManager.GetRequesterAsync(_context, User);
+            if (!currentUser.IsAdmin())
                 return Forbid();
 
             // Most recent IP per user, looked up separately since it doesn't fit the SQL joins below cleanly.

@@ -77,7 +77,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         {
             AddMoveset(1, "Visible One");
             var blocked = AddMoveset(2, "Rejected One");
-            SeedData.AddActionLog(_db.Context, blocked.MovesetId, acceptanceStateId: 6, DateTime.UtcNow, userId: "log-author");
+            SeedData.AddActionLog(_db.Context, blocked.MovesetId, acceptanceStateId: AcceptanceStates.Rejected, DateTime.UtcNow, userId: "log-author");
 
             var controller = CreateController();
 
@@ -91,9 +91,9 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task GetMovesets_AdminUser_SeesBlockedAcceptanceStates()
         {
-            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
             var blocked = AddMoveset(1, "Rejected One");
-            SeedData.AddActionLog(_db.Context, blocked.MovesetId, acceptanceStateId: 6, DateTime.UtcNow, userId: "admin-1");
+            SeedData.AddActionLog(_db.Context, blocked.MovesetId, acceptanceStateId: AcceptanceStates.Rejected, DateTime.UtcNow, userId: "admin-1");
 
             var controller = CreateController("admin-1");
 
@@ -105,12 +105,12 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task GetMovesets_OwnerModder_SeesOwnBlockedMoveset()
         {
-            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: 2, modderId: 5);
+            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: UserTypes.Modder, modderId: 5);
             SeedData.AddModder(_db.Context, 5, owner.Id, "OwnerModder");
             var moveset = AddMoveset(1, "My Rejected Moveset");
             _db.Context.MovesetModders.Add(new MovesetModder { MovesetId = moveset.MovesetId, ModderId = 5, SortOrder = 0 });
             _db.Context.SaveChanges();
-            SeedData.AddActionLog(_db.Context, moveset.MovesetId, acceptanceStateId: 6, DateTime.UtcNow, userId: owner.Id);
+            SeedData.AddActionLog(_db.Context, moveset.MovesetId, acceptanceStateId: AcceptanceStates.Rejected, DateTime.UtcNow, userId: owner.Id);
 
             var controller = CreateController(owner.Id);
 
@@ -152,8 +152,8 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task GetMovesets_BetaOnlyFilter_MatchesReleaseState4()
         {
-            AddMoveset(1, "Released", releaseStateId: 1);
-            AddMoveset(2, "InBeta", releaseStateId: 4);
+            AddMoveset(1, "Released", releaseStateId: ReleaseStates.Released);
+            AddMoveset(2, "InBeta", releaseStateId: ReleaseStates.OpenBeta);
 
             var controller = CreateController();
 
@@ -210,7 +210,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         public async Task GetMoveset_RejectedMoveset_ForbidsNonOwnerNonAdmin()
         {
             var moveset = AddMoveset(1, "Rejected", isPrivate: false);
-            SeedData.AddActionLog(_db.Context, moveset.MovesetId, acceptanceStateId: 6, DateTime.UtcNow, userId: "log-author");
+            SeedData.AddActionLog(_db.Context, moveset.MovesetId, acceptanceStateId: AcceptanceStates.Rejected, DateTime.UtcNow, userId: "log-author");
 
             var controller = CreateController();
 
@@ -262,7 +262,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task PatchMovesetImages_OwnerModder_FillsEmptyFields()
         {
-            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: 2, modderId: 5);
+            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: UserTypes.Modder, modderId: 5);
             SeedData.AddModder(_db.Context, 5, owner.Id, "OwnerModder");
             var moveset = AddMoveset(1, "New Moveset");
             _db.Context.MovesetModders.Add(new MovesetModder { MovesetId = moveset.MovesetId, ModderId = 5, SortOrder = 0 });
@@ -285,7 +285,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task PatchMovesetImages_AlreadySet_ReturnsConflict()
         {
-            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: 2, modderId: 5);
+            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: UserTypes.Modder, modderId: 5);
             SeedData.AddModder(_db.Context, 5, owner.Id, "OwnerModder");
             var moveset = AddMoveset(1, "New Moveset");
             moveset.ThumbhImageUrl = "/uploads/existing.png";
@@ -301,9 +301,9 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task PatchMovesetImages_NonOwningModder_ReturnsForbid()
         {
-            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: 2, modderId: 5);
+            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: UserTypes.Modder, modderId: 5);
             SeedData.AddModder(_db.Context, 5, owner.Id, "OwnerModder");
-            var other = SeedData.AddUser(_db.Context, "other-1", userTypeId: 2, modderId: 6);
+            var other = SeedData.AddUser(_db.Context, "other-1", userTypeId: UserTypes.Modder, modderId: 6);
             SeedData.AddModder(_db.Context, 6, other.Id, "OtherModder");
             var moveset = AddMoveset(1, "New Moveset");
             _db.Context.MovesetModders.Add(new MovesetModder { MovesetId = moveset.MovesetId, ModderId = 5, SortOrder = 0 });
@@ -318,7 +318,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task DeleteMoveset_NonAdmin_ReturnsForbid()
         {
-            SeedData.AddUser(_db.Context, "user-1", userTypeId: 1);
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
             AddMoveset(1, "Test");
             var controller = CreateController("user-1");
 
@@ -330,7 +330,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task DeleteMoveset_UnknownId_ReturnsNotFound()
         {
-            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
             var controller = CreateController("admin-1");
 
             var result = await controller.DeleteMoveset(999);
@@ -341,7 +341,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task DeleteMoveset_Admin_RemovesMoveset()
         {
-            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
             AddMoveset(1, "Test");
             var controller = CreateController("admin-1");
 
@@ -354,8 +354,8 @@ namespace CustomCharInfo.server.Tests.Controllers
         [Fact]
         public async Task DeleteMoveset_WithCompatibilityReports_RemovesReportsToo()
         {
-            SeedData.AddUser(_db.Context, "admin-1", userTypeId: 3);
-            SeedData.AddUser(_db.Context, "reporter-1", userTypeId: 1);
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
+            SeedData.AddUser(_db.Context, "reporter-1", userTypeId: UserTypes.User);
             AddMoveset(1, "First");
             AddMoveset(2, "Second");
             _db.Context.CompatibilityReports.Add(new CompatibilityReport
@@ -400,7 +400,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         {
             AddMoveset(1, "Visible Match");
             var blocked = AddMoveset(2, "Blocked Match");
-            SeedData.AddActionLog(_db.Context, blocked.MovesetId, acceptanceStateId: 6, DateTime.UtcNow, userId: "log-author");
+            SeedData.AddActionLog(_db.Context, blocked.MovesetId, acceptanceStateId: AcceptanceStates.Rejected, DateTime.UtcNow, userId: "log-author");
             var privateMoveset = AddMoveset(3, "Private Match", isPrivate: true);
 
             var controller = CreateController();
