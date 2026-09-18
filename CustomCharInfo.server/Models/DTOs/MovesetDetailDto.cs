@@ -2,7 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CustomCharInfo.server.Models.DTOs
 {
-    // TODO putting "2" at the end of everything is bad and evil and must be fixed
+    // Response shape for GET /api/movesets/{idOrSlottedId}.
+    // The nested *SummaryDto types are the trimmed views of related rows this response embeds.
 
     public class MovesetDetailDto
     {
@@ -37,14 +38,14 @@ namespace CustomCharInfo.server.Models.DTOs
         public bool? IsJokeMoveset { get; set; }
         public string? Subtitle { get; set; }
 
-        public VanillaCharDto2 VanillaChar { get; set; }
-        public ReleaseStateDto2 ReleaseState { get; set; }
-        public SeriesDto2 Series { get; set; }
+        public VanillaCharSummaryDto VanillaChar { get; set; }
+        public ReleaseStateSummaryDto ReleaseState { get; set; }
+        public SeriesSummaryDto Series { get; set; }
 
-        public List<MovesetDependencyDto2> MovesetDependencies { get; set; }
-        public List<MovesetModderDto2> MovesetModders { get; set; }
-        public List<MovesetArticleDto2> MovesetArticles { get; set; }
-        public List<MovesetHookDto2> MovesetHooks { get; set; }
+        public List<MovesetDependencyDetailDto> MovesetDependencies { get; set; }
+        public List<MovesetModderDetailDto> MovesetModders { get; set; }
+        public List<MovesetArticleDetailDto> MovesetArticles { get; set; }
+        public List<MovesetHookDetailDto> MovesetHooks { get; set; }
 
         public string ThumbhImageUrl { get; set; }
         public string MovesetHeroImageUrl { get; set; }
@@ -53,44 +54,44 @@ namespace CustomCharInfo.server.Models.DTOs
         public bool UserLiked { get; set; }
     }
 
-    public class VanillaCharDto2
+    public class VanillaCharSummaryDto
     {
         public string VanillaCharInternalName { get; set; }
         public string DisplayName { get; set; }
     }
 
-    public class ReleaseStateDto2
+    public class ReleaseStateSummaryDto
     {
         public int? ReleaseStateId { get; set; }
         public string ReleaseStateName { get; set; }
     }
 
-    public class SeriesDto2
+    public class SeriesSummaryDto
     {
         public int? SeriesId { get; set; }
         public string SeriesName { get; set; }
         public string SeriesIconUrl { get; set; }
     }
 
-    public class MovesetDependencyDto2
+    public class MovesetDependencyDetailDto
     {
-        public DependencyDto2 Dependency { get; set; }
+        public DependencySummaryDto Dependency { get; set; }
     }
 
-    public class DependencyDto2
+    public class DependencySummaryDto
     {
         public int? DependencyId { get; set; }
         public string Name { get; set; }
         public string DownloadLink { get; set; }
     }
 
-    public class MovesetModderDto2
+    public class MovesetModderDetailDto
     {
-        public ModderDto2 Modder { get; set; }
+        public ModderSummaryDto Modder { get; set; }
         public int? SortOrder { get; set; }
     }
 
-    public class ModderDto2
+    public class ModderSummaryDto
     {
         public int ModderId { get; set; }
         public string? Name { get; set; }
@@ -100,29 +101,29 @@ namespace CustomCharInfo.server.Models.DTOs
         public string? UserId { get; set; }
     }
 
-    public class MovesetArticleDto2
+    public class MovesetArticleDetailDto
     {
-        public ArticleDto2 Article { get; set; }
+        public ArticleSummaryDto Article { get; set; }
         public string ModdedName { get; set; }
         public string Description { get; set; }
         public int SortOrder { get; set; }
     }
 
-    public class ArticleDto2
+    public class ArticleSummaryDto
     {
         public int? ArticleId { get; set; }
         public string VanillaCharInternalName { get; set; }
         public string ArticleName { get; set; }
     }
 
-    public class MovesetHookDto2
+    public class MovesetHookDetailDto
     {
-        public HookDto2 Hook { get; set; }
+        public HookSummaryDto Hook { get; set; }
         public string Description { get; set; }
         public int SortOrder { get; set; }
     }
 
-    public class HookDto2
+    public class HookSummaryDto
     {
         public int? HookId { get; set; }
         public string Offset { get; set; }
