@@ -2,7 +2,6 @@
   <div class="moveset-list-all no-select">
     <!-- Controls -->
     <v-row v-if="showControls" dense align="center" class="controls mb-3">
-
       <!-- Search -->
       <v-col cols="12" sm="12" md="4">
         <v-text-field
@@ -20,8 +19,8 @@
       <!-- Sort -->
       <v-col cols="6" sm="4" md="2">
         <v-select
-          label="Sort"
           v-model="sortMode"
+          label="Sort"
           variant="outlined"
           density="compact"
           hide-details
@@ -36,8 +35,8 @@
       <!-- Release State -->
       <v-col cols="6" sm="4" md="2">
         <v-select
-          label="Release State"
           v-model="filterReleaseState"
+          label="Release State"
           clearable
           variant="outlined"
           density="compact"
@@ -51,8 +50,8 @@
       <!-- Privacy -->
       <v-col cols="6" sm="4" md="2">
         <v-select
-          label="Privacy"
           v-model="filterPrivacy"
+          label="Privacy"
           variant="outlined"
           density="compact"
           hide-details
@@ -77,8 +76,8 @@
       <!-- Vanilla Character -->
       <v-col cols="12" sm="6" md="4">
         <v-autocomplete
-          label="Vanilla Character"
           v-model="filterVanillaChar"
+          label="Vanilla Character"
           clearable
           variant="outlined"
           density="compact"
@@ -115,8 +114,8 @@
       <!-- Vanilla Article -->
       <v-col cols="12" sm="6" md="4">
         <v-autocomplete
-          label="Vanilla Article"
           v-model="filterArticle"
+          label="Vanilla Article"
           clearable
           variant="outlined"
           density="compact"
@@ -129,8 +128,8 @@
       <!-- Open Source -->
       <v-col cols="6" sm="3" md="2">
         <v-select
-          label="Source"
           v-model="filterOpenSource"
+          label="Source"
           variant="outlined"
           density="compact"
           hide-details
@@ -145,8 +144,8 @@
       <!-- On Mods Wiki -->
       <v-col cols="6" sm="3" md="2">
         <v-select
-          label="Mods Wiki"
           v-model="filterOnModsWiki"
+          label="Mods Wiki"
           variant="outlined"
           density="compact"
           hide-details
@@ -157,7 +156,6 @@
           ]"
         />
       </v-col>
-
     </v-row>
 
     <!-- Moveset List -->
@@ -166,8 +164,8 @@
         v-for="m in processedMovesets"
         :key="m.movesetId"
         :moveset="m"
-        :canView="canViewMoveset(m)"
-        :blockedSeriesIconUrls="blockedSeriesIconUrls"
+        :can-view="canViewMoveset(m)"
+        :blocked-series-icon-urls="blockedSeriesIconUrls"
       />
     </div>
   </div>
@@ -210,15 +208,17 @@ const filterOnModsWiki = ref('all')
 
 const vanillaCharFilter = (_, query, item) => {
   const q = query.toLowerCase()
-  return item.raw.displayName.toLowerCase().includes(q) ||
-         item.raw.internalName.toLowerCase().includes(q)
+  return (
+    item.raw.displayName.toLowerCase().includes(q) ||
+    item.raw.internalName.toLowerCase().includes(q)
+  )
 }
 
 const displayedMovesets = computed(() => props.movesets ?? fetchedMovesets.value)
 
 const vanillaChars = computed(() => {
   const map = new Map()
-  displayedMovesets.value.forEach(m => {
+  displayedMovesets.value.forEach((m) => {
     if (m.vanillaCharName) map.set(m.vanillaCharName, m.vanillaCharDisplayName ?? m.vanillaCharName)
   })
   return [...map.entries()]
@@ -228,8 +228,10 @@ const vanillaChars = computed(() => {
 
 const articleNames = computed(() => {
   const set = new Set()
-  displayedMovesets.value.forEach(m => {
-    m.articleNames?.forEach(a => { if (a) set.add(a) })
+  displayedMovesets.value.forEach((m) => {
+    m.articleNames?.forEach((a) => {
+      if (a) set.add(a)
+    })
   })
   return [...set].sort()
 })
@@ -239,65 +241,64 @@ const canViewMoveset = (moveset) => {
   if (!user.value) return false
 
   const isAdmin = user.value.userTypeId === UserType.Admin
-  const isModder =
-    user.value.userName &&
-    moveset.modders.includes(user.value.userName) // This should absolutely not be done by username but there's security on the moveset itself so it's whatever lol
+  const isModder = user.value.userName && moveset.modders.includes(user.value.userName) // This should absolutely not be done by username but there's security on the moveset itself so it's whatever lol
 
   return isAdmin || isModder
 }
 
 const processedMovesets = computed(() => {
-  let list = displayedMovesets.value.filter(m => !hardHeldMovesetIds.value.has(m.movesetId))
+  let list = displayedMovesets.value.filter((m) => !hardHeldMovesetIds.value.has(m.movesetId))
 
   // Filter joke movesets
   if (props.showControls && !showJokeMovesets.value) {
-    list = list.filter(m => !m.isJokeMoveset)
+    list = list.filter((m) => !m.isJokeMoveset)
   }
 
   // Text search
   if (searchQuery.value?.trim()) {
     const q = searchQuery.value.trim().toLowerCase()
-    list = list.filter(m =>
-      m.moddedCharName?.toLowerCase().includes(q) ||
-      m.modders?.some(mod => mod.toLowerCase().includes(q)) ||
-      m.seriesName?.toLowerCase().includes(q)
+    list = list.filter(
+      (m) =>
+        m.moddedCharName?.toLowerCase().includes(q) ||
+        m.modders?.some((mod) => mod.toLowerCase().includes(q)) ||
+        m.seriesName?.toLowerCase().includes(q)
     )
   }
 
   // Release state filter
   if (filterReleaseState.value != null) {
-    list = list.filter(m => m.releaseState === filterReleaseState.value)
+    list = list.filter((m) => m.releaseState === filterReleaseState.value)
   }
 
   // Privacy filter
   if (filterPrivacy.value === 'public') {
-    list = list.filter(m => !m.privateMoveset)
+    list = list.filter((m) => !m.privateMoveset)
   } else if (filterPrivacy.value === 'private') {
-    list = list.filter(m => m.privateMoveset)
+    list = list.filter((m) => m.privateMoveset)
   }
 
   // Vanilla character filter
   if (filterVanillaChar.value != null) {
-    list = list.filter(m => m.vanillaCharName === filterVanillaChar.value)
+    list = list.filter((m) => m.vanillaCharName === filterVanillaChar.value)
   }
 
   // Article filter
   if (filterArticle.value != null) {
-    list = list.filter(m => m.articleNames?.includes(filterArticle.value))
+    list = list.filter((m) => m.articleNames?.includes(filterArticle.value))
   }
 
   // Open source filter
   if (filterOpenSource.value === 'yes') {
-    list = list.filter(m => m.hasSourceCode)
+    list = list.filter((m) => m.hasSourceCode)
   } else if (filterOpenSource.value === 'no') {
-    list = list.filter(m => !m.hasSourceCode)
+    list = list.filter((m) => !m.hasSourceCode)
   }
 
   // Mods wiki filter
   if (filterOnModsWiki.value === 'yes') {
-    list = list.filter(m => m.hasModsWikiLink)
+    list = list.filter((m) => m.hasModsWikiLink)
   } else if (filterOnModsWiki.value === 'no') {
-    list = list.filter(m => !m.hasModsWikiLink)
+    list = list.filter((m) => !m.hasModsWikiLink)
   }
 
   // Sort
@@ -331,8 +332,11 @@ const processedMovesets = computed(() => {
       return modderA.localeCompare(modderB)
     })
   } else if (sortMode.value === 'popularity') {
-    list = list.filter(m => !m.privateMoveset)
-    list.sort((a, b) => (b.likeCount ?? 0) - (a.likeCount ?? 0) || a.moddedCharName.localeCompare(b.moddedCharName))
+    list = list.filter((m) => !m.privateMoveset)
+    list.sort(
+      (a, b) =>
+        (b.likeCount ?? 0) - (a.likeCount ?? 0) || a.moddedCharName.localeCompare(b.moddedCharName)
+    )
   } else if (!props.movesets) {
     list.sort((a, b) => {
       if (a.privateMoveset !== b.privateMoveset) return a.privateMoveset ? 1 : -1

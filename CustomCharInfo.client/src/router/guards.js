@@ -14,7 +14,12 @@ export async function fetchAuthUser(next) {
   try {
     return (await api.get('/auth/me')).data
   } catch {
-    redirectError(next, '401 Unauthorized', 'Authentication failed.', 'Try signing in or refreshing the page.')
+    redirectError(
+      next,
+      '401 Unauthorized',
+      'Authentication failed.',
+      'Try signing in or refreshing the page.'
+    )
     return null
   }
 }
@@ -23,7 +28,7 @@ export async function fetchAuthUser(next) {
 export async function getLatestLog(itemTypeId, matchItem) {
   const logsRes = await api.get('/logs')
   return logsRes.data
-    .filter(log => log.itemType?.itemTypeId === itemTypeId && matchItem(log.item))
+    .filter((log) => log.itemType?.itemTypeId === itemTypeId && matchItem(log.item))
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]
 }
 

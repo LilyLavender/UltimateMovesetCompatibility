@@ -12,20 +12,31 @@
           <span class="legend-text">No overlap</span>
           <span class="swatch swatch-overlap ml-4" />
           <span class="legend-text">Slot overlap</span>
-          <p class="slot-note ml-5">Most movesets allow their slots to be changed, so two movesets sharing a slot range isn't necessarily a dealbreaker.</p>
+          <p class="slot-note ml-5">
+            Most movesets allow their slots to be changed, so two movesets sharing a slot range
+            isn't necessarily a dealbreaker.
+          </p>
         </div>
         <div class="sort-btns">
           <span class="sort-label">Sort:</span>
-          <button :class="['sort-btn', sortOrder === 'alpha' ? 'sort-btn--active' : '']" @click="sortOrder = 'alpha'">A–Z</button>
-          <button :class="['sort-btn', sortOrder === 'count' ? 'sort-btn--active' : '']" @click="sortOrder = 'count'">Moveset Count</button>
+          <button
+            :class="['sort-btn', sortOrder === 'alpha' ? 'sort-btn--active' : '']"
+            @click="sortOrder = 'alpha'"
+          >
+            A–Z
+          </button>
+          <button
+            :class="['sort-btn', sortOrder === 'count' ? 'sort-btn--active' : '']"
+            @click="sortOrder = 'count'"
+          >
+            Moveset Count
+          </button>
         </div>
       </div>
-
 
       <!-- Table -->
       <div class="scroll-container">
         <div class="grid-table">
-
           <!-- Header row -->
           <div class="g-row header-row">
             <div class="char-col">Character</div>
@@ -38,11 +49,7 @@
           </div>
 
           <!-- Character rows -->
-          <div
-            v-for="row in processedGrid"
-            :key="row.vanillaChar"
-            class="g-row"
-          >
+          <div v-for="row in processedGrid" :key="row.vanillaChar" class="g-row">
             <div class="char-col" :style="{ height: rowHeight(row) + 'px' }">
               <img
                 :src="iconUrl(row.vanillaChar)"
@@ -50,7 +57,10 @@
                 :alt="row.displayName"
                 loading="lazy"
               />
-              <span class="char-name">{{ row.displayName }} <span class="char-count">({{ row.movesetCount }})</span></span>
+              <span class="char-name"
+                >{{ row.displayName }}
+                <span class="char-count">({{ row.movesetCount }})</span></span
+              >
             </div>
             <div class="slots-col" :style="{ height: rowHeight(row) + 'px' }">
               <div
@@ -94,7 +104,6 @@
               </template>
             </div>
           </div>
-
         </div>
       </div>
     </template>
@@ -116,19 +125,29 @@ const sortOrder = ref('alpha')
 
 const movesetsByChar = computed(() => {
   const map = {}
-  gridData.value.forEach(row => { map[row.vanillaChar] = row.movesets })
+  gridData.value.forEach((row) => {
+    map[row.vanillaChar] = row.movesets
+  })
   return map
 })
 
 const minSlot = computed(() => {
   let min = Infinity
-  gridData.value.forEach(row => row.movesets.forEach(m => { if (m.slotsStart < min) min = m.slotsStart }))
+  gridData.value.forEach((row) =>
+    row.movesets.forEach((m) => {
+      if (m.slotsStart < min) min = m.slotsStart
+    })
+  )
   return min === Infinity ? 0 : Math.floor(min / 8) * 8
 })
 
 const maxSlot = computed(() => {
   let max = -Infinity
-  gridData.value.forEach(row => row.movesets.forEach(m => { if (m.slotsEnd > max) max = m.slotsEnd }))
+  gridData.value.forEach((row) =>
+    row.movesets.forEach((m) => {
+      if (m.slotsEnd > max) max = m.slotsEnd
+    })
+  )
   return max === -Infinity ? 7 : Math.ceil((max + 1) / 8) * 8 - 1
 })
 
@@ -141,11 +160,11 @@ const headerTicks = computed(() => {
 })
 
 function slotXPct(slot) {
-  return ((slot - minSlot.value) / numSlots.value * 100) + '%'
+  return ((slot - minSlot.value) / numSlots.value) * 100 + '%'
 }
 
 function slotWPct(start, end) {
-  return ((end - start + 1) / numSlots.value * 100) + '%'
+  return ((end - start + 1) / numSlots.value) * 100 + '%'
 }
 
 function pad(n) {
@@ -181,7 +200,10 @@ function assignLanesAndOverlaps(movesets) {
   const overlapsWith = sorted.map(() => [])
   for (let i = 0; i < sorted.length; i++) {
     for (let j = i + 1; j < sorted.length; j++) {
-      if (sorted[i].slotsStart <= sorted[j].slotsEnd && sorted[j].slotsStart <= sorted[i].slotsEnd) {
+      if (
+        sorted[i].slotsStart <= sorted[j].slotsEnd &&
+        sorted[j].slotsStart <= sorted[i].slotsEnd
+      ) {
         overlapsWith[i].push(j)
         overlapsWith[j].push(i)
       }
@@ -191,14 +213,17 @@ function assignLanesAndOverlaps(movesets) {
   // Greedy lane assignment: fit each moveset into the first lane it doesn't conflict with
   const laneEnds = []
   const result = sorted.map((m, i) => {
-    let lane = laneEnds.findIndex(end => end < m.slotsStart)
-    if (lane === -1) { lane = laneEnds.length; laneEnds.push(0) }
+    let lane = laneEnds.findIndex((end) => end < m.slotsStart)
+    if (lane === -1) {
+      lane = laneEnds.length
+      laneEnds.push(0)
+    }
     laneEnds[lane] = m.slotsEnd
     return {
       ...m,
       lane,
       hasOverlap: overlapsWith[i].length > 0,
-      overlapNames: overlapsWith[i].map(j => sorted[j].name)
+      overlapNames: overlapsWith[i].map((j) => sorted[j].name),
     }
   })
 
@@ -207,8 +232,8 @@ function assignLanesAndOverlaps(movesets) {
 
 const processedGrid = computed(() => {
   const rows = allChars.value
-    .filter(c => c.vanillaCharInternalName !== 'kirby')
-    .map(c => {
+    .filter((c) => c.vanillaCharInternalName !== 'kirby')
+    .map((c) => {
       const raw = movesetsByChar.value[c.vanillaCharInternalName] ?? []
       const { movesets, laneCount } = assignLanesAndOverlaps(raw)
       return {
@@ -216,12 +241,14 @@ const processedGrid = computed(() => {
         displayName: c.displayName,
         movesets,
         laneCount,
-        movesetCount: raw.length
+        movesetCount: raw.length,
       }
     })
 
   if (sortOrder.value === 'count') {
-    rows.sort((a, b) => b.movesetCount - a.movesetCount || a.displayName.localeCompare(b.displayName))
+    rows.sort(
+      (a, b) => b.movesetCount - a.movesetCount || a.displayName.localeCompare(b.displayName)
+    )
   } else {
     rows.sort((a, b) => a.displayName.localeCompare(b.displayName))
   }
@@ -232,7 +259,7 @@ const processedGrid = computed(() => {
 onMounted(async () => {
   const [charsRes, gridRes] = await Promise.all([
     api.get('/vanillachars'),
-    api.get('/movesets/slot-grid')
+    api.get('/movesets/slot-grid'),
   ])
   allChars.value = charsRes.data
   gridData.value = gridRes.data
@@ -431,10 +458,14 @@ onMounted(async () => {
   background: #1e1e1e;
   color: #ccc;
   cursor: pointer;
-  transition: background 0.1s, color 0.1s;
+  transition:
+    background 0.1s,
+    color 0.1s;
 }
 
-.sort-btn:hover { background: #2a2a2a; }
+.sort-btn:hover {
+  background: #2a2a2a;
+}
 
 .sort-btn--active {
   background: #1565c0;

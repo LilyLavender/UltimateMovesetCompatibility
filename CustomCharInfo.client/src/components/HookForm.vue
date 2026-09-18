@@ -11,8 +11,8 @@
           <!-- Offset -->
           <v-col cols="12" sm="4">
             <v-text-field
-              variant="outlined"
               v-model="offsetInput"
+              variant="outlined"
               label="Offset (hex)"
               placeholder="123ABC"
               prefix="0x"
@@ -22,8 +22,8 @@
           <!-- Hookable Status -->
           <v-col cols="12" sm="4">
             <v-select
-              variant="outlined"
               v-model="form.hookableStatusId"
+              variant="outlined"
               :items="hookableStatuses"
               item-title="name"
               item-value="hookableStatusId"
@@ -36,8 +36,8 @@
           <!-- Description -->
           <v-col cols="12">
             <v-textarea
-              variant="outlined"
               v-model="form.description"
+              variant="outlined"
               label="Description (what the hook normally handles)"
               auto-grow
               rows="1"
@@ -49,9 +49,9 @@
       <!-- Notes + Submit -->
       <div class="d-flex align-start ga-3 justify-end">
         <v-textarea
+          v-model="form.notes"
           variant="outlined"
           density="compact"
-          v-model="form.notes"
           :label="isEditMode ? 'Editing notes' : 'Submission notes'"
           placeholder="Optional, shown to admins only."
           rows="1"
@@ -59,10 +59,7 @@
           hide-details
           class="notes-field"
         />
-        <v-btn
-          class="btn submit-button mt-1"
-          @click="submit"
-        >
+        <v-btn class="btn submit-button mt-1" @click="submit">
           {{ isEditMode ? 'Save' : 'Add Hook' }}
         </v-btn>
       </div>
@@ -77,7 +74,7 @@ import api from '@/services/api'
 
 const props = defineProps({
   mode: { type: String },
-  hookId: { type: Number }
+  hookId: { type: Number },
 })
 
 const isEditMode = computed(() => props.mode === 'edit')
@@ -89,7 +86,7 @@ const form = ref({
   offset: '',
   description: '',
   hookableStatusId: null,
-  notes: ''
+  notes: '',
 })
 
 const offsetInput = ref('')
@@ -148,8 +145,8 @@ const submit = async () => {
       alert(`A hook with offset 0x${form.value.offset} already exists.`)
       return
     }
-    console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
-    alert("Failed to save hook.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+    console.error('Submit failed:', JSON.stringify(err.response?.data) || err.message)
+    alert('Failed to save hook.\n\n' + (JSON.stringify(err.response?.data) || err.message))
   }
 }
 </script>

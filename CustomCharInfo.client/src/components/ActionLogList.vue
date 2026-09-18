@@ -9,19 +9,9 @@
             <h1>Notification Dashboard</h1>
 
             <div class="d-flex ga-2">
-              <v-btn
-                size="small"
-                variant="tonal"
-                @click="selectAllFilters"
-              >
-                Enable All
-              </v-btn>
+              <v-btn size="small" variant="tonal" @click="selectAllFilters"> Enable All </v-btn>
 
-              <v-btn
-                size="small"
-                variant="tonal"
-                @click="selectOnlyRelevant"
-              >
+              <v-btn size="small" variant="tonal" @click="selectOnlyRelevant">
                 Only Relevant
               </v-btn>
             </div>
@@ -31,8 +21,8 @@
         <!-- Acceptance States -->
         <v-col cols="12" sm="5">
           <v-select
-            variant="outlined"
             v-model="selectedAcceptanceStates"
+            variant="outlined"
             :items="acceptanceStateOptions"
             item-title="name"
             item-value="id"
@@ -46,8 +36,8 @@
         <!-- Item Types -->
         <v-col cols="12" sm="3">
           <v-select
-            variant="outlined"
             v-model="selectedItemTypes"
+            variant="outlined"
             :items="itemTypeOptions"
             item-title="name"
             item-value="id"
@@ -61,12 +51,8 @@
 
       <!-- Logs -->
       <v-row v-if="filteredGroups.length">
-        <v-col
-          v-for="group in filteredGroups"
-          :key="group.key"
-          cols="12"
-        >
-          <ActionLogGroup :logs="group.logs" :isAdmin="isAdmin && !userId" />
+        <v-col v-for="group in filteredGroups" :key="group.key" cols="12">
+          <ActionLogGroup :logs="group.logs" :is-admin="isAdmin && !userId" />
         </v-col>
       </v-row>
       <p v-else>No logs found.</p>
@@ -83,12 +69,12 @@ import { UserType, ItemType } from '@/globals'
 const props = defineProps({
   viewAll: {
     type: Boolean,
-    default: false
+    default: false,
   },
   userId: {
     type: String,
-    default: null
-  }
+    default: null,
+  },
 })
 
 const logs = ref([])
@@ -107,7 +93,7 @@ const acceptanceStateOptions = [
   { id: 4, name: 'Pending User (Hard)' },
   { id: 5, name: 'Accepted' },
   { id: 6, name: 'Rejected' },
-  { id: 7, name: 'Auto-Accepted' }
+  { id: 7, name: 'Auto-Accepted' },
 ]
 
 const itemTypeOptions = [
@@ -115,7 +101,7 @@ const itemTypeOptions = [
   { id: 2, name: 'User' },
   { id: 3, name: 'Series' },
   { id: 4, name: 'Hooks' },
-  { id: 5, name: 'Plugins' }
+  { id: 5, name: 'Plugins' },
 ]
 
 const fetchUser = async () => {
@@ -132,7 +118,7 @@ const fetchLogs = async () => {
   try {
     const params = {
       acceptanceStates: [1, 2, 3, 4, 5, 6, 7],
-      itemTypes: selectedItemTypes.value
+      itemTypes: selectedItemTypes.value,
     }
 
     if (props.userId) {
@@ -168,7 +154,8 @@ const filterLogs = () => {
   for (const [key, groupLogs] of groupMap) {
     groupLogs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     const latest = groupLogs[0]
-    if (filterEnabled.value && !enabledStates.includes(latest.acceptanceState.acceptanceStateId)) continue
+    if (filterEnabled.value && !enabledStates.includes(latest.acceptanceState.acceptanceStateId))
+      continue
     groups.push({ key, logs: groupLogs })
   }
 
@@ -177,8 +164,8 @@ const filterLogs = () => {
 
 // Filter helpers
 const selectAllFilters = () => {
-  selectedAcceptanceStates.value = acceptanceStateOptions.map(s => s.id)
-  selectedItemTypes.value = itemTypeOptions.map(t => t.id)
+  selectedAcceptanceStates.value = acceptanceStateOptions.map((s) => s.id)
+  selectedItemTypes.value = itemTypeOptions.map((t) => t.id)
 }
 const selectOnlyRelevant = () => {
   selectedAcceptanceStates.value = [1, 2, 3, 4]

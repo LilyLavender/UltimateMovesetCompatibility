@@ -2,10 +2,10 @@
   <div class="lookup-page">
     <h1 class="page-title no-select">Plugin Lookup</h1>
     <p class="subtitle">
-      Not sure what a <code>.nro</code> is or whether it's up to date?
-      Upload the file below to hash entirely in the browser and check with UMC's database.
-
-      If you have a plugin and wish to add it to the database, go to the <router-link to="/plugins/add" class="unvisitable">submission page</router-link>.
+      Not sure what a <code>.nro</code> is or whether it's up to date? Upload the file below to hash
+      entirely in the browser and check with UMC's database. If you have a plugin and wish to add it
+      to the database, go to the
+      <router-link to="/plugins/add" class="unvisitable">submission page</router-link>.
     </p>
 
     <div class="picker-row">
@@ -27,13 +27,17 @@
       <div>
         <div class="result-title">Not recognized</div>
         <div class="result-sub">
-          This hash doesn't match any plugin in our database!
-          If you know what it is, please <router-link to="/plugins/add" class="unvisitable">submit it</router-link>.
+          This hash doesn't match any plugin in our database! If you know what it is, please
+          <router-link to="/plugins/add" class="unvisitable">submit it</router-link>.
         </div>
       </div>
     </div>
 
-    <div v-else-if="result" class="result-card" :class="result.isCurrent ? 'result-card--current' : 'result-card--outdated'">
+    <div
+      v-else-if="result"
+      class="result-card"
+      :class="result.isCurrent ? 'result-card--current' : 'result-card--outdated'"
+    >
       <v-icon class="result-icon">{{ result.isCurrent ? 'mdi-check-circle' : 'mdi-alert' }}</v-icon>
       <div class="result-body">
         <div class="result-title">
@@ -41,18 +45,31 @@
             v-if="result.attachmentType === 'Moveset'"
             :to="{ name: 'MovesetDetail', params: { movesetId: result.movesetId } }"
             class="unvisitable"
-          >{{ result.pluginName }}</router-link>
+            >{{ result.pluginName }}</router-link
+          >
           <template v-else>{{ result.pluginName }}</template>
         </div>
         <div class="result-sub">Version {{ result.matchedVersionLabel }}</div>
-        <p v-if="result.attachmentType === 'Other' && result.pluginDescription" class="result-desc">{{ result.pluginDescription }}</p>
+        <p v-if="result.attachmentType === 'Other' && result.pluginDescription" class="result-desc">
+          {{ result.pluginDescription }}
+        </p>
 
         <div class="result-version-row">
           <span v-if="result.isCurrent">Up to date! This is the most recent version.</span>
           <span v-else>
             There is a
-            <a v-if="result.learnMoreUrl" :href="result.learnMoreUrl" target="_blank" rel="noopener" class="unvisitable">newer version of this {{ thingLabel }}</a><template v-else>newer version of this {{ thingLabel }}</template>
-            available!<template v-if="result.currentVersionLabel"> ({{ displayVersion(result.currentVersionLabel) }})</template>
+            <a
+              v-if="result.learnMoreUrl"
+              :href="result.learnMoreUrl"
+              target="_blank"
+              rel="noopener"
+              class="unvisitable"
+              >newer version of this {{ thingLabel }}</a
+            ><template v-else>newer version of this {{ thingLabel }}</template> available!<template
+              v-if="result.currentVersionLabel"
+            >
+              ({{ displayVersion(result.currentVersionLabel) }})</template
+            >
           </span>
         </div>
 
@@ -87,7 +104,9 @@ const loading = ref(false)
 const error = ref(null)
 const result = ref(null)
 
-const thingLabel = computed(() => result.value?.attachmentType === 'Dependency' ? 'dependency' : 'mod')
+const thingLabel = computed(() =>
+  result.value?.attachmentType === 'Dependency' ? 'dependency' : 'mod'
+)
 
 async function checkHash(h) {
   error.value = null
@@ -119,11 +138,24 @@ watch(hash, checkHash)
   padding: 2rem 1.5rem 4rem;
 }
 
-.page-title { font-size: 4em; margin-bottom: 0.15em; }
-.subtitle { color: #aaa; margin-bottom: 1.5rem; line-height: 1.5; }
-.subtitle code { background-color: #222; padding: 0.1em 0.35em; border-radius: 3px; }
+.page-title {
+  font-size: 4em;
+  margin-bottom: 0.15em;
+}
+.subtitle {
+  color: #aaa;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+.subtitle code {
+  background-color: #222;
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
 
-.picker-row { margin-bottom: 1.5rem; }
+.picker-row {
+  margin-bottom: 1.5rem;
+}
 
 .status-msg {
   display: flex;
@@ -141,10 +173,25 @@ watch(hash, checkHash)
   border-radius: 6px;
 }
 
-.result-icon { font-size: 1.6em; flex-shrink: 0; margin-top: 2px; }
-.result-title { font-size: 1.15em; font-weight: bold; }
-.result-sub { font-size: 0.85em; opacity: 0.75; margin-top: 0.1rem; }
-.result-desc { margin: 0.5rem 0 0; font-size: 0.92em; line-height: 1.4; }
+.result-icon {
+  font-size: 1.6em;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.result-title {
+  font-size: 1.15em;
+  font-weight: bold;
+}
+.result-sub {
+  font-size: 0.85em;
+  opacity: 0.75;
+  margin-top: 0.1rem;
+}
+.result-desc {
+  margin: 0.5rem 0 0;
+  font-size: 0.92em;
+  line-height: 1.4;
+}
 
 .result-version-row {
   display: flex;
@@ -164,10 +211,28 @@ watch(hash, checkHash)
   color: #90caf9;
   text-decoration: none;
 }
-.learn-more-link:hover { text-decoration: underline; }
+.learn-more-link:hover {
+  text-decoration: underline;
+}
 
-.result-card--error    { background-color: #3a1010; color: #ef9a9a; border: 1px solid #c62828; }
-.result-card--unknown  { background-color: #1a1a1a; color: #ccc; border: 1px solid #333; }
-.result-card--current  { background-color: #1b3a1b; color: #c8e6c9; border: 1px solid #388e3c; }
-.result-card--outdated { background-color: #3a2f00; color: #ffe082; border: 1px solid #f9a825; }
+.result-card--error {
+  background-color: #3a1010;
+  color: #ef9a9a;
+  border: 1px solid #c62828;
+}
+.result-card--unknown {
+  background-color: #1a1a1a;
+  color: #ccc;
+  border: 1px solid #333;
+}
+.result-card--current {
+  background-color: #1b3a1b;
+  color: #c8e6c9;
+  border: 1px solid #388e3c;
+}
+.result-card--outdated {
+  background-color: #3a2f00;
+  color: #ffe082;
+  border: 1px solid #f9a825;
+}
 </style>

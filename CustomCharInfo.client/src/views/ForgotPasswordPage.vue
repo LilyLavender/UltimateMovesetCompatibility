@@ -5,11 +5,10 @@
 
     <!-- Main content -->
     <div>
+      <p>UMC doesn't use an automated email service, so password resets are handled manually.</p>
       <p>
-        UMC doesn't use an automated email service, so password resets are handled manually.
-      </p>
-      <p>
-        Send an admin a message and they'll clear your account and get you a reset link as soon as they can.
+        Send an admin a message and they'll clear your account and get you a reset link as soon as
+        they can.
       </p>
     </div>
   </v-container>

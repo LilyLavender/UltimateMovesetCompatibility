@@ -7,18 +7,9 @@
     <v-alert v-if="error" type="error" class="mb-5">{{ error }}</v-alert>
 
     <!-- Table -->
-    <v-data-table
-      :items="users"
-      :headers="headers"
-      item-key="id"
-      class="dark-table"
-    >
+    <v-data-table :items="users" :headers="headers" item-key="id" class="dark-table">
       <template #item.actions="{ item }">
-        <v-btn
-          size="small"
-          class="btn"
-          @click="generate(item)"
-        >
+        <v-btn size="small" class="btn" @click="generate(item)">
           <v-icon class="mr-1">mdi-lock-reset</v-icon>
           Generate Reset
         </v-btn>
@@ -37,13 +28,14 @@
             :model-value="resetLink"
             variant="outlined"
             append-inner-icon="mdi-content-copy"
+            hide-details
+            readonly
             @click:append-inner="copy"
-            hide-details readonly
           />
         </v-card-text>
 
         <v-card-actions>
-          <v-btn @click="dialog=false">Close</v-btn>
+          <v-btn @click="dialog = false">Close</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -63,14 +55,14 @@ const headers = [
   { title: 'Username', key: 'userName' },
   { title: 'Email', key: 'email' },
   { title: 'User Type', key: 'userTypeId' },
-  { title: 'Actions', key: 'actions' }
+  { title: 'Actions', key: 'actions' },
 ]
 
 onMounted(async () => {
   try {
     const res = await api.get('/users')
     const onlyUsers = res.data.onlyUsers ?? []
-    const inBothUsers = (res.data.inBoth ?? []).map(x => x.user)
+    const inBothUsers = (res.data.inBoth ?? []).map((x) => x.user)
     users.value = [...onlyUsers, ...inBothUsers].sort((a, b) =>
       a.userName.localeCompare(b.userName, undefined, { sensitivity: 'base' })
     )
@@ -82,7 +74,7 @@ onMounted(async () => {
 const generate = async (user) => {
   try {
     const res = await api.post('/auth/generate-password-reset', {
-      userId: user.id
+      userId: user.id,
     })
 
     resetLink.value = `${window.location.origin}/UltimateMovesetCompatibility/#/reset-password?userId=${res.data.userId}&token=${encodeURIComponent(res.data.token)}`

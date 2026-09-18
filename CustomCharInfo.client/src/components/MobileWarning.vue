@@ -8,18 +8,14 @@
       </v-card-title>
 
       <v-card-text>
-        UMC is not yet optimized for mobile devices. <br>
-        you may experience layout or usability issues.<br>
+        UMC is not yet optimized for mobile devices. <br />
+        you may experience layout or usability issues.<br />
         Usage on desktop is recommended.
       </v-card-text>
 
       <v-card-actions class="justify-end">
-        <v-btn color="red" @click="dismissForSession">
-          Don’t show again
-        </v-btn>
-        <v-btn @click="continueAnyway">
-          Continue Anyway
-        </v-btn>
+        <v-btn color="red" @click="dismissForSession"> Don’t show again </v-btn>
+        <v-btn @click="continueAnyway"> Continue Anyway </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

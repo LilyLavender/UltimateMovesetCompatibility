@@ -7,8 +7,8 @@
       <!-- Select -->
       <v-col cols="12" sm="6">
         <v-select
-          variant="outlined"
           v-model="selectedMovesetId"
+          variant="outlined"
           :items="movesetsOptions"
           label="Select a moveset"
           item-title="moddedCharName"
@@ -24,8 +24,8 @@
           <v-btn
             color="primary"
             class="btn"
-            @click="addAdminPick"
             :disabled="!selectedMovesetId || adminPicksIds.has(selectedMovesetId)"
+            @click="addAdminPick"
           >
             <v-icon class="mr-1">mdi-account-plus</v-icon>
             Add Admin Pick
@@ -35,20 +35,15 @@
           <v-btn
             color="error"
             class="btn"
-            @click="removeAdminPick"
             :disabled="!selectedMovesetId || !adminPicksIds.has(selectedMovesetId)"
+            @click="removeAdminPick"
           >
             <v-icon class="mr-1">mdi-account-remove</v-icon>
             Remove Admin Pick
           </v-btn>
 
           <!-- Save -->
-          <v-btn 
-            color="success"
-            class="btn"
-            @click="saveAdminPicks"
-            :loading="saving"
-          >
+          <v-btn color="success" class="btn" :loading="saving" @click="saveAdminPicks">
             <v-icon class="mr-1">mdi-content-save</v-icon>
             Save Changes
           </v-btn>
@@ -81,7 +76,7 @@ onMounted(async () => {
   try {
     const res = await api.get('/movesets', { params: { pageSize: 1000 } })
     movesets.value = res.data
-    adminPicksIds.value = new Set(res.data.filter(m => m.adminPick).map(m => m.movesetId))
+    adminPicksIds.value = new Set(res.data.filter((m) => m.adminPick).map((m) => m.movesetId))
   } catch (err) {
     console.error('Failed to fetch movesets:', err)
   }
@@ -89,11 +84,11 @@ onMounted(async () => {
 
 // Compute lists for display
 const adminPicksList = computed(() =>
-  movesets.value.filter(m => adminPicksIds.value.has(m.movesetId))
+  movesets.value.filter((m) => adminPicksIds.value.has(m.movesetId))
 )
 
 const nonAdminPicksList = computed(() =>
-  movesets.value.filter(m => !adminPicksIds.value.has(m.movesetId))
+  movesets.value.filter((m) => !adminPicksIds.value.has(m.movesetId))
 )
 
 // Dropdown

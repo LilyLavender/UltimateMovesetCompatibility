@@ -2,9 +2,8 @@
   <v-container max-width="1000px">
     <h1 class="mb-3 page-title">Request to Edit a Series</h1>
     <p class="mb-6 text-medium-emphasis">
-      Series edits require admin approval.
-      Select a series below, then submit a request explaining what you'd like to change.
-      An admin will review it and grant or deny edit access.
+      Series edits require admin approval. Select a series below, then submit a request explaining
+      what you'd like to change. An admin will review it and grant or deny edit access.
     </p>
 
     <div v-if="loading" class="text-center py-10">
@@ -25,11 +24,7 @@
           :class="{ 'series-item--selected': selected?.seriesId === s.seriesId }"
           @click="select(s)"
         >
-          <img
-            :src="resolveIconUrl(s.seriesIconUrl)"
-            class="series-icon"
-            alt=""
-          />
+          <img :src="resolveIconUrl(s.seriesIconUrl)" class="series-icon" alt="" />
           <span class="series-label">{{ s.seriesName }}</span>
         </div>
       </div>
@@ -142,10 +137,10 @@ onMounted(async () => {
     ])
 
     mySeries.value = seriesRes.data
-      .filter(s => s.isUserModder)
+      .filter((s) => s.isUserModder)
       .sort((a, b) => a.seriesName.localeCompare(b.seriesName))
 
-    const seriesLogs = logsRes.data.filter(l => l.itemType?.itemTypeId === ItemType.Series)
+    const seriesLogs = logsRes.data.filter((l) => l.itemType?.itemTypeId === ItemType.Series)
     for (const log of seriesLogs) {
       const sid = log.item?.seriesId
       if (!sid) continue
@@ -175,7 +170,7 @@ const requestEdit = async (seriesId) => {
     await api.post(`/series/${seriesId}/request-edit`, { notes: note })
     submitted[seriesId] = true
     latestLogBySeries[seriesId] = {
-      acceptanceState: { acceptanceStateId: 1 }
+      acceptanceState: { acceptanceStateId: 1 },
     }
   } catch (err) {
     notesErrors[seriesId] = err.response?.data ?? 'Failed to submit request. Please try again.'
@@ -215,7 +210,9 @@ const requestEdit = async (seriesId) => {
   border-radius: 10px;
   border: 2px solid transparent;
   cursor: pointer;
-  transition: border-color 150ms ease, background-color 150ms ease;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
   text-align: center;
 }
 
@@ -249,7 +246,7 @@ const requestEdit = async (seriesId) => {
   top: 80px;
   background-color: #1e1e1e;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 1.25rem;
   min-height: 200px;
 }

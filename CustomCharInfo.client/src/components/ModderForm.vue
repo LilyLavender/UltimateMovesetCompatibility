@@ -1,10 +1,10 @@
 <template>
   <div v-if="(isEditMode && modder) || !isEditMode">
     <v-container max-width="1020px">
-      <h1 class="mt-5 mb-5" v-if="!isEditMode">Apply to Become a Modder</h1>
-      <h1 class="mt-5 mb-5" v-else>Edit Your Modder Profile</h1>
+      <h1 v-if="!isEditMode" class="mt-5 mb-5">Apply to Become a Modder</h1>
+      <h1 v-else class="mt-5 mb-5">Edit Your Modder Profile</h1>
 
-      <v-form @submit.prevent="isEditMode ? save() : submit()" v-if="user">
+      <v-form v-if="user" @submit.prevent="isEditMode ? save() : submit()">
         <!-- Row 1: PFP preview + Username + GB ID + Discord -->
         <v-row align="center" class="mb-0">
           <!-- PFP preview -->
@@ -32,11 +32,7 @@
               <template #details>
                 <span>
                   Edit your username in&nbsp;
-                  <router-link
-                    to="/user-actions"
-                    class="offsite unvisitable"
-                    target="_blank"
-                  >
+                  <router-link to="/user-actions" class="offsite unvisitable" target="_blank">
                     user settings
                   </router-link>
                   <span v-if="!isEditMode">
@@ -50,14 +46,18 @@
           <!-- GameBanana ID -->
           <v-col cols="12" sm="4">
             <v-text-field
-              variant="outlined"
               v-model.number="modder.gamebananaId"
+              variant="outlined"
               label="GameBanana ID"
-              @input="digitsOnly('gamebananaId')"
               :prefix="GB_MEMBER_URL"
+              @input="digitsOnly('gamebananaId')"
             >
               <template #label>
-                <img src="https://images.gamebanana.com/img/ico/games/banana.gif" class="field-platform-icon" alt="" />
+                <img
+                  src="https://images.gamebanana.com/img/ico/games/banana.gif"
+                  class="field-platform-icon"
+                  alt=""
+                />
                 GameBanana ID
               </template>
             </v-text-field>
@@ -66,13 +66,17 @@
           <!-- Discord -->
           <v-col cols="12" sm="3">
             <v-text-field
-              variant="outlined"
               v-model="modder.discordUsername"
+              variant="outlined"
               label="Discord"
               prefix="@"
             >
               <template #label>
-                <img src="https://cdn.simpleicons.org/discord/5865F2" class="field-platform-icon" alt="" />
+                <img
+                  src="https://cdn.simpleicons.org/discord/5865F2"
+                  class="field-platform-icon"
+                  alt=""
+                />
                 Discord
               </template>
             </v-text-field>
@@ -83,39 +87,51 @@
         <v-row class="mb-0">
           <v-col cols="12" sm="4">
             <v-text-field
-              variant="outlined"
               v-model="modder.twitterUsername"
+              variant="outlined"
               label="Twitter / X"
               prefix="x.com/"
             >
               <template #label>
-                <img src="https://cdn.simpleicons.org/x/ffffff" class="field-platform-icon" alt="" />
+                <img
+                  src="https://cdn.simpleicons.org/x/ffffff"
+                  class="field-platform-icon"
+                  alt=""
+                />
                 Twitter
               </template>
             </v-text-field>
           </v-col>
           <v-col cols="12" sm="4">
             <v-text-field
-              variant="outlined"
               v-model="modder.blueskyHandle"
+              variant="outlined"
               label="Bluesky"
               prefix="bsky.app/profile/"
             >
               <template #label>
-                <img src="https://cdn.simpleicons.org/bluesky/0085FF" class="field-platform-icon" alt="" />
+                <img
+                  src="https://cdn.simpleicons.org/bluesky/0085FF"
+                  class="field-platform-icon"
+                  alt=""
+                />
                 Bluesky
               </template>
             </v-text-field>
           </v-col>
           <v-col cols="12" sm="4">
             <v-text-field
-              variant="outlined"
               v-model="modder.githubUsername"
+              variant="outlined"
               label="GitHub"
               prefix="github.com/"
             >
               <template #label>
-                <img src="https://cdn.simpleicons.org/github/ffffff" class="field-platform-icon" alt="" />
+                <img
+                  src="https://cdn.simpleicons.org/github/ffffff"
+                  class="field-platform-icon"
+                  alt=""
+                />
                 GitHub
               </template>
             </v-text-field>
@@ -126,8 +142,8 @@
         <v-row class="mb-0">
           <v-col cols="12">
             <v-text-field
-              variant="outlined"
               v-model="modder.pfpUrl"
+              variant="outlined"
               label="Profile Picture URL"
               placeholder="Any square image URL (jpg, png, gif…)"
               clearable
@@ -143,12 +159,13 @@
         <v-row class="mb-3">
           <v-col cols="12">
             <v-textarea
-              variant="outlined"
               v-model="modder.bio"
+              variant="outlined"
               label="Bio"
               placeholder="Displayed on your modder profile page."
               rows="3"
-              auto-grow hide-details
+              auto-grow
+              hide-details
             />
           </v-col>
         </v-row>
@@ -156,9 +173,9 @@
         <!-- Notes + Submit -->
         <div class="d-flex align-start ga-3 justify-end mt-3">
           <v-textarea
+            v-model="modder.notes"
             variant="outlined"
             density="compact"
-            v-model="modder.notes"
             :label="isEditMode ? 'Editing notes' : 'Submission notes'"
             placeholder="Optional, shown to admins only."
             rows="1"
@@ -167,7 +184,7 @@
             class="notes-field"
           />
           <v-btn class="btn mt-1" type="submit">
-            {{ isEditMode ? "Save Profile" : "Apply for Modder" }}
+            {{ isEditMode ? 'Save Profile' : 'Apply for Modder' }}
           </v-btn>
         </div>
 
@@ -175,7 +192,7 @@
         <v-row>
           <v-col cols="12">
             <p v-if="success" class="text-green">
-              {{ isEditMode ? "Saved successfully!" : "Application submitted!" }}
+              {{ isEditMode ? 'Saved successfully!' : 'Application submitted!' }}
             </p>
             <p v-if="error" class="text-red">{{ error }}</p>
           </v-col>
@@ -219,7 +236,10 @@ const gbPfpUrl = ref(null)
 const pfpPreviewUrl = computed(() => modder.value.pfpUrl || gbPfpUrl.value || null)
 
 const fetchGbPfp = async (gbId) => {
-  if (!gbId) { gbPfpUrl.value = null; return }
+  if (!gbId) {
+    gbPfpUrl.value = null
+    return
+  }
   try {
     const res = await axios.get(
       `https://api.gamebanana.com/Core/Item/Data?itemtype=Member&itemid=${gbId}&fields=Url().sHdAvatarUrl(),Url().sAvatarUrl()`

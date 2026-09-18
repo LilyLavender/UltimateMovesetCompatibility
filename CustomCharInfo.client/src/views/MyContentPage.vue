@@ -12,26 +12,24 @@
         <h2 class="section-title">Movesets</h2>
         <p v-if="movesets.length === 0" class="empty-msg">No movesets yet.</p>
         <div v-else class="moveset-grid">
-          <div
-            v-for="moveset in movesets"
-            :key="moveset.movesetId"
-            class="moveset-wrapper"
-          >
+          <div v-for="moveset in movesets" :key="moveset.movesetId" class="moveset-wrapper">
             <MovesetCard :moveset="moveset" />
             <div
-              class="pill-overlay"
               v-if="statusPillFor(movesetStates[moveset.movesetId]) || moveset.privateMoveset"
+              class="pill-overlay"
             >
               <span
                 v-if="statusPillFor(movesetStates[moveset.movesetId])"
                 class="state-pill"
                 :style="{ backgroundColor: statusPillFor(movesetStates[moveset.movesetId]).color }"
-              >{{ statusPillFor(movesetStates[moveset.movesetId]).label }}</span>
+                >{{ statusPillFor(movesetStates[moveset.movesetId]).label }}</span
+              >
               <span
                 v-if="moveset.privateMoveset"
                 class="state-pill"
                 :style="{ backgroundColor: PRIVATE_COLOR }"
-              >Private</span>
+                >Private</span
+              >
             </div>
           </div>
         </div>
@@ -42,13 +40,8 @@
         <h2 class="section-title">Series</h2>
         <p v-if="userSeries.length === 0" class="empty-msg">No series yet.</p>
         <v-row v-else>
-          <v-col
-            v-for="s in userSeries"
-            :key="s.seriesId"
-            cols="6"
-            sm="4"
-          >
-            <SeriesCard :series="s" :apiUrl="apiUrl">
+          <v-col v-for="s in userSeries" :key="s.seriesId" cols="6" sm="4">
+            <SeriesCard :series="s" :api-url="apiUrl">
               <template #subtitle>
                 <div class="series-pills">
                   <span
@@ -56,8 +49,12 @@
                     :key="pill.label"
                     class="state-pill"
                     :style="{ backgroundColor: pill.color }"
-                  >{{ pill.label }}</span>
-                  <span v-if="!pillsFor(seriesStates[s.seriesId]).length" class="series-pill-spacer" />
+                    >{{ pill.label }}</span
+                  >
+                  <span
+                    v-if="!pillsFor(seriesStates[s.seriesId]).length"
+                    class="series-pill-spacer"
+                  />
                 </div>
               </template>
             </SeriesCard>
@@ -81,7 +78,8 @@
                 :key="pill.label"
                 class="state-pill"
                 :style="{ backgroundColor: pill.color }"
-              >{{ pill.label }}</span>
+                >{{ pill.label }}</span
+              >
             </div>
           </v-list-item>
         </v-list>
@@ -142,7 +140,7 @@ function pluginAttachmentLabel(plugin) {
 }
 
 function pluginVersionPills(plugin) {
-  return (plugin.versions ?? []).map(v => {
+  return (plugin.versions ?? []).map((v) => {
     const label = displayVersion(v.versionLabel)
     if (v.isCurrent) return { label: `${label} (current)`, color: CURRENT_COLOR }
     const pill = statusPillFor(v.acceptanceStateId)
@@ -200,9 +198,9 @@ onMounted(async () => {
     const seriesIds = [...seriesLogMap.keys()]
     if (seriesIds.length > 0) {
       const results = await Promise.all(
-        seriesIds.map(id => api.get(`/series/${id}`).catch(() => null))
+        seriesIds.map((id) => api.get(`/series/${id}`).catch(() => null))
       )
-      userSeries.value = results.filter(r => r?.data).map(r => r.data)
+      userSeries.value = results.filter((r) => r?.data).map((r) => r.data)
       for (const [id, log] of seriesLogMap) {
         seriesStates.value[id] = log.acceptanceState?.acceptanceStateId
       }
@@ -277,8 +275,12 @@ onMounted(async () => {
 }
 
 /* Plugins */
-.plugin-list { background: transparent; }
-.plugin-item { margin-bottom: 0.5rem; }
+.plugin-list {
+  background: transparent;
+}
+.plugin-item {
+  margin-bottom: 0.5rem;
+}
 
 /* Series pills */
 .series-pills {

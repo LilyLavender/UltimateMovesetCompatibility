@@ -18,18 +18,20 @@
           <!-- Moveset Name -->
           <v-col cols="12" sm="4">
             <v-text-field
-              variant="outlined"
               v-model="form.moddedCharName"
+              variant="outlined"
               label="Modded Character Name"
             >
-              <template #label>Modded Character Name <span class="required-asterisk">*</span></template>
+              <template #label
+                >Modded Character Name <span class="required-asterisk">*</span></template
+              >
             </v-text-field>
           </v-col>
           <!-- Modders -->
           <v-col cols="12" sm="4">
             <v-select
-              variant="outlined"
               v-model="form.modderIds"
+              variant="outlined"
               :items="modders"
               item-title="name"
               item-value="modderId"
@@ -45,15 +47,16 @@
                   to="/modder-credit-guide"
                   class="offsite unvisitable text-decoration-none"
                   target="_blank"
-                >Who should I include?</router-link>
+                  >Who should I include?</router-link
+                >
               </template>
             </v-select>
           </v-col>
           <!-- Series -->
           <v-col cols="12" sm="4">
             <v-select
-              variant="outlined"
               v-model="form.seriesId"
+              variant="outlined"
               :items="seriesList"
               item-title="seriesName"
               item-value="seriesId"
@@ -65,7 +68,10 @@
                 <v-list-item v-bind="props" class="remove-bound-props">
                   <div class="filter-option">
                     <div v-if="item.raw.seriesIconUrl">
-                      <v-img :src="getFullImageUrl(item.raw.seriesIconUrl)" class="series-icon series-icon-small" />
+                      <v-img
+                        :src="getFullImageUrl(item.raw.seriesIconUrl)"
+                        class="series-icon series-icon-small"
+                      />
                     </div>
                     <v-list-item-title>{{ item.raw.seriesName }}</v-list-item-title>
                   </div>
@@ -84,11 +90,12 @@
 
               <!-- Hint -->
               <template #details>
-                <router-link 
+                <router-link
                   to="/series/add"
                   class="offsite unvisitable text-decoration-none"
                   target="_blank"
-                >Don't see your series?</router-link>
+                  >Don't see your series?</router-link
+                >
               </template>
             </v-select>
           </v-col>
@@ -99,29 +106,21 @@
               label="Slotted ID and Replacement ID are different"
             />
           </v-col>
-          <v-col cols="12" sm="4" v-if="!showSeparateIds">
-            <v-text-field
-              variant="outlined"
-              v-model="form.slottedId"
-              label="Internal ID"
-            >
+          <v-col v-if="!showSeparateIds" cols="12" sm="4">
+            <v-text-field v-model="form.slottedId" variant="outlined" label="Internal ID">
               <template #label>Internal ID <span class="required-asterisk">*</span></template>
             </v-text-field>
           </v-col>
-          <v-col cols="12" sm="8" v-else class="two-of-them">
+          <v-col v-else cols="12" sm="8" class="two-of-them">
             <v-col cols="6">
-              <v-text-field
-                variant="outlined"
-                v-model="form.slottedId"
-                label="Slotted ID"
-              >
+              <v-text-field v-model="form.slottedId" variant="outlined" label="Slotted ID">
                 <template #label>Slotted ID <span class="required-asterisk">*</span></template>
               </v-text-field>
             </v-col>
             <v-col cols="6">
               <v-text-field
-                variant="outlined"
                 v-model="form.replacementId"
+                variant="outlined"
                 label="Replacement ID"
               />
             </v-col>
@@ -129,8 +128,8 @@
           <!-- Vanilla Character -->
           <v-col cols="12" sm="4">
             <v-select
-              variant="outlined"
               v-model="form.vanillaCharInternalName"
+              variant="outlined"
               :items="vanillaChars"
               item-title="displayName"
               item-value="vanillaCharInternalName"
@@ -142,7 +141,10 @@
                 <v-list-item v-bind="props" class="remove-bound-props">
                   <div class="filter-option">
                     <div>
-                      <v-img :src="`/UltimateMovesetCompatibility/vanilla-stock-icons/chara_2_${item.raw.vanillaCharInternalName}.png`" class="stock-icon-small" />
+                      <v-img
+                        :src="`/UltimateMovesetCompatibility/vanilla-stock-icons/chara_2_${item.raw.vanillaCharInternalName}.png`"
+                        class="stock-icon-small"
+                      />
                     </div>
                     <v-list-item-title>{{ item.raw.displayName }}</v-list-item-title>
                   </div>
@@ -153,7 +155,9 @@
               <template #selection="{ item }">
                 <div class="filter-option d-flex align-center">
                   <v-avatar class="me-2" size="26">
-                    <v-img :src="`/UltimateMovesetCompatibility/vanilla-stock-icons/chara_2_${item.raw.vanillaCharInternalName}.png`" />
+                    <v-img
+                      :src="`/UltimateMovesetCompatibility/vanilla-stock-icons/chara_2_${item.raw.vanillaCharInternalName}.png`"
+                    />
                   </v-avatar>
                   <span>{{ item.raw.displayName }}</span>
                 </div>
@@ -163,44 +167,41 @@
           <!-- Slots -->
           <v-col cols="12" sm="2" class="left-merged-input-container">
             <v-text-field
-              variant="outlined"
               v-model.number="form.slotsStart"
+              variant="outlined"
               label="Start Slot"
-              @input="digitsOnly('slotsStart')"
-              @blur="checkSlotAlignment"
               :min="8"
               :max="255"
               prefix="c"
               class="left-merged-input"
+              @input="digitsOnly('slotsStart')"
+              @blur="checkSlotAlignment"
             >
               <template #label>Start Slot <span class="required-asterisk">*</span></template>
             </v-text-field>
           </v-col>
           <v-col cols="12" sm="2" class="right-merged-input-container">
             <v-text-field
-              variant="outlined"
               v-model.number="form.slotsEnd"
+              variant="outlined"
               label="End Slot"
-              @input="digitsOnly('slotsEnd')"
-              @blur="checkSlotAlignment"
               :min="8"
               :max="255"
               prefix="c"
               class="right-merged-input"
+              @input="digitsOnly('slotsEnd')"
+              @blur="checkSlotAlignment"
             >
               <template #label>End Slot <span class="required-asterisk">*</span></template>
             </v-text-field>
           </v-col>
           <!-- Release Date -->
           <v-col cols="12" sm="4">
-            <v-menu
-              :close-on-content-click="false"
-              transition="scale-transition"
-            >
-              <template v-slot:activator="{ props }">
+            <v-menu :close-on-content-click="false" transition="scale-transition">
+              <template #activator="{ props }">
                 <v-text-field
-                  variant="outlined"
                   v-model="formattedReleaseDate"
+                  variant="outlined"
                   label="Release Date"
                   readonly
                   clearable
@@ -218,8 +219,8 @@
           <!-- Release State -->
           <v-col cols="12" sm="4">
             <v-select
-              variant="outlined"
               v-model="form.releaseStateId"
+              variant="outlined"
               :items="releaseStates"
               item-title="releaseStateName"
               item-value="releaseStateId"
@@ -231,8 +232,8 @@
           <!-- Modpack -->
           <v-col cols="12" sm="4">
             <v-text-field
-              variant="outlined"
               v-model="form.modpackName"
+              variant="outlined"
               label="Modpack"
               placeholder="(leave blank if not exclusive)"
             />
@@ -240,8 +241,8 @@
           <!-- Dependencies -->
           <v-col>
             <v-select
-              variant="outlined"
               v-model="form.dependencyIds"
+              variant="outlined"
               :items="dependencies"
               item-title="name"
               item-value="dependencyId"
@@ -258,11 +259,8 @@
       <section>
         <h2>Display</h2>
         <p class="mb-3">
-          For information on image hosting in UMC, see <router-link 
-            to="/image-hosting"
-            class="unvisitable"
-            target="_blank"
-            >here</router-link>.
+          For information on image hosting in UMC, see
+          <router-link to="/image-hosting" class="unvisitable" target="_blank">here</router-link>.
         </p>
         <v-row>
           <!-- ThumbH URL -->
@@ -275,11 +273,7 @@
               hint="A thumbnail image displayed in moveset lists."
             />
             <!-- Download -->
-            <a
-              :href="thumbhUnknown"
-              download
-              class="unvisitable text-caption"
-            >
+            <a :href="thumbhUnknown" download class="unvisitable text-caption">
               Download placeholder image
             </a>
           </v-col>
@@ -293,19 +287,15 @@
               hint="The render of the character cropped to fit."
             />
             <!-- Download -->
-            <a
-              :href="movesetHeroUnknown"
-              download
-              class="unvisitable text-caption"
-            >
+            <a :href="movesetHeroUnknown" download class="unvisitable text-caption">
               Download placeholder image
             </a>
           </v-col>
           <!-- Background Color -->
           <v-col cols="12" sm="4">
             <v-text-field
-              variant="outlined"
               v-model="form.backgroundColor"
+              variant="outlined"
               label="Background Color (Hex)"
               maxlength="6"
               prefix="#"
@@ -340,117 +330,117 @@
           </v-col>
         </v-row>
       </section>
-      
+
       <!-- Links + Function Usage -->
       <div class="links-functions-row">
+        <!-- Links -->
+        <section class="darker-preview-text links-section">
+          <h2>Links</h2>
+          <v-row>
+            <!-- Mod Page -->
+            <v-col cols="12">
+              <v-text-field
+                v-model="form.modPageUrl"
+                variant="outlined"
+                label="Mod Page"
+                type="url"
+                :placeholder="`${GB_PAGE_URL}12345`"
+              />
+            </v-col>
+            <!-- GameBanana WIP -->
+            <v-col cols="12">
+              <v-text-field
+                v-model="form.gamebananaWipId"
+                variant="outlined"
+                label="GameBanana WIP Page"
+                :prefix="GB_WIP_URL"
+                @input="digitsOnly('gamebananaWipId')"
+              />
+            </v-col>
+            <!-- Mods Wiki -->
+            <v-col cols="12">
+              <v-text-field
+                v-model="form.modsWikiLink"
+                variant="outlined"
+                label="SSBU Mods Wiki Page"
+                :prefix="MODS_WIKI_URL"
+              />
+            </v-col>
+            <!-- Source Code -->
+            <v-col cols="12">
+              <v-text-field
+                v-model="form.sourceCode"
+                variant="outlined"
+                label="Source Code URL"
+                type="url"
+              >
+                <!-- Hint -->
+                <template #details>
+                  <router-link
+                    to="/open-source"
+                    class="offsite unvisitable text-decoration-none"
+                    target="_blank"
+                    >Why should I open-source my movesets?</router-link
+                  >
+                </template>
+              </v-text-field>
+            </v-col>
+          </v-row>
+        </section>
 
-      <!-- Links -->
-      <section class="darker-preview-text links-section">
-        <h2>Links</h2>
-        <v-row>
-          <!-- Mod Page -->
-          <v-col cols="12">
-            <v-text-field
-              variant="outlined"
-              v-model="form.modPageUrl"
-              label="Mod Page"
-              type="url"
-              :placeholder="`${GB_PAGE_URL}12345`"
-            />
-          </v-col>
-          <!-- GameBanana WIP -->
-          <v-col cols="12">
-            <v-text-field
-              variant="outlined"
-              v-model="form.gamebananaWipId"
-              label="GameBanana WIP Page"
-              :prefix="GB_WIP_URL"
-              @input="digitsOnly('gamebananaWipId')"
-            />
-          </v-col>
-          <!-- Mods Wiki -->
-          <v-col cols="12">
-            <v-text-field
-              variant="outlined"
-              v-model="form.modsWikiLink"
-              label="SSBU Mods Wiki Page"
-              :prefix="MODS_WIKI_URL"
-            />
-          </v-col>
-          <!-- Source Code -->
-          <v-col cols="12">
-            <v-text-field
-              variant="outlined"
-              v-model="form.sourceCode"
-              label="Source Code URL"
-              type="url"
-            >
-              <!-- Hint -->
-              <template #details>
-                <router-link 
-                  to="/open-source"
-                  class="offsite unvisitable text-decoration-none"
-                  target="_blank"
-                >Why should I open-source my movesets?</router-link>
-              </template>
-            </v-text-field>
-          </v-col>
-        </v-row>
-      </section>
-
-      <!-- Function Usage -->
-      <section class="functions-section">
-        <h2>Function Usage</h2>
-        <v-row class="functions">
-          <v-col cols="12">
-            <v-checkbox
-              v-model="form.hasGlobalOpff"
-              label="Global OPFF"
-              messages="Runs once every frame for all characters"
-              true-icon="mdi-check-bold"
-              false-icon="mdi-close-thick"
-            />
-          </v-col>
-          <v-col cols="12">
-            <v-checkbox
-              v-model="form.hasCharacterOpff"
-              label="Character OPFF"
-              :messages="`Runs once every frame for ${getVanillaCharDisplayName(form.vanillaCharInternalName)}`"
-              true-icon="mdi-check-bold"
-              false-icon="mdi-close-thick"
-            />
-          </v-col>
-          <v-col cols="12">
-            <v-checkbox
-              v-model="form.hasAgentInit"
-              label="Agent init"
-              messages="Runs once when a fighter is spawned in"
-              true-icon="mdi-check-bold"
-              false-icon="mdi-close-thick"
-            />
-          </v-col>
-          <v-col cols="12">
-            <v-checkbox
-              v-model="form.hasGlobalOnLinePre"
-              label="Global on_line pre"
-              messages="Runs once every time a pre status script runs"
-              true-icon="mdi-check-bold"
-              false-icon="mdi-close-thick"
-            />
-          </v-col>
-          <v-col cols="12">
-            <v-checkbox
-              v-model="form.hasGlobalOnLineEnd"
-              label="Global on_line end"
-              messages="Runs once every time an end status script runs"
-              true-icon="mdi-check-bold"
-              false-icon="mdi-close-thick"
-            />
-          </v-col>
-        </v-row>
-      </section>
-
-      </div><!-- end links-functions-row -->
+        <!-- Function Usage -->
+        <section class="functions-section">
+          <h2>Function Usage</h2>
+          <v-row class="functions">
+            <v-col cols="12">
+              <v-checkbox
+                v-model="form.hasGlobalOpff"
+                label="Global OPFF"
+                messages="Runs once every frame for all characters"
+                true-icon="mdi-check-bold"
+                false-icon="mdi-close-thick"
+              />
+            </v-col>
+            <v-col cols="12">
+              <v-checkbox
+                v-model="form.hasCharacterOpff"
+                label="Character OPFF"
+                :messages="`Runs once every frame for ${getVanillaCharDisplayName(form.vanillaCharInternalName)}`"
+                true-icon="mdi-check-bold"
+                false-icon="mdi-close-thick"
+              />
+            </v-col>
+            <v-col cols="12">
+              <v-checkbox
+                v-model="form.hasAgentInit"
+                label="Agent init"
+                messages="Runs once when a fighter is spawned in"
+                true-icon="mdi-check-bold"
+                false-icon="mdi-close-thick"
+              />
+            </v-col>
+            <v-col cols="12">
+              <v-checkbox
+                v-model="form.hasGlobalOnLinePre"
+                label="Global on_line pre"
+                messages="Runs once every time a pre status script runs"
+                true-icon="mdi-check-bold"
+                false-icon="mdi-close-thick"
+              />
+            </v-col>
+            <v-col cols="12">
+              <v-checkbox
+                v-model="form.hasGlobalOnLineEnd"
+                label="Global on_line end"
+                messages="Runs once every time an end status script runs"
+                true-icon="mdi-check-bold"
+                false-icon="mdi-close-thick"
+              />
+            </v-col>
+          </v-row>
+        </section>
+      </div>
+      <!-- end links-functions-row -->
 
       <!-- Articles -->
       <section>
@@ -463,17 +453,19 @@
             icon="mdi-plus"
             class="rotate-toggle"
             :class="{ rotated: addArticleForm }"
-            @click="addArticleForm = !addArticleForm; if (!addArticleForm) { editingArticleIndex = null; newArticle = { articleId: null, moddedName: '', description: '' } }"
+            @click="toggleArticleForm"
           />
         </h2>
         <!-- learn more -->
-        <p class="subheader"><a
+        <p class="subheader">
+          <a
             href="https://docs.google.com/spreadsheets/d/16SEU3MibrzTJHTjxJb7c5e7JzGgrfWY_c_hqNJtGvNY/"
             target="_blank"
             class="offsite unvisitable"
           >
             Learn more about articles
-        </a></p>
+          </a>
+        </p>
         <!-- Add Article -->
         <v-expand-transition>
           <div v-if="addArticleForm">
@@ -481,10 +473,10 @@
               <!-- Vanilla internal name -->
               <v-col cols="12" sm="4">
                 <v-autocomplete
-                  variant="outlined"
                   v-model="newArticle.articleId"
+                  variant="outlined"
                   :items="articles"
-                  :item-title="item => `${item.vanillaCharInternalName}_${item.articleName}`"
+                  :item-title="(item) => `${item.vanillaCharInternalName}_${item.articleName}`"
                   item-value="articleId"
                   label="Article"
                 />
@@ -492,8 +484,8 @@
               <!-- Modded internal name -->
               <v-col cols="12" sm="3">
                 <v-text-field
-                  variant="outlined"
                   v-model="newArticle.moddedName"
+                  variant="outlined"
                   label="Modded Internal Name"
                   placeholder="eg. shortaxe"
                 />
@@ -501,15 +493,15 @@
               <!-- Display name -->
               <v-col cols="12" sm="3">
                 <v-text-field
-                  variant="outlined"
                   v-model="newArticle.description"
+                  variant="outlined"
                   label="Display Name"
                   placeholder="eg. Short Axe"
                 />
               </v-col>
               <!-- Submit -->
               <v-col cols="12" sm="2" class="justify-content-center">
-                <v-btn @click="addArticle" class="btn add-button">
+                <v-btn class="btn add-button" @click="addArticle">
                   {{ editingArticleIndex !== null ? 'Update Article' : 'Add Article' }}
                 </v-btn>
               </v-col>
@@ -519,18 +511,26 @@
 
         <!-- Article List -->
         <v-list>
-          <v-list-item
-            v-for="(entry, i) in form.articles"
-            :key="i"
-          >
+          <v-list-item v-for="(entry, i) in form.articles" :key="i">
             <v-list-item-title>
-              <strong>{{ entry.description }}</strong>: {{ getArticleName(entry.articleId) }} ({{ entry.moddedName }})
+              <strong>{{ entry.description }}</strong
+              >: {{ getArticleName(entry.articleId) }} ({{ entry.moddedName }})
             </v-list-item-title>
             <template #append>
-              <v-icon @click="moveItem(form.articles, i, -1)" class="reorder-icon" :class="{ invisible: i === 0 }">mdi-arrow-up</v-icon>
-              <v-icon @click="moveItem(form.articles, i, 1)" class="reorder-icon" :class="{ invisible: i === form.articles.length - 1 }">mdi-arrow-down</v-icon>
-              <v-icon @click="editArticle(i)" class="edit-icon">mdi-pencil</v-icon>
-              <v-icon @click="form.articles.splice(i, 1)" class="delete-icon">mdi-delete</v-icon>
+              <v-icon
+                class="reorder-icon"
+                :class="{ invisible: i === 0 }"
+                @click="moveItem(form.articles, i, -1)"
+                >mdi-arrow-up</v-icon
+              >
+              <v-icon
+                class="reorder-icon"
+                :class="{ invisible: i === form.articles.length - 1 }"
+                @click="moveItem(form.articles, i, 1)"
+                >mdi-arrow-down</v-icon
+              >
+              <v-icon class="edit-icon" @click="editArticle(i)">mdi-pencil</v-icon>
+              <v-icon class="delete-icon" @click="form.articles.splice(i, 1)">mdi-delete</v-icon>
             </template>
           </v-list-item>
         </v-list>
@@ -546,17 +546,15 @@
             icon="mdi-plus"
             class="rotate-toggle"
             :class="{ rotated: addHookForm }"
-            @click="addHookForm = !addHookForm; if (!addHookForm) { editingHookIndex = null; newHook = { hookId: null, description: '' } }"
+            @click="toggleHookForm"
           />
         </h2>
         <!-- Hint -->
-        <p class="subheader"><router-link
-            to="/hooks/add"
-            class="unvisitable"
-            target="_blank"
-          >
+        <p class="subheader">
+          <router-link to="/hooks/add" class="unvisitable" target="_blank">
             Don't see your hook?
-        </router-link></p>
+          </router-link>
+        </p>
         <!-- Add Hook -->
         <v-expand-transition>
           <div v-if="addHookForm">
@@ -564,10 +562,10 @@
               <!-- Vanilla hook -->
               <v-col cols="12">
                 <v-autocomplete
-                  variant="outlined"
                   v-model="newHook.hookId"
+                  variant="outlined"
                   :items="hooks"
-                  :item-title="item => `0x${item.offset} (${item.description})`"
+                  :item-title="(item) => `0x${item.offset} (${item.description})`"
                   item-value="hookId"
                   label="Hook Offset"
                   hide-details
@@ -576,15 +574,15 @@
               <!-- Description -->
               <v-col cols="12" sm="10">
                 <v-text-field
-                  variant="outlined"
                   v-model="newHook.description"
+                  variant="outlined"
                   label="Hook Usage"
                   :placeholder="`What does ${form.moddedCharName || 'the character'} use this for?`"
                 />
               </v-col>
               <!-- Button -->
               <v-col cols="12" sm="2" class="justify-content-center">
-                <v-btn @click="addHook" class="btn add-button">
+                <v-btn class="btn add-button" @click="addHook">
                   {{ editingHookIndex !== null ? 'Update Hook' : 'Add Hook' }}
                 </v-btn>
               </v-col>
@@ -594,18 +592,27 @@
 
         <!-- Hook List -->
         <v-list>
-          <v-list-item
-            v-for="(entry, i) in form.hooks"
-            :key="i"
-          >
+          <v-list-item v-for="(entry, i) in form.hooks" :key="i">
             <v-list-item-title>
-              0x{{ entry.offset }} <span class="hook-usage-dim">({{ entry.hookDescription }})</span> – <span class="hook-usage-dim">{{ entry.description }}</span>
+              0x{{ entry.offset }}
+              <span class="hook-usage-dim">({{ entry.hookDescription }})</span> –
+              <span class="hook-usage-dim">{{ entry.description }}</span>
             </v-list-item-title>
             <template #append>
-              <v-icon @click="moveItem(form.hooks, i, -1)" class="reorder-icon" :class="{ invisible: i === 0 }">mdi-arrow-up</v-icon>
-              <v-icon @click="moveItem(form.hooks, i, 1)" class="reorder-icon" :class="{ invisible: i === form.hooks.length - 1 }">mdi-arrow-down</v-icon>
-              <v-icon @click="editHook(i)" class="edit-icon">mdi-pencil</v-icon>
-              <v-icon @click="form.hooks.splice(i, 1)" class="delete-icon">mdi-delete</v-icon>
+              <v-icon
+                class="reorder-icon"
+                :class="{ invisible: i === 0 }"
+                @click="moveItem(form.hooks, i, -1)"
+                >mdi-arrow-up</v-icon
+              >
+              <v-icon
+                class="reorder-icon"
+                :class="{ invisible: i === form.hooks.length - 1 }"
+                @click="moveItem(form.hooks, i, 1)"
+                >mdi-arrow-down</v-icon
+              >
+              <v-icon class="edit-icon" @click="editHook(i)">mdi-pencil</v-icon>
+              <v-icon class="delete-icon" @click="form.hooks.splice(i, 1)">mdi-delete</v-icon>
             </template>
           </v-list-item>
         </v-list>
@@ -619,17 +626,18 @@
       />
       <section v-else>
         <h2>Plugins</h2>
-        <p class="subheader">Save this moveset first, then attach its plugin(s) from the edit page.</p>
+        <p class="subheader">
+          Save this moveset first, then attach its plugin(s) from the edit page.
+        </p>
       </section>
 
       <!-- Advanced Settings -->
       <section class="advanced-section">
-        <h3
-          class="advanced-toggle"
-          @click="showAdvanced = !showAdvanced"
-        >
+        <h3 class="advanced-toggle" @click="showAdvanced = !showAdvanced">
           Advanced Settings
-          <v-icon class="advanced-chevron" :class="{ rotated: showAdvanced }">mdi-chevron-down</v-icon>
+          <v-icon class="advanced-chevron" :class="{ rotated: showAdvanced }"
+            >mdi-chevron-down</v-icon
+          >
         </h3>
         <v-expand-transition>
           <div v-if="showAdvanced">
@@ -649,8 +657,8 @@
               <!-- Subtitle -->
               <v-col cols="12" sm="4">
                 <v-text-field
-                  variant="outlined"
                   v-model="form.subtitle"
+                  variant="outlined"
                   label="Subtitle"
                   placeholder="e.g. V2, Ult-S, Standalone"
                   messages="Shown in parentheses next to this moveset's name. For disambiguation purposes only."
@@ -664,9 +672,9 @@
       <!-- Notes + Submit -->
       <div class="d-flex align-start ga-3 justify-end">
         <v-textarea
+          v-model="form.notes"
           variant="outlined"
           density="compact"
-          v-model="form.notes"
           :label="isEditMode ? 'Editing notes' : 'Submission notes'"
           placeholder="Optional, shown to admins only."
           rows="1"
@@ -675,10 +683,10 @@
           class="notes-field"
         />
         <v-btn
-          @click="submit"
           class="btn submit-button mt-1"
           :loading="isSubmitting"
           :disabled="isSubmitting"
+          @click="submit"
         >
           {{ uploadStatus || (isEditMode ? 'Save' : 'Submit Moveset') }}
         </v-btn>
@@ -693,8 +701,8 @@
           Unusual Slot Range
         </v-card-title>
         <v-card-text>
-          Slots c{{ form.slotsStart }} through c{{ form.slotsEnd }} aren't a standard 8-slot-aligned range
-          (e.g. c08-c15, c120-c127). Please double-check this is intentional before saving.
+          Slots c{{ form.slotsStart }} through c{{ form.slotsEnd }} aren't a standard 8-slot-aligned
+          range (e.g. c08-c15, c120-c127). Please double-check this is intentional before saving.
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -711,14 +719,14 @@ import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import api from '@/services/api'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import MovesetPluginsPanel from '@/components/MovesetPluginsPanel.vue'
-import thumbhUnknown from "@/assets/thumb_h_unknown.png"
-import movesetHeroUnknown from "@/assets/moveset_hero_unknown.png"
+import thumbhUnknown from '@/assets/thumb_h_unknown.png'
+import movesetHeroUnknown from '@/assets/moveset_hero_unknown.png'
 import { GB_PAGE_URL, GB_WIP_URL, MODS_WIKI_URL, IMAGE_UPLOAD_SPECS } from '@/globals'
 import { dateOnlyStringToLocalDate, localDateToDateOnlyString } from '@/services/dateOnly'
 
 const props = defineProps({
   mode: { type: String },
-  movesetId: { type: Number }
+  movesetId: { type: Number },
 })
 
 const emit = defineEmits(['submitted'])
@@ -768,13 +776,13 @@ const getFullImageUrl = (path) => {
 }
 
 const getVanillaCharDisplayName = (internalName) => {
-  const match = vanillaChars.value.find(v => v.vanillaCharInternalName === internalName)
+  const match = vanillaChars.value.find((v) => v.vanillaCharInternalName === internalName)
   return match ? match.displayName : internalName
 }
 
 const getArticleName = (id) => {
-  const article = articles.value.find(a => a.articleId === id);
-  return article ? `${article.vanillaCharInternalName}_${article.articleName}` : 'Unknown';
+  const article = articles.value.find((a) => a.articleId === id)
+  return article ? `${article.vanillaCharInternalName}_${article.articleName}` : 'Unknown'
 }
 
 const addArticle = () => {
@@ -798,14 +806,14 @@ const editArticle = (i) => {
 const addHook = () => {
   if (!newHook.value.hookId) return
 
-  const hook = hooks.value.find(h => h.hookId === newHook.value.hookId)
+  const hook = hooks.value.find((h) => h.hookId === newHook.value.hookId)
   if (!hook) return
 
   const entry = {
     hookId: hook.hookId,
     offset: hook.offset,
     hookDescription: hook.description,
-    description: newHook.value.description
+    description: newHook.value.description,
   }
 
   if (editingHookIndex.value !== null) {
@@ -876,24 +884,44 @@ const form = ref({
   notes: '',
 })
 
-const newArticle = ref({ articleId: null, moddedName: "", description: "" });
-const newHook = ref({ hookId: null, description: "" });
+const newArticle = ref({ articleId: null, moddedName: '', description: '' })
+const newHook = ref({ hookId: null, description: '' })
+
+// Closing either add form also discards any in-progress edit.
+const toggleArticleForm = () => {
+  addArticleForm.value = !addArticleForm.value
+  if (!addArticleForm.value) {
+    editingArticleIndex.value = null
+    newArticle.value = { articleId: null, moddedName: '', description: '' }
+  }
+}
+
+const toggleHookForm = () => {
+  addHookForm.value = !addHookForm.value
+  if (!addHookForm.value) {
+    editingHookIndex.value = null
+    newHook.value = { hookId: null, description: '' }
+  }
+}
 
 const vanillaChars = ref([])
 const seriesList = ref([])
 const releaseStates = ref([])
 const modders = ref([])
 const dependencies = ref([])
-const articles = ref([]);
-const hooks = ref([]);
+const articles = ref([])
+const hooks = ref([])
 
 const showSeparateIds = ref(false)
 
-watch(() => form.value.slottedId, (val) => {
-  if (!showSeparateIds.value) {
-    form.value.replacementId = val
+watch(
+  () => form.value.slottedId,
+  (val) => {
+    if (!showSeparateIds.value) {
+      form.value.replacementId = val
+    }
   }
-})
+)
 
 const digitsOnly = (field) => {
   if (form.value[field] == null) return
@@ -927,7 +955,15 @@ const dismissSlotWarning = () => {
 onMounted(async () => {
   window.addEventListener('beforeunload', handleBeforeUnload)
 
-  const [vanillaCharsRes, seriesRes, releaseStatesRes, moddersRes, dependenciesRes, articlesRes, hooksRes] = await Promise.all([
+  const [
+    vanillaCharsRes,
+    seriesRes,
+    releaseStatesRes,
+    moddersRes,
+    dependenciesRes,
+    articlesRes,
+    hooksRes,
+  ] = await Promise.all([
     api.get('/vanillachars'),
     api.get('/series'),
     api.get('/releasestates'),
@@ -937,7 +973,9 @@ onMounted(async () => {
     api.get('/hooks'),
   ])
 
-  vanillaChars.value = vanillaCharsRes.data.sort((a, b) => a.displayName.localeCompare(b.displayName))
+  vanillaChars.value = vanillaCharsRes.data.sort((a, b) =>
+    a.displayName.localeCompare(b.displayName)
+  )
   seriesList.value = seriesRes.data.sort((a, b) => a.seriesName.localeCompare(b.seriesName))
   releaseStates.value = releaseStatesRes.data
   modders.value = moddersRes.data.sort((a, b) => a.name.localeCompare(b.name))
@@ -951,26 +989,29 @@ onMounted(async () => {
       const res = await api.get(`/movesets/${props.movesetId}`)
       moveset.value = res.data
       Object.assign(form.value, res.data)
-      document.title = `UMC | Editing ${moveset.value?.moddedCharName}`; // sets page title
+      document.title = `UMC | Editing ${moveset.value?.moddedCharName}` // sets page title
 
       showSeparateIds.value = form.value.slottedId !== form.value.replacementId
       slotRange.value = [form.value.slotsStart, form.value.slotsEnd]
       if (res.data.isJokeMoveset || res.data.subtitle) {
         showAdvanced.value = true
       }
-      form.value.modderIds = res.data.movesetModders?.map(m => m.modder.modderId) || []
-      form.value.dependencyIds = res.data.movesetDependencies?.map(d => d.dependency.dependencyId) || []
-      form.value.articles = res.data.movesetArticles?.map(a => ({
-        articleId: a.article.articleId,
-        moddedName: a.moddedName,
-        description: a.description
-      })) || []
-      form.value.hooks = res.data.movesetHooks?.map(h => ({
-        hookId: h.hook.hookId,
-        offset: h.hook.offset,
-        hookDescription: h.hook.description,
-        description: h.description
-      })) || []
+      form.value.modderIds = res.data.movesetModders?.map((m) => m.modder.modderId) || []
+      form.value.dependencyIds =
+        res.data.movesetDependencies?.map((d) => d.dependency.dependencyId) || []
+      form.value.articles =
+        res.data.movesetArticles?.map((a) => ({
+          articleId: a.article.articleId,
+          moddedName: a.moddedName,
+          description: a.description,
+        })) || []
+      form.value.hooks =
+        res.data.movesetHooks?.map((h) => ({
+          hookId: h.hook.hookId,
+          offset: h.hook.offset,
+          hookDescription: h.hook.description,
+          description: h.description,
+        })) || []
     } catch (err) {
       console.error(err)
       router.replace({ name: 'ErrorPage', query: { http: 404, reason: 'Moveset not found' } })
@@ -978,9 +1019,13 @@ onMounted(async () => {
   }
 
   initialFormSnapshot = JSON.stringify(form.value)
-  watch(form, () => {
-    isDirty.value = JSON.stringify(form.value) !== initialFormSnapshot
-  }, { deep: true })
+  watch(
+    form,
+    () => {
+      isDirty.value = JSON.stringify(form.value) !== initialFormSnapshot
+    },
+    { deep: true }
+  )
 })
 
 const slotRange = ref([form.value.slotsStart || 8, form.value.slotsEnd || 8])
@@ -998,7 +1043,7 @@ const releaseDatePickerValue = computed({
   },
   set(newVal) {
     form.value.releaseDate = localDateToDateOnlyString(newVal)
-  }
+  },
 })
 
 const formattedReleaseDate = computed({
@@ -1010,7 +1055,7 @@ const formattedReleaseDate = computed({
     if (!newVal) {
       form.value.releaseDate = null
     }
-  }
+  },
 })
 
 const uploadImageIfNeeded = async (value, type, itemName) => {
@@ -1042,7 +1087,7 @@ const submit = async () => {
   }
 
   // Validate modderId
-  const user = await api.get('/auth/me');
+  const user = await api.get('/auth/me')
   if (!form.value.modderIds.includes(user.data.modderId)) {
     if (!isEditMode.value) {
       alert('You cannot save a moveset you do not own.')
@@ -1060,7 +1105,7 @@ const submit = async () => {
     'seriesId',
     'slottedId',
     'vanillaCharInternalName',
-    'releaseStateId'
+    'releaseStateId',
   ]
 
   for (const field of requiredFields) {
@@ -1088,11 +1133,22 @@ const submit = async () => {
     // Edit mode: the moveset already exists, so upload first (as before) and save in one request.
     uploadStatus.value = 'Uploading images...'
     try {
-      form.value.thumbhImageUrl = await uploadImageIfNeeded(form.value.thumbhImageUrl, 'thumb_h', form.value.moddedCharName)
-      form.value.movesetHeroImageUrl = await uploadImageIfNeeded(form.value.movesetHeroImageUrl, 'moveset_hero', form.value.moddedCharName)
+      form.value.thumbhImageUrl = await uploadImageIfNeeded(
+        form.value.thumbhImageUrl,
+        'thumb_h',
+        form.value.moddedCharName
+      )
+      form.value.movesetHeroImageUrl = await uploadImageIfNeeded(
+        form.value.movesetHeroImageUrl,
+        'moveset_hero',
+        form.value.moddedCharName
+      )
     } catch (err) {
-      console.error("Image upload failed:", JSON.stringify(err.response?.data) || err.message)
-      alert("Failed to upload image(s). Please check the file and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+      console.error('Image upload failed:', JSON.stringify(err.response?.data) || err.message)
+      alert(
+        'Failed to upload image(s). Please check the file and try again.\n\n' +
+          (JSON.stringify(err.response?.data) || err.message)
+      )
       isSubmitting.value = false
       uploadStatus.value = ''
       return
@@ -1105,8 +1161,11 @@ const submit = async () => {
       justSubmitted.value = true
       router.push(`/moveset/${props.movesetId}`)
     } catch (err) {
-      console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
-      alert("Failed to save moveset. Please check the form and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+      console.error('Submit failed:', JSON.stringify(err.response?.data) || err.message)
+      alert(
+        'Failed to save moveset. Please check the form and try again.\n\n' +
+          (JSON.stringify(err.response?.data) || err.message)
+      )
     } finally {
       isSubmitting.value = false
       uploadStatus.value = ''
@@ -1119,7 +1178,8 @@ const submit = async () => {
   // Create the moveset first (without staged files), then upload and attach images after -
   // that way a failure at any step never leaves an upload with no surviving record.
   const stagedThumb = form.value.thumbhImageUrl instanceof File ? form.value.thumbhImageUrl : null
-  const stagedHero = form.value.movesetHeroImageUrl instanceof File ? form.value.movesetHeroImageUrl : null
+  const stagedHero =
+    form.value.movesetHeroImageUrl instanceof File ? form.value.movesetHeroImageUrl : null
 
   const payload = { ...form.value }
   if (stagedThumb) payload.thumbhImageUrl = null
@@ -1132,8 +1192,11 @@ const submit = async () => {
     const res = await api.post('/movesets', payload)
     newId = res.data.movesetId
   } catch (err) {
-    console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
-    alert("Failed to save moveset. Please check the form and try again.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+    console.error('Submit failed:', JSON.stringify(err.response?.data) || err.message)
+    alert(
+      'Failed to save moveset. Please check the form and try again.\n\n' +
+        (JSON.stringify(err.response?.data) || err.message)
+    )
     isSubmitting.value = false
     uploadStatus.value = ''
     return
@@ -1143,12 +1206,28 @@ const submit = async () => {
     uploadStatus.value = 'Uploading images...'
     try {
       const images = {}
-      if (stagedThumb) images.thumbhImageUrl = await uploadImageIfNeeded(stagedThumb, 'thumb_h', form.value.moddedCharName)
-      if (stagedHero) images.movesetHeroImageUrl = await uploadImageIfNeeded(stagedHero, 'moveset_hero', form.value.moddedCharName)
+      if (stagedThumb)
+        images.thumbhImageUrl = await uploadImageIfNeeded(
+          stagedThumb,
+          'thumb_h',
+          form.value.moddedCharName
+        )
+      if (stagedHero)
+        images.movesetHeroImageUrl = await uploadImageIfNeeded(
+          stagedHero,
+          'moveset_hero',
+          form.value.moddedCharName
+        )
       await api.patch(`/movesets/${newId}/images`, images)
     } catch (err) {
-      console.error("Image upload failed after moveset creation:", JSON.stringify(err.response?.data) || err.message)
-      alert("Moveset created, but the image(s) failed to upload. You can add them later by editing the moveset.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+      console.error(
+        'Image upload failed after moveset creation:',
+        JSON.stringify(err.response?.data) || err.message
+      )
+      alert(
+        'Moveset created, but the image(s) failed to upload. You can add them later by editing the moveset.\n\n' +
+          (JSON.stringify(err.response?.data) || err.message)
+      )
     }
   }
 

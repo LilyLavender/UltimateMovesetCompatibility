@@ -1,5 +1,5 @@
 <template>
-  <MovesetForm mode="edit" :movesetId="parseInt(route.params.movesetId)" />
+  <MovesetForm mode="edit" :moveset-id="parseInt(route.params.movesetId)" />
 </template>
 
 <script setup>

@@ -13,20 +13,18 @@ import Header from '@/components/SiteHeader.vue'
 import Footer from '@/components/SiteFooter.vue'
 import MobileWarning from '@/components/MobileWarning.vue'
 
-import { watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { watch } from 'vue'
+import { useRoute } from 'vue-router'
 
-const route = useRoute();
+const route = useRoute()
 
 watch(
   () => route.fullPath,
   () => {
-    document.title = route.meta.title
-      ? `UMC | ${route.meta.title}`
-      : 'UMC';
+    document.title = route.meta.title ? `UMC | ${route.meta.title}` : 'UMC'
   },
   { immediate: true }
-);
+)
 </script>
 
 <style scoped>
@@ -35,17 +33,17 @@ watch(
 /* Fonts */
 @font-face {
   font-family: AsiaKGDU;
-  src: url('@/assets/fonts/asia_kgdu.woff') format("woff");
+  src: url('@/assets/fonts/asia_kgdu.woff') format('woff');
 }
 
 @font-face {
   font-family: DFHeiGB;
-  src: url('@/assets/fonts/df_hei_gb-w12.otf') format("opentype");
+  src: url('@/assets/fonts/df_hei_gb-w12.otf') format('opentype');
 }
 
 @font-face {
-  font-family: "Roboto Condensed";
-  src: url('@/assets/fonts/Roboto_Condensed-normal-700.woff') format("woff");
+  font-family: 'Roboto Condensed';
+  src: url('@/assets/fonts/Roboto_Condensed-normal-700.woff') format('woff');
 }
 
 /* Table */

@@ -5,12 +5,19 @@
 
     <!-- Main content -->
     <div class="space-between-ps">
-      <p>UMC exposes a read-only public API for looking up movesets, series, hooks, and plugin versions, and for checking predicted compatibility between movesets. It's free to use and doesn't require an API key.</p>
+      <p>
+        UMC exposes a read-only public API for looking up movesets, series, hooks, and plugin
+        versions, and for checking predicted compatibility between movesets. It's free to use and
+        doesn't require an API key.
+      </p>
 
       <p>Movesets can be looked up by their SlottedId or UMC's internal database ID.</p>
 
       <p>
-        Documentation: <a :href="swaggerUrl" target="_blank" rel="noopener" class="unvisitable">{{ swaggerUrl }}</a>
+        Documentation:
+        <a :href="swaggerUrl" target="_blank" rel="noopener" class="unvisitable">{{
+          swaggerUrl
+        }}</a>
       </p>
     </div>
   </v-container>

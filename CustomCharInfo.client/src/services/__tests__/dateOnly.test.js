@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { dateOnlyStringToLocalDate, localDateToDateOnlyString, compareDateOnlyStrings } from '@/services/dateOnly'
+import {
+  dateOnlyStringToLocalDate,
+  localDateToDateOnlyString,
+  compareDateOnlyStrings,
+} from '@/services/dateOnly'
 
 // These exercise the fix for the "release date saved a day off" bug: a Date
 // constructed from *local* year/month/day components must always round-trip

@@ -4,14 +4,8 @@
     <h1 class="mb-4 page-title">Hooks</h1>
 
     <!-- Add hook button -->
-    <div 
-      v-if="user && user.userTypeId >= UserType.Modder"
-      class="mb-5 pb-5"
-    >
-      <router-link
-        :to="{ name: 'AddHook' }"
-        class="unvisitable text-decoration-none"
-      >
+    <div v-if="user && user.userTypeId >= UserType.Modder" class="mb-5 pb-5">
+      <router-link :to="{ name: 'AddHook' }" class="unvisitable text-decoration-none">
         <v-icon>mdi-plus</v-icon>
         Add Hook
       </router-link>
@@ -27,19 +21,17 @@
       dense
     >
       <!-- Offset with 0x -->
-      <template v-slot:item.offset="{ item }">
-        0x{{ item.offset.toString(16).toUpperCase() }}
-      </template>
+      <template #item.offset="{ item }"> 0x{{ item.offset.toString(16).toUpperCase() }} </template>
 
       <!-- Hookable? column -->
-      <template v-slot:item.hookableStatusId="{ item }">
+      <template #item.hookableStatusId="{ item }">
         <span class="hookable-pill" :class="`status-${item.hookableStatusId}`">
           {{ hookableStatusMap[item.hookableStatusId] || 'Unknown' }}
         </span>
       </template>
 
       <!-- Actions -->
-      <template v-slot:item.actions="{ item }">
+      <template #item.actions="{ item }">
         <router-link
           :to="{ name: 'EditHook', params: { hookId: item.hookId } }"
           class="text-decoration-none unvisitable"
@@ -67,7 +59,7 @@ const headers = [
   { title: 'Offset', key: 'offset', width: '1%' },
   { title: 'Description', key: 'description' },
   { title: 'Hookable?', key: 'hookableStatusId', width: '20%' },
-  { title: 'Actions', key: 'actions', width: '1%', sortable: false }
+  { title: 'Actions', key: 'actions', width: '1%', sortable: false },
 ]
 
 const fetchUser = async () => {
@@ -127,7 +119,14 @@ onMounted(async () => {
   font-weight: 500;
   text-align: center;
 }
-.status-1 { background-color: #fbc02d; color: black; }
-.status-2 { background-color: #c62828; }
-.status-3 { background-color: #2e7d32; }
+.status-1 {
+  background-color: #fbc02d;
+  color: black;
+}
+.status-2 {
+  background-color: #c62828;
+}
+.status-3 {
+  background-color: #2e7d32;
+}
 </style>

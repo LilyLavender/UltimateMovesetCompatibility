@@ -19,7 +19,7 @@ const props = defineProps({
   extra: {
     type: String,
     default: '',
-  }
+  },
 })
 </script>
 

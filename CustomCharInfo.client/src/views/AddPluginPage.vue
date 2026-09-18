@@ -2,8 +2,8 @@
   <div class="add-plugin-page">
     <h1 class="page-title no-select">Submit a Plugin</h1>
     <p class="subtitle">
-      For a plugin belonging to a shared dependency or unrelated to any moveset.
-      To attach a plugin to a moveset, check out the moveset's edit page instead.
+      For a plugin belonging to a shared dependency or unrelated to any moveset. To attach a plugin
+      to a moveset, check out the moveset's edit page instead.
     </p>
     <p class="subtitle subtitle--note">
       Submissions here go through admin review before they're searchable on the
@@ -14,12 +14,12 @@
       <!-- Upload first. Everything else appears once we know it's not a duplicate -->
       <v-col cols="12" sm="6">
         <PluginDropZone
-          :model-value="form.file"
-          @update:model-value="onFilePicked"
           v-model:hash="form.hash"
           v-model:duplicate="form.duplicate"
+          :model-value="form.file"
           label="plugin.nro"
           large
+          @update:model-value="onFilePicked"
         />
       </v-col>
 
@@ -35,8 +35,8 @@
         <template v-if="attachment === 'other'">
           <v-col cols="12" sm="6">
             <v-combobox
-              variant="outlined"
               v-model="pluginSelection"
+              variant="outlined"
               :items="otherPlugins"
               :custom-filter="filterByName"
               item-title="name"
@@ -48,7 +48,13 @@
             />
           </v-col>
           <v-col cols="12" sm="4">
-            <v-text-field variant="outlined" v-model="form.versionLabel" label="Version" placeholder="e.g. 1.0.0" hide-details />
+            <v-text-field
+              v-model="form.versionLabel"
+              variant="outlined"
+              label="Version"
+              placeholder="e.g. 1.0.0"
+              hide-details
+            />
           </v-col>
         </template>
 
@@ -56,8 +62,8 @@
         <template v-else>
           <v-col cols="12" sm="6">
             <v-autocomplete
-              variant="outlined"
               v-model="form.dependencyId"
+              variant="outlined"
               :items="dependencies"
               item-title="name"
               item-value="dependencyId"
@@ -66,14 +72,22 @@
             />
           </v-col>
           <v-col cols="12" sm="4">
-            <v-text-field variant="outlined" v-model="form.versionLabel" label="Version" placeholder="e.g. 1.0.0" hide-details />
+            <v-text-field
+              v-model="form.versionLabel"
+              variant="outlined"
+              label="Version"
+              placeholder="e.g. 1.0.0"
+              hide-details
+            />
           </v-col>
         </template>
 
         <!-- Adding a version to an existing plugin -->
         <v-col v-if="isExistingSelected" cols="12">
           <div class="existing-preview">
-            <p v-if="matchedPlugin.description" class="existing-preview-desc">{{ matchedPlugin.description }}</p>
+            <p v-if="matchedPlugin.description" class="existing-preview-desc">
+              {{ matchedPlugin.description }}
+            </p>
             <a
               v-if="matchedPlugin.defaultLearnMoreUrl"
               :href="matchedPlugin.defaultLearnMoreUrl"
@@ -88,19 +102,30 @@
         </v-col>
         <template v-else>
           <v-col v-if="attachment === 'other'" cols="12">
-            <v-textarea variant="outlined" v-model="form.description" label="Description (optional)" rows="2" hide-details />
+            <v-textarea
+              v-model="form.description"
+              variant="outlined"
+              label="Description (optional)"
+              rows="2"
+              hide-details
+            />
           </v-col>
           <v-col cols="12" sm="6">
-            <v-text-field variant="outlined" v-model="form.defaultLearnMoreUrl" label="Mod Link (optional)" hide-details />
+            <v-text-field
+              v-model="form.defaultLearnMoreUrl"
+              variant="outlined"
+              label="Mod Link (optional)"
+              hide-details
+            />
           </v-col>
         </template>
 
         <v-col cols="12">
           <div class="d-flex align-start ga-3 justify-end">
             <v-textarea
+              v-model="form.notes"
               variant="outlined"
               density="compact"
-              v-model="form.notes"
               label="Notes for admins"
               placeholder="Optional, shown to admins only."
               rows="1"
@@ -109,10 +134,10 @@
               class="notes-field"
             />
             <v-btn
-              @click="submit"
               class="btn submit-button mt-1"
               :loading="submitting"
               :disabled="submitting"
+              @click="submit"
             >
               Submit for review
             </v-btn>
@@ -149,12 +174,19 @@ const isExistingSelected = computed(() => {
   if (attachment.value === 'dependency') return existingDependencyPlugin.value != null
   return pluginSelection.value != null && typeof pluginSelection.value === 'object'
 })
-const matchedPlugin = computed(() => attachment.value === 'dependency' ? existingDependencyPlugin.value : pluginSelection.value)
+const matchedPlugin = computed(() =>
+  attachment.value === 'dependency' ? existingDependencyPlugin.value : pluginSelection.value
+)
 
 const emptyForm = () => ({
-  description: '', defaultLearnMoreUrl: '',
+  description: '',
+  defaultLearnMoreUrl: '',
   dependencyId: null,
-  file: null, hash: null, duplicate: null, versionLabel: '', notes: ''
+  file: null,
+  hash: null,
+  duplicate: null,
+  versionLabel: '',
+  notes: '',
 })
 const form = ref(emptyForm())
 
@@ -172,7 +204,7 @@ function filterByName(itemTitle, queryText, item) {
 // The version being submitted is shown separately, so the name doesn't bake in "v4.0.9"
 // and then go stale the moment a different version (e.g. 4.0.8) gets added to the same plugin.
 const selectedDependency = computed(() =>
-  dependencies.value.find(d => d.dependencyId === form.value.dependencyId)
+  dependencies.value.find((d) => d.dependencyId === form.value.dependencyId)
 )
 const generatedName = computed(() => selectedDependency.value?.name ?? '')
 
@@ -186,24 +218,34 @@ async function loadOtherPlugins() {
   try {
     const res = await api.get('/plugins/search', { params: { standalone: true } })
     otherPlugins.value = res.data
-  } catch { otherPlugins.value = [] }
+  } catch {
+    otherPlugins.value = []
+  }
 }
 
-watch(attachment, () => { pluginSelection.value = null; existingDependencyPlugin.value = null })
+watch(attachment, () => {
+  pluginSelection.value = null
+  existingDependencyPlugin.value = null
+})
 
 // A dependency's own download link is the natural "mod link" for a plugin registered under it.
 // A dependency can only ever have one plugin identity, so if it already has one,
 // new versions attach to it automatically instead of registering a duplicate.
-watch(() => form.value.dependencyId, async (id) => {
-  const dep = dependencies.value.find(d => d.dependencyId === id)
-  form.value.defaultLearnMoreUrl = dep?.downloadLink || ''
-  existingDependencyPlugin.value = null
-  if (id == null) return
-  try {
-    const res = await api.get('/plugins/search', { params: { dependencyId: id } })
-    existingDependencyPlugin.value = res.data[0] ?? null
-  } catch { existingDependencyPlugin.value = null }
-})
+watch(
+  () => form.value.dependencyId,
+  async (id) => {
+    const dep = dependencies.value.find((d) => d.dependencyId === id)
+    form.value.defaultLearnMoreUrl = dep?.downloadLink || ''
+    existingDependencyPlugin.value = null
+    if (id == null) return
+    try {
+      const res = await api.get('/plugins/search', { params: { dependencyId: id } })
+      existingDependencyPlugin.value = res.data[0] ?? null
+    } catch {
+      existingDependencyPlugin.value = null
+    }
+  }
+)
 
 async function submit() {
   error.value = null
@@ -258,7 +300,9 @@ onMounted(async () => {
   try {
     const res = await api.get('/dependencies')
     dependencies.value = res.data
-  } catch { dependencies.value = [] }
+  } catch {
+    dependencies.value = []
+  }
   loadOtherPlugins()
 })
 </script>
@@ -269,12 +313,31 @@ onMounted(async () => {
   margin: 0 auto;
   padding: 2rem 1.5rem 4rem;
 }
-.page-title { font-size: 3em; margin-bottom: 0.15em; }
-.subtitle { color: #aaa; margin-bottom: 1rem; line-height: 1.5; }
-.subtitle--note { font-size: 0.9em; }
-.error-text { color: #ef9a9a; font-size: 0.9em; margin-left: 0.75rem; }
-.success-text { color: #81c784; font-size: 0.9em; margin-left: 0.75rem; }
-.submit-feedback { text-align: right; }
+.page-title {
+  font-size: 3em;
+  margin-bottom: 0.15em;
+}
+.subtitle {
+  color: #aaa;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+.subtitle--note {
+  font-size: 0.9em;
+}
+.error-text {
+  color: #ef9a9a;
+  font-size: 0.9em;
+  margin-left: 0.75rem;
+}
+.success-text {
+  color: #81c784;
+  font-size: 0.9em;
+  margin-left: 0.75rem;
+}
+.submit-feedback {
+  text-align: right;
+}
 .disabled :deep(input) {
   color: #484848;
 }
@@ -283,8 +346,13 @@ onMounted(async () => {
   border-radius: 6px;
   padding: 0.75rem 1rem;
 }
-.existing-preview-desc { margin: 0 0 0.4rem; font-size: 0.92em; }
-.hook-usage-dim { opacity: 0.6; }
+.existing-preview-desc {
+  margin: 0 0 0.4rem;
+  font-size: 0.92em;
+}
+.hook-usage-dim {
+  opacity: 0.6;
+}
 
 /* Shared with MovesetForm.vue's "Notes + Submit" row - duplicated because Vue's scoped
    styles don't cross component boundaries. */

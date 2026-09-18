@@ -1,7 +1,7 @@
 <template>
   <div class="log-group">
     <div class="latest-wrapper">
-      <ActionLogItem :log="latest" :isAdmin="isAdmin" />
+      <ActionLogItem :log="latest" :is-admin="isAdmin" />
       <v-btn
         v-if="history.length"
         icon
@@ -16,12 +16,7 @@
     </div>
 
     <div v-if="open && history.length" class="history-list">
-      <ActionLogItem
-        v-for="log in history"
-        :key="log.actionLogId"
-        :log="log"
-        :isAdmin="isAdmin"
-      />
+      <ActionLogItem v-for="log in history" :key="log.actionLogId" :log="log" :is-admin="isAdmin" />
     </div>
   </div>
 </template>
@@ -33,7 +28,7 @@ import ActionLogItem from './ActionLogItem.vue'
 const props = defineProps({
   logs: { type: Array, required: true },
   isAdmin: Boolean,
-  defaultOpen: { type: Boolean, default: false }
+  defaultOpen: { type: Boolean, default: false },
 })
 
 const open = ref(props.defaultOpen)

@@ -1,64 +1,64 @@
-import { createRouter, createWebHashHistory  } from 'vue-router';
+import { createRouter, createWebHashHistory } from 'vue-router'
 import api from '@/services/api'
 import { createAuthGuard, fetchAuthUser, getLatestLog, redirectError } from '@/router/guards'
 import { UserType, ItemType, BLOCKED_ACCEPTANCE_STATES, AcceptanceState } from '@/globals'
 // Basic
-import HomePage from '@/views/HomePage.vue';
-import ErrorPage from '@/views/ErrorPage.vue';
-import AboutPage from '@/views/AboutPage.vue';
-import PhotoSubmissionPage from '@/views/PhotoSubmissionPage.vue';
-import ImageHostingPage from '@/views/ImageHostingPage.vue';
-import MovesetSubmissionGuide from '@/views/MovesetSubmissionGuide.vue';
-import ModderCreditGuide from '@/views/ModderCreditGuide.vue';
-import OpenSourcePage from '@/views/OpenSourcePage.vue';
-import PrivacyPolicyPage from '@/views/PrivacyPolicyPage.vue';
-import ForgotPasswordPage from '@/views/ForgotPasswordPage.vue';
-import ApiPage from '@/views/ApiPage.vue';
+import HomePage from '@/views/HomePage.vue'
+import ErrorPage from '@/views/ErrorPage.vue'
+import AboutPage from '@/views/AboutPage.vue'
+import PhotoSubmissionPage from '@/views/PhotoSubmissionPage.vue'
+import ImageHostingPage from '@/views/ImageHostingPage.vue'
+import MovesetSubmissionGuide from '@/views/MovesetSubmissionGuide.vue'
+import ModderCreditGuide from '@/views/ModderCreditGuide.vue'
+import OpenSourcePage from '@/views/OpenSourcePage.vue'
+import PrivacyPolicyPage from '@/views/PrivacyPolicyPage.vue'
+import ForgotPasswordPage from '@/views/ForgotPasswordPage.vue'
+import ApiPage from '@/views/ApiPage.vue'
 // Movesets
-import MovesetsPage from '@/views/MovesetsPage.vue';
-import MovesetsListPage from '@/views/MovesetsListPage.vue';
-import SlotGridPage from '@/views/SlotGridPage.vue';
-import MovesetDetail from '@/views/MovesetDetail.vue';
-import AddMoveset from '@/views/AddMoveset.vue';
-import EditMoveset from '@/views/EditMoveset.vue';
+import MovesetsPage from '@/views/MovesetsPage.vue'
+import MovesetsListPage from '@/views/MovesetsListPage.vue'
+import SlotGridPage from '@/views/SlotGridPage.vue'
+import MovesetDetail from '@/views/MovesetDetail.vue'
+import AddMoveset from '@/views/AddMoveset.vue'
+import EditMoveset from '@/views/EditMoveset.vue'
 // Modders
-import ModdersPage from '@/views/ModdersPage.vue';
-import ModderDetail from '@/views/ModderDetail.vue';
-import ApplyModder from '@/views/ApplyModder.vue';
-import EditModder from '@/views/EditModder.vue';
+import ModdersPage from '@/views/ModdersPage.vue'
+import ModderDetail from '@/views/ModderDetail.vue'
+import ApplyModder from '@/views/ApplyModder.vue'
+import EditModder from '@/views/EditModder.vue'
 // Series
-import SeriesPage from '@/views/SeriesPage.vue';
-import SeriesDetail from '@/views/SeriesDetail.vue';
-import AddSeries from '@/views/AddSeries.vue';
-import EditSeries from '@/views/EditSeries.vue';
-import RequestEditSeries from '@/views/RequestEditSeries.vue';
+import SeriesPage from '@/views/SeriesPage.vue'
+import SeriesDetail from '@/views/SeriesDetail.vue'
+import AddSeries from '@/views/AddSeries.vue'
+import EditSeries from '@/views/EditSeries.vue'
+import RequestEditSeries from '@/views/RequestEditSeries.vue'
 // Tools
-import CompatibilityCheckPage from '@/views/CompatibilityCheckPage.vue';
-import PluginLookupPage from '@/views/PluginLookupPage.vue';
-import AddPluginPage from '@/views/AddPluginPage.vue';
+import CompatibilityCheckPage from '@/views/CompatibilityCheckPage.vue'
+import PluginLookupPage from '@/views/PluginLookupPage.vue'
+import AddPluginPage from '@/views/AddPluginPage.vue'
 // Hooks
-import HooksPage from '@/views/HooksPage.vue';
-import AddHook from '@/views/AddHook.vue';
-import EditHook from '@/views/EditHook.vue';
+import HooksPage from '@/views/HooksPage.vue'
+import AddHook from '@/views/AddHook.vue'
+import EditHook from '@/views/EditHook.vue'
 // Blog
-import BlogPage from '@/views/BlogPage.vue';
-import BlogPostForm from '@/components/BlogPostForm.vue';
+import BlogPage from '@/views/BlogPage.vue'
+import BlogPostForm from '@/components/BlogPostForm.vue'
 // User
-import AccountPage from '@/views/AccountPage.vue';
-import MyContentPage from '@/views/MyContentPage.vue';
-import MyLikesPage from '@/views/MyLikesPage.vue';
-import ResetPasswordPage from '@/views/ResetPasswordPage.vue';
+import AccountPage from '@/views/AccountPage.vue'
+import MyContentPage from '@/views/MyContentPage.vue'
+import MyLikesPage from '@/views/MyLikesPage.vue'
+import ResetPasswordPage from '@/views/ResetPasswordPage.vue'
 // Admin
-import AdminPortal from '@/views/AdminPortal.vue';
-import AdminAccepter from '@/views/AdminAccepter.vue';
-import NotificationSimulator from '@/views/NotificationSimulator.vue';
-import AdminPicks from '@/views/AdminPicks.vue';
-import AdminPasswordResetter from '@/views/AdminPasswordResetter.vue';
-import UserList from '@/views/UserList.vue';
-import ImageGarbageCollector from '@/views/ImageGarbageCollector.vue';
-import BannerImageManager from '@/views/BannerImageManager.vue';
-import MovesetDeleteManager from '@/views/MovesetDeleteManager.vue';
-import AllPluginsPage from '@/views/AllPluginsPage.vue';
+import AdminPortal from '@/views/AdminPortal.vue'
+import AdminAccepter from '@/views/AdminAccepter.vue'
+import NotificationSimulator from '@/views/NotificationSimulator.vue'
+import AdminPicks from '@/views/AdminPicks.vue'
+import AdminPasswordResetter from '@/views/AdminPasswordResetter.vue'
+import UserList from '@/views/UserList.vue'
+import ImageGarbageCollector from '@/views/ImageGarbageCollector.vue'
+import BannerImageManager from '@/views/BannerImageManager.vue'
+import MovesetDeleteManager from '@/views/MovesetDeleteManager.vue'
+import AllPluginsPage from '@/views/AllPluginsPage.vue'
 
 const routes = [
   {
@@ -101,7 +101,7 @@ const routes = [
     name: 'AddPlugin',
     component: AddPluginPage,
     meta: { title: 'Submit a Plugin' },
-    beforeEnter: createAuthGuard(user => user.userTypeId >= UserType.Modder),
+    beforeEnter: createAuthGuard((user) => user.userTypeId >= UserType.Modder),
   },
   {
     path: '/blog',
@@ -120,7 +120,7 @@ const routes = [
     name: 'RequestEditSeries',
     component: RequestEditSeries,
     meta: { title: 'Edit a Series' },
-    beforeEnter: createAuthGuard(user => user.userTypeId >= UserType.Modder),
+    beforeEnter: createAuthGuard((user) => user.userTypeId >= UserType.Modder),
   },
   {
     path: '/series/:seriesId',
@@ -134,19 +134,19 @@ const routes = [
     component: MovesetDetail,
     props: true,
     beforeEnter: async (to, from, next) => {
-      const movesetId = parseInt(to.params.movesetId);
+      const movesetId = parseInt(to.params.movesetId)
 
       try {
         // Logged-out users don't see logs
         let latestLog = null
         try {
-          latestLog = await getLatestLog(ItemType.Moveset, item => item?.movesetId === movesetId)
+          latestLog = await getLatestLog(ItemType.Moveset, (item) => item?.movesetId === movesetId)
         } catch {
           latestLog = null
         }
 
         const moveset = (await api.get(`/movesets/${movesetId}`)).data
-        const modderIds = moveset.movesetModders.map(m => m.modder.modderId)
+        const modderIds = moveset.movesetModders.map((m) => m.modder.modderId)
 
         // Anonymous users are allowed here; auth is only needed to check ownership below
         let user = null
@@ -165,15 +165,25 @@ const routes = [
           const isOwner = user && modderIds.includes(user.modderId)
 
           if (!isAdmin && !isOwner) {
-            return redirectError(next, '403 Forbidden', 'This moveset is currently private.', 'Check back later, or try signing in.')
+            return redirectError(
+              next,
+              '403 Forbidden',
+              'This moveset is currently private.',
+              'Check back later, or try signing in.'
+            )
           }
         }
 
         return next()
       } catch (err) {
-        return redirectError(next, '500 Server Error', 'Could not load the moveset.', err.message || 'Please try again later.')
+        return redirectError(
+          next,
+          '500 Server Error',
+          'Could not load the moveset.',
+          err.message || 'Please try again later.'
+        )
       }
-    }
+    },
   },
   {
     path: '/moveset/edit/:movesetId',
@@ -183,21 +193,31 @@ const routes = [
     beforeEnter: async (to, from, next) => {
       let moveset
       try {
-        moveset = await api.get(`/movesets/${to.params.movesetId}`);
+        moveset = await api.get(`/movesets/${to.params.movesetId}`)
       } catch (err) {
-        return redirectError(next, '500 Server Error', 'Could not load the moveset.', err.message || 'Please try again later.')
+        return redirectError(
+          next,
+          '500 Server Error',
+          'Could not load the moveset.',
+          err.message || 'Please try again later.'
+        )
       }
 
       const user = await fetchAuthUser(next)
       if (!user) return
 
-      const modderIds = moveset.data.movesetModders.map(m => m.modder.modderId);
+      const modderIds = moveset.data.movesetModders.map((m) => m.modder.modderId)
       if (modderIds.includes(user.modderId) || user.userTypeId === UserType.Admin) {
-        next();
+        next()
       } else {
-        redirectError(next, '403 Forbidden', 'You do not have permission to access this page.', 'Try signing in?')
+        redirectError(
+          next,
+          '403 Forbidden',
+          'You do not have permission to access this page.',
+          'Try signing in?'
+        )
       }
-    }
+    },
   },
   {
     path: '/series/edit/:seriesId',
@@ -205,67 +225,82 @@ const routes = [
     component: EditSeries,
     props: true,
     beforeEnter: async (to, from, next) => {
-      const seriesId = parseInt(to.params.seriesId);
+      const seriesId = parseInt(to.params.seriesId)
 
       const user = await fetchAuthUser(next)
       if (!user) return
 
-      const denyForbidden = () => redirectError(next, '403 Forbidden', 'You do not have permission to edit this series.', '')
+      const denyForbidden = () =>
+        redirectError(next, '403 Forbidden', 'You do not have permission to edit this series.', '')
 
       try {
-        const latestLog = await getLatestLog(ItemType.Series, item => item?.seriesId === seriesId)
-        const stateId = latestLog?.acceptanceState?.acceptanceStateId;
+        const latestLog = await getLatestLog(ItemType.Series, (item) => item?.seriesId === seriesId)
+        const stateId = latestLog?.acceptanceState?.acceptanceStateId
 
         // The submitter reviewing their own pending edit
-        if (stateId === AcceptanceState.PendingUserSoft || stateId === AcceptanceState.PendingUserHard) {
-          return next();
+        if (
+          stateId === AcceptanceState.PendingUserSoft ||
+          stateId === AcceptanceState.PendingUserHard
+        ) {
+          return next()
         }
 
         // Admin review of a series awaiting admin action
         if (
-          (stateId === AcceptanceState.PendingAdminSoft || stateId === AcceptanceState.PendingAdminHard) &&
+          (stateId === AcceptanceState.PendingAdminSoft ||
+            stateId === AcceptanceState.PendingAdminHard) &&
           user.userTypeId === UserType.Admin
         ) {
-          return next();
+          return next()
         }
 
         // Get movesets from series
-        const movesets = (await api.get('/movesets', { params: { seriesId } })).data;
+        const movesets = (await api.get('/movesets', { params: { seriesId } })).data
 
         // No movesets, only modders or admins
         if (movesets.length === 0) {
           if (user.userTypeId === UserType.Modder || user.userTypeId === UserType.Admin) {
-            return next();
+            return next()
           }
-          return denyForbidden();
+          return denyForbidden()
         }
 
         // Check if user is a modder of a moveset in this series. The moveset list endpoint only
         // exposes modder display names (not IDs), so this has to match by name.
-        const modderNames = movesets.flatMap(m => m.modders);
-        const modderName = (await api.get(`/modders/${user.modderId}`)).data.name;
+        const modderNames = movesets.flatMap((m) => m.modders)
+        const modderName = (await api.get(`/modders/${user.modderId}`)).data.name
         if (modderNames.includes(modderName)) {
-          return next();
+          return next()
         }
-        return redirectError(next, '403 Forbidden', 'You do not have permission to edit this series.', 'Only modders of movesets in this series can edit it.')
+        return redirectError(
+          next,
+          '403 Forbidden',
+          'You do not have permission to edit this series.',
+          'Only modders of movesets in this series can edit it.'
+        )
       } catch (err) {
-        return redirectError(next, '500 Server Error', 'Could not load this series.', err.message || 'Please try again later.')
+        return redirectError(
+          next,
+          '500 Server Error',
+          'Could not load this series.',
+          err.message || 'Please try again later.'
+        )
       }
-    }
+    },
   },
   {
     path: '/moveset/add',
     name: 'AddMoveset',
     component: AddMoveset,
     meta: { title: 'Submit Moveset' },
-    beforeEnter: createAuthGuard(user => user.userTypeId >= UserType.Modder),
+    beforeEnter: createAuthGuard((user) => user.userTypeId >= UserType.Modder),
   },
   {
     path: '/series/add',
     name: 'AddSeries',
     component: AddSeries,
     meta: { title: 'Submit Series' },
-    beforeEnter: createAuthGuard(user => user.userTypeId >= UserType.Modder),
+    beforeEnter: createAuthGuard((user) => user.userTypeId >= UserType.Modder),
   },
   {
     path: '/modders',
@@ -289,11 +324,11 @@ const routes = [
       if (!user) return
 
       if (!user.modderId) {
-        next();
+        next()
       } else {
         redirectError(next, '403 Forbidden', 'You have already applied for modder.')
       }
-    }
+    },
   },
   {
     path: '/modder/edit/:id',
@@ -306,22 +341,33 @@ const routes = [
       if (!user) return
 
       if (user.modderId === parseInt(to.params.id)) {
-        return next();
+        return next()
       }
 
       try {
-        const logsRes = await api.get(`/logs`, { params: { userId: user.id } });
-        const submitted = logsRes.data.find(log =>
-          log.itemType?.itemTypeId === ItemType.Modder &&
-          log.item?.modderId === parseInt(to.params.id)
-        );
+        const logsRes = await api.get(`/logs`, { params: { userId: user.id } })
+        const submitted = logsRes.data.find(
+          (log) =>
+            log.itemType?.itemTypeId === ItemType.Modder &&
+            log.item?.modderId === parseInt(to.params.id)
+        )
         if (submitted) {
-          next();
+          next()
         } else {
-          redirectError(next, '403 Forbidden', 'You do not have permission to access this page.', 'Try signing in?')
+          redirectError(
+            next,
+            '403 Forbidden',
+            'You do not have permission to access this page.',
+            'Try signing in?'
+          )
         }
       } catch (err) {
-        redirectError(next, '500 Server Error', 'Could not load this modder.', err.message || 'Please try again later.')
+        redirectError(
+          next,
+          '500 Server Error',
+          'Could not load this modder.',
+          err.message || 'Please try again later.'
+        )
       }
     },
   },
@@ -336,14 +382,14 @@ const routes = [
     name: 'AddHook',
     component: AddHook,
     meta: { title: 'Submit Hook' },
-    beforeEnter: createAuthGuard(user => user.userTypeId >= UserType.Modder),
+    beforeEnter: createAuthGuard((user) => user.userTypeId >= UserType.Modder),
   },
   {
     path: '/hooks/edit/:hookId',
     name: 'EditHook',
     component: EditHook,
     props: true,
-    beforeEnter: createAuthGuard(user => user.userTypeId >= UserType.Modder),
+    beforeEnter: createAuthGuard((user) => user.userTypeId >= UserType.Modder),
   },
   {
     path: '/user-actions',
@@ -369,77 +415,77 @@ const routes = [
     name: 'AdminPortal',
     component: AdminPortal,
     meta: { title: 'Admin portal' },
-    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
   },
   {
     path: '/action-log-manager',
     name: 'AdminAccepter',
     component: AdminAccepter,
     meta: { title: 'Action Log Manager' },
-    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
   },
   {
     path: '/notification-simulator',
     name: 'NotificationSimulator',
     component: NotificationSimulator,
     meta: { title: 'Notification Simulator' },
-    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
   },
   {
     path: '/admin-picks',
     name: 'AdminPicks',
     component: AdminPicks,
     meta: { title: 'Admin Picks' },
-    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
   },
   {
     path: '/admin-password-resetter',
     name: 'AdminPasswordResetter',
     component: AdminPasswordResetter,
     meta: { title: 'Password Resetter' },
-    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
   },
   {
     path: '/add-blog-post',
     name: 'AddBlogPost',
     component: BlogPostForm,
     meta: { title: 'Add Blog Post' },
-    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
   },
   {
     path: '/user-list',
     name: 'UserList',
     component: UserList,
     meta: { title: 'User List' },
-    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
   },
   {
     path: '/image-garbage-collector',
     name: 'ImageGarbageCollector',
     component: ImageGarbageCollector,
     meta: { title: 'Image Garbage Collector' },
-    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
   },
   {
     path: '/banner-image-manager',
     name: 'BannerImageManager',
     component: BannerImageManager,
     meta: { title: 'Banner Image Manager' },
-    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
   },
   {
     path: '/moveset-delete-manager',
     name: 'MovesetDeleteManager',
     component: MovesetDeleteManager,
     meta: { title: 'Moveset Delete Manager' },
-    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
   },
   {
     path: '/all-plugins',
     name: 'AllPlugins',
     component: AllPluginsPage,
     meta: { title: 'All Plugins' },
-    beforeEnter: createAuthGuard(user => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
   },
   {
     path: '/about',
@@ -523,4 +569,4 @@ const routes = [
 export default createRouter({
   history: createWebHashHistory('/UltimateMovesetCompatibility/'),
   routes,
-});
+})

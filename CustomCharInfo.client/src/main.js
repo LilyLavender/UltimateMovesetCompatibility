@@ -1,10 +1,10 @@
-import { createApp } from 'vue';
-import { createPinia } from 'pinia';
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import { createUnhead, headSymbol } from '@unhead/vue'
-import '@/style.css';
-import App from '@/App.vue';
+import '@/style.css'
+import App from '@/App.vue'
 import vuetify from '@/plugins/vuetify'
-import router from '@/router';
+import router from '@/router'
 
 const app = createApp(App)
 const head = createUnhead()

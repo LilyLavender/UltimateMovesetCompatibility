@@ -8,12 +8,7 @@
 
     <v-row class="mb-4" align="center">
       <v-col cols="12" sm="6">
-        <v-btn
-          color="primary"
-          class="btn"
-          @click="fileInput?.click()"
-          :loading="uploading"
-        >
+        <v-btn color="primary" class="btn" :loading="uploading" @click="fileInput?.click()">
           <v-icon class="mr-1">mdi-upload</v-icon>
           Upload Image
         </v-btn>
@@ -41,8 +36,8 @@
         <v-btn
           class="delete-btn"
           block
-          @click="deleteImage(item)"
           :loading="deletingId === item.bannerImageId"
+          @click="deleteImage(item)"
         >
           <v-icon class="mr-1">mdi-delete</v-icon>
           Delete
@@ -103,7 +98,7 @@ const deleteImage = async (item) => {
   deletingId.value = item.bannerImageId
   try {
     await api.delete(`/admin/banner-images/${item.bannerImageId}`)
-    images.value = images.value.filter(i => i.bannerImageId !== item.bannerImageId)
+    images.value = images.value.filter((i) => i.bannerImageId !== item.bannerImageId)
   } catch (err) {
     console.error('Failed to delete banner image:', err)
     alert('Failed to delete banner image.')

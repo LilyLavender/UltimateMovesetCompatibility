@@ -4,13 +4,13 @@
     <div
       class="background-column center-column gradient-column"
       :style="{
-        backgroundImage: `linear-gradient(to bottom, ${backgroundColor} 0%, white 80%)`
+        backgroundImage: `linear-gradient(to bottom, ${backgroundColor} 0%, white 80%)`,
       }"
     ></div>
     <div
       class="background-column center-column icon-column"
       :style="{
-        backgroundImage: `url('${getFullImageUrl(moveset.series.seriesIconUrl, '')}')`
+        backgroundImage: `url('${getFullImageUrl(moveset.series.seriesIconUrl, '')}')`,
       }"
     ></div>
     <div class="background-column side-column left-black"></div>
@@ -22,20 +22,34 @@
       <div class="column-left">
         <div class="title-container">
           <h1 class="title-font page-title no-select">
-            {{ moveset.moddedCharName }}<span v-if="moveset.subtitle" class="page-title-subtitle"> ({{ moveset.subtitle }})</span>
+            {{ moveset.moddedCharName
+            }}<span v-if="moveset.subtitle" class="page-title-subtitle">
+              ({{ moveset.subtitle }})</span
+            >
           </h1>
         </div>
         <div class="left-overlay">
           <div v-if="moveset.isJokeMoveset" class="moveset-warning joke-warning">
-            <span class="pill pill--joke"><v-icon size="14">mdi-egg-easter</v-icon> Joke Moveset</span>
+            <span class="pill pill--joke"
+              ><v-icon size="14">mdi-egg-easter</v-icon> Joke Moveset</span
+            >
           </div>
-          <div v-if="warningInfo" class="moveset-warning">This moveset is <span v-if="warningInfo.isPrivate" class="pill pill--private">Private</span><span v-if="warningInfo.isPrivate && warningInfo.pendingType"> and </span><span v-if="warningInfo.pendingType" :class="['pill', warningInfo.pendingType === 'Admin' ? 'pill--admin' : 'pill--user']">Pending {{ warningInfo.pendingType }} Action</span>. It can only be seen by {{ singleModder ? 'you' : 'its creators' }} and site admins.</div>
+          <div v-if="warningInfo" class="moveset-warning">
+            This moveset is
+            <span v-if="warningInfo.isPrivate" class="pill pill--private">Private</span
+            ><span v-if="warningInfo.isPrivate && warningInfo.pendingType"> and </span
+            ><span
+              v-if="warningInfo.pendingType"
+              :class="['pill', warningInfo.pendingType === 'Admin' ? 'pill--admin' : 'pill--user']"
+              >Pending {{ warningInfo.pendingType }} Action</span
+            >. It can only be seen by {{ singleModder ? 'you' : 'its creators' }} and site admins.
+          </div>
           <div class="like-row">
             <button
               class="like-btn"
               :class="{ 'like-btn--liked': userLiked }"
-              @click="toggleLike"
               :title="user ? (userLiked ? 'Unlike' : 'Like') : 'Sign in to like'"
+              @click="toggleLike"
             >
               <v-icon>{{ userLiked ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
             </button>
@@ -70,23 +84,34 @@
               <h1>Basic Info</h1>
 
               <!-- Creator(s) -->
-              <div class="align-center" v-if="moveset.movesetModders?.length">
-                <p class="d-inline mr-2">Creator<span v-if="moveset.movesetModders.length > 1">s</span>:</p>
+              <div v-if="moveset.movesetModders?.length" class="align-center">
+                <p class="d-inline mr-2">
+                  Creator<span v-if="moveset.movesetModders.length > 1">s</span>:
+                </p>
                 <strong>
                   <template v-for="(mm, index) in moveset.movesetModders" :key="mm.modder.modderId">
                     <router-link
                       :to="{ name: 'ModderDetail', params: { id: mm.modder.modderId } }"
                       class="unvisitable"
                     >
-                      {{ mm.modder.name }}
-                    </router-link><span v-if="index < moveset.movesetModders.length - 1">, </span>
+                      {{ mm.modder.name }} </router-link
+                    ><span v-if="index < moveset.movesetModders.length - 1">, </span>
                   </template>
                 </strong>
               </div>
 
               <!-- Series -->
               <div>
-                <p>Series: <strong>{{ moveset.series?.seriesName }} <img :src="getFullImageUrl(moveset.series.seriesIconUrl, seriesIconUnknown)" alt="series icon" class="inline-series" /></strong></p>
+                <p>
+                  Series:
+                  <strong
+                    >{{ moveset.series?.seriesName }}
+                    <img
+                      :src="getFullImageUrl(moveset.series.seriesIconUrl, seriesIconUnknown)"
+                      alt="series icon"
+                      class="inline-series"
+                  /></strong>
+                </p>
               </div>
 
               <!-- IDs -->
@@ -95,19 +120,35 @@
                   Internal ID: <strong>{{ moveset.slottedId }}</strong>
                 </p>
                 <template v-else>
-                  <p>Slotted ID: <strong>{{ moveset.slottedId }}</strong></p>
-                  <p>Replacement ID: <strong>{{ moveset.replacementId }}</strong></p>
+                  <p>
+                    Slotted ID: <strong>{{ moveset.slottedId }}</strong>
+                  </p>
+                  <p>
+                    Replacement ID: <strong>{{ moveset.replacementId }}</strong>
+                  </p>
                 </template>
               </div>
 
               <!-- Slots -->
               <div>
                 <p v-if="moveset.slotsStart && moveset.slotsEnd">
-                  {{ new Date().getMonth() == 3 && new Date().getDate() == 1 ? 'Schmeebulates:' : 'Slots:' }}
-                  <strong>{{ moveset.vanillaChar?.displayName }} c{{ String(moveset.slotsStart).padStart(2, '0') }}-c{{ String(moveset.slotsEnd).padStart(2, '0') }}</strong>
+                  {{
+                    new Date().getMonth() == 3 && new Date().getDate() == 1
+                      ? 'Schmeebulates:'
+                      : 'Slots:'
+                  }}
+                  <strong
+                    >{{ moveset.vanillaChar?.displayName }} c{{
+                      String(moveset.slotsStart).padStart(2, '0')
+                    }}-c{{ String(moveset.slotsEnd).padStart(2, '0') }}</strong
+                  >
                 </p>
                 <p v-else>
-                  {{ new Date().getMonth() == 3 && new Date().getDate() == 1 ? 'Schmeebulates:' : 'Slots:' }}
+                  {{
+                    new Date().getMonth() == 3 && new Date().getDate() == 1
+                      ? 'Schmeebulates:'
+                      : 'Slots:'
+                  }}
                   <strong>{{ moveset.vanillaChar?.displayName }} c???</strong>
                 </p>
               </div>
@@ -118,11 +159,7 @@
                 <strong>
                   <span v-if="releaseDisplay">
                     <template v-if="releaseDisplay.url">
-                      <a
-                        :href="releaseDisplay.url"
-                        target="_blank"
-                        class="offsite unvisitable"
-                      >
+                      <a :href="releaseDisplay.url" target="_blank" class="offsite unvisitable">
                         {{ releaseDisplay.text }}
                       </a>
                     </template>
@@ -138,12 +175,18 @@
 
               <!-- External Links -->
               <p v-if="moveset.modsWikiLink">
-                <a :href="`${MODS_WIKI_URL}${moveset.modsWikiLink}`" target="_blank" class="offsite unvisitable">
+                <a
+                  :href="`${MODS_WIKI_URL}${moveset.modsWikiLink}`"
+                  target="_blank"
+                  class="offsite unvisitable"
+                >
                   View {{ moveset.moddedCharName }} on SSBU Mods Wiki
                 </a>
               </p>
               <p v-if="moveset.sourceCode && !moveset.modpackName">
-                <a :href="moveset.sourceCode" target="_blank" class="offsite unvisitable">Source Code</a>
+                <a :href="moveset.sourceCode" target="_blank" class="offsite unvisitable"
+                  >Source Code</a
+                >
               </p>
             </div>
           </v-col>
@@ -153,35 +196,55 @@
             <div class="mb-4 info-card">
               <h1>Functions</h1>
               <div class="functions-list">
-                <v-tooltip text="Runs once every frame for all characters" location="left" open-delay="500">
+                <v-tooltip
+                  text="Runs once every frame for all characters"
+                  location="left"
+                  open-delay="500"
+                >
                   <template #activator="{ props }">
                     <div class="function-row" v-bind="props">
                       <span>Global OPFF</span><StatusIcon :value="moveset.hasGlobalOpff" />
                     </div>
                   </template>
                 </v-tooltip>
-                <v-tooltip :text="`Runs once every frame for ${moveset.vanillaChar?.displayName ?? 'the character'}`" location="left" open-delay="500">
+                <v-tooltip
+                  :text="`Runs once every frame for ${moveset.vanillaChar?.displayName ?? 'the character'}`"
+                  location="left"
+                  open-delay="500"
+                >
                   <template #activator="{ props }">
                     <div class="function-row" v-bind="props">
                       <span>Character OPFF</span><StatusIcon :value="moveset.hasCharacterOpff" />
                     </div>
                   </template>
                 </v-tooltip>
-                <v-tooltip text="Runs once when a fighter is spawned in" location="left" open-delay="500">
+                <v-tooltip
+                  text="Runs once when a fighter is spawned in"
+                  location="left"
+                  open-delay="500"
+                >
                   <template #activator="{ props }">
                     <div class="function-row" v-bind="props">
                       <span>agent_init</span><StatusIcon :value="moveset.hasAgentInit" />
                     </div>
                   </template>
                 </v-tooltip>
-                <v-tooltip text="Runs once every time a pre status script runs" location="left" open-delay="500">
+                <v-tooltip
+                  text="Runs once every time a pre status script runs"
+                  location="left"
+                  open-delay="500"
+                >
                   <template #activator="{ props }">
                     <div class="function-row" v-bind="props">
                       <span>on_line pre</span><StatusIcon :value="moveset.hasGlobalOnLinePre" />
                     </div>
                   </template>
                 </v-tooltip>
-                <v-tooltip text="Runs once every time an end status script runs" location="left" open-delay="500">
+                <v-tooltip
+                  text="Runs once every time an end status script runs"
+                  location="left"
+                  open-delay="500"
+                >
                   <template #activator="{ props }">
                     <div class="function-row" v-bind="props">
                       <span>on_line end</span><StatusIcon :value="moveset.hasGlobalOnLineEnd" />
@@ -198,7 +261,12 @@
               <h1>Dependencies</h1>
               <ul v-if="moveset.movesetDependencies.length > 0">
                 <li v-for="md in moveset.movesetDependencies" :key="md.dependencyId">
-                  • <a :href="md.dependency.downloadLink" target="_blank" class="offsite unvisitable dependency-link">
+                  •
+                  <a
+                    :href="md.dependency.downloadLink"
+                    target="_blank"
+                    class="offsite unvisitable dependency-link"
+                  >
                     {{ md.dependency.name }}
                   </a>
                 </li>
@@ -215,13 +283,20 @@
             <div class="mb-4 info-card">
               <h1>Articles</h1>
               <ul v-if="moveset.movesetArticles.length > 0">
-                <li v-for="ma in moveset.movesetArticles" :key="ma.articleId" class="d-flex justify-space-between">
+                <li
+                  v-for="ma in moveset.movesetArticles"
+                  :key="ma.articleId"
+                  class="d-flex justify-space-between"
+                >
                   <div>
-                    <strong>{{ ma.description }}</strong>&nbsp;
+                    <strong>{{ ma.description }}</strong
+                    >&nbsp;
                     <span>({{ ma.moddedName }})</span>
                   </div>
                   <div>
-                    <span>{{ ma.article.vanillaCharInternalName }}_{{ ma.article.articleName }}</span>
+                    <span
+                      >{{ ma.article.vanillaCharInternalName }}_{{ ma.article.articleName }}</span
+                    >
                   </div>
                 </li>
               </ul>
@@ -234,7 +309,11 @@
             <div class="info-card">
               <h1>Hooks</h1>
               <ul v-if="moveset.movesetHooks.length > 0">
-                <li v-for="mh in moveset.movesetHooks" :key="mh.hookId" class="d-flex justify-space-between">
+                <li
+                  v-for="mh in moveset.movesetHooks"
+                  :key="mh.hookId"
+                  class="d-flex justify-space-between"
+                >
                   <div>
                     <strong :title="mh.hook.description" class="hastooltip">
                       0x{{ mh.hook.offset }}
@@ -252,7 +331,6 @@
         </v-row>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -261,8 +339,8 @@ import { ref, watch, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useHead } from '@unhead/vue'
 import api from '@/services/api'
-import movesetHeroUnknown from "@/assets/moveset_hero_unknown.png"
-import seriesIconUnknown from "@/assets/series_icon_unknown.png"
+import movesetHeroUnknown from '@/assets/moveset_hero_unknown.png'
+import seriesIconUnknown from '@/assets/series_icon_unknown.png'
 import { GB_WIP_URL, MODS_WIKI_URL, UserType, ItemType } from '@/globals'
 import { dateOnlyStringToLocalDate } from '@/services/dateOnly'
 
@@ -274,36 +352,46 @@ const likeCount = ref(0)
 const userLiked = ref(false)
 const latestLog = ref(null)
 
-useHead(computed(() => {
-  const name = moveset.value?.moddedCharName
-  const description = name
-    ? `View ${name} moveset info on Ultimate Moveset Compatibility.`
-    : 'View information on Super Smash Bros. Ultimate custom movesets.'
-  const image = moveset.value?.movesetHeroImageUrl
-    ? getFullImageUrl(moveset.value.movesetHeroImageUrl, '')
-    : null
-  return {
-    title: name ? `UMC | ${name} Moveset` : 'UMC',
-    meta: [
-      { name: 'description', content: description },
-      { property: 'og:title', content: name ? `${name} Moveset` : 'Ultimate Moveset Compatibility' },
-      { property: 'og:description', content: description },
-      ...(image ? [
-        { property: 'og:image', content: image },
-        { name: 'twitter:card', content: 'summary_large_image' },
-        { name: 'twitter:image', content: image },
-      ] : []),
-      { name: 'twitter:title', content: name ? `${name} Moveset` : 'Ultimate Moveset Compatibility' },
-      { name: 'twitter:description', content: description },
-    ],
-  }
-}))
+useHead(
+  computed(() => {
+    const name = moveset.value?.moddedCharName
+    const description = name
+      ? `View ${name} moveset info on Ultimate Moveset Compatibility.`
+      : 'View information on Super Smash Bros. Ultimate custom movesets.'
+    const image = moveset.value?.movesetHeroImageUrl
+      ? getFullImageUrl(moveset.value.movesetHeroImageUrl, '')
+      : null
+    return {
+      title: name ? `UMC | ${name} Moveset` : 'UMC',
+      meta: [
+        { name: 'description', content: description },
+        {
+          property: 'og:title',
+          content: name ? `${name} Moveset` : 'Ultimate Moveset Compatibility',
+        },
+        { property: 'og:description', content: description },
+        ...(image
+          ? [
+              { property: 'og:image', content: image },
+              { name: 'twitter:card', content: 'summary_large_image' },
+              { name: 'twitter:image', content: image },
+            ]
+          : []),
+        {
+          name: 'twitter:title',
+          content: name ? `${name} Moveset` : 'Ultimate Moveset Compatibility',
+        },
+        { name: 'twitter:description', content: description },
+      ],
+    }
+  })
+)
 
 const apiUrl = import.meta.env.VITE_API_URL
 
 const imageLoaded = ref(false)
 
-function getFullImageUrl (path, elsepath) {
+function getFullImageUrl(path, elsepath) {
   if (!path) return elsepath
   return path.startsWith('/') ? `${apiUrl}${path}` : path
 }
@@ -315,7 +403,7 @@ const backgroundColor = computed(() => {
 
 const userIsModder = computed(() => {
   if (!user.value || !moveset.value?.movesetModders) return false
-  return moveset.value.movesetModders.some(mm => mm.modder.modderId === user.value.modderId)
+  return moveset.value.movesetModders.some((mm) => mm.modder.modderId === user.value.modderId)
 })
 
 const singleModder = computed(() => moveset.value?.movesetModders?.length === 1)
@@ -333,14 +421,8 @@ const warningInfo = computed(() => {
 const releaseDisplay = computed(() => {
   if (!moveset.value) return null
 
-  const {
-    modpackName,
-    sourceCode,
-    releaseState,
-    modPageUrl,
-    gamebananaWipId,
-    releaseDate
-  } = moveset.value
+  const { modpackName, sourceCode, releaseState, modPageUrl, gamebananaWipId, releaseDate } =
+    moveset.value
 
   const state = releaseState?.releaseStateName
   const pageUrl = modPageUrl || null
@@ -358,7 +440,7 @@ const releaseDisplay = computed(() => {
   if (modpackName) {
     return {
       text: `Exclusive to ${modpackName}`,
-      url: sourceCode || null
+      url: sourceCode || null,
     }
   }
 
@@ -371,9 +453,7 @@ const releaseDisplay = computed(() => {
   if (state === 'Open Beta') {
     let text = 'Open Beta'
     if (hasDate) {
-      text += isPast
-        ? ` (Released ${formatDate(date)})`
-        : ` (Releases ${formatDate(date)})`
+      text += isPast ? ` (Released ${formatDate(date)})` : ` (Releases ${formatDate(date)})`
     }
 
     return { text, url }
@@ -389,7 +469,7 @@ const releaseDisplay = computed(() => {
       text: isPast
         ? `Originally Released ${formatDate(date)}`
         : `Update Releases ${formatDate(date)}`,
-      url
+      url,
     }
   }
 
@@ -447,9 +527,13 @@ onMounted(async () => {
     const isAdmin = user.value?.userTypeId === UserType.Admin
     const logsRes = await api.get(isAdmin ? '/logs?viewAll=true' : '/logs')
     const movesetId = parseInt(route.params.movesetId)
-    latestLog.value = logsRes.data
-      .filter(log => log.itemType?.itemTypeId === ItemType.Moveset && log.item?.movesetId === movesetId)
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] ?? null
+    latestLog.value =
+      logsRes.data
+        .filter(
+          (log) =>
+            log.itemType?.itemTypeId === ItemType.Moveset && log.item?.movesetId === movesetId
+        )
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] ?? null
   } catch {
     //
   }
@@ -466,16 +550,10 @@ const StatusIcon = defineComponent({
   },
   setup(props) {
     return () =>
-      h(
-        'i',
-        {
-          class: [
-            'mdi',
-            props.value ? 'mdi-check-bold' : 'mdi-close-thick'
-          ]
-        }
-      )
-  }
+      h('i', {
+        class: ['mdi', props.value ? 'mdi-check-bold' : 'mdi-close-thick'],
+      })
+  },
 })
 </script>
 
@@ -589,7 +667,7 @@ const StatusIcon = defineComponent({
   position: relative;
   z-index: 10;
   margin: -20px 0.25em -16px 1.5em;
-  filter: drop-shadow(5px 4px 3px #000000c0)
+  filter: drop-shadow(5px 4px 3px #000000c0);
 }
 
 .character-image {
@@ -637,9 +715,7 @@ const StatusIcon = defineComponent({
   border-radius: 3px;
   position: relative;
   z-index: 20;
-  backdrop-filter: blur(2px) 
-                   saturate(0.8) 
-                   brightness(0.9);
+  backdrop-filter: blur(2px) saturate(0.8) brightness(0.9);
 }
 
 .inline-series {
@@ -810,7 +886,8 @@ li {
   align-items: center;
 }
 
-.mdi-check-bold, .mdi-close-thick {
+.mdi-check-bold,
+.mdi-close-thick {
   font-size: 1.6em;
   margin-left: 2px;
 }

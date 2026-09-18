@@ -6,10 +6,7 @@
       class="moveset-card__link"
     >
       <!-- Background gradient -->
-      <div
-        class="moveset-card__background"
-        :style="{ background: backgroundGradient }"
-      />
+      <div class="moveset-card__background" :style="{ background: backgroundGradient }" />
 
       <!-- Character image -->
       <div
@@ -18,16 +15,19 @@
       />
 
       <!-- Series icon -->
-      <div v-if="moveset.seriesIconUrl && !blockedSeriesIconUrls.has(moveset.seriesIconUrl)" class="moveset-card__series">
-        <img
-          :src="getFullImageUrl(moveset.seriesIconUrl)"
-          alt="Series Icon"
-        />
+      <div
+        v-if="moveset.seriesIconUrl && !blockedSeriesIconUrls.has(moveset.seriesIconUrl)"
+        class="moveset-card__series"
+      >
+        <img :src="getFullImageUrl(moveset.seriesIconUrl)" alt="Series Icon" />
       </div>
 
       <!-- Character name -->
       <p class="moveset-card__charname">
-        {{ moveset.moddedCharName }}<span v-if="moveset.subtitle" class="moveset-card__subtitle"> ({{ moveset.subtitle }})</span>
+        {{ moveset.moddedCharName
+        }}<span v-if="moveset.subtitle" class="moveset-card__subtitle">
+          ({{ moveset.subtitle }})</span
+        >
       </p>
 
       <!-- Creator(s) -->
@@ -40,7 +40,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import thumbhUnknown from "@/assets/thumb_h_unknown.png"
+import thumbhUnknown from '@/assets/thumb_h_unknown.png'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
@@ -96,7 +96,7 @@ const backgroundGradient = computed(() => {
 }
 
 .moveset-card__link::after {
-  content: "";
+  content: '';
   display: block;
   width: 0;
   height: 82px;
@@ -149,7 +149,7 @@ const backgroundGradient = computed(() => {
   margin-top: 7.5%;
   margin-left: 1.4em;
   font-size: larger;
-  font-family: "Roboto Condensed";
+  font-family: 'Roboto Condensed';
   text-transform: uppercase;
 }
 

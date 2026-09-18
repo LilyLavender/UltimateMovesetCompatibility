@@ -6,8 +6,8 @@
     <v-row>
       <v-col cols="12" sm="3">
         <v-select
-          variant="outlined"
           v-model="selectedUserId"
+          variant="outlined"
           :items="users"
           item-title="user.userName"
           item-value="user.id"
@@ -18,14 +18,9 @@
     </v-row>
 
     <!-- Logs -->
-    <ActionLogList
-      v-if="selectedUserId"
-      :user-id="selectedUserId"
-    />
+    <ActionLogList v-if="selectedUserId" :user-id="selectedUserId" />
 
-    <p v-else class="text-medium-emphasis">
-      Select a user to view their action logs.
-    </p>
+    <p v-else class="text-medium-emphasis">Select a user to view their action logs.</p>
   </v-container>
 </template>
 
@@ -44,7 +39,7 @@ const fetchUsers = async () => {
     const res = await api.get('/users')
     users.value = res.data.inBoth
       .slice()
-      .sort((a, b) => (a.user.userName).localeCompare(b.user.userName))
+      .sort((a, b) => a.user.userName.localeCompare(b.user.userName))
   } catch (err) {
     console.error('Failed to fetch users:', err)
   } finally {
@@ -59,5 +54,5 @@ onMounted(fetchUsers)
 .page-title {
   font-size: 5em;
   margin-top: 0.5em;
-}  
+}
 </style>

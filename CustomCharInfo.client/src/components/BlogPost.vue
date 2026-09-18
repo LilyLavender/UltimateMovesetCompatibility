@@ -4,10 +4,14 @@
       {{ props.post.blogTitle }}
     </v-card-title>
     <v-card-text>
-      <div v-html="renderedText" class="blog-text"></div>
+      <div class="blog-text" v-html="renderedText"></div>
     </v-card-text>
     <div>
-      <v-img v-if="props.post.blogImageUrl" :src="getFullImageUrl(props.post.blogImageUrl)" class="blog-image" />
+      <v-img
+        v-if="props.post.blogImageUrl"
+        :src="getFullImageUrl(props.post.blogImageUrl)"
+        class="blog-image"
+      />
     </div>
     <v-card-subtitle class="blog-subtitle">
       {{ props.post.authorUserName }} | {{ formatDate(props.post.postedDate) }} UTC

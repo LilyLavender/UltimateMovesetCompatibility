@@ -61,8 +61,8 @@ const unknownHeaders = [
 
 // Flatten to one row per version so check counts/dates are visible per-version
 const versionRows = computed(() =>
-  plugins.value.flatMap(p =>
-    p.versions.map(v => ({
+  plugins.value.flatMap((p) =>
+    p.versions.map((v) => ({
       pluginVersionId: v.pluginVersionId,
       pluginName: p.name,
       attachedTo: p.movesetName ?? p.dependencyName ?? 'Other',

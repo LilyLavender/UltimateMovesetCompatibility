@@ -5,13 +5,11 @@
     <!-- Pending Admin Items -->
     <div class="mb-6">
       <h2 class="mb-2">Pending Admin Action</h2>
-      <p v-if="!pendingAdminLogs.length" class="text-medium-emphasis">No items pending admin action.</p>
+      <p v-if="!pendingAdminLogs.length" class="text-medium-emphasis">
+        No items pending admin action.
+      </p>
       <v-row v-else>
-        <v-col
-          v-for="log in pendingAdminLogs"
-          :key="log.actionLogId"
-          cols="12" sm="6" md="3"
-        >
+        <v-col v-for="log in pendingAdminLogs" :key="log.actionLogId" cols="12" sm="6" md="3">
           <v-card class="pending-card pa-3 h-100 d-flex flex-column" color="#2e2e2e">
             <div class="card-info-row mb-3">
               <span class="type-chip">
@@ -21,7 +19,11 @@
               <span class="item-name">{{ getItemName(log) }}</span>
               <v-tooltip :text="log.acceptanceState.acceptanceStateName" location="top">
                 <template #activator="{ props: tooltipProps }">
-                  <span v-bind="tooltipProps" class="state-dot" :style="stateDotStyle(log.acceptanceState.acceptanceStateId)" />
+                  <span
+                    v-bind="tooltipProps"
+                    class="state-dot"
+                    :style="stateDotStyle(log.acceptanceState.acceptanceStateId)"
+                  />
                 </template>
               </v-tooltip>
             </div>
@@ -29,7 +31,12 @@
               <v-btn
                 v-if="![ItemType.Hook, ItemType.Plugin].includes(log.itemType.itemTypeId)"
                 variant="flat"
-                :class="['action-btn', pendingUserTargetState(log) === AcceptanceState.PendingUserHard ? 'pending-btn-hard' : 'pending-btn-soft']"
+                :class="[
+                  'action-btn',
+                  pendingUserTargetState(log) === AcceptanceState.PendingUserHard
+                    ? 'pending-btn-hard'
+                    : 'pending-btn-soft',
+                ]"
                 style="width: 50%"
                 @click="prefillForm(log, pendingUserTargetState(log))"
               >
@@ -38,7 +45,11 @@
               <v-btn
                 variant="flat"
                 class="action-btn accept-btn"
-                :style="{ width: [ItemType.Hook, ItemType.Plugin].includes(log.itemType.itemTypeId) ? '100%' : '50%' }"
+                :style="{
+                  width: [ItemType.Hook, ItemType.Plugin].includes(log.itemType.itemTypeId)
+                    ? '100%'
+                    : '50%',
+                }"
                 @click="prefillForm(log, AcceptanceState.Accepted)"
               >
                 Accepted
@@ -59,23 +70,21 @@
           <v-row>
             <!-- Title -->
             <v-col cols="12" md="4">
-              <h2 class="center-entire">
-                Select Item
-              </h2>
+              <h2 class="center-entire">Select Item</h2>
             </v-col>
 
             <!-- Item Type -->
             <v-col cols="12" md="4">
               <v-select
-                variant="outlined"
                 v-model="form.itemTypeId"
+                variant="outlined"
                 :items="itemTypes"
                 item-title="label"
                 item-value="value"
                 label="Item Type"
                 required
                 hide-details
-                @update:modelValue="fetchItems"
+                @update:model-value="fetchItems"
               >
                 <template #selection="{ item }">
                   <v-icon size="20" class="mr-1">{{ itemTypeIcon(item.raw.value) }}</v-icon>
@@ -97,8 +106,8 @@
             <!-- Item ID -->
             <v-col cols="12" md="4">
               <v-autocomplete
-                variant="outlined"
                 v-model="form.itemId"
+                variant="outlined"
                 :items="items"
                 item-title="name"
                 item-value="id"
@@ -117,16 +126,14 @@
           <v-row>
             <!-- Title -->
             <v-col cols="12" md="4">
-              <h2 class="center-entire">
-                Create Log
-              </h2>
+              <h2 class="center-entire">Create Log</h2>
             </v-col>
 
             <!-- Acceptance State -->
             <v-col cols="12" md="8">
               <v-select
-                variant="outlined"
                 v-model="form.acceptanceStateId"
+                variant="outlined"
                 :items="acceptanceStates"
                 item-title="name"
                 item-value="id"
@@ -153,8 +160,8 @@
           <v-row>
             <v-col cols="12">
               <v-textarea
-                variant="outlined"
                 v-model="form.notes"
+                variant="outlined"
                 label="Notes"
                 rows="3"
                 auto-grow
@@ -174,7 +181,9 @@
 
             <!-- Feedback -->
             <v-col cols="12" md="7">
-              <p v-if="success" class="text-green mt-3">Action Log {{ success }} submitted at {{ (new Date()).toLocaleTimeString("en-US") }}</p>
+              <p v-if="success" class="text-green mt-3">
+                Action Log {{ success }} submitted at {{ new Date().toLocaleTimeString('en-US') }}
+              </p>
               <p v-if="error" class="text-red mt-3">{{ error }}</p>
             </v-col>
           </v-row>
@@ -185,7 +194,7 @@
           <!-- Moveset preview -->
           <div v-if="selectedFull && form.itemTypeId === ItemType.Moveset" class="mb-3">
             <h2 class="mb-1">Preview</h2>
-            <MovesetCard :moveset="selectedFull" :canView="true" />
+            <MovesetCard :moveset="selectedFull" :can-view="true" />
           </div>
 
           <!-- Modder preview -->
@@ -203,8 +212,12 @@
               </div>
               <div class="modder-preview-info">
                 <span class="modder-preview-name">{{ selectedFull.name }}</span>
-                <span v-if="selectedFull.bio" class="modder-preview-bio">{{ selectedFull.bio }}</span>
-                <span v-if="selectedFull.discordUsername" class="modder-preview-discord">@{{ selectedFull.discordUsername }}</span>
+                <span v-if="selectedFull.bio" class="modder-preview-bio">{{
+                  selectedFull.bio
+                }}</span>
+                <span v-if="selectedFull.discordUsername" class="modder-preview-discord"
+                  >@{{ selectedFull.discordUsername }}</span
+                >
               </div>
             </div>
           </div>
@@ -238,8 +251,8 @@
           <ActionLogGroup
             v-if="itemLogs.length"
             :logs="itemLogs"
-            :isAdmin="false"
-            :defaultOpen="true"
+            :is-admin="false"
+            :default-open="true"
           />
         </v-col>
       </v-row>
@@ -257,14 +270,15 @@ import seriesIconUnknown from '@/assets/series_icon_unknown.png'
 import { ItemType, AcceptanceState } from '@/globals'
 
 const apiUrl = import.meta.env.VITE_API_URL
-const resolveIconUrl = (path) => path?.startsWith('/') ? `${apiUrl}${path}` : (path ?? seriesIconUnknown)
+const resolveIconUrl = (path) =>
+  path?.startsWith('/') ? `${apiUrl}${path}` : (path ?? seriesIconUnknown)
 
 const form = ref({
   userId: null,
   itemTypeId: null,
   itemId: null,
   acceptanceStateId: null,
-  notes: ''
+  notes: '',
 })
 
 const itemTypes = ref([])
@@ -273,7 +287,7 @@ const acceptanceStates = ref([])
 const fetchItemTypes = async () => {
   try {
     const res = await api.get('/itemtypes')
-    itemTypes.value = res.data.map(t => ({ label: t.itemTypeName, value: t.itemTypeId }))
+    itemTypes.value = res.data.map((t) => ({ label: t.itemTypeName, value: t.itemTypeId }))
   } catch (err) {
     console.error('Failed to fetch item types:', err)
   }
@@ -283,8 +297,8 @@ const fetchAcceptanceStates = async () => {
   try {
     const res = await api.get('/acceptancestates')
     acceptanceStates.value = res.data
-      .filter(s => s.acceptanceStateId !== AcceptanceState.AutoAccepted)
-      .map(s => ({ id: s.acceptanceStateId, name: s.acceptanceStateName }))
+      .filter((s) => s.acceptanceStateId !== AcceptanceState.AutoAccepted)
+      .map((s) => ({ id: s.acceptanceStateId, name: s.acceptanceStateName }))
   } catch (err) {
     console.error('Failed to fetch acceptance states:', err)
   }
@@ -299,47 +313,61 @@ const loadingLogs = ref(false)
 const pendingAdminLogs = ref([])
 const modderGbPfp = ref(null)
 
-const itemTypeLabel = (id) => ({
-  [ItemType.Moveset]: 'Moveset',
-  [ItemType.Modder]: 'Modder',
-  [ItemType.Series]: 'Series',
-  [ItemType.Hook]: 'Hook',
-  [ItemType.Plugin]: 'Plugin',
-})[id] ?? '?'
+const itemTypeLabel = (id) =>
+  ({
+    [ItemType.Moveset]: 'Moveset',
+    [ItemType.Modder]: 'Modder',
+    [ItemType.Series]: 'Series',
+    [ItemType.Hook]: 'Hook',
+    [ItemType.Plugin]: 'Plugin',
+  })[id] ?? '?'
 
-const itemTypeIcon = (id) => ({
-  [ItemType.Moveset]: 'mdi-sword',
-  [ItemType.Modder]: 'mdi-account',
-  [ItemType.Series]: 'mdi-view-list',
-  [ItemType.Hook]: 'mdi-hook',
-  [ItemType.Plugin]: 'mdi-file-code',
-})[id] ?? 'mdi-help'
+const itemTypeIcon = (id) =>
+  ({
+    [ItemType.Moveset]: 'mdi-sword',
+    [ItemType.Modder]: 'mdi-account',
+    [ItemType.Series]: 'mdi-view-list',
+    [ItemType.Hook]: 'mdi-hook',
+    [ItemType.Plugin]: 'mdi-file-code',
+  })[id] ?? 'mdi-help'
 
 const stateDotStyle = (id) => ({
-  backgroundColor: id === AcceptanceState.PendingAdminHard ? 'rgb(52, 194, 241)' : 'rgb(187, 224, 236)',
+  backgroundColor:
+    id === AcceptanceState.PendingAdminHard ? 'rgb(52, 194, 241)' : 'rgb(187, 224, 236)',
 })
 
 const acceptanceStateDotStyle = (id) => ({
-  backgroundColor: {
-    [AcceptanceState.PendingAdminSoft]: 'rgb(187, 224, 236)',
-    [AcceptanceState.PendingAdminHard]: 'rgb(52, 194, 241)',
-    [AcceptanceState.PendingUserSoft]: 'rgb(241, 241, 142)',
-    [AcceptanceState.PendingUserHard]: 'rgb(241, 241, 52)',
-    [AcceptanceState.Accepted]: 'rgb(52, 241, 52)',
-    [AcceptanceState.Rejected]: 'rgb(241, 52, 52)',
-    [AcceptanceState.AutoAccepted]: 'rgb(52, 241, 52)',
-  }[id] ?? '#888',
+  backgroundColor:
+    {
+      [AcceptanceState.PendingAdminSoft]: 'rgb(187, 224, 236)',
+      [AcceptanceState.PendingAdminHard]: 'rgb(52, 194, 241)',
+      [AcceptanceState.PendingUserSoft]: 'rgb(241, 241, 142)',
+      [AcceptanceState.PendingUserHard]: 'rgb(241, 241, 52)',
+      [AcceptanceState.Accepted]: 'rgb(52, 241, 52)',
+      [AcceptanceState.Rejected]: 'rgb(241, 52, 52)',
+      [AcceptanceState.AutoAccepted]: 'rgb(52, 241, 52)',
+    }[id] ?? '#888',
 })
 
-const getItemId = (log) => log.item?.movesetId ?? log.item?.modderId ?? log.item?.seriesId ?? log.item?.hookId ?? log.item?.pluginVersionId
+const getItemId = (log) =>
+  log.item?.movesetId ??
+  log.item?.modderId ??
+  log.item?.seriesId ??
+  log.item?.hookId ??
+  log.item?.pluginVersionId
 
-const getItemName = (log) => log.item?.moddedCharName ?? log.item?.name ?? log.item?.seriesName ?? (log.item?.offset ? `0x${log.item.offset}` : undefined) ?? log.item?.label ?? '(deleted)'
+const getItemName = (log) =>
+  log.item?.moddedCharName ??
+  log.item?.name ??
+  log.item?.seriesName ??
+  (log.item?.offset ? `0x${log.item.offset}` : undefined) ??
+  log.item?.label ??
+  '(deleted)'
 
 const pendingUserTargetState = (log) =>
   log.acceptanceState.acceptanceStateId === AcceptanceState.PendingAdminHard
     ? AcceptanceState.PendingUserHard
     : AcceptanceState.PendingUserSoft
-
 
 const fetchUser = async () => {
   const res = await api.get('/auth/me')
@@ -351,9 +379,15 @@ const fetchPendingAdminLogs = async () => {
     const res = await api.get('/logs', {
       params: {
         acceptanceStates: [AcceptanceState.PendingAdminSoft, AcceptanceState.PendingAdminHard],
-        itemTypes: [ItemType.Moveset, ItemType.Modder, ItemType.Series, ItemType.Hook, ItemType.Plugin],
-        viewAll: true
-      }
+        itemTypes: [
+          ItemType.Moveset,
+          ItemType.Modder,
+          ItemType.Series,
+          ItemType.Hook,
+          ItemType.Plugin,
+        ],
+        viewAll: true,
+      },
     })
     const latestMap = new Map()
     for (const log of res.data) {
@@ -363,8 +397,11 @@ const fetchPendingAdminLogs = async () => {
         latestMap.set(key, log)
       }
     }
-    pendingAdminLogs.value = Array.from(latestMap.values())
-      .filter(log => [AcceptanceState.PendingAdminSoft, AcceptanceState.PendingAdminHard].includes(log.acceptanceState.acceptanceStateId))
+    pendingAdminLogs.value = Array.from(latestMap.values()).filter((log) =>
+      [AcceptanceState.PendingAdminSoft, AcceptanceState.PendingAdminHard].includes(
+        log.acceptanceState.acceptanceStateId
+      )
+    )
   } catch (err) {
     console.error('Failed to fetch pending admin logs:', err)
   }
@@ -375,23 +412,23 @@ const fetchItems = async () => {
     if (form.value.itemTypeId === ItemType.Moveset) {
       const res = await api.get('/movesets')
       const sorted = res.data.sort((a, b) => a.moddedCharName.localeCompare(b.moddedCharName))
-      fullItemsById.value = Object.fromEntries(sorted.map(m => [m.movesetId, m]))
-      items.value = sorted.map(m => ({ id: m.movesetId, name: m.moddedCharName }))
+      fullItemsById.value = Object.fromEntries(sorted.map((m) => [m.movesetId, m]))
+      items.value = sorted.map((m) => ({ id: m.movesetId, name: m.moddedCharName }))
     } else if (form.value.itemTypeId === ItemType.Modder) {
       const res = await api.get('/modders')
       const sorted = res.data.sort((a, b) => a.name.localeCompare(b.name))
-      fullItemsById.value = Object.fromEntries(sorted.map(m => [m.modderId, m]))
-      items.value = sorted.map(m => ({ id: m.modderId, name: m.name }))
+      fullItemsById.value = Object.fromEntries(sorted.map((m) => [m.modderId, m]))
+      items.value = sorted.map((m) => ({ id: m.modderId, name: m.name }))
     } else if (form.value.itemTypeId === ItemType.Series) {
       const res = await api.get('/series')
       const sorted = res.data.sort((a, b) => a.seriesName.localeCompare(b.seriesName))
-      fullItemsById.value = Object.fromEntries(sorted.map(s => [s.seriesId, s]))
-      items.value = sorted.map(s => ({ id: s.seriesId, name: s.seriesName }))
+      fullItemsById.value = Object.fromEntries(sorted.map((s) => [s.seriesId, s]))
+      items.value = sorted.map((s) => ({ id: s.seriesId, name: s.seriesName }))
     } else if (form.value.itemTypeId === ItemType.Hook) {
       const res = await api.get('/hooks')
       const sorted = res.data.sort((a, b) => a.offset.localeCompare(b.offset))
-      fullItemsById.value = Object.fromEntries(sorted.map(h => [h.hookId, h]))
-      items.value = sorted.map(h => ({ id: h.hookId, name: `${h.offset} - ${h.description}` }))
+      fullItemsById.value = Object.fromEntries(sorted.map((h) => [h.hookId, h]))
+      items.value = sorted.map((h) => ({ id: h.hookId, name: `${h.offset} - ${h.description}` }))
     } else {
       fullItemsById.value = {}
       items.value = []
@@ -405,15 +442,13 @@ const selectedFull = computed(() =>
   form.value.itemId ? (fullItemsById.value[form.value.itemId] ?? null) : null
 )
 
-const modderPfpPreview = computed(() =>
-  selectedFull.value?.pfpUrl || modderGbPfp.value || null
-)
+const modderPfpPreview = computed(() => selectedFull.value?.pfpUrl || modderGbPfp.value || null)
 
 const SURROUNDING_SERIES_IDS = [6, 39, 4, 11, 1, 2, 34, 20]
 
 const seriesGridCells = computed(() => {
   if (!selectedFull.value || form.value.itemTypeId !== ItemType.Series) return []
-  const surrounding = SURROUNDING_SERIES_IDS.map(id => fullItemsById.value[id] ?? null)
+  const surrounding = SURROUNDING_SERIES_IDS.map((id) => fullItemsById.value[id] ?? null)
   const cells = Array(9).fill(null)
   cells[4] = selectedFull.value
   let j = 0
@@ -465,10 +500,7 @@ const submitLog = async () => {
 }
 
 // Fetch item logs when itemId changes
-watch(
-  () => [form.value.itemTypeId, form.value.itemId],
-  fetchItemLogs
-)
+watch(() => [form.value.itemTypeId, form.value.itemId], fetchItemLogs)
 
 // Fetch GB pfp when a modder without a custom pfpUrl is selected
 watch(selectedFull, async (modder) => {
@@ -503,7 +535,7 @@ onMounted(async () => {
   text-align: center;
 }
 
-div:has(>.center-entire) {
+div:has(> .center-entire) {
   align-content: center;
 }
 
@@ -535,7 +567,7 @@ div:has(>.center-entire) {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #aaa;
-  background: rgba(255,255,255,0.07);
+  background: rgba(255, 255, 255, 0.07);
   padding: 2px 8px 2px 6px;
   border-radius: 999px;
   white-space: nowrap;
@@ -571,12 +603,12 @@ div:has(>.center-entire) {
 }
 
 .pending-btn-soft {
-  background-color: rgba(255, 193, 7, 0.10) !important;
+  background-color: rgba(255, 193, 7, 0.1) !important;
   color: #ffe082 !important;
 }
 
 .pending-btn-soft:hover {
-  background-color: rgba(255, 193, 7, 0.20) !important;
+  background-color: rgba(255, 193, 7, 0.2) !important;
 }
 
 .pending-btn-hard {

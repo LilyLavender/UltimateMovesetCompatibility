@@ -55,33 +55,34 @@ const movesets = ref([])
 const canEdit = ref(false)
 const apiUrl = import.meta.env.VITE_API_URL
 
-const getFullImageUrl = (path) =>
-  path?.startsWith('/') ? `${apiUrl}${path}` : path
+const getFullImageUrl = (path) => (path?.startsWith('/') ? `${apiUrl}${path}` : path)
 
-useHead(computed(() => {
-  const name = series.value?.seriesName
-  const description = name
-    ? `Browse ${name} movesets on Ultimate Moveset Compatibility.`
-    : 'View information on Super Smash Bros. Ultimate custom movesets.'
-  const image = series.value?.seriesIconUrl
-    ? getFullImageUrl(series.value.seriesIconUrl)
-    : null
-  return {
-    title: name ? `UMC | ${name}` : 'UMC',
-    meta: [
-      { name: 'description', content: description },
-      { property: 'og:title', content: name ?? 'Ultimate Moveset Compatibility' },
-      { property: 'og:description', content: description },
-      ...(image ? [
-        { property: 'og:image', content: image },
-        { name: 'twitter:card', content: 'summary' },
-        { name: 'twitter:image', content: image },
-      ] : []),
-      { name: 'twitter:title', content: name ?? 'Ultimate Moveset Compatibility' },
-      { name: 'twitter:description', content: description },
-    ],
-  }
-}))
+useHead(
+  computed(() => {
+    const name = series.value?.seriesName
+    const description = name
+      ? `Browse ${name} movesets on Ultimate Moveset Compatibility.`
+      : 'View information on Super Smash Bros. Ultimate custom movesets.'
+    const image = series.value?.seriesIconUrl ? getFullImageUrl(series.value.seriesIconUrl) : null
+    return {
+      title: name ? `UMC | ${name}` : 'UMC',
+      meta: [
+        { name: 'description', content: description },
+        { property: 'og:title', content: name ?? 'Ultimate Moveset Compatibility' },
+        { property: 'og:description', content: description },
+        ...(image
+          ? [
+              { property: 'og:image', content: image },
+              { name: 'twitter:card', content: 'summary' },
+              { name: 'twitter:image', content: image },
+            ]
+          : []),
+        { name: 'twitter:title', content: name ?? 'Ultimate Moveset Compatibility' },
+        { name: 'twitter:description', content: description },
+      ],
+    }
+  })
+)
 
 onMounted(async () => {
   try {
@@ -97,9 +98,10 @@ onMounted(async () => {
     try {
       const userRes = await api.get('/auth/me')
       const user = userRes.data
-      canEdit.value = seriesRes.data.canEdit ||
+      canEdit.value =
+        seriesRes.data.canEdit ||
         user.userTypeId === UserType.Admin ||
-        movesetsRes.data.some(m => m.modders.includes(user.userName))
+        movesetsRes.data.some((m) => m.modders.includes(user.userName))
     } catch {
       canEdit.value = false
     }
@@ -107,7 +109,7 @@ onMounted(async () => {
     if (err.response?.status === 404 || err.response?.status === 403) {
       router.replace({
         name: 'ErrorPage',
-        query: { httpCode: '404 Not Found', reason: 'This series is not available.' }
+        query: { httpCode: '404 Not Found', reason: 'This series is not available.' },
       })
     }
   }

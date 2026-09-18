@@ -9,8 +9,8 @@
         <!-- Blog Title -->
         <v-col cols="12">
           <v-text-field
-            variant="outlined"
             v-model="form.blogTitle"
+            variant="outlined"
             label="Post Title"
             hide-details
           />
@@ -24,33 +24,33 @@
               <button
                 class="tab-btn"
                 :class="{ active: tab === 'write' }"
-                @click="tab = 'write'"
                 type="button"
-              >Write</button>
+                @click="tab = 'write'"
+              >
+                Write
+              </button>
               <button
                 class="tab-btn"
                 :class="{ active: tab === 'preview' }"
-                @click="tab = 'preview'"
                 type="button"
-              >Preview</button>
+                @click="tab = 'preview'"
+              >
+                Preview
+              </button>
             </div>
           </div>
 
           <v-textarea
             v-if="tab === 'write'"
-            variant="outlined"
             v-model="form.blogText"
+            variant="outlined"
             placeholder="Markdown is supported."
             auto-grow
             rows="5"
             hide-details
           />
           <div v-else class="preview-box">
-            <div
-              v-if="renderedPreview"
-              v-html="renderedPreview"
-              class="preview-content"
-            />
+            <div v-if="renderedPreview" class="preview-content" v-html="renderedPreview" />
             <span v-else class="preview-empty">Nothing to preview.</span>
           </div>
         </v-col>
@@ -65,12 +65,7 @@
 
     <!-- Submit -->
     <div class="d-flex justify-end">
-      <v-btn
-        @click="submit"
-        class="submit-button"
-        :loading="isSubmitting"
-        :disabled="isSubmitting"
-      >
+      <v-btn class="submit-button" :loading="isSubmitting" :disabled="isSubmitting" @click="submit">
         {{ uploadStatus || 'Add Blog Post' }}
       </v-btn>
     </div>
@@ -113,7 +108,7 @@ const uploadImageIfNeeded = async (value) => {
 
 const submit = async () => {
   if (!form.value.blogTitle?.trim() || !form.value.blogText?.trim()) {
-    alert("Blog Title and Blog Text are required.")
+    alert('Blog Title and Blog Text are required.')
     return
   }
 
@@ -127,15 +122,15 @@ const submit = async () => {
 
   let newId
   try {
-    const res = await api.post("/blog", {
+    const res = await api.post('/blog', {
       blogTitle: form.value.blogTitle,
       blogText: form.value.blogText,
       blogImageUrl: stagedImage ? null : form.value.blogImageUrl,
     })
     newId = res.data.blogPostId
   } catch (err) {
-    console.error("Submit failed:", JSON.stringify(err.response?.data) || err.message)
-    alert("Failed to post blog.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+    console.error('Submit failed:', JSON.stringify(err.response?.data) || err.message)
+    alert('Failed to post blog.\n\n' + (JSON.stringify(err.response?.data) || err.message))
     isSubmitting.value = false
     uploadStatus.value = ''
     return
@@ -147,14 +142,20 @@ const submit = async () => {
       const blogImageUrl = await uploadImageIfNeeded(stagedImage)
       await api.patch(`/blog/${newId}/image`, { blogImageUrl })
     } catch (err) {
-      console.error("Image upload failed after blog post creation:", JSON.stringify(err.response?.data) || err.message)
-      alert("Blog post created, but the image failed to upload.\n\n" + (JSON.stringify(err.response?.data) || err.message))
+      console.error(
+        'Image upload failed after blog post creation:',
+        JSON.stringify(err.response?.data) || err.message
+      )
+      alert(
+        'Blog post created, but the image failed to upload.\n\n' +
+          (JSON.stringify(err.response?.data) || err.message)
+      )
     }
   }
 
   isSubmitting.value = false
   uploadStatus.value = ''
-  router.push("/blog")
+  router.push('/blog')
 }
 </script>
 
@@ -202,7 +203,9 @@ h1 {
   padding: 4px 14px;
   font-size: 0.85rem;
   cursor: pointer;
-  transition: background 150ms, color 150ms;
+  transition:
+    background 150ms,
+    color 150ms;
 }
 .tab-btn:hover {
   background: #2e2e2e;

@@ -38,31 +38,30 @@
   </header>
 </template>
 
-
 <script setup>
-import { useRoute } from 'vue-router';
+import { useRoute } from 'vue-router'
 import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
-import umcLogo from "@/assets/umc-logo.svg"
+import umcLogo from '@/assets/umc-logo.svg'
 
 const authStore = useAuthStore()
 
 const links = [
-  { title: "Home", route: "/" },
-  { title: "Movesets", route: "/movesets" },
-  { title: "Series", route: "/series" },
-  { title: "Modders", route: "/modders" },
-  { title: "Blog", route: "/blog" },
-  { title: "mdi-account", route: "/user-actions", isAccount: true },
+  { title: 'Home', route: '/' },
+  { title: 'Movesets', route: '/movesets' },
+  { title: 'Series', route: '/series' },
+  { title: 'Modders', route: '/modders' },
+  { title: 'Blog', route: '/blog' },
+  { title: 'mdi-account', route: '/user-actions', isAccount: true },
 ]
 
-const route = useRoute();
+const route = useRoute()
 
 const activeTab = computed(() => {
-  const tabRoutes = links.map(link => link.route);
-  return tabRoutes.includes(route.path) ? route.path : null;
-});
+  const tabRoutes = links.map((link) => link.route)
+  return tabRoutes.includes(route.path) ? route.path : null
+})
 
 // Notification counts
 const userPendingCount = ref(0)
@@ -97,7 +96,10 @@ const fetchNotifications = async () => {
       groupMap.get(key).push(log)
     }
 
-    let userSoft = 0, userHard = 0, adminSoft = 0, adminHard = 0
+    let userSoft = 0,
+      userHard = 0,
+      adminSoft = 0,
+      adminHard = 0
     for (const [, groupLogs] of groupMap) {
       groupLogs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       const stateId = groupLogs[0].acceptanceState.acceptanceStateId
@@ -119,9 +121,12 @@ const fetchNotifications = async () => {
 
 // Refetch when login state changes (e.g. logging in/out without a page reload) instead of
 // only on mount, now that isLoggedIn is reactive shared state.
-watch(() => authStore.isLoggedIn, () => {
-  fetchNotifications()
-})
+watch(
+  () => authStore.isLoggedIn,
+  () => {
+    fetchNotifications()
+  }
+)
 
 onMounted(async () => {
   await fetchNotifications()

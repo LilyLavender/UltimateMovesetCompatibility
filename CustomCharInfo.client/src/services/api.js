@@ -48,10 +48,12 @@ api.interceptors.response.use(
       // Queue this request until the in-flight refresh completes
       return new Promise((resolve, reject) => {
         failedQueue.push({ resolve, reject })
-      }).then((token) => {
-        original.headers.Authorization = `Bearer ${token}`
-        return api(original)
-      }).catch((err) => Promise.reject(err))
+      })
+        .then((token) => {
+          original.headers.Authorization = `Bearer ${token}`
+          return api(original)
+        })
+        .catch((err) => Promise.reject(err))
     }
 
     original._retry = true
