@@ -79,6 +79,7 @@ import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import api from '@/services/api'
 import ImageUploadField from '@/components/ImageUploadField.vue'
+import { useImageUpload, isStagedFile } from '@/composables/useImageUpload'
 
 const router = useRouter()
 
@@ -94,17 +95,7 @@ const form = ref({
 
 const renderedPreview = computed(() => DOMPurify.sanitize(marked.parse(form.value.blogText || '')))
 
-const uploadImageIfNeeded = async (value) => {
-  if (!(value instanceof File)) return value
-
-  const formData = new FormData()
-  formData.append('File', value)
-
-  const res = await api.post('/upload/blog-image', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
-  return res.data.url
-}
+const { uploadIfNeeded } = useImageUpload('/upload/blog-image')
 
 const submit = async () => {
   if (!form.value.blogTitle?.trim() || !form.value.blogText?.trim()) {
@@ -116,7 +107,7 @@ const submit = async () => {
   // upload would otherwise orphan the image in R2 with nothing referencing it. Create the post
   // first (without a staged file), then upload and attach the image after.
   isSubmitting.value = true
-  const stagedImage = form.value.blogImageUrl instanceof File ? form.value.blogImageUrl : null
+  const stagedImage = isStagedFile(form.value.blogImageUrl) ? form.value.blogImageUrl : null
 
   uploadStatus.value = 'Posting...'
 
@@ -139,7 +130,7 @@ const submit = async () => {
   if (stagedImage) {
     uploadStatus.value = 'Uploading image...'
     try {
-      const blogImageUrl = await uploadImageIfNeeded(stagedImage)
+      const blogImageUrl = await uploadIfNeeded(stagedImage)
       await api.patch(`/blog/${newId}/image`, { blogImageUrl })
     } catch (err) {
       console.error(

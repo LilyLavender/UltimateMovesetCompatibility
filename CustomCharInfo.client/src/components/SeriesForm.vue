@@ -75,6 +75,7 @@ import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import { IMAGE_UPLOAD_SPECS } from '@/globals'
+import { useImageUpload, isStagedFile } from '@/composables/useImageUpload'
 
 const props = defineProps({
   mode: { type: String },
@@ -139,19 +140,7 @@ const validateSeriesName = () => {
   }
 }
 
-const uploadImageIfNeeded = async (value, type, itemName) => {
-  if (!(value instanceof File)) return value
-
-  const formData = new FormData()
-  formData.append('File', value)
-  formData.append('Type', type)
-  formData.append('ItemName', itemName || 'unnamed')
-
-  const res = await api.post('/upload/moveset-image', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
-  return res.data.url
-}
+const { uploadIfNeeded } = useImageUpload()
 
 const submit = async () => {
   // Validation
@@ -166,11 +155,10 @@ const submit = async () => {
     // Edit mode: the series already exists, so upload first (as before) and save in one request.
     uploadStatus.value = 'Uploading image...'
     try {
-      form.value.seriesIconUrl = await uploadImageIfNeeded(
-        form.value.seriesIconUrl,
-        'series_icon',
-        form.value.seriesName
-      )
+      form.value.seriesIconUrl = await uploadIfNeeded(form.value.seriesIconUrl, {
+        type: 'series_icon',
+        itemName: form.value.seriesName,
+      })
     } catch (err) {
       console.error('Image upload failed:', JSON.stringify(err.response?.data) || err.message)
       alert(
@@ -206,7 +194,7 @@ const submit = async () => {
   // Create mode: no series exists yet to attach an image to, so an upload failure or a save
   // failure after upload would otherwise orphan the image in R2 with nothing referencing it.
   // Create the series first (without a staged file), then upload and attach the image after.
-  const stagedIcon = form.value.seriesIconUrl instanceof File ? form.value.seriesIconUrl : null
+  const stagedIcon = isStagedFile(form.value.seriesIconUrl) ? form.value.seriesIconUrl : null
   const payload = { ...form.value }
   if (stagedIcon) payload.seriesIconUrl = null
 
@@ -234,11 +222,10 @@ const submit = async () => {
   if (stagedIcon) {
     uploadStatus.value = 'Uploading image...'
     try {
-      const seriesIconUrl = await uploadImageIfNeeded(
-        stagedIcon,
-        'series_icon',
-        form.value.seriesName
-      )
+      const seriesIconUrl = await uploadIfNeeded(stagedIcon, {
+        type: 'series_icon',
+        itemName: form.value.seriesName,
+      })
       await api.patch(`/series/${newId}/image`, { seriesIconUrl })
     } catch (err) {
       console.error(

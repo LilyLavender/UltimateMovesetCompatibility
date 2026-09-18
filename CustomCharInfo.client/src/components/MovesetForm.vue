@@ -99,102 +99,14 @@
               </template>
             </v-select>
           </v-col>
-          <!-- Internal ID -->
-          <v-col cols="12" sm="4">
-            <v-checkbox
-              v-model="showSeparateIds"
-              label="Slotted ID and Replacement ID are different"
-            />
-          </v-col>
-          <v-col v-if="!showSeparateIds" cols="12" sm="4">
-            <v-text-field v-model="form.slottedId" variant="outlined" label="Internal ID">
-              <template #label>Internal ID <span class="required-asterisk">*</span></template>
-            </v-text-field>
-          </v-col>
-          <v-col v-else cols="12" sm="8" class="two-of-them">
-            <v-col cols="6">
-              <v-text-field v-model="form.slottedId" variant="outlined" label="Slotted ID">
-                <template #label>Slotted ID <span class="required-asterisk">*</span></template>
-              </v-text-field>
-            </v-col>
-            <v-col cols="6">
-              <v-text-field
-                v-model="form.replacementId"
-                variant="outlined"
-                label="Replacement ID"
-              />
-            </v-col>
-          </v-col>
-          <!-- Vanilla Character -->
-          <v-col cols="12" sm="4">
-            <v-select
-              v-model="form.vanillaCharInternalName"
-              variant="outlined"
-              :items="vanillaChars"
-              item-title="displayName"
-              item-value="vanillaCharInternalName"
-              label="Vanilla Character"
-            >
-              <template #label>Vanilla Character <span class="required-asterisk">*</span></template>
-              <!-- List item -->
-              <template #item="{ props, item }">
-                <v-list-item v-bind="props" class="remove-bound-props">
-                  <div class="filter-option">
-                    <div>
-                      <v-img
-                        :src="`/UltimateMovesetCompatibility/vanilla-stock-icons/chara_2_${item.raw.vanillaCharInternalName}.png`"
-                        class="stock-icon-small"
-                      />
-                    </div>
-                    <v-list-item-title>{{ item.raw.displayName }}</v-list-item-title>
-                  </div>
-                </v-list-item>
-              </template>
-
-              <!-- Selected item -->
-              <template #selection="{ item }">
-                <div class="filter-option d-flex align-center">
-                  <v-avatar class="me-2" size="26">
-                    <v-img
-                      :src="`/UltimateMovesetCompatibility/vanilla-stock-icons/chara_2_${item.raw.vanillaCharInternalName}.png`"
-                    />
-                  </v-avatar>
-                  <span>{{ item.raw.displayName }}</span>
-                </div>
-              </template>
-            </v-select>
-          </v-col>
-          <!-- Slots -->
-          <v-col cols="12" sm="2" class="left-merged-input-container">
-            <v-text-field
-              v-model.number="form.slotsStart"
-              variant="outlined"
-              label="Start Slot"
-              :min="8"
-              :max="255"
-              prefix="c"
-              class="left-merged-input"
-              @input="digitsOnly('slotsStart')"
-              @blur="checkSlotAlignment"
-            >
-              <template #label>Start Slot <span class="required-asterisk">*</span></template>
-            </v-text-field>
-          </v-col>
-          <v-col cols="12" sm="2" class="right-merged-input-container">
-            <v-text-field
-              v-model.number="form.slotsEnd"
-              variant="outlined"
-              label="End Slot"
-              :min="8"
-              :max="255"
-              prefix="c"
-              class="right-merged-input"
-              @input="digitsOnly('slotsEnd')"
-              @blur="checkSlotAlignment"
-            >
-              <template #label>End Slot <span class="required-asterisk">*</span></template>
-            </v-text-field>
-          </v-col>
+          <MovesetIdentityFields
+            v-model:slotted-id="form.slottedId"
+            v-model:replacement-id="form.replacementId"
+            v-model:vanilla-char-internal-name="form.vanillaCharInternalName"
+            v-model:slots-start="form.slotsStart"
+            v-model:slots-end="form.slotsEnd"
+            :vanilla-chars="vanillaChars"
+          />
           <!-- Release Date -->
           <v-col cols="12" sm="4">
             <v-menu :close-on-content-click="false" transition="scale-transition">
@@ -333,60 +245,12 @@
 
       <!-- Links + Function Usage -->
       <div class="links-functions-row">
-        <!-- Links -->
-        <section class="darker-preview-text links-section">
-          <h2>Links</h2>
-          <v-row>
-            <!-- Mod Page -->
-            <v-col cols="12">
-              <v-text-field
-                v-model="form.modPageUrl"
-                variant="outlined"
-                label="Mod Page"
-                type="url"
-                :placeholder="`${GB_PAGE_URL}12345`"
-              />
-            </v-col>
-            <!-- GameBanana WIP -->
-            <v-col cols="12">
-              <v-text-field
-                v-model="form.gamebananaWipId"
-                variant="outlined"
-                label="GameBanana WIP Page"
-                :prefix="GB_WIP_URL"
-                @input="digitsOnly('gamebananaWipId')"
-              />
-            </v-col>
-            <!-- Mods Wiki -->
-            <v-col cols="12">
-              <v-text-field
-                v-model="form.modsWikiLink"
-                variant="outlined"
-                label="SSBU Mods Wiki Page"
-                :prefix="MODS_WIKI_URL"
-              />
-            </v-col>
-            <!-- Source Code -->
-            <v-col cols="12">
-              <v-text-field
-                v-model="form.sourceCode"
-                variant="outlined"
-                label="Source Code URL"
-                type="url"
-              >
-                <!-- Hint -->
-                <template #details>
-                  <router-link
-                    to="/open-source"
-                    class="offsite unvisitable text-decoration-none"
-                    target="_blank"
-                    >Why should I open-source my movesets?</router-link
-                  >
-                </template>
-              </v-text-field>
-            </v-col>
-          </v-row>
-        </section>
+        <MovesetLinksSection
+          v-model:mod-page-url="form.modPageUrl"
+          v-model:gamebanana-wip-id="form.gamebananaWipId"
+          v-model:mods-wiki-link="form.modsWikiLink"
+          v-model:source-code="form.sourceCode"
+        />
 
         <!-- Function Usage -->
         <section class="functions-section">
@@ -442,181 +306,13 @@
       </div>
       <!-- end links-functions-row -->
 
-      <!-- Articles -->
-      <section>
-        <!-- Header -->
-        <h2>
-          Cloned Articles
-          <v-btn
-            variant="text"
-            density="compact"
-            icon="mdi-plus"
-            class="rotate-toggle"
-            :class="{ rotated: addArticleForm }"
-            @click="toggleArticleForm"
-          />
-        </h2>
-        <!-- learn more -->
-        <p class="subheader">
-          <a
-            href="https://docs.google.com/spreadsheets/d/16SEU3MibrzTJHTjxJb7c5e7JzGgrfWY_c_hqNJtGvNY/"
-            target="_blank"
-            class="offsite unvisitable"
-          >
-            Learn more about articles
-          </a>
-        </p>
-        <!-- Add Article -->
-        <v-expand-transition>
-          <div v-if="addArticleForm">
-            <v-row>
-              <!-- Vanilla internal name -->
-              <v-col cols="12" sm="4">
-                <v-autocomplete
-                  v-model="newArticle.articleId"
-                  variant="outlined"
-                  :items="articles"
-                  :item-title="(item) => `${item.vanillaCharInternalName}_${item.articleName}`"
-                  item-value="articleId"
-                  label="Article"
-                />
-              </v-col>
-              <!-- Modded internal name -->
-              <v-col cols="12" sm="3">
-                <v-text-field
-                  v-model="newArticle.moddedName"
-                  variant="outlined"
-                  label="Modded Internal Name"
-                  placeholder="eg. shortaxe"
-                />
-              </v-col>
-              <!-- Display name -->
-              <v-col cols="12" sm="3">
-                <v-text-field
-                  v-model="newArticle.description"
-                  variant="outlined"
-                  label="Display Name"
-                  placeholder="eg. Short Axe"
-                />
-              </v-col>
-              <!-- Submit -->
-              <v-col cols="12" sm="2" class="justify-content-center">
-                <v-btn class="btn add-button" @click="addArticle">
-                  {{ editingArticleIndex !== null ? 'Update Article' : 'Add Article' }}
-                </v-btn>
-              </v-col>
-            </v-row>
-          </div>
-        </v-expand-transition>
+      <MovesetArticlesEditor v-model="form.articles" :article-options="articles" />
 
-        <!-- Article List -->
-        <v-list>
-          <v-list-item v-for="(entry, i) in form.articles" :key="i">
-            <v-list-item-title>
-              <strong>{{ entry.description }}</strong
-              >: {{ getArticleName(entry.articleId) }} ({{ entry.moddedName }})
-            </v-list-item-title>
-            <template #append>
-              <v-icon
-                class="reorder-icon"
-                :class="{ invisible: i === 0 }"
-                @click="moveItem(form.articles, i, -1)"
-                >mdi-arrow-up</v-icon
-              >
-              <v-icon
-                class="reorder-icon"
-                :class="{ invisible: i === form.articles.length - 1 }"
-                @click="moveItem(form.articles, i, 1)"
-                >mdi-arrow-down</v-icon
-              >
-              <v-icon class="edit-icon" @click="editArticle(i)">mdi-pencil</v-icon>
-              <v-icon class="delete-icon" @click="form.articles.splice(i, 1)">mdi-delete</v-icon>
-            </template>
-          </v-list-item>
-        </v-list>
-      </section>
-
-      <!-- Hooks -->
-      <section>
-        <h2>
-          Hooks
-          <v-btn
-            variant="text"
-            density="compact"
-            icon="mdi-plus"
-            class="rotate-toggle"
-            :class="{ rotated: addHookForm }"
-            @click="toggleHookForm"
-          />
-        </h2>
-        <!-- Hint -->
-        <p class="subheader">
-          <router-link to="/hooks/add" class="unvisitable" target="_blank">
-            Don't see your hook?
-          </router-link>
-        </p>
-        <!-- Add Hook -->
-        <v-expand-transition>
-          <div v-if="addHookForm">
-            <v-row>
-              <!-- Vanilla hook -->
-              <v-col cols="12">
-                <v-autocomplete
-                  v-model="newHook.hookId"
-                  variant="outlined"
-                  :items="hooks"
-                  :item-title="(item) => `0x${item.offset} (${item.description})`"
-                  item-value="hookId"
-                  label="Hook Offset"
-                  hide-details
-                />
-              </v-col>
-              <!-- Description -->
-              <v-col cols="12" sm="10">
-                <v-text-field
-                  v-model="newHook.description"
-                  variant="outlined"
-                  label="Hook Usage"
-                  :placeholder="`What does ${form.moddedCharName || 'the character'} use this for?`"
-                />
-              </v-col>
-              <!-- Button -->
-              <v-col cols="12" sm="2" class="justify-content-center">
-                <v-btn class="btn add-button" @click="addHook">
-                  {{ editingHookIndex !== null ? 'Update Hook' : 'Add Hook' }}
-                </v-btn>
-              </v-col>
-            </v-row>
-          </div>
-        </v-expand-transition>
-
-        <!-- Hook List -->
-        <v-list>
-          <v-list-item v-for="(entry, i) in form.hooks" :key="i">
-            <v-list-item-title>
-              0x{{ entry.offset }}
-              <span class="hook-usage-dim">({{ entry.hookDescription }})</span> –
-              <span class="hook-usage-dim">{{ entry.description }}</span>
-            </v-list-item-title>
-            <template #append>
-              <v-icon
-                class="reorder-icon"
-                :class="{ invisible: i === 0 }"
-                @click="moveItem(form.hooks, i, -1)"
-                >mdi-arrow-up</v-icon
-              >
-              <v-icon
-                class="reorder-icon"
-                :class="{ invisible: i === form.hooks.length - 1 }"
-                @click="moveItem(form.hooks, i, 1)"
-                >mdi-arrow-down</v-icon
-              >
-              <v-icon class="edit-icon" @click="editHook(i)">mdi-pencil</v-icon>
-              <v-icon class="delete-icon" @click="form.hooks.splice(i, 1)">mdi-delete</v-icon>
-            </template>
-          </v-list-item>
-        </v-list>
-      </section>
+      <MovesetHooksEditor
+        v-model="form.hooks"
+        :hook-options="hooks"
+        :character-name="form.moddedCharName"
+      />
 
       <!-- Plugins (only available once the moveset exists) -->
       <MovesetPluginsPanel
@@ -692,36 +388,24 @@
         </v-btn>
       </div>
     </v-container>
-
-    <!-- Slot alignment warning -->
-    <v-dialog v-model="slotWarningDialog" max-width="480">
-      <v-card color="#2e2e2e">
-        <v-card-title>
-          <v-icon>mdi-alert</v-icon>
-          Unusual Slot Range
-        </v-card-title>
-        <v-card-text>
-          Slots c{{ form.slotsStart }} through c{{ form.slotsEnd }} aren't a standard 8-slot-aligned
-          range (e.g. c08-c15, c120-c127). Please double-check this is intentional before saving.
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn @click="dismissSlotWarning">Dismiss</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import MovesetPluginsPanel from '@/components/MovesetPluginsPanel.vue'
+import MovesetIdentityFields from '@/components/MovesetIdentityFields.vue'
+import MovesetLinksSection from '@/components/MovesetLinksSection.vue'
+import MovesetArticlesEditor from '@/components/MovesetArticlesEditor.vue'
+import MovesetHooksEditor from '@/components/MovesetHooksEditor.vue'
+import { useImageUpload, isStagedFile } from '@/composables/useImageUpload'
+import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import thumbhUnknown from '@/assets/thumb_h_unknown.png'
 import movesetHeroUnknown from '@/assets/moveset_hero_unknown.png'
-import { GB_PAGE_URL, GB_WIP_URL, MODS_WIKI_URL, IMAGE_UPLOAD_SPECS } from '@/globals'
+import { IMAGE_UPLOAD_SPECS } from '@/globals'
 import { dateOnlyStringToLocalDate, localDateToDateOnlyString } from '@/services/dateOnly'
 
 const props = defineProps({
@@ -735,38 +419,10 @@ const isEditMode = computed(() => props.mode === 'edit')
 const route = useRoute()
 const router = useRouter()
 
-const addArticleForm = ref(false)
-const addHookForm = ref(false)
-const editingArticleIndex = ref(null)
-const editingHookIndex = ref(null)
 const showAdvanced = ref(false)
 
-const isDirty = ref(false)
 const isSubmitting = ref(false)
 const uploadStatus = ref('')
-let initialFormSnapshot = null
-
-const justSubmitted = ref(false)
-
-onBeforeRouteLeave((to, from, next) => {
-  if (isDirty.value && !justSubmitted.value) {
-    const confirmed = window.confirm('You have unsaved changes. Are you sure you want to leave?')
-    next(confirmed)
-  } else {
-    next()
-  }
-})
-
-const handleBeforeUnload = (e) => {
-  if (isDirty.value && !justSubmitted.value) {
-    e.preventDefault()
-    e.returnValue = ''
-  }
-}
-
-onUnmounted(() => {
-  window.removeEventListener('beforeunload', handleBeforeUnload)
-})
 
 const apiUrl = import.meta.env.VITE_API_URL
 
@@ -778,68 +434,6 @@ const getFullImageUrl = (path) => {
 const getVanillaCharDisplayName = (internalName) => {
   const match = vanillaChars.value.find((v) => v.vanillaCharInternalName === internalName)
   return match ? match.displayName : internalName
-}
-
-const getArticleName = (id) => {
-  const article = articles.value.find((a) => a.articleId === id)
-  return article ? `${article.vanillaCharInternalName}_${article.articleName}` : 'Unknown'
-}
-
-const addArticle = () => {
-  if (!newArticle.value.articleId) return
-  if (editingArticleIndex.value !== null) {
-    form.value.articles[editingArticleIndex.value] = { ...newArticle.value }
-    editingArticleIndex.value = null
-  } else {
-    form.value.articles.push({ ...newArticle.value })
-  }
-  newArticle.value = { articleId: null, moddedName: '', description: '' }
-  addArticleForm.value = false
-}
-
-const editArticle = (i) => {
-  editingArticleIndex.value = i
-  newArticle.value = { ...form.value.articles[i] }
-  addArticleForm.value = true
-}
-
-const addHook = () => {
-  if (!newHook.value.hookId) return
-
-  const hook = hooks.value.find((h) => h.hookId === newHook.value.hookId)
-  if (!hook) return
-
-  const entry = {
-    hookId: hook.hookId,
-    offset: hook.offset,
-    hookDescription: hook.description,
-    description: newHook.value.description,
-  }
-
-  if (editingHookIndex.value !== null) {
-    form.value.hooks[editingHookIndex.value] = entry
-    editingHookIndex.value = null
-  } else {
-    form.value.hooks.push(entry)
-  }
-
-  newHook.value = { hookId: null, description: '' }
-  addHookForm.value = false
-}
-
-const moveItem = (arr, i, dir) => {
-  const j = i + dir
-  if (j < 0 || j >= arr.length) return
-  const tmp = arr[i]
-  arr[i] = arr[j]
-  arr[j] = tmp
-}
-
-const editHook = (i) => {
-  editingHookIndex.value = i
-  const entry = form.value.hooks[i]
-  newHook.value = { hookId: entry.hookId, description: entry.description }
-  addHookForm.value = true
 }
 
 const moveset = ref(null)
@@ -884,25 +478,8 @@ const form = ref({
   notes: '',
 })
 
-const newArticle = ref({ articleId: null, moddedName: '', description: '' })
-const newHook = ref({ hookId: null, description: '' })
-
-// Closing either add form also discards any in-progress edit.
-const toggleArticleForm = () => {
-  addArticleForm.value = !addArticleForm.value
-  if (!addArticleForm.value) {
-    editingArticleIndex.value = null
-    newArticle.value = { articleId: null, moddedName: '', description: '' }
-  }
-}
-
-const toggleHookForm = () => {
-  addHookForm.value = !addHookForm.value
-  if (!addHookForm.value) {
-    editingHookIndex.value = null
-    newHook.value = { hookId: null, description: '' }
-  }
-}
+const { uploadIfNeeded } = useImageUpload()
+const { takeSnapshot, markSaved } = useUnsavedChanges(form)
 
 const vanillaChars = ref([])
 const seriesList = ref([])
@@ -912,49 +489,7 @@ const dependencies = ref([])
 const articles = ref([])
 const hooks = ref([])
 
-const showSeparateIds = ref(false)
-
-watch(
-  () => form.value.slottedId,
-  (val) => {
-    if (!showSeparateIds.value) {
-      form.value.replacementId = val
-    }
-  }
-)
-
-const digitsOnly = (field) => {
-  if (form.value[field] == null) return
-  form.value[field] = String(form.value[field]).replace(/\D+/g, '')
-}
-
-const slotWarningDialog = ref(false)
-let dismissedSlotRange = null
-
-const isSlotRangeClean = (start, end) => {
-  return start % 8 === 0 && (end - start + 1) % 8 === 0
-}
-
-const checkSlotAlignment = () => {
-  const start = parseInt(form.value.slotsStart)
-  const end = parseInt(form.value.slotsEnd)
-  if (isNaN(start) || isNaN(end)) return
-
-  if (isSlotRangeClean(start, end)) return
-
-  if (dismissedSlotRange && dismissedSlotRange[0] === start && dismissedSlotRange[1] === end) return
-
-  slotWarningDialog.value = true
-}
-
-const dismissSlotWarning = () => {
-  dismissedSlotRange = [parseInt(form.value.slotsStart), parseInt(form.value.slotsEnd)]
-  slotWarningDialog.value = false
-}
-
 onMounted(async () => {
-  window.addEventListener('beforeunload', handleBeforeUnload)
-
   const [
     vanillaCharsRes,
     seriesRes,
@@ -991,8 +526,6 @@ onMounted(async () => {
       Object.assign(form.value, res.data)
       document.title = `UMC | Editing ${moveset.value?.moddedCharName}` // sets page title
 
-      showSeparateIds.value = form.value.slottedId !== form.value.replacementId
-      slotRange.value = [form.value.slotsStart, form.value.slotsEnd]
       if (res.data.isJokeMoveset || res.data.subtitle) {
         showAdvanced.value = true
       }
@@ -1018,21 +551,7 @@ onMounted(async () => {
     }
   }
 
-  initialFormSnapshot = JSON.stringify(form.value)
-  watch(
-    form,
-    () => {
-      isDirty.value = JSON.stringify(form.value) !== initialFormSnapshot
-    },
-    { deep: true }
-  )
-})
-
-const slotRange = ref([form.value.slotsStart || 8, form.value.slotsEnd || 8])
-
-watch(slotRange, ([start, end]) => {
-  form.value.slotsStart = start
-  form.value.slotsEnd = end
+  takeSnapshot()
 })
 
 // Vuetify's date picker always emits a raw JS Date on selection regardless of what type it's bound to,
@@ -1057,20 +576,6 @@ const formattedReleaseDate = computed({
     }
   },
 })
-
-const uploadImageIfNeeded = async (value, type, itemName) => {
-  if (!(value instanceof File)) return value
-
-  const formData = new FormData()
-  formData.append('File', value)
-  formData.append('Type', type)
-  formData.append('ItemName', itemName || 'unnamed')
-
-  const res = await api.post('/upload/moveset-image', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
-  return res.data.url
-}
 
 const submit = async () => {
   const slotsStart = parseInt(form.value.slotsStart)
@@ -1133,16 +638,14 @@ const submit = async () => {
     // Edit mode: the moveset already exists, so upload first (as before) and save in one request.
     uploadStatus.value = 'Uploading images...'
     try {
-      form.value.thumbhImageUrl = await uploadImageIfNeeded(
-        form.value.thumbhImageUrl,
-        'thumb_h',
-        form.value.moddedCharName
-      )
-      form.value.movesetHeroImageUrl = await uploadImageIfNeeded(
-        form.value.movesetHeroImageUrl,
-        'moveset_hero',
-        form.value.moddedCharName
-      )
+      form.value.thumbhImageUrl = await uploadIfNeeded(form.value.thumbhImageUrl, {
+        type: 'thumb_h',
+        itemName: form.value.moddedCharName,
+      })
+      form.value.movesetHeroImageUrl = await uploadIfNeeded(form.value.movesetHeroImageUrl, {
+        type: 'moveset_hero',
+        itemName: form.value.moddedCharName,
+      })
     } catch (err) {
       console.error('Image upload failed:', JSON.stringify(err.response?.data) || err.message)
       alert(
@@ -1157,8 +660,7 @@ const submit = async () => {
     uploadStatus.value = 'Saving moveset...'
     try {
       await api.put(`/movesets/${props.movesetId}`, { ...form.value })
-      isDirty.value = false
-      justSubmitted.value = true
+      markSaved()
       router.push(`/moveset/${props.movesetId}`)
     } catch (err) {
       console.error('Submit failed:', JSON.stringify(err.response?.data) || err.message)
@@ -1177,9 +679,10 @@ const submit = async () => {
   // failure after upload would otherwise orphan the image in R2 with nothing referencing it.
   // Create the moveset first (without staged files), then upload and attach images after -
   // that way a failure at any step never leaves an upload with no surviving record.
-  const stagedThumb = form.value.thumbhImageUrl instanceof File ? form.value.thumbhImageUrl : null
-  const stagedHero =
-    form.value.movesetHeroImageUrl instanceof File ? form.value.movesetHeroImageUrl : null
+  const stagedThumb = isStagedFile(form.value.thumbhImageUrl) ? form.value.thumbhImageUrl : null
+  const stagedHero = isStagedFile(form.value.movesetHeroImageUrl)
+    ? form.value.movesetHeroImageUrl
+    : null
 
   const payload = { ...form.value }
   if (stagedThumb) payload.thumbhImageUrl = null
@@ -1207,17 +710,15 @@ const submit = async () => {
     try {
       const images = {}
       if (stagedThumb)
-        images.thumbhImageUrl = await uploadImageIfNeeded(
-          stagedThumb,
-          'thumb_h',
-          form.value.moddedCharName
-        )
+        images.thumbhImageUrl = await uploadIfNeeded(stagedThumb, {
+          type: 'thumb_h',
+          itemName: form.value.moddedCharName,
+        })
       if (stagedHero)
-        images.movesetHeroImageUrl = await uploadImageIfNeeded(
-          stagedHero,
-          'moveset_hero',
-          form.value.moddedCharName
-        )
+        images.movesetHeroImageUrl = await uploadIfNeeded(stagedHero, {
+          type: 'moveset_hero',
+          itemName: form.value.moddedCharName,
+        })
       await api.patch(`/movesets/${newId}/images`, images)
     } catch (err) {
       console.error(
@@ -1231,8 +732,7 @@ const submit = async () => {
     }
   }
 
-  isDirty.value = false
-  justSubmitted.value = true
+  markSaved()
   isSubmitting.value = false
   uploadStatus.value = ''
   router.push(`/moveset/${newId}`)
@@ -1262,9 +762,6 @@ section h2 {
 :deep(.v-text-field__prefix__text) {
   color: #e4e4e4;
 }
-:deep(.darker-preview-text .v-text-field__prefix__text) {
-  color: #9b9b9b;
-}
 .preview-image {
   border: 1px solid #686868;
   border-radius: 3px;
@@ -1278,64 +775,12 @@ section h2 {
   background-color: #2e2e2e;
   color: #e2e2e2;
 }
-.add-button {
-  background-color: #2e2e2e;
-  color: #e2e2e2;
-  margin-top: 10px;
-  margin-left: 10px;
-  box-shadow: none;
-}
 .btn {
   text-transform: unset;
   letter-spacing: 0.009375em;
   font-size: medium;
 }
-.edit-icon,
-.delete-icon,
-.reorder-icon {
-  background: none;
-  font-size: 20px;
-  margin-left: 8px;
-  color: #aaaaaa;
-  transition: color 150ms ease-in-out;
-}
-.edit-icon:hover,
-.delete-icon:hover,
-.reorder-icon:hover {
-  color: #dddddd;
-}
-.edit-icon::before,
-.delete-icon::before,
-.reorder-icon::before {
-  margin-top: -4px;
-}
-.invisible {
-  visibility: hidden;
-  pointer-events: none;
-}
-.hook-usage-dim {
-  opacity: 0.6;
-}
-
-/* Fix for showing/hiding extra ID input */
-.two-of-them {
-  display: flex;
-}
-.two-of-them > .v-col {
-  padding-top: 0;
-  padding-bottom: 0;
-}
-.two-of-them > .v-col:first-of-type {
-  padding-left: 0;
-}
-.two-of-them > .v-col:last-of-type {
-  padding-right: 0;
-}
-
 /* Dropdown display */
-.stock-icon-small {
-  width: 20px;
-}
 .series-icon {
   filter: brightness(4.35);
 }
@@ -1355,28 +800,6 @@ section h2 {
 }
 .v-avatar {
   background: transparent;
-}
-
-/* Merge two inputs */
-.left-merged-input-container {
-  padding-right: 0;
-}
-.right-merged-input-container {
-  padding-left: 0;
-}
-.right-merged-input :deep(.v-field) {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-}
-.left-merged-input :deep(.v-field) {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-}
-.right-merged-input :deep(.v-field__outline__start) {
-  border-left: none;
-}
-.left-merged-input :deep(.v-field__outline__end) {
-  border-right: none;
 }
 
 /* subheader helper class */
@@ -1460,14 +883,6 @@ section h2 {
 }
 :deep(.functions-section .v-input__control) {
   margin-left: 0.5em;
-}
-
-/* Toggle form button */
-:deep(.rotate-toggle > span > i::before) {
-  transition: transform 250ms ease-in-out;
-}
-:deep(.rotate-toggle.rotated span > i::before) {
-  transform: rotate(-45deg);
 }
 
 .required-asterisk {
