@@ -40,11 +40,11 @@
           <span
             class="release-pill"
             :class="{
-              released: item.releaseState === 'Released',
-              upcoming: item.releaseState === 'Upcoming',
-              pending: item.releaseState === 'Pending Update',
-              beta: item.releaseState === 'Open Beta',
-              deprecated: item.releaseState === 'Deprecated',
+              released: item.releaseState === RELEASE_STATE_NAMES[ReleaseState.Released],
+              upcoming: item.releaseState === RELEASE_STATE_NAMES[ReleaseState.Upcoming],
+              pending: item.releaseState === RELEASE_STATE_NAMES[ReleaseState.PendingUpdate],
+              beta: item.releaseState === RELEASE_STATE_NAMES[ReleaseState.OpenBeta],
+              deprecated: item.releaseState === RELEASE_STATE_NAMES[ReleaseState.Deprecated],
             }"
           >
             {{ item.releaseState }}
@@ -107,6 +107,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import api from '@/services/api'
+import { ReleaseState, RELEASE_STATE_NAMES } from '@/globals'
 
 const movesets = ref([])
 
@@ -221,17 +222,6 @@ const normalizedMovesets = computed(() =>
 
     return row
   })
-)
-
-// Store column indexes
-const coreEndIndex = computed(() => headers.value.findIndex((h) => h.key === 'releaseState') + 1)
-
-const boolEndIndex = computed(
-  () => headers.value.findIndex((h) => h.key === 'hasGlobalOnLineEnd') + 1
-)
-
-const articleEndIndex = computed(
-  () => headers.value.findLastIndex((h) => h.key.startsWith('article:')) + 1
 )
 
 onMounted(async () => {

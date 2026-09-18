@@ -335,13 +335,20 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, computed } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useHead } from '@unhead/vue'
 import api from '@/services/api'
 import movesetHeroUnknown from '@/assets/moveset_hero_unknown.png'
 import seriesIconUnknown from '@/assets/series_icon_unknown.png'
-import { GB_WIP_URL, MODS_WIKI_URL, UserType, ItemType } from '@/globals'
+import {
+  GB_WIP_URL,
+  MODS_WIKI_URL,
+  UserType,
+  ItemType,
+  AcceptanceState,
+  ReleaseState,
+} from '@/globals'
 import { dateOnlyStringToLocalDate } from '@/services/dateOnly'
 
 const route = useRoute()
@@ -412,7 +419,12 @@ const warningInfo = computed(() => {
   if (!moveset.value) return null
   const isPrivate = !!moveset.value.privateMoveset
   const stateId = latestLog.value?.acceptanceState?.acceptanceStateId
-  const pendingType = stateId === 2 ? 'Admin' : stateId === 4 ? 'User' : null
+  const pendingType =
+    stateId === AcceptanceState.PendingAdminHard
+      ? 'Admin'
+      : stateId === AcceptanceState.PendingUserHard
+        ? 'User'
+        : null
   if (!isPrivate && !pendingType) return null
   return { isPrivate, pendingType }
 })
@@ -424,7 +436,7 @@ const releaseDisplay = computed(() => {
   const { modpackName, sourceCode, releaseState, modPageUrl, gamebananaWipId, releaseDate } =
     moveset.value
 
-  const state = releaseState?.releaseStateName
+  const stateId = releaseState?.releaseStateId
   const pageUrl = modPageUrl || null
   const wipUrl = gamebananaWipId ? `${GB_WIP_URL}${gamebananaWipId}` : null
   const url = pageUrl || wipUrl
@@ -444,13 +456,11 @@ const releaseDisplay = computed(() => {
     }
   }
 
-  // Depreciated
-  if (state === 'Depreciated') {
-    return { text: 'Depreciated', url }
+  if (stateId === ReleaseState.Deprecated) {
+    return { text: 'Deprecated', url }
   }
 
-  // Beta testing
-  if (state === 'Open Beta') {
+  if (stateId === ReleaseState.OpenBeta) {
     let text = 'Open Beta'
     if (hasDate) {
       text += isPast ? ` (Released ${formatDate(date)})` : ` (Releases ${formatDate(date)})`
@@ -459,8 +469,7 @@ const releaseDisplay = computed(() => {
     return { text, url }
   }
 
-  // Pending Update
-  if (state === 'Pending Update') {
+  if (stateId === ReleaseState.PendingUpdate) {
     if (!hasDate) {
       return { text: 'Pending Update', url }
     }
@@ -473,8 +482,7 @@ const releaseDisplay = computed(() => {
     }
   }
 
-  // Released
-  if (state === 'Released') {
+  if (stateId === ReleaseState.Released) {
     let text = 'Released'
     if (hasDate) {
       text += ` ${formatDate(date)}`
@@ -483,8 +491,7 @@ const releaseDisplay = computed(() => {
     return { text, url }
   }
 
-  // Upcoming
-  if (state === 'Upcoming') {
+  if (stateId === ReleaseState.Upcoming) {
     let text = 'Upcoming'
     if (hasDate) {
       text += ` ${formatDate(date)}`
@@ -514,7 +521,7 @@ onMounted(async () => {
     moveset.value = movesetRes.data
     likeCount.value = movesetRes.data.likeCount ?? 0
     userLiked.value = movesetRes.data.userLiked ?? false
-  } catch (err) {
+  } catch {
     router.replace({ name: 'ErrorPage', query: { http: 404, reason: 'Moveset not found' } })
   }
   try {

@@ -71,21 +71,18 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import api from '@/services/api'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import { IMAGE_UPLOAD_SPECS } from '@/globals'
 import { useImageUpload, isStagedFile } from '@/composables/useImageUpload'
 
 const props = defineProps({
-  mode: { type: String },
-  seriesId: { type: Number },
+  mode: { type: String, default: 'add' },
+  seriesId: { type: Number, default: null },
 })
 
-const emit = defineEmits(['submitted'])
-
 const isEditMode = computed(() => props.mode === 'edit')
-const route = useRoute()
 const router = useRouter()
 
 const series = ref(null)
@@ -95,7 +92,6 @@ const form = ref({
   notes: '',
 })
 
-const showSeparateIds = ref(false)
 const nameError = ref('')
 const isSubmitting = ref(false)
 const uploadStatus = ref('')

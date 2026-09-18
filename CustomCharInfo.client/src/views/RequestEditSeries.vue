@@ -133,7 +133,7 @@ onMounted(async () => {
   try {
     const [seriesRes, logsRes] = await Promise.all([
       api.get('/series'),
-      api.get('/logs', { params: { itemTypes: [3] } }),
+      api.get('/logs', { params: { itemTypes: [ItemType.Series] } }),
     ])
 
     mySeries.value = seriesRes.data

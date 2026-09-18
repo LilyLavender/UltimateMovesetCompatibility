@@ -91,6 +91,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/services/api'
+import { AcceptanceState, ItemType, ALL_ACCEPTANCE_STATES } from '@/globals'
 import MovesetCard from '@/components/MovesetCard.vue'
 import SeriesCard from '@/components/SeriesCard.vue'
 import { displayVersion } from '@/services/pluginVersion'
@@ -105,19 +106,19 @@ const movesetStates = ref({})
 const seriesStates = ref({})
 
 const PILL_COLORS = {
-  1: 'rgb(187, 224, 236)',
-  2: 'rgb(52, 194, 241)',
-  3: 'rgb(241, 241, 142)',
-  4: 'rgb(241, 241, 52)',
-  6: 'rgb(241, 52, 52)',
+  [AcceptanceState.PendingAdminSoft]: 'rgb(187, 224, 236)',
+  [AcceptanceState.PendingAdminHard]: 'rgb(52, 194, 241)',
+  [AcceptanceState.PendingUserSoft]: 'rgb(241, 241, 142)',
+  [AcceptanceState.PendingUserHard]: 'rgb(241, 241, 52)',
+  [AcceptanceState.Rejected]: 'rgb(241, 52, 52)',
 }
 
 const PILL_LABELS = {
-  1: 'Pending Admin Action (Soft)',
-  2: 'Pending Admin Action (Hard)',
-  3: 'Pending User Action (Soft)',
-  4: 'Pending User Action (Hard)',
-  6: 'Rejected',
+  [AcceptanceState.PendingAdminSoft]: 'Pending Admin Action (Soft)',
+  [AcceptanceState.PendingAdminHard]: 'Pending Admin Action (Hard)',
+  [AcceptanceState.PendingUserSoft]: 'Pending User Action (Soft)',
+  [AcceptanceState.PendingUserHard]: 'Pending User Action (Hard)',
+  [AcceptanceState.Rejected]: 'Rejected',
 }
 
 const PRIVATE_COLOR = 'rgb(241, 52, 52)'
@@ -155,8 +156,8 @@ onMounted(async () => {
     const [logsRes, movesetsRes, pluginsRes] = await Promise.all([
       api.get('/logs', {
         params: {
-          acceptanceStates: [1, 2, 3, 4, 5, 6, 7],
-          itemTypes: [1, 3],
+          acceptanceStates: ALL_ACCEPTANCE_STATES,
+          itemTypes: [ItemType.Moveset, ItemType.Series],
         },
       }),
       user.modderId

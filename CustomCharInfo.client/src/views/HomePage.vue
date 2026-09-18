@@ -66,6 +66,7 @@
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useHead } from '@unhead/vue'
 import api from '@/services/api'
+import { ReleaseState } from '@/globals'
 import { localDateToDateOnlyString, compareDateOnlyStrings } from '@/services/dateOnly'
 
 import ScrollingHero from '@/components/ScrollingHero.vue'
@@ -119,7 +120,9 @@ const upcomingReleases = computed(() => {
   return [...withDate, ...noDate].slice(0, 6)
 })
 
-const betaMovesets = computed(() => adminPicks.value.filter((m) => m.releaseStateId === 4))
+const betaMovesets = computed(() =>
+  adminPicks.value.filter((m) => m.releaseStateId === ReleaseState.OpenBeta)
+)
 
 const showBetaSection = computed(() => betaMovesets.value.length >= 3)
 
@@ -151,7 +154,7 @@ onMounted(async () => {
     const res = await api.get('/movesets')
     allMovesets.value = res.data
     await fetchLatestBlogPost()
-  } catch (err) {
+  } catch {
     siteDisabled.value = true
     await nextTick()
     loadTwitterScript()

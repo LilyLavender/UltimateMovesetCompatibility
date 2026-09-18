@@ -114,7 +114,6 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 
-const CHAR_W = 168
 const HEADER_H = 36
 const LANE_H = 26
 

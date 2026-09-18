@@ -142,8 +142,6 @@ import MovesetList from '@/components/MovesetList.vue'
 import { GB_MEMBER_URL } from '@/globals'
 import { compareDateOnlyStrings } from '@/services/dateOnly'
 
-const apiUrl = import.meta.env.VITE_API_URL
-
 const route = useRoute()
 const router = useRouter()
 const modderId = route.params.id

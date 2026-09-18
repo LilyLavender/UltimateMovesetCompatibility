@@ -248,10 +248,15 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import api from '@/services/api'
+import { ItemType, ReleaseState, RELEASE_STATE_NAMES, ALL_ACCEPTANCE_STATES } from '@/globals'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
-const ALLOWED_STATES = new Set(['Released', 'Pending Update', 'Open Beta'])
+const ALLOWED_STATES = new Set(
+  [ReleaseState.Released, ReleaseState.PendingUpdate, ReleaseState.OpenBeta].map(
+    (id) => RELEASE_STATE_NAMES[id]
+  )
+)
 const COMMUNITY_MIN_VOTES = 3
 const COMMUNITY_THRESHOLD = 0.65
 
@@ -302,14 +307,6 @@ const toggleSelect = (m) => {
     return
   }
   selection.value.push(m)
-}
-
-const deselect = (m) => {
-  const idx = selection.value.findIndex((s) => s.movesetId === m.movesetId)
-  if (idx !== -1) {
-    selection.value.splice(idx, 1)
-    result.value = null
-  }
 }
 
 const thumbStyle = (m) => {
@@ -445,7 +442,7 @@ const runCheck = async () => {
 // Watch the actual IDs so replacing selection[1] triggers a re-check
 watch(
   () => selection.value.map((s) => s.movesetId).join(','),
-  async (val) => {
+  async () => {
     if (selection.value.length === 2) {
       runCheck()
     } else if (selection.value.length === 1) {
@@ -606,7 +603,9 @@ onMounted(async () => {
       api.get('/movesets'),
       api.get('/hookablestatuses'),
       api.get('/auth/me'),
-      api.get('/logs', { params: { acceptanceStates: [1, 2, 3, 4, 5, 6, 7], itemTypes: [1] } }),
+      api.get('/logs', {
+        params: { acceptanceStates: ALL_ACCEPTANCE_STATES, itemTypes: [ItemType.Moveset] },
+      }),
     ])
     if (msRes.status === 'fulfilled') movesets.value = msRes.value.data
     if (statusRes.status === 'fulfilled') hookableStatuses.value = statusRes.value.data

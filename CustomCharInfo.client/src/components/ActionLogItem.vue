@@ -121,7 +121,7 @@ import { format } from 'date-fns'
 import { ItemType, AcceptanceState } from '@/globals'
 
 const props = defineProps({
-  log: Object,
+  log: { type: Object, required: true },
   isAdmin: Boolean,
 })
 

@@ -88,8 +88,8 @@
           :custom-filter="vanillaCharFilter"
           auto-select-first
         >
-          <template #item="{ props, item }">
-            <v-list-item v-bind="props" class="vc-remove-title">
+          <template #item="{ props: itemProps, item }">
+            <v-list-item v-bind="itemProps" class="vc-remove-title">
               <div class="vc-filter-option">
                 <img
                   :src="`/UltimateMovesetCompatibility/vanilla-stock-icons/chara_2_${item.raw.internalName}.png`"
@@ -175,7 +175,7 @@
 import { ref, onMounted, computed } from 'vue'
 import MovesetCard from './MovesetCard.vue'
 import api from '@/services/api'
-import { UserType } from '@/globals'
+import { UserType, ItemType, ALL_ACCEPTANCE_STATES } from '@/globals'
 import { compareDateOnlyStrings } from '@/services/dateOnly'
 
 const props = defineProps({
@@ -376,7 +376,10 @@ const fetchUser = async () => {
 const fetchBlockedIds = async () => {
   try {
     const res = await api.get('/logs', {
-      params: { acceptanceStates: [1, 2, 3, 4, 5, 6, 7], itemTypes: [1, 3] },
+      params: {
+        acceptanceStates: ALL_ACCEPTANCE_STATES,
+        itemTypes: [ItemType.Moveset, ItemType.Series],
+      },
     })
     const latestPerMoveset = new Map()
     const latestPerSeries = new Map()

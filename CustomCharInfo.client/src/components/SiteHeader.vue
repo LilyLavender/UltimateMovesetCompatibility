@@ -43,6 +43,7 @@ import { useRoute } from 'vue-router'
 import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
+import { AcceptanceState, ALL_ACCEPTANCE_STATES } from '@/globals'
 import umcLogo from '@/assets/umc-logo.svg'
 
 const authStore = useAuthStore()
@@ -86,7 +87,7 @@ const fetchNotifications = async () => {
     return
   }
   try {
-    const res = await api.get('/logs', { params: { acceptanceStates: [1, 2, 3, 4, 5, 6, 7] } })
+    const res = await api.get('/logs', { params: { acceptanceStates: ALL_ACCEPTANCE_STATES } })
     const logs = res.data
 
     const groupMap = new Map()
@@ -103,10 +104,10 @@ const fetchNotifications = async () => {
     for (const [, groupLogs] of groupMap) {
       groupLogs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       const stateId = groupLogs[0].acceptanceState.acceptanceStateId
-      if (stateId === 3) userSoft++
-      else if (stateId === 4) userHard++
-      else if (stateId === 1) adminSoft++
-      else if (stateId === 2) adminHard++
+      if (stateId === AcceptanceState.PendingUserSoft) userSoft++
+      else if (stateId === AcceptanceState.PendingUserHard) userHard++
+      else if (stateId === AcceptanceState.PendingAdminSoft) adminSoft++
+      else if (stateId === AcceptanceState.PendingAdminHard) adminHard++
     }
 
     userPendingCount.value = userSoft + userHard

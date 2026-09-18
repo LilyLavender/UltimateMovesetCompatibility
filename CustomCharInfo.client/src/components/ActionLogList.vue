@@ -64,7 +64,14 @@
 import { ref, onMounted, watch } from 'vue'
 import api from '@/services/api'
 import ActionLogGroup from '@/components/ActionLogGroup.vue'
-import { UserType, ItemType } from '@/globals'
+import {
+  UserType,
+  ItemType,
+  AcceptanceState,
+  PENDING_ADMIN_STATES,
+  PENDING_USER_STATES,
+  ALL_ACCEPTANCE_STATES,
+} from '@/globals'
 
 const props = defineProps({
   viewAll: {
@@ -83,25 +90,25 @@ const user = ref(null)
 const isAdmin = ref(false)
 const filterEnabled = ref(true)
 
-const selectedAcceptanceStates = ref([1, 2, 3, 4])
-const selectedItemTypes = ref([1, 2, 3, 4, 5])
+const selectedAcceptanceStates = ref([...PENDING_ADMIN_STATES, ...PENDING_USER_STATES])
+const selectedItemTypes = ref(Object.values(ItemType))
 
 const acceptanceStateOptions = [
-  { id: 1, name: 'Pending Admin (Soft)' },
-  { id: 2, name: 'Pending Admin (Hard)' },
-  { id: 3, name: 'Pending User (Soft)' },
-  { id: 4, name: 'Pending User (Hard)' },
-  { id: 5, name: 'Accepted' },
-  { id: 6, name: 'Rejected' },
-  { id: 7, name: 'Auto-Accepted' },
+  { id: AcceptanceState.PendingAdminSoft, name: 'Pending Admin (Soft)' },
+  { id: AcceptanceState.PendingAdminHard, name: 'Pending Admin (Hard)' },
+  { id: AcceptanceState.PendingUserSoft, name: 'Pending User (Soft)' },
+  { id: AcceptanceState.PendingUserHard, name: 'Pending User (Hard)' },
+  { id: AcceptanceState.Accepted, name: 'Accepted' },
+  { id: AcceptanceState.Rejected, name: 'Rejected' },
+  { id: AcceptanceState.AutoAccepted, name: 'Auto-Accepted' },
 ]
 
 const itemTypeOptions = [
-  { id: 1, name: 'Movesets' },
-  { id: 2, name: 'User' },
-  { id: 3, name: 'Series' },
-  { id: 4, name: 'Hooks' },
-  { id: 5, name: 'Plugins' },
+  { id: ItemType.Moveset, name: 'Movesets' },
+  { id: ItemType.Modder, name: 'User' },
+  { id: ItemType.Series, name: 'Series' },
+  { id: ItemType.Hook, name: 'Hooks' },
+  { id: ItemType.Plugin, name: 'Plugins' },
 ]
 
 const fetchUser = async () => {
@@ -117,7 +124,7 @@ const fetchUser = async () => {
 const fetchLogs = async () => {
   try {
     const params = {
-      acceptanceStates: [1, 2, 3, 4, 5, 6, 7],
+      acceptanceStates: ALL_ACCEPTANCE_STATES,
       itemTypes: selectedItemTypes.value,
     }
 

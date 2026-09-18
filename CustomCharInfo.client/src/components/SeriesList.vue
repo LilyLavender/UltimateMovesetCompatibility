@@ -55,7 +55,7 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 import SeriesCard from './SeriesCard.vue'
-import { UserType } from '@/globals'
+import { UserType, ItemType, ALL_ACCEPTANCE_STATES } from '@/globals'
 
 const series = ref([])
 const blockedSeriesIds = ref(new Set())
@@ -74,7 +74,9 @@ onMounted(async () => {
       })
       .catch(() => {}),
     api
-      .get('/logs', { params: { acceptanceStates: [1, 2, 3, 4, 5, 6, 7], itemTypes: [3] } })
+      .get('/logs', {
+        params: { acceptanceStates: ALL_ACCEPTANCE_STATES, itemTypes: [ItemType.Series] },
+      })
       .then((r) => {
         const latestPerSeries = new Map()
         for (const log of r.data) {

@@ -4,6 +4,7 @@
       {{ props.post.blogTitle }}
     </v-card-title>
     <v-card-text>
+      <!-- eslint-disable-next-line vue/no-v-html. Content is DOMPurify-sanitized -->
       <div class="blog-text" v-html="renderedText"></div>
     </v-card-text>
     <div>

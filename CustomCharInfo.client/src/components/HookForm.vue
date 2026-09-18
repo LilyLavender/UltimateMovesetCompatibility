@@ -73,8 +73,8 @@ import { useRouter } from 'vue-router'
 import api from '@/services/api'
 
 const props = defineProps({
-  mode: { type: String },
-  hookId: { type: Number },
+  mode: { type: String, default: 'add' },
+  hookId: { type: Number, default: null },
 })
 
 const isEditMode = computed(() => props.mode === 'edit')

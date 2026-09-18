@@ -1,7 +1,13 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import api from '@/services/api'
-import { createAuthGuard, fetchAuthUser, getLatestLog, redirectError } from '@/router/guards'
-import { UserType, ItemType, BLOCKED_ACCEPTANCE_STATES, AcceptanceState } from '@/globals'
+import {
+  createAuthGuard,
+  createMovesetViewGuard,
+  createMovesetOwnerGuard,
+  createSeriesEditGuard,
+  createModderApplyGuard,
+  createModderEditGuard,
+} from '@/router/guards'
+import { UserType } from '@/globals'
 // Basic
 import HomePage from '@/views/HomePage.vue'
 import ErrorPage from '@/views/ErrorPage.vue'
@@ -133,160 +139,21 @@ const routes = [
     name: 'MovesetDetail',
     component: MovesetDetail,
     props: true,
-    beforeEnter: async (to, from, next) => {
-      const movesetId = parseInt(to.params.movesetId)
-
-      try {
-        // Logged-out users don't see logs
-        let latestLog = null
-        try {
-          latestLog = await getLatestLog(ItemType.Moveset, (item) => item?.movesetId === movesetId)
-        } catch {
-          latestLog = null
-        }
-
-        const moveset = (await api.get(`/movesets/${movesetId}`)).data
-        const modderIds = moveset.movesetModders.map((m) => m.modder.modderId)
-
-        // Anonymous users are allowed here; auth is only needed to check ownership below
-        let user = null
-        try {
-          user = (await api.get('/auth/me')).data
-        } catch {
-          user = null
-        }
-
-        const isPrivate =
-          latestLog &&
-          BLOCKED_ACCEPTANCE_STATES.includes(latestLog.acceptanceState.acceptanceStateId)
-
-        if (isPrivate) {
-          const isAdmin = user?.userTypeId === UserType.Admin
-          const isOwner = user && modderIds.includes(user.modderId)
-
-          if (!isAdmin && !isOwner) {
-            return redirectError(
-              next,
-              '403 Forbidden',
-              'This moveset is currently private.',
-              'Check back later, or try signing in.'
-            )
-          }
-        }
-
-        return next()
-      } catch (err) {
-        return redirectError(
-          next,
-          '500 Server Error',
-          'Could not load the moveset.',
-          err.message || 'Please try again later.'
-        )
-      }
-    },
+    beforeEnter: createMovesetViewGuard(),
   },
   {
     path: '/moveset/edit/:movesetId',
     name: 'EditMoveset',
     component: EditMoveset,
     props: true,
-    beforeEnter: async (to, from, next) => {
-      let moveset
-      try {
-        moveset = await api.get(`/movesets/${to.params.movesetId}`)
-      } catch (err) {
-        return redirectError(
-          next,
-          '500 Server Error',
-          'Could not load the moveset.',
-          err.message || 'Please try again later.'
-        )
-      }
-
-      const user = await fetchAuthUser(next)
-      if (!user) return
-
-      const modderIds = moveset.data.movesetModders.map((m) => m.modder.modderId)
-      if (modderIds.includes(user.modderId) || user.userTypeId === UserType.Admin) {
-        next()
-      } else {
-        redirectError(
-          next,
-          '403 Forbidden',
-          'You do not have permission to access this page.',
-          'Try signing in?'
-        )
-      }
-    },
+    beforeEnter: createMovesetOwnerGuard(),
   },
   {
     path: '/series/edit/:seriesId',
     name: 'EditSeries',
     component: EditSeries,
     props: true,
-    beforeEnter: async (to, from, next) => {
-      const seriesId = parseInt(to.params.seriesId)
-
-      const user = await fetchAuthUser(next)
-      if (!user) return
-
-      const denyForbidden = () =>
-        redirectError(next, '403 Forbidden', 'You do not have permission to edit this series.', '')
-
-      try {
-        const latestLog = await getLatestLog(ItemType.Series, (item) => item?.seriesId === seriesId)
-        const stateId = latestLog?.acceptanceState?.acceptanceStateId
-
-        // The submitter reviewing their own pending edit
-        if (
-          stateId === AcceptanceState.PendingUserSoft ||
-          stateId === AcceptanceState.PendingUserHard
-        ) {
-          return next()
-        }
-
-        // Admin review of a series awaiting admin action
-        if (
-          (stateId === AcceptanceState.PendingAdminSoft ||
-            stateId === AcceptanceState.PendingAdminHard) &&
-          user.userTypeId === UserType.Admin
-        ) {
-          return next()
-        }
-
-        // Get movesets from series
-        const movesets = (await api.get('/movesets', { params: { seriesId } })).data
-
-        // No movesets, only modders or admins
-        if (movesets.length === 0) {
-          if (user.userTypeId === UserType.Modder || user.userTypeId === UserType.Admin) {
-            return next()
-          }
-          return denyForbidden()
-        }
-
-        // Check if user is a modder of a moveset in this series. The moveset list endpoint only
-        // exposes modder display names (not IDs), so this has to match by name.
-        const modderNames = movesets.flatMap((m) => m.modders)
-        const modderName = (await api.get(`/modders/${user.modderId}`)).data.name
-        if (modderNames.includes(modderName)) {
-          return next()
-        }
-        return redirectError(
-          next,
-          '403 Forbidden',
-          'You do not have permission to edit this series.',
-          'Only modders of movesets in this series can edit it.'
-        )
-      } catch (err) {
-        return redirectError(
-          next,
-          '500 Server Error',
-          'Could not load this series.',
-          err.message || 'Please try again later.'
-        )
-      }
-    },
+    beforeEnter: createSeriesEditGuard(),
   },
   {
     path: '/moveset/add',
@@ -319,16 +186,7 @@ const routes = [
     name: 'ApplyModder',
     component: ApplyModder,
     props: true,
-    beforeEnter: async (to, from, next) => {
-      const user = await fetchAuthUser(next)
-      if (!user) return
-
-      if (!user.modderId) {
-        next()
-      } else {
-        redirectError(next, '403 Forbidden', 'You have already applied for modder.')
-      }
-    },
+    beforeEnter: createModderApplyGuard(),
   },
   {
     path: '/modder/edit/:id',
@@ -336,40 +194,7 @@ const routes = [
     component: EditModder,
     meta: { title: 'Editing Modder Page' },
     props: true,
-    beforeEnter: async (to, from, next) => {
-      const user = await fetchAuthUser(next)
-      if (!user) return
-
-      if (user.modderId === parseInt(to.params.id)) {
-        return next()
-      }
-
-      try {
-        const logsRes = await api.get(`/logs`, { params: { userId: user.id } })
-        const submitted = logsRes.data.find(
-          (log) =>
-            log.itemType?.itemTypeId === ItemType.Modder &&
-            log.item?.modderId === parseInt(to.params.id)
-        )
-        if (submitted) {
-          next()
-        } else {
-          redirectError(
-            next,
-            '403 Forbidden',
-            'You do not have permission to access this page.',
-            'Try signing in?'
-          )
-        }
-      } catch (err) {
-        redirectError(
-          next,
-          '500 Server Error',
-          'Could not load this modder.',
-          err.message || 'Please try again later.'
-        )
-      }
-    },
+    beforeEnter: createModderEditGuard(),
   },
   {
     path: '/hooks',

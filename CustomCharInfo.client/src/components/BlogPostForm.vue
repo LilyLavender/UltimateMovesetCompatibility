@@ -50,6 +50,7 @@
             hide-details
           />
           <div v-else class="preview-box">
+            <!-- eslint-disable-next-line vue/no-v-html. Content is DOMPurify-sanitized -->
             <div v-if="renderedPreview" class="preview-content" v-html="renderedPreview" />
             <span v-else class="preview-empty">Nothing to preview.</span>
           </div>

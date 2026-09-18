@@ -28,7 +28,7 @@ onMounted(async () => {
   try {
     const response = await api.get('/blog')
     blogPosts.value = response.data.sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate))
-  } catch (err) {
+  } catch {
     error.value = 'Failed to load blog posts.'
   } finally {
     loading.value = false

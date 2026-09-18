@@ -64,8 +64,8 @@
             >
               <template #label>Series <span class="required-asterisk">*</span></template>
               <!-- List item -->
-              <template #item="{ props, item }">
-                <v-list-item v-bind="props" class="remove-bound-props">
+              <template #item="{ props: itemProps, item }">
+                <v-list-item v-bind="itemProps" class="remove-bound-props">
                   <div class="filter-option">
                     <div v-if="item.raw.seriesIconUrl">
                       <v-img
@@ -110,14 +110,14 @@
           <!-- Release Date -->
           <v-col cols="12" sm="4">
             <v-menu :close-on-content-click="false" transition="scale-transition">
-              <template #activator="{ props }">
+              <template #activator="{ props: activatorProps }">
                 <v-text-field
                   v-model="formattedReleaseDate"
                   variant="outlined"
                   label="Release Date"
                   readonly
                   clearable
-                  v-bind="props"
+                  v-bind="activatorProps"
                 />
               </template>
               <!-- ??? can't get any props to work -->
@@ -393,7 +393,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import api from '@/services/api'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import MovesetPluginsPanel from '@/components/MovesetPluginsPanel.vue'
@@ -409,14 +409,11 @@ import { IMAGE_UPLOAD_SPECS } from '@/globals'
 import { dateOnlyStringToLocalDate, localDateToDateOnlyString } from '@/services/dateOnly'
 
 const props = defineProps({
-  mode: { type: String },
-  movesetId: { type: Number },
+  mode: { type: String, default: 'add' },
+  movesetId: { type: Number, default: null },
 })
 
-const emit = defineEmits(['submitted'])
-
 const isEditMode = computed(() => props.mode === 'edit')
-const route = useRoute()
 const router = useRouter()
 
 const showAdvanced = ref(false)
