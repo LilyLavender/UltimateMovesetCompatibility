@@ -37,7 +37,8 @@ namespace CustomCharInfo.server.Controllers
         [EnableRateLimiting("public")]
         [ApiExplorerSettings(GroupName = "public")]
         public async Task<IActionResult> GetSeries(
-            [FromQuery] bool? inSeriesList = false
+            [FromQuery] bool? inSeriesList = false,
+            [FromQuery] bool includeHidden = false
         )
         {
             var userId = _userManager.GetUserId(User);
@@ -48,7 +49,8 @@ namespace CustomCharInfo.server.Controllers
                 .FirstOrDefaultAsync();
 
             var modderId = userInfo?.ModderId;
-            var isAdmin = userInfo?.UserTypeId == UserTypes.Admin;
+            // Admins count blocked movesets only when asked for hidden content explicitly.
+            var seeAll = userInfo?.UserTypeId == UserTypes.Admin && includeHidden;
             
             // All series user has a moveset from
             var movesetSeriesIds = modderId != null
@@ -87,11 +89,11 @@ namespace CustomCharInfo.server.Controllers
                     s.SeriesName,
                     s.SeriesIconUrl,
 
-                    // Count only non-private, non-blocked movesets (blocked only visible to admins)
+                    // Count only non-private, non-blocked movesets (blocked only counted for admins asking for hidden content)
                     MovesetCount = _context.Movesets.Count(m =>
                         m.SeriesId == s.SeriesId &&
                         m.PrivateMoveset != true &&
-                        (isAdmin || !AcceptanceStates.Blocked.Contains(
+                        (seeAll || !AcceptanceStates.Blocked.Contains(
                             _context.ActionLogs
                                 .Where(a => a.ItemTypeId == ItemTypes.Moveset && a.ItemId == m.MovesetId)
                                 .OrderByDescending(a => a.CreatedAt)
@@ -259,10 +261,10 @@ namespace CustomCharInfo.server.Controllers
             return CreatedAtAction(nameof(GetSeries), new { id = series.SeriesId }, series);
         }
 
-        // Attaches an image uploaded just after a create, without writing an ActionLog entry or
-        // affecting review state - completes the create->upload->attach sequence started by
-        // CreateSeries. Only fills the field if it's still empty, so it can't be reused to swap
-        // an existing icon without going through the normal reviewed edit path.
+        // Attaches an image uploaded just after a create, without writing an ActionLog entry or affecting review state.
+        // Completes the create->upload->attach sequence started by CreateSeries.
+        // Only fills the field if it's still empty,
+        // so it can't be reused to swap an existing icon without going through the normal reviewed edit path.
         [Authorize]
         [HttpPatch("{id}/image")]
         public async Task<IActionResult> PatchSeriesImage(int id, [FromBody] SeriesImageDto dto)

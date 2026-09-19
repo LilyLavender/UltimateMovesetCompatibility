@@ -81,11 +81,10 @@ namespace CustomCharInfo.server.Controllers
             return CreatedAtAction(nameof(GetMoveset), new { idOrSlottedId = moveset.MovesetId }, moveset);
         }
 
-        // Attaches images uploaded just after a create, without writing an ActionLog entry or
-        // affecting review state - the images were already part of the original submission's
-        // intent, this just completes the create->upload->attach sequence started by PostMoveset.
-        // Only fills fields that are still empty, so it can't be reused to swap an existing image
-        // without going through the normal reviewed edit path.
+        // Attaches an image uploaded just after a create, without writing an ActionLog entry or affecting review state.
+        // Completes the create->upload->attach sequence started by PostMoveset.
+        // Only fills the field if it's still empty,
+        // so it can't be reused to swap an existing image without going through the normal reviewed edit path.
         [Authorize]
         [HttpPatch("{id}/images")]
         public async Task<IActionResult> PatchMovesetImages(int id, [FromBody] MovesetImagesDto dto)

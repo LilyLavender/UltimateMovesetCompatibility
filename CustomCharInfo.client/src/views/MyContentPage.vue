@@ -91,10 +91,16 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/services/api'
-import { AcceptanceState, ItemType, ALL_ACCEPTANCE_STATES } from '@/globals'
+import { ItemType, ALL_ACCEPTANCE_STATES } from '@/globals'
 import MovesetCard from '@/components/MovesetCard.vue'
 import SeriesCard from '@/components/SeriesCard.vue'
 import { displayVersion } from '@/services/pluginVersion'
+import {
+  PRIVATE_COLOR,
+  CURRENT_COLOR,
+  statusPillFor,
+  pillsFor,
+} from '@/services/acceptanceStateDisplay'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
@@ -104,35 +110,6 @@ const userSeries = ref([])
 const plugins = ref([])
 const movesetStates = ref({})
 const seriesStates = ref({})
-
-const PILL_COLORS = {
-  [AcceptanceState.PendingAdminSoft]: 'rgb(187, 224, 236)',
-  [AcceptanceState.PendingAdminHard]: 'rgb(52, 194, 241)',
-  [AcceptanceState.PendingUserSoft]: 'rgb(241, 241, 142)',
-  [AcceptanceState.PendingUserHard]: 'rgb(241, 241, 52)',
-  [AcceptanceState.Rejected]: 'rgb(241, 52, 52)',
-}
-
-const PILL_LABELS = {
-  [AcceptanceState.PendingAdminSoft]: 'Pending Admin Action (Soft)',
-  [AcceptanceState.PendingAdminHard]: 'Pending Admin Action (Hard)',
-  [AcceptanceState.PendingUserSoft]: 'Pending User Action (Soft)',
-  [AcceptanceState.PendingUserHard]: 'Pending User Action (Hard)',
-  [AcceptanceState.Rejected]: 'Rejected',
-}
-
-const PRIVATE_COLOR = 'rgb(241, 52, 52)'
-const CURRENT_COLOR = 'rgb(129, 199, 132)'
-
-function statusPillFor(stateId) {
-  if (!PILL_LABELS[stateId]) return null
-  return { label: PILL_LABELS[stateId], color: PILL_COLORS[stateId] }
-}
-
-function pillsFor(stateId) {
-  const pill = statusPillFor(stateId)
-  return pill ? [pill] : []
-}
 
 function pluginAttachmentLabel(plugin) {
   if (plugin.movesetId) return `Moveset: ${plugin.movesetName}`

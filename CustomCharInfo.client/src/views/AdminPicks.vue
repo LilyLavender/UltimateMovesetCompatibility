@@ -77,7 +77,7 @@ const adminPicksIds = ref(new Set())
 
 onMounted(async () => {
   try {
-    const res = await api.get('/movesets', { params: { pageSize: 1000 } })
+    const res = await api.get('/movesets', { params: { pageSize: 1000, includeHidden: true } })
     movesets.value = res.data
     adminPicksIds.value = new Set(res.data.filter((m) => m.adminPick).map((m) => m.movesetId))
   } catch (err) {

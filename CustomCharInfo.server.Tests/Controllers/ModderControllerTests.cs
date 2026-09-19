@@ -164,6 +164,23 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
+        public async Task GetModders_AdminSeesBlockedModdersOnlyWithIncludeHidden()
+        {
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
+            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: UserTypes.Modder, modderId: 1);
+            SeedData.AddModder(_db.Context, 1, owner.Id, "Owner");
+            SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: AcceptanceStates.Rejected, DateTime.UtcNow, userId: owner.Id, itemTypeId: ItemTypes.Modder);
+
+            var controller = CreateController("admin-1");
+
+            var hidden = Assert.IsType<OkObjectResult>(await controller.GetModders());
+            Assert.Empty((IEnumerable<object>)hidden.Value!);
+
+            var shown = Assert.IsType<OkObjectResult>(await controller.GetModders(includeHidden: true));
+            Assert.Single((IEnumerable<object>)shown.Value!);
+        }
+
+        [Fact]
         public async Task GetModder_BlockedForNonAdminStranger()
         {
             var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: UserTypes.Modder, modderId: 1);

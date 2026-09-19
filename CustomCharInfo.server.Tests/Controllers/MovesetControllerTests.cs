@@ -89,17 +89,80 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
-        public async Task GetMovesets_AdminUser_SeesBlockedAcceptanceStates()
+        public async Task GetMovesets_AdminWithoutIncludeHidden_HidesBlockedAcceptanceStates()
         {
             SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
-            var blocked = AddMoveset(1, "Rejected One");
-            SeedData.AddActionLog(_db.Context, blocked.MovesetId, acceptanceStateId: AcceptanceStates.Rejected, DateTime.UtcNow, userId: "admin-1");
+            AddMoveset(1, "Visible One");
+            var blocked = AddMoveset(2, "Rejected One");
+            SeedData.AddActionLog(_db.Context, blocked.MovesetId, acceptanceStateId: AcceptanceStates.Rejected, DateTime.UtcNow, userId: "log-author");
 
             var controller = CreateController("admin-1");
 
             var result = await controller.GetMovesets(null, null, null, null, null, null, null, null, null);
 
+            var movesets = Unwrap(result);
+            Assert.Single(movesets);
+            Assert.Equal("Visible One", Prop<string>(movesets[0], "ModdedCharName"));
+        }
+
+        [Fact]
+        public async Task GetMovesets_AdminWithIncludeHidden_SeesBlockedAcceptanceStates()
+        {
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
+            var blocked = AddMoveset(1, "Rejected One");
+            SeedData.AddActionLog(_db.Context, blocked.MovesetId, acceptanceStateId: AcceptanceStates.Rejected, DateTime.UtcNow, userId: "log-author");
+
+            var controller = CreateController("admin-1");
+
+            var result = await controller.GetMovesets(null, null, null, null, null, null, null, null, null, includeHidden: true);
+
             Assert.Single(Unwrap(result));
+        }
+
+        [Fact]
+        public async Task GetMovesets_AdminWithoutIncludeHidden_PrivateMovesetIsRedacted()
+        {
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
+            AddMoveset(1, "Secret Name", isPrivate: true);
+
+            var controller = CreateController("admin-1");
+
+            var hidden = Unwrap(await controller.GetMovesets(null, null, null, null, null, null, null, null, null));
+            Assert.Equal("???", Prop<string>(hidden[0], "ModdedCharName"));
+
+            var shown = Unwrap(await controller.GetMovesets(null, null, null, null, null, null, null, null, null, includeHidden: true));
+            Assert.Equal("Secret Name", Prop<string>(shown[0], "ModdedCharName"));
+        }
+
+        [Fact]
+        public async Task GetMovesets_NonAdminWithIncludeHidden_StillHidesBlocked()
+        {
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: UserTypes.Modder);
+            var blocked = AddMoveset(1, "Rejected One");
+            SeedData.AddActionLog(_db.Context, blocked.MovesetId, acceptanceStateId: AcceptanceStates.Rejected, DateTime.UtcNow, userId: "log-author");
+
+            var controller = CreateController("modder-1");
+
+            var result = await controller.GetMovesets(null, null, null, null, null, null, null, null, null, includeHidden: true);
+
+            Assert.Empty(Unwrap(result));
+        }
+
+        [Fact]
+        public async Task GetMovesets_ModderIdFilter_DoesNotExposeAnotherModdersBlockedMoveset()
+        {
+            var owner = SeedData.AddUser(_db.Context, "owner-1", userTypeId: UserTypes.Modder, modderId: 5);
+            SeedData.AddModder(_db.Context, 5, owner.Id, "OwnerModder");
+            var moveset = AddMoveset(1, "Their Rejected Moveset");
+            _db.Context.MovesetModders.Add(new MovesetModder { MovesetId = moveset.MovesetId, ModderId = 5, SortOrder = 0 });
+            _db.Context.SaveChanges();
+            SeedData.AddActionLog(_db.Context, moveset.MovesetId, acceptanceStateId: AcceptanceStates.Rejected, DateTime.UtcNow, userId: owner.Id);
+
+            var controller = CreateController();
+
+            var result = await controller.GetMovesets(null, null, modderId: 5, null, null, null, null, null, null);
+
+            Assert.Empty(Unwrap(result));
         }
 
         [Fact]
@@ -410,6 +473,23 @@ namespace CustomCharInfo.server.Tests.Controllers
             var results = ((IEnumerable<object>)ok.Value!).ToList();
             var item = Assert.Single(results);
             Assert.Equal("Visible Match", Prop<string>(item, "Name"));
+        }
+
+        [Fact]
+        public async Task SearchMovesets_AdminSeesBlockedAndPrivateOnlyWithIncludeHidden()
+        {
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
+            var blocked = AddMoveset(1, "Blocked Match");
+            SeedData.AddActionLog(_db.Context, blocked.MovesetId, acceptanceStateId: AcceptanceStates.Rejected, DateTime.UtcNow, userId: "log-author");
+            AddMoveset(2, "Private Match", isPrivate: true);
+
+            var controller = CreateController("admin-1");
+
+            var hidden = Assert.IsType<OkObjectResult>((await controller.SearchMovesets("match")).Result);
+            Assert.Empty((IEnumerable<object>)hidden.Value!);
+
+            var shown = Assert.IsType<OkObjectResult>((await controller.SearchMovesets("match", includeHidden: true)).Result);
+            Assert.Equal(2, ((IEnumerable<object>)shown.Value!).Count());
         }
 
         [Fact]

@@ -198,6 +198,28 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
+        public async Task GetSeries_AdminCountsBlockedMovesetsOnlyWithIncludeHidden()
+        {
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
+            _db.Context.Series.Add(new Series { SeriesId = 100, SeriesName = "Custom" });
+            _db.Context.Movesets.Add(new Moveset { MovesetId = 1, ModdedCharName = "Rejected", VanillaCharInternalName = "mario", SlottedId = "slotone", SeriesId = 100, ReleaseStateId = ReleaseStates.Released });
+            _db.Context.SaveChanges();
+            SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: AcceptanceStates.Rejected, DateTime.UtcNow, userId: "log-author");
+
+            var controller = CreateController("admin-1");
+
+            static int CountFor(IActionResult result)
+            {
+                var ok = Assert.IsType<OkObjectResult>(result);
+                var row = ((IEnumerable<object>)ok.Value!).Single();
+                return (int)row.GetType().GetProperty("MovesetCount")!.GetValue(row)!;
+            }
+
+            Assert.Equal(0, CountFor(await controller.GetSeries()));
+            Assert.Equal(1, CountFor(await controller.GetSeries(includeHidden: true)));
+        }
+
+        [Fact]
         public async Task GetOneSeries_UnknownId_ReturnsNotFound()
         {
             var controller = CreateController();

@@ -68,8 +68,9 @@ namespace CustomCharInfo.server.Controllers
             return CreatedAtAction(nameof(GetBlogPosts), new { id = blogPost.BlogPostId }, blogPost);
         }
 
-        // Attaches an image uploaded just after a create - completes the create->upload->attach
-        // sequence started by CreateBlogPost. Only fills the field if it's still empty.
+        // Attaches an image uploaded just after a create.
+        // Completes the create->upload->attach sequence started by CreateBlogPost.
+        // Only fills the field if it's still empty
         [Authorize]
         [HttpPatch("{id}/image")]
         public async Task<IActionResult> PatchBlogPostImage(int id, [FromBody] BlogPostImageDto dto)
