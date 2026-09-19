@@ -35,6 +35,33 @@
         </div>
       </section>
 
+      <!-- Movesets the user edits without being credited -->
+      <section v-if="editedMovesets.length > 0" class="content-section">
+        <h2 class="section-title">Movesets I can edit</h2>
+        <div class="moveset-grid">
+          <div v-for="moveset in editedMovesets" :key="moveset.movesetId" class="moveset-wrapper">
+            <MovesetCard :moveset="moveset" />
+            <div
+              v-if="statusPillFor(movesetStates[moveset.movesetId]) || moveset.privateMoveset"
+              class="pill-overlay"
+            >
+              <span
+                v-if="statusPillFor(movesetStates[moveset.movesetId])"
+                class="state-pill"
+                :style="{ backgroundColor: statusPillFor(movesetStates[moveset.movesetId]).color }"
+                >{{ statusPillFor(movesetStates[moveset.movesetId]).label }}</span
+              >
+              <span
+                v-if="moveset.privateMoveset"
+                class="state-pill"
+                :style="{ backgroundColor: PRIVATE_COLOR }"
+                >Private</span
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Series -->
       <section class="content-section">
         <h2 class="section-title">Series</h2>
@@ -106,6 +133,7 @@ const apiUrl = import.meta.env.VITE_API_URL
 
 const loading = ref(true)
 const movesets = ref([])
+const editedMovesets = ref([])
 const userSeries = ref([])
 const plugins = ref([])
 const movesetStates = ref({})
@@ -130,7 +158,7 @@ onMounted(async () => {
   try {
     const user = (await api.get('/auth/me')).data
 
-    const [logsRes, movesetsRes, pluginsRes] = await Promise.all([
+    const [logsRes, movesetsRes, editedRes, pluginsRes] = await Promise.all([
       api.get('/logs', {
         params: {
           acceptanceStates: ALL_ACCEPTANCE_STATES,
@@ -141,11 +169,15 @@ onMounted(async () => {
         ? api.get('/movesets', { params: { modderId: user.modderId } })
         : Promise.resolve({ data: [] }),
       user.modderId
+        ? api.get('/movesets', { params: { editorId: user.modderId } }).catch(() => ({ data: [] }))
+        : Promise.resolve({ data: [] }),
+      user.modderId
         ? api.get('/plugins/mine').catch(() => ({ data: [] }))
         : Promise.resolve({ data: [] }),
     ])
 
     movesets.value = movesetsRes.data
+    editedMovesets.value = editedRes.data
     plugins.value = pluginsRes.data
 
     const logs = logsRes.data

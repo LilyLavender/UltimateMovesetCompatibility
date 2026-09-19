@@ -52,23 +52,21 @@ describe('router role guards', () => {
     })
   })
 
-  describe('/series/edit/:seriesId (modders must own a moveset in the series)', () => {
-    const mockSeriesEditApi = ({ user, movesets = [], modderName = '' }) => {
+  describe('/series/edit/:seriesId (modders must own or edit a moveset in the series)', () => {
+    const mockSeriesEditApi = ({ user, userOwnsMoveset, seriesStatus = 200 }) => {
       api.get.mockImplementation((url) => {
         if (url === '/auth/me') return Promise.resolve({ data: user })
         if (url === '/logs') return Promise.resolve({ data: [] })
-        if (url === '/movesets') return Promise.resolve({ data: movesets })
-        if (url.startsWith('/modders/')) return Promise.resolve({ data: { name: modderName } })
+        if (url === '/series/1') {
+          if (seriesStatus !== 200) return Promise.reject({ response: { status: seriesStatus } })
+          return Promise.resolve({ data: { seriesId: 1, userOwnsMoveset } })
+        }
         return Promise.reject(new Error(`unexpected url: ${url}`))
       })
     }
 
     it('redirects a modder who does not own any moveset in the series to ErrorPage 403', async () => {
-      mockSeriesEditApi({
-        user: { userTypeId: 2, modderId: 5 },
-        movesets: [{ modders: ['SomeoneElse'] }],
-        modderName: 'RequestingModder',
-      })
+      mockSeriesEditApi({ user: { userTypeId: 2, modderId: 5 }, userOwnsMoveset: false })
 
       await router.push('/series/edit/1')
 
@@ -76,16 +74,21 @@ describe('router role guards', () => {
       expect(router.currentRoute.value.query.httpCode).toBe('403 Forbidden')
     })
 
-    it('allows a modder who owns a moveset in the series through', async () => {
-      mockSeriesEditApi({
-        user: { userTypeId: 2, modderId: 5 },
-        movesets: [{ modders: ['RequestingModder'] }],
-        modderName: 'RequestingModder',
-      })
+    it('allows a modder who owns or edits a moveset in the series through', async () => {
+      mockSeriesEditApi({ user: { userTypeId: 2, modderId: 5 }, userOwnsMoveset: true })
 
       await router.push('/series/edit/1')
 
       expect(router.currentRoute.value.name).toBe('EditSeries')
+    })
+
+    it('treats a 403 from the series endpoint as forbidden rather than a server error', async () => {
+      mockSeriesEditApi({ user: { userTypeId: 2, modderId: 5 }, seriesStatus: 403 })
+
+      await router.push('/series/edit/1')
+
+      expect(router.currentRoute.value.name).toBe('ErrorPage')
+      expect(router.currentRoute.value.query.httpCode).toBe('403 Forbidden')
     })
   })
 
@@ -176,18 +179,20 @@ describe('router role guards', () => {
     })
   })
 
-  describe('/moveset/edit/:movesetId (owner or admin)', () => {
-    const mockEditApi = (user) => {
+  describe('/moveset/edit/:movesetId (credited modder or editor, as decided by the API)', () => {
+    const mockEditApi = (user, canEdit) => {
       api.get.mockImplementation((url) => {
         if (url === '/auth/me') return Promise.resolve({ data: user })
         if (url === '/movesets/1')
-          return Promise.resolve({ data: { movesetModders: [{ modder: { modderId: 5 } }] } })
+          return Promise.resolve({
+            data: { canEdit, movesetModders: [{ modder: { modderId: 5 } }] },
+          })
         return Promise.reject(new Error(`unexpected url: ${url}`))
       })
     }
 
     it('redirects a modder who is not on the moveset to ErrorPage 403', async () => {
-      mockEditApi({ userTypeId: 2, modderId: 9 })
+      mockEditApi({ userTypeId: 2, modderId: 9 }, false)
 
       await router.push('/moveset/edit/1')
 
@@ -196,19 +201,28 @@ describe('router role guards', () => {
     })
 
     it('allows a modder on the moveset through', async () => {
-      mockEditApi({ userTypeId: 2, modderId: 5 })
+      mockEditApi({ userTypeId: 2, modderId: 5 }, true)
 
       await router.push('/moveset/edit/1')
 
       expect(router.currentRoute.value.name).toBe('EditMoveset')
     })
 
-    it('allows an admin through', async () => {
-      mockEditApi({ userTypeId: 3, modderId: null })
+    it('allows an editor of the moveset through', async () => {
+      mockEditApi({ userTypeId: 2, modderId: 7 }, true)
 
       await router.push('/moveset/edit/1')
 
       expect(router.currentRoute.value.name).toBe('EditMoveset')
+    })
+
+    it('redirects an admin who is not on the moveset to ErrorPage 403', async () => {
+      mockEditApi({ userTypeId: 3, modderId: null }, false)
+
+      await router.push('/moveset/edit/1')
+
+      expect(router.currentRoute.value.name).toBe('ErrorPage')
+      expect(router.currentRoute.value.query.httpCode).toBe('403 Forbidden')
     })
   })
 

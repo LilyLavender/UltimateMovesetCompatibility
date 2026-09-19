@@ -108,7 +108,8 @@ export function createMovesetViewGuard() {
   }
 }
 
-// Moveset edit page: one of the moveset's modders, or an admin.
+// Moveset edit page: a credited modder or an editor of the moveset. The API sets canEdit;
+// admins are not let in on role alone.
 export function createMovesetOwnerGuard() {
   return async (to, from, next) => {
     let moveset
@@ -126,8 +127,7 @@ export function createMovesetOwnerGuard() {
     const user = await fetchAuthUser(next)
     if (!user) return
 
-    const modderIds = moveset.movesetModders.map((m) => m.modder.modderId)
-    if (modderIds.includes(user.modderId) || user.userTypeId === UserType.Admin) {
+    if (moveset.canEdit) {
       next()
     } else {
       redirectError(
@@ -141,8 +141,7 @@ export function createMovesetOwnerGuard() {
 }
 
 // Series edit page. Allowed when the series is pending the user's own edit, when an admin is
-// reviewing it, or when the requester is a modder of a moveset in the series (any modder if the
-// series has none yet).
+// reviewing it, or when the requester is credited on or edits a moveset in the series.
 export function createSeriesEditGuard() {
   return async (to, from, next) => {
     const seriesId = parseInt(to.params.seriesId)
@@ -161,15 +160,16 @@ export function createSeriesEditGuard() {
       if (PENDING_ADMIN_STATES.includes(stateId) && user.userTypeId === UserType.Admin)
         return next()
 
-      const movesets = (await api.get('/movesets', { params: { seriesId } })).data
-      if (movesets.length === 0) {
-        return user.userTypeId >= UserType.Modder ? next() : denyForbidden()
+      // The series detail endpoint reports whether the requester is credited on or edits a
+      // moveset in it. It answers 403 or 404 to strangers of a series with no public movesets.
+      let series
+      try {
+        series = (await api.get(`/series/${seriesId}`)).data
+      } catch (err) {
+        if (err.response?.status === 403 || err.response?.status === 404) return denyForbidden()
+        throw err
       }
-
-      // The moveset list endpoint only exposes modder display names, not IDs, so match by name.
-      const modderNames = movesets.flatMap((m) => m.modders)
-      const modderName = (await api.get(`/modders/${user.modderId}`)).data.name
-      if (modderNames.includes(modderName)) return next()
+      if (series.userOwnsMoveset) return next()
 
       return denyForbidden('Only modders of movesets in this series can edit it.')
     } catch (err) {

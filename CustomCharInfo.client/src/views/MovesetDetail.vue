@@ -55,7 +55,7 @@
             </button>
             <span class="like-count">{{ likeCount }}</span>
             <router-link
-              v-if="userIsModder"
+              v-if="canEdit"
               :to="{ name: 'EditMoveset', params: { movesetId: route.params.movesetId } }"
               class="edit-link unvisitable"
               title="Edit moveset"
@@ -408,10 +408,8 @@ const backgroundColor = computed(() => {
   return `#${color}`
 })
 
-const userIsModder = computed(() => {
-  if (!user.value || !moveset.value?.movesetModders) return false
-  return moveset.value.movesetModders.some((mm) => mm.modder.modderId === user.value.modderId)
-})
+// The API decides: credited modders and editors may edit, admins only when they are one of those.
+const canEdit = computed(() => !!moveset.value?.canEdit)
 
 const singleModder = computed(() => moveset.value?.movesetModders?.length === 1)
 
