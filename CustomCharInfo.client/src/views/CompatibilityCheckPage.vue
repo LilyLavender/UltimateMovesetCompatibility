@@ -248,7 +248,13 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import api from '@/services/api'
-import { ItemType, ReleaseState, RELEASE_STATE_NAMES, ALL_ACCEPTANCE_STATES } from '@/globals'
+import {
+  ItemType,
+  ReleaseState,
+  RELEASE_STATE_NAMES,
+  ALL_ACCEPTANCE_STATES,
+  HookableStatus,
+} from '@/globals'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
@@ -265,7 +271,6 @@ const checking = ref(false)
 const reportLoading = ref(false)
 
 const movesets = ref([])
-const hookableStatuses = ref([])
 const hardHeldIds = ref(new Set())
 const user = ref(null)
 
@@ -347,10 +352,6 @@ function iconUrl(internalName) {
   return `${import.meta.env.BASE_URL}vanilla-stock-icons/chara_2_${internalName}.png`
 }
 
-const statusName = (id) => hookableStatuses.value.find((s) => s.hookableStatusId === id)?.name ?? ''
-const isOnceOnly = (id) => statusName(id).toLowerCase().includes('once')
-const isMultiOk = (id) => statusName(id).toLowerCase().includes('more than once')
-
 const runCheck = async () => {
   if (selection.value.length < 2) return
   checking.value = true
@@ -389,12 +390,12 @@ const runCheck = async () => {
       const mhA = (a.movesetHooks ?? []).find((h) => h.hook.hookId === hookId)
       if (!mhA) continue
       const sid = mhA.hook.hookableStatusId
-      if (isMultiOk(sid)) {
+      if (sid === HookableStatus.MoreThanOnce) {
         issues.push({
           severity: 'warning',
           message: `Both movesets use hook 0x${mhA.hook.offset}. This hook supports multiple uses, but too many at the same offset may still cause issues.`,
         })
-      } else if (isOnceOnly(sid)) {
+      } else if (sid === HookableStatus.OnlyOnce) {
         issues.push({
           severity: 'incompatible',
           message: `Both movesets use hook 0x${mhA.hook.offset} - this hook can only be used once and will cause a crash.`,
@@ -599,16 +600,14 @@ const submitReport = async (isCompatible) => {
 onMounted(async () => {
   loading.value = true
   try {
-    const [msRes, statusRes, userRes, logsRes] = await Promise.allSettled([
+    const [msRes, userRes, logsRes] = await Promise.allSettled([
       api.get('/movesets'),
-      api.get('/hookablestatuses'),
       api.get('/auth/me'),
       api.get('/logs', {
         params: { acceptanceStates: ALL_ACCEPTANCE_STATES, itemTypes: [ItemType.Moveset] },
       }),
     ])
     if (msRes.status === 'fulfilled') movesets.value = msRes.value.data
-    if (statusRes.status === 'fulfilled') hookableStatuses.value = statusRes.value.data
     if (userRes.status === 'fulfilled') user.value = userRes.value.data
     if (logsRes.status === 'fulfilled') {
       const latest = new Map()
