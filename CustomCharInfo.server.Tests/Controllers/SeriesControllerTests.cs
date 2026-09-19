@@ -220,6 +220,25 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
+        public async Task RequestSeriesEdit_EditorOfMovesetInSeries_IsAllowed()
+        {
+            var editor = SeedData.AddUser(_db.Context, "editor-1", userTypeId: UserTypes.Modder, modderId: 3);
+            SeedData.AddModder(_db.Context, 3, editor.Id, "Editor");
+            _db.Context.Series.Add(new Series { SeriesId = 100, SeriesName = "Custom" });
+            _db.Context.Movesets.Add(new Moveset { MovesetId = 1, ModdedCharName = "Edited", VanillaCharInternalName = "mario", SlottedId = "slotone", SeriesId = 100, ReleaseStateId = ReleaseStates.Released });
+            _db.Context.MovesetEditors.Add(new MovesetEditor { MovesetId = 1, ModderId = 3, FullAccess = false });
+            _db.Context.SaveChanges();
+
+            var controller = CreateController("editor-1");
+
+            var request = await controller.RequestSeriesEdit(100, new RequestEditSeriesDto { Notes = "Please" });
+            Assert.IsType<OkObjectResult>(request);
+
+            var detail = Assert.IsType<OkObjectResult>((await controller.GetOneSeries(100)).Result);
+            Assert.True(Assert.IsType<ReturnSeriesDto>(detail.Value).UserOwnsMoveset);
+        }
+
+        [Fact]
         public async Task GetOneSeries_UnknownId_ReturnsNotFound()
         {
             var controller = CreateController();

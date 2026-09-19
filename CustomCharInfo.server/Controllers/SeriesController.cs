@@ -52,14 +52,13 @@ namespace CustomCharInfo.server.Controllers
             // Admins count blocked movesets only when asked for hidden content explicitly.
             var seeAll = userInfo?.UserTypeId == UserTypes.Admin && includeHidden;
             
-            // All series user has a moveset from
-            var movesetSeriesIds = modderId != null
-                ? await _context.MovesetModders
-                    .Where(mm => mm.ModderId == modderId)
-                    .Select(mm => mm.Moveset.SeriesId)
-                    .Distinct()
-                    .ToListAsync()
-                : new List<int?>();
+            // All series the user has a moveset in, as a credited modder or an editor
+            var ownedMovesetIds = await MovesetAccess.EditableMovesetIdsAsync(_context, modderId);
+            var movesetSeriesIds = await _context.Movesets
+                .Where(m => ownedMovesetIds.Contains(m.MovesetId))
+                .Select(m => m.SeriesId)
+                .Distinct()
+                .ToListAsync();
 
             // Get the most recent ActionLog for each series
             var latestLogs = await _context.ActionLogs
@@ -171,11 +170,11 @@ namespace CustomCharInfo.server.Controllers
             var hasPublicMovesets = await _context.Movesets
                 .AnyAsync(m => m.SeriesId == id && m.PrivateMoveset != true);
 
-            // Check if user owns a moveset in the series
-            var userOwnsMoveset = modderId != null && await _context.MovesetModders
-                .AnyAsync(mm =>
-                    mm.ModderId == modderId &&
-                    mm.Moveset.SeriesId == id);
+            // Check if user owns or edits a moveset in the series
+            var userOwnsMoveset = modderId != null && await _context.Movesets
+                .AnyAsync(m => m.SeriesId == id &&
+                    (m.MovesetModders.Any(mm => mm.ModderId == modderId)
+                     || m.MovesetEditors.Any(me => me.ModderId == modderId)));
 
             if (!hasPublicMovesets && !isAdmin && !userOwnsMoveset)
                 return Forbid();
@@ -187,6 +186,7 @@ namespace CustomCharInfo.server.Controllers
                     SeriesId = s.SeriesId,
                     SeriesName = s.SeriesName,
                     SeriesIconUrl = s.SeriesIconUrl,
+                    UserOwnsMoveset = userOwnsMoveset,
                     MovesetCount = _context.Movesets.Count(m =>
                         m.SeriesId == s.SeriesId &&
                         m.PrivateMoveset != true &&
@@ -301,8 +301,10 @@ namespace CustomCharInfo.server.Controllers
             if (!seriesExists)
                 return NotFound("Series not found.");
 
-            var hasMoveset = await _context.MovesetModders
-                .AnyAsync(mm => mm.ModderId == modderId && mm.Moveset.SeriesId == id);
+            var hasMoveset = await _context.Movesets
+                .AnyAsync(m => m.SeriesId == id &&
+                    (m.MovesetModders.Any(mm => mm.ModderId == modderId)
+                     || m.MovesetEditors.Any(me => me.ModderId == modderId)));
             if (!hasMoveset)
                 return Forbid();
 

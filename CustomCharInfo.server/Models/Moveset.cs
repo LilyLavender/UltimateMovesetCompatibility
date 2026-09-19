@@ -60,6 +60,7 @@ namespace CustomCharInfo.server.Models
         public ICollection<MovesetModder> MovesetModders { get; set; }
         public ICollection<MovesetArticle> MovesetArticles { get; set; }
         public ICollection<MovesetHook> MovesetHooks { get; set; }
+        public ICollection<MovesetEditor> MovesetEditors { get; set; }
 
         // Images
         [MaxLength(255)]

@@ -90,6 +90,26 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
+        public async Task CreatePlugin_MovesetAttached_ByEditor_SucceedsAndShowsInMyPlugins()
+        {
+            AddMoveset(1);
+            SeedData.AddUser(_db.Context, "editor-1", userTypeId: UserTypes.Modder, modderId: 2);
+            SeedData.AddModder(_db.Context, 2, "editor-1", "Editor Two");
+            _db.Context.MovesetEditors.Add(new MovesetEditor { MovesetId = 1, ModderId = 2, FullAccess = false });
+            _db.Context.SaveChanges();
+            var controller = CreateController("editor-1");
+
+            var dto = BaseDto(Hash1);
+            dto.MovesetId = 1;
+
+            var created = await controller.CreatePlugin(dto);
+            Assert.IsType<CreatedAtActionResult>(created.Result);
+
+            var mine = Assert.IsType<OkObjectResult>((await controller.GetMyPlugins()).Result);
+            Assert.Single((IEnumerable<PluginDto>)mine.Value!);
+        }
+
+        [Fact]
         public async Task CreatePlugin_MovesetAttached_ByModder_IsLiveWithNoActionLog()
         {
             AddMoveset(1);

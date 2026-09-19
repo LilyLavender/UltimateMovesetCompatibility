@@ -42,7 +42,8 @@ namespace CustomCharInfo.server.Controllers
             [FromQuery] string? likedByUserId = null,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = int.MaxValue,
-            [FromQuery] bool includeHidden = false
+            [FromQuery] bool includeHidden = false,
+            [FromQuery] int? editorId = null
         )
         {
             var user = await _userManager.GetRequesterSummaryAsync(_context, User);
@@ -70,8 +71,10 @@ namespace CustomCharInfo.server.Controllers
                         .OrderByDescending(a => a.CreatedAt)
                         .FirstOrDefault(),
 
+                    // Credited modders and editors both count as owners for visibility.
                     IsOwner = currentModderId != null &&
-                        m.MovesetModders.Any(mm => mm.ModderId == currentModderId)
+                        (m.MovesetModders.Any(mm => mm.ModderId == currentModderId)
+                         || m.MovesetEditors.Any(me => me.ModderId == currentModderId))
                 })
                 .AsQueryable();
 
@@ -88,6 +91,10 @@ namespace CustomCharInfo.server.Controllers
             if (modderId.HasValue)
                 query = query.Where(x =>
                     x.Moveset.MovesetModders.Any(mm => mm.ModderId == modderId));
+
+            if (editorId.HasValue)
+                query = query.Where(x =>
+                    x.Moveset.MovesetEditors.Any(me => me.ModderId == editorId));
 
             if (!string.IsNullOrEmpty(likedByUserId))
                 query = query.Where(x =>
@@ -244,7 +251,9 @@ namespace CustomCharInfo.server.Controllers
                     m.SlottedId,
                     m.ModdedCharName,
                     m.PrivateMoveset,
-                    IsOwner = currentModderId != null && m.MovesetModders.Any(mm => mm.ModderId == currentModderId),
+                    IsOwner = currentModderId != null
+                        && (m.MovesetModders.Any(mm => mm.ModderId == currentModderId)
+                            || m.MovesetEditors.Any(me => me.ModderId == currentModderId)),
                     LatestLogState = _context.ActionLogs
                         .Where(a => a.ItemTypeId == ItemTypes.Moveset && a.ItemId == m.MovesetId)
                         .OrderByDescending(a => a.CreatedAt)
@@ -296,11 +305,20 @@ namespace CustomCharInfo.server.Controllers
                 .OrderBy(mm => mm.SortOrder)
                 .ToList();
 
-            // Check ownership
-            bool isOwner =
+            // Ownership: credited modders and editors both count.
+            bool isCredited =
                 user != null
                 && user.ModderId != null
                 && moveset.MovesetModders.Any(mm => mm.Modder.ModderId == user.ModderId);
+            var editorEntry = user?.ModderId == null
+                ? null
+                : moveset.MovesetEditors?.FirstOrDefault(me => me.Modder.ModderId == user.ModderId);
+            bool isOwner = isCredited || editorEntry != null;
+
+            moveset.CanEdit = isOwner;
+            moveset.CanManageMembers = isCredited || (editorEntry != null && editorEntry.FullAccess);
+            if (!isOwner)
+                moveset.MovesetEditors = null;
 
             // Hide if private
             if ((bool)moveset.PrivateMoveset && user?.UserTypeId != UserTypes.Admin && !isOwner)

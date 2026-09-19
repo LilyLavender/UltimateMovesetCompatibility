@@ -34,6 +34,7 @@ namespace CustomCharInfo.server.Controllers
             var moveset = new Moveset
             {
                 MovesetModders = dto.ModderIds.Select(id => new MovesetModder { ModderId = id }).ToList(),
+                MovesetEditors = BuildEditors(dto),
                 MovesetDependencies = dto.DependencyIds?.Select(id => new MovesetDependency { DependencyId = id }).ToList() ?? new List<MovesetDependency>(),
                 MovesetHooks = dto.Hooks?.Select((h, i) => new MovesetHook
                 {
@@ -95,12 +96,12 @@ namespace CustomCharInfo.server.Controllers
 
             var moveset = await _context.Movesets
                 .Include(m => m.MovesetModders)
+                .Include(m => m.MovesetEditors)
                 .FirstOrDefaultAsync(m => m.MovesetId == id);
             if (moveset == null)
                 return NotFound();
 
-            bool isOwner = user.ModderId != null && moveset.MovesetModders.Any(mm => mm.ModderId == user.ModderId);
-            if (!isOwner && !user.IsAdmin())
+            if (!MovesetAccess.CanEdit(moveset, user.ModderId))
                 return Forbid();
 
             if (dto.ThumbhImageUrl != null)
@@ -162,6 +163,7 @@ namespace CustomCharInfo.server.Controllers
 
             var moveset = await _context.Movesets
                 .Include(m => m.MovesetModders)
+                .Include(m => m.MovesetEditors)
                 .Include(m => m.MovesetDependencies)
                 .Include(m => m.MovesetHooks)
                 .Include(m => m.MovesetArticles)
@@ -170,10 +172,20 @@ namespace CustomCharInfo.server.Controllers
             if (moveset == null)
                 return NotFound();
 
-            // Make sure current user is a modder on the moveset
-            bool isModder = moveset.MovesetModders.Any(mm => mm.ModderId == user.ModderId);
-            if (!isModder)
+            // Credited modders and editors may edit; only credited modders and full-access editors may change who is on it.
+            if (!MovesetAccess.CanEdit(moveset, user.ModderId))
                 return Forbid();
+
+            var newEditors = BuildEditors(dto);
+            if (!MovesetAccess.CanManageMembers(moveset, user.ModderId))
+            {
+                bool moddersChanged = !moveset.MovesetModders.Select(mm => mm.ModderId).ToHashSet()
+                    .SetEquals(dto.ModderIds ?? new List<int>());
+                bool editorsChanged = !moveset.MovesetEditors.Select(me => (me.ModderId, me.FullAccess)).ToHashSet()
+                    .SetEquals(newEditors.Select(me => (me.ModderId, me.FullAccess)));
+                if (moddersChanged || editorsChanged)
+                    return Forbid();
+            }
 
             var latestLog = await _context.ActionLogs
                 .Where(a => a.ItemTypeId == ItemTypes.Moveset && a.ItemId == id)
@@ -218,6 +230,11 @@ namespace CustomCharInfo.server.Controllers
                 SortOrder = index 
             })
             .ToList();
+
+            // Sync Editors
+            _context.MovesetEditors.RemoveRange(moveset.MovesetEditors);
+            foreach (var editor in newEditors) editor.MovesetId = id;
+            moveset.MovesetEditors = newEditors;
 
             // Sync Dependencies
             _context.MovesetDependencies.RemoveRange(moveset.MovesetDependencies);
@@ -287,6 +304,17 @@ namespace CustomCharInfo.server.Controllers
             }
 
             return NoContent();
+        }
+
+        // Editors from the request, minus anyone who is also a credited modder, deduplicated by modder.
+        private static List<MovesetEditor> BuildEditors(CreateMovesetDto dto)
+        {
+            var credited = (dto.ModderIds ?? new List<int>()).ToHashSet();
+            return (dto.Editors ?? new List<MovesetEditorDto>())
+                .Where(e => !credited.Contains(e.ModderId))
+                .GroupBy(e => e.ModderId)
+                .Select(g => new MovesetEditor { ModderId = g.Key, FullAccess = g.Any(e => e.FullAccess) })
+                .ToList();
         }
 
         [Authorize]

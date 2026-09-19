@@ -14,7 +14,10 @@ namespace CustomCharInfo.server.Helpers
         {
             // Batch lookups for human-readable diff values
             var allModderIds = moveset.MovesetModders.Select(m => m.ModderId)
-                .Concat(dto.ModderIds ?? new()).Distinct().ToList();
+                .Concat(dto.ModderIds ?? new())
+                .Concat(moveset.MovesetEditors.Select(e => e.ModderId))
+                .Concat((dto.Editors ?? new()).Select(e => e.ModderId))
+                .Distinct().ToList();
             var allDepIds = moveset.MovesetDependencies.Select(d => d.DependencyId)
                 .Concat(dto.DependencyIds ?? new()).Distinct().ToList();
             var allSeriesIds = new[] { moveset.SeriesId, (int?)dto.SeriesId }
@@ -73,6 +76,9 @@ namespace CustomCharInfo.server.Helpers
                 Modders       = string.Join(", ", moveset.MovesetModders
                     .Select(m => modderNameMap.TryGetValue(m.ModderId, out var n) ? n : m.ModderId.ToString())
                     .OrderBy(x => x)),
+                Editors       = string.Join(", ", moveset.MovesetEditors
+                    .Select(e => EditorLabel(modderNameMap, e.ModderId, e.FullAccess))
+                    .OrderBy(x => x)),
                 Dependencies  = string.Join(", ", moveset.MovesetDependencies
                     .Select(d => depNameMap.TryGetValue(d.DependencyId, out var n) ? n : d.DependencyId.ToString())
                     .OrderBy(x => x)),
@@ -86,6 +92,10 @@ namespace CustomCharInfo.server.Helpers
 
             var newModders = string.Join(", ", (dto.ModderIds ?? new())
                 .Select(mid => modderNameMap.TryGetValue(mid, out var n) ? n : mid.ToString())
+                .OrderBy(x => x));
+            var newEditors = string.Join(", ", (dto.Editors ?? new())
+                .Where(e => !(dto.ModderIds ?? new()).Contains(e.ModderId))
+                .Select(e => EditorLabel(modderNameMap, e.ModderId, e.FullAccess))
                 .OrderBy(x => x));
             var newDeps = string.Join(", ", (dto.DependencyIds ?? new())
                 .Select(did => depNameMap.TryGetValue(did, out var n) ? n : did.ToString())
@@ -126,6 +136,7 @@ namespace CustomCharInfo.server.Helpers
                 ("JokeMoveset",     snap.IsJokeMoveset,     dto.IsJokeMoveset),
                 ("Subtitle",        snap.Subtitle,          dto.Subtitle),
                 ("Modders",         snap.Modders,           newModders),
+                ("Editors",         snap.Editors,           newEditors),
                 ("Dependencies",    snap.Dependencies,      newDeps),
                 ("Hooks",           snap.Hooks,             newHooks),
                 ("Articles",        snap.Articles,          newArticles),
@@ -133,5 +144,8 @@ namespace CustomCharInfo.server.Helpers
 
             return diff;
         }
+
+        private static string EditorLabel(Dictionary<int, string> modderNameMap, int modderId, bool fullAccess) =>
+            $"{(modderNameMap.TryGetValue(modderId, out var n) ? n : modderId.ToString())} ({(fullAccess ? "full" : "partial")})";
     }
 }

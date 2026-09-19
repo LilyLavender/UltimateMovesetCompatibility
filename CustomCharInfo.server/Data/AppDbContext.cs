@@ -13,6 +13,7 @@ namespace CustomCharInfo.server.Data
         public DbSet<MovesetDependency> MovesetDependencies { get; set; }
         public DbSet<Modder> Modders { get; set; }
         public DbSet<MovesetModder> MovesetModders { get; set; }
+        public DbSet<MovesetEditor> MovesetEditors { get; set; }
         public DbSet<Article> Articles { get; set; }
         public DbSet<MovesetArticle> MovesetArticles { get; set; }
         public DbSet<Hook> Hooks { get; set; }
@@ -55,6 +56,9 @@ namespace CustomCharInfo.server.Data
 
             modelBuilder.Entity<MovesetModder>()
                 .HasKey(mm => new { mm.MovesetId, mm.ModderId });
+
+            modelBuilder.Entity<MovesetEditor>()
+                .HasKey(me => new { me.MovesetId, me.ModderId });
 
             modelBuilder.Entity<MovesetArticle>()
                 .HasKey(ma => new { ma.MovesetId, ma.ArticleId });

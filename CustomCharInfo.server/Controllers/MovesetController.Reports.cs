@@ -94,7 +94,8 @@ namespace CustomCharInfo.server.Controllers
                         .FirstOrDefault(),
 
                     IsOwner = userModderId != null &&
-                        m.MovesetModders.Any(mm => mm.ModderId == userModderId)
+                        (m.MovesetModders.Any(mm => mm.ModderId == userModderId)
+                         || m.MovesetEditors.Any(me => me.ModderId == userModderId))
                 })
                 .AsQueryable();
 
