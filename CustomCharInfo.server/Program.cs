@@ -122,6 +122,13 @@ namespace CustomCharInfo.server
             builder.Services.AddScoped<IpActivityService>();
             builder.Services.AddScoped<ActivityTrackingFilter>();
 
+            // Downloads GitHub release assets that predate GitHub's own digests so the Repo Releases page can hash them.
+            builder.Services.AddHttpClient<IReleaseAssetHasher, GitHubAssetHasher>(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(60);
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("UltimateMovesetCompatibility/1.0");
+            });
+
             // Rate limiting for auth endpoints (login/register/refresh/reset-password) to slow
             // brute-force and credential-stuffing attempts. Partitioned per client IP.
             builder.Services.AddRateLimiter(options =>

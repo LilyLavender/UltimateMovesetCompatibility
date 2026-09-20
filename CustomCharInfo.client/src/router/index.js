@@ -42,6 +42,7 @@ import RequestEditSeries from '@/views/RequestEditSeries.vue'
 import CompatibilityCheckPage from '@/views/CompatibilityCheckPage.vue'
 import PluginLookupPage from '@/views/PluginLookupPage.vue'
 import AddPluginPage from '@/views/AddPluginPage.vue'
+import RepoReleasesPage from '@/views/RepoReleasesPage.vue'
 // Hooks
 import HooksPage from '@/views/HooksPage.vue'
 import AddHook from '@/views/AddHook.vue'
@@ -318,6 +319,13 @@ const routes = [
     name: 'AllPlugins',
     component: AllPluginsPage,
     meta: { title: 'All Plugins' },
+    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
+  },
+  {
+    path: '/repo-releases',
+    name: 'RepoReleases',
+    component: RepoReleasesPage,
+    meta: { title: 'Repo Releases' },
     beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
   },
   {

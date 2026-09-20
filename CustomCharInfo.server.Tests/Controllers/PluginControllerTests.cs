@@ -27,7 +27,7 @@ namespace CustomCharInfo.server.Tests.Controllers
         private PluginController CreateController(string? currentUserId = null)
         {
             var userManager = MockUserManagerFactory.Create(currentUserId, _db.Context.Users);
-            var controller = new PluginController(_db.Context, userManager.Object);
+            var controller = new PluginController(_db.Context, userManager.Object, new FakeAssetHasher());
             controller.SetFakeUser();
             return controller;
         }
@@ -172,6 +172,83 @@ namespace CustomCharInfo.server.Tests.Controllers
             var result = await controller.CreatePlugin(dto);
 
             Assert.IsType<BadRequestObjectResult>(result.Result);
+        }
+
+        private UnknownPluginHash AddUnknownHash(string hash, int checkCount)
+        {
+            var unknown = new UnknownPluginHash
+            {
+                Hash = hash,
+                CheckCount = checkCount,
+                FirstCheckedAt = DateTime.UtcNow.AddDays(-3),
+                LastCheckedAt = DateTime.UtcNow.AddDays(-1)
+            };
+            _db.Context.UnknownPluginHashes.Add(unknown);
+            _db.Context.SaveChanges();
+            return unknown;
+        }
+
+        [Fact]
+        public async Task CreatePlugin_AbsorbsUnknownHashHistory()
+        {
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
+            SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
+            var unknown = AddUnknownHash(Hash1, checkCount: 5);
+            var controller = CreateController("user-1");
+
+            var result = await controller.CreatePlugin(BaseDto(Hash1));
+
+            var created = Assert.IsType<CreatedAtActionResult>(result.Result);
+            var dto = Assert.IsType<PluginDto>(created.Value);
+            var versionDto = Assert.Single(dto.Versions);
+            Assert.Equal(5, versionDto.CheckCount);
+            Assert.Equal(unknown.FirstCheckedAt, versionDto.FirstCheckedAt);
+            Assert.Equal(unknown.LastCheckedAt, versionDto.LastCheckedAt);
+            Assert.Empty(_db.Context.UnknownPluginHashes);
+        }
+
+        [Fact]
+        public async Task AddPluginVersion_AbsorbsUnknownHashHistory()
+        {
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
+            SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
+            var controller = CreateController("user-1");
+            var created = (PluginDto)((CreatedAtActionResult)(await controller.CreatePlugin(BaseDto(Hash1))).Result!).Value!;
+            var unknown = AddUnknownHash(Hash2, checkCount: 3);
+
+            await controller.AddPluginVersion(created.PluginId, new CreatePluginVersionDto { VersionLabel = "1.1.0", Hash = Hash2 });
+
+            var version = _db.Context.PluginVersions.Single(v => v.Hash == Hash2);
+            Assert.Equal(3, version.CheckCount);
+            Assert.Equal(unknown.FirstCheckedAt, version.FirstCheckedAt);
+            Assert.Equal(unknown.LastCheckedAt, version.LastCheckedAt);
+            Assert.Empty(_db.Context.UnknownPluginHashes);
+        }
+
+        [Fact]
+        public async Task Identify_SetsFirstCheckedOnceAndLastCheckedEveryTime()
+        {
+            SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.Modder, modderId: 1);
+            SeedData.AddModder(_db.Context, 1, "user-1", "Modder One");
+            var moveset = AddMoveset(1);
+            AddModderToMoveset(1, 1);
+            var controller = CreateController("user-1");
+            var dto = BaseDto(Hash1);
+            dto.MovesetId = moveset.MovesetId;
+            await controller.CreatePlugin(dto);
+
+            await controller.Identify(Hash1);
+            var afterFirst = _db.Context.PluginVersions.Single();
+            var first = afterFirst.FirstCheckedAt;
+            Assert.NotNull(first);
+            Assert.Equal(first, afterFirst.LastCheckedAt);
+
+            await Task.Delay(5);
+            await controller.Identify(Hash1);
+            var afterSecond = _db.Context.PluginVersions.Single();
+            Assert.Equal(2, afterSecond.CheckCount);
+            Assert.Equal(first, afterSecond.FirstCheckedAt);
+            Assert.True(afterSecond.LastCheckedAt > first);
         }
 
         [Fact]

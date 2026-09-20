@@ -27,6 +27,7 @@ namespace CustomCharInfo.server.Models
 
         // Incremented by PluginController.Identify on a successful, publicly-visible hash match.
         public int CheckCount { get; set; }
+        public DateTime? FirstCheckedAt { get; set; }
         public DateTime? LastCheckedAt { get; set; }
 
         [Required]

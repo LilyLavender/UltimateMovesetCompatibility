@@ -28,6 +28,7 @@ namespace CustomCharInfo.server.Data
         public DbSet<Plugin> Plugins { get; set; }
         public DbSet<PluginVersion> PluginVersions { get; set; }
         public DbSet<UnknownPluginHash> UnknownPluginHashes { get; set; }
+        public DbSet<WatchedRepo> WatchedRepos { get; set; }
 
         // Users
         public DbSet<ApplicationUser> Users { get; set; }
@@ -232,6 +233,18 @@ namespace CustomCharInfo.server.Data
             modelBuilder.Entity<UnknownPluginHash>()
                 .HasIndex(u => u.Hash)
                 .IsUnique();
+
+            // Repos admins recheck for plugin releases. Case-insensitive uniqueness is enforced in the controller,
+            // since GitHub names are case-insensitive but Postgres indexes are not.
+            modelBuilder.Entity<WatchedRepo>()
+                .HasIndex(w => new { w.Owner, w.Repo })
+                .IsUnique();
+
+            modelBuilder.Entity<WatchedRepo>()
+                .HasOne(w => w.AddedBy)
+                .WithMany()
+                .HasForeignKey(w => w.AddedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             // ItemTypeId 5, following the same numbering as the AddHookItemType migration (id 4).
             modelBuilder.Entity<ItemType>()

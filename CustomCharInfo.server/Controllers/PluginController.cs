@@ -5,6 +5,7 @@ using CustomCharInfo.server.Data;
 using CustomCharInfo.server.Models;
 using CustomCharInfo.server.Models.DTOs;
 using CustomCharInfo.server.Helpers;
+using CustomCharInfo.server.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.RateLimiting;
@@ -15,10 +16,11 @@ namespace CustomCharInfo.server.Controllers
 {
     [ApiController]
     [Route("api/plugins")]
-    public class PluginController : ControllerBase
+    public partial class PluginController : ControllerBase
     {
         private readonly AppDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IReleaseAssetHasher _assetHasher;
 
         // Same set used in MovesetController to decide whether an item's latest ActionLog state means "not publicly visible yet".
         
@@ -30,10 +32,11 @@ namespace CustomCharInfo.server.Controllers
         // Same pattern, anchored - used only to decide whether a label gets a "v" prefix when displayed.
         private static readonly Regex VersionNumberAtStartPattern = new(@"^\d+(?:\.\d+)+", RegexOptions.Compiled);
 
-        public PluginController(AppDbContext context, UserManager<ApplicationUser> userManager)
+        public PluginController(AppDbContext context, UserManager<ApplicationUser> userManager, IReleaseAssetHasher assetHasher)
         {
             _context = context;
             _userManager = userManager;
+            _assetHasher = assetHasher;
         }
 
         private async Task<(ApplicationUser? user, bool isAdmin)> GetRequesterAsync()
@@ -235,6 +238,7 @@ namespace CustomCharInfo.server.Controllers
                     IsCurrent = v.IsCurrent,
                     CreatedAt = v.CreatedAt,
                     CheckCount = v.CheckCount,
+                    FirstCheckedAt = v.FirstCheckedAt,
                     LastCheckedAt = v.LastCheckedAt
                 };
 
@@ -317,6 +321,7 @@ namespace CustomCharInfo.server.Controllers
                 IsCurrent = true
             };
             plugin.PluginVersions.Add(version);
+            await AbsorbUnknownHashAsync(version);
 
             _context.Plugins.Add(plugin);
 
@@ -443,6 +448,7 @@ namespace CustomCharInfo.server.Controllers
             };
 
             plugin.PluginVersions.Add(version);
+            await AbsorbUnknownHashAsync(version);
             RecomputeIsCurrent(plugin);
 
             try
@@ -534,6 +540,24 @@ namespace CustomCharInfo.server.Controllers
             return NoContent();
         }
 
+        // A hash people looked up before it was registered carries its history onto the new version,
+        // so the All Plugins table shows how often it was checked, and the unknown row goes away.
+        // Does not save; callers save as part of their own write.
+        private async Task AbsorbUnknownHashAsync(PluginVersion version)
+        {
+            var unknown = await _context.UnknownPluginHashes.FirstOrDefaultAsync(u => u.Hash == version.Hash);
+            if (unknown == null) return;
+
+            version.CheckCount += unknown.CheckCount;
+            version.FirstCheckedAt = version.FirstCheckedAt == null || unknown.FirstCheckedAt < version.FirstCheckedAt
+                ? unknown.FirstCheckedAt
+                : version.FirstCheckedAt;
+            version.LastCheckedAt = version.LastCheckedAt == null || unknown.LastCheckedAt > version.LastCheckedAt
+                ? unknown.LastCheckedAt
+                : version.LastCheckedAt;
+            _context.UnknownPluginHashes.Remove(unknown);
+        }
+
         // Only called for hashes that matched no PluginVersion at all.
         // A blocked/pending match still exists in the system, so it isn't "unknown" and doesn't go through here.
         private async Task RecordUnknownHashAsync(string hash)
@@ -617,8 +641,10 @@ namespace CustomCharInfo.server.Controllers
 
             var currentSet = ResolveCurrentSet(visibleVersions);
 
+            var checkedAt = DateTime.UtcNow;
             version.CheckCount++;
-            version.LastCheckedAt = DateTime.UtcNow;
+            version.FirstCheckedAt ??= checkedAt;
+            version.LastCheckedAt = checkedAt;
             await _context.SaveChangesAsync();
 
             return new IdentifyPluginResultDto

@@ -9,6 +9,9 @@
       item-key="pluginVersionId"
       density="comfortable"
     >
+      <template #item.firstCheckedAt="{ item }">
+        {{ item.firstCheckedAt ? new Date(item.firstCheckedAt).toLocaleString() : 'Never' }}
+      </template>
       <template #item.lastCheckedAt="{ item }">
         {{ item.lastCheckedAt ? new Date(item.lastCheckedAt).toLocaleString() : 'Never' }}
       </template>
@@ -49,6 +52,7 @@ const headers = [
   { title: 'Version', key: 'versionLabel' },
   { title: 'Current', key: 'isCurrent' },
   { title: 'Check Count', key: 'checkCount' },
+  { title: 'First Checked', key: 'firstCheckedAt' },
   { title: 'Last Checked', key: 'lastCheckedAt' },
 ]
 
@@ -69,6 +73,7 @@ const versionRows = computed(() =>
       versionLabel: v.versionLabel,
       isCurrent: v.isCurrent,
       checkCount: v.checkCount,
+      firstCheckedAt: v.firstCheckedAt,
       lastCheckedAt: v.lastCheckedAt,
     }))
   )

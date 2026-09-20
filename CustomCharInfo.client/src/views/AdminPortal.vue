@@ -57,6 +57,11 @@
         <v-icon left>mdi-puzzle</v-icon>
         All Plugins
       </router-link>
+
+      <router-link :to="{ name: 'RepoReleases' }" class="unvisitable ml-2 admin-link">
+        <v-icon left>mdi-github</v-icon>
+        Repo Releases
+      </router-link>
     </div>
 
     <!-- Action Log Dashboard -->
