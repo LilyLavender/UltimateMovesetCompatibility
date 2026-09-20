@@ -117,6 +117,19 @@ namespace CustomCharInfo.server.Helpers
                             Description = mh.Hook.Description,
                             HookableStatusId = mh.Hook.HookableStatusId
                         }
+                    }).ToList(),
+
+                // Stripped again in GetMoveset unless the requester can edit.
+                MovesetEditors = m.MovesetEditors
+                    .Select(me => new MovesetEditorDetailDto
+                    {
+                        FullAccess = me.FullAccess,
+                        Modder = new ModderSummaryDto
+                        {
+                            ModderId = me.Modder.ModderId,
+                            Name = me.Modder.Name,
+                            UserId = me.Modder.UserId
+                        }
                     }).ToList()
             };
     }

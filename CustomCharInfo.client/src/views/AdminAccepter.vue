@@ -410,17 +410,17 @@ const fetchPendingAdminLogs = async () => {
 const fetchItems = async () => {
   try {
     if (form.value.itemTypeId === ItemType.Moveset) {
-      const res = await api.get('/movesets')
+      const res = await api.get('/movesets', { params: { includeHidden: true } })
       const sorted = res.data.sort((a, b) => a.moddedCharName.localeCompare(b.moddedCharName))
       fullItemsById.value = Object.fromEntries(sorted.map((m) => [m.movesetId, m]))
       items.value = sorted.map((m) => ({ id: m.movesetId, name: m.moddedCharName }))
     } else if (form.value.itemTypeId === ItemType.Modder) {
-      const res = await api.get('/modders')
+      const res = await api.get('/modders', { params: { includeHidden: true } })
       const sorted = res.data.sort((a, b) => a.name.localeCompare(b.name))
       fullItemsById.value = Object.fromEntries(sorted.map((m) => [m.modderId, m]))
       items.value = sorted.map((m) => ({ id: m.modderId, name: m.name }))
     } else if (form.value.itemTypeId === ItemType.Series) {
-      const res = await api.get('/series')
+      const res = await api.get('/series', { params: { includeHidden: true } })
       const sorted = res.data.sort((a, b) => a.seriesName.localeCompare(b.seriesName))
       fullItemsById.value = Object.fromEntries(sorted.map((s) => [s.seriesId, s]))
       items.value = sorted.map((s) => ({ id: s.seriesId, name: s.seriesName }))

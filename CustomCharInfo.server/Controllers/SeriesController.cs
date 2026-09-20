@@ -37,7 +37,8 @@ namespace CustomCharInfo.server.Controllers
         [EnableRateLimiting("public")]
         [ApiExplorerSettings(GroupName = "public")]
         public async Task<IActionResult> GetSeries(
-            [FromQuery] bool? inSeriesList = false
+            [FromQuery] bool? inSeriesList = false,
+            [FromQuery] bool includeHidden = false
         )
         {
             var userId = _userManager.GetUserId(User);
@@ -48,16 +49,16 @@ namespace CustomCharInfo.server.Controllers
                 .FirstOrDefaultAsync();
 
             var modderId = userInfo?.ModderId;
-            var isAdmin = userInfo?.UserTypeId == UserTypes.Admin;
+            // Admins count blocked movesets only when asked for hidden content explicitly.
+            var seeAll = userInfo?.UserTypeId == UserTypes.Admin && includeHidden;
             
-            // All series user has a moveset from
-            var movesetSeriesIds = modderId != null
-                ? await _context.MovesetModders
-                    .Where(mm => mm.ModderId == modderId)
-                    .Select(mm => mm.Moveset.SeriesId)
-                    .Distinct()
-                    .ToListAsync()
-                : new List<int?>();
+            // All series the user has a moveset in, as a credited modder or an editor
+            var ownedMovesetIds = await MovesetAccess.EditableMovesetIdsAsync(_context, modderId);
+            var movesetSeriesIds = await _context.Movesets
+                .Where(m => ownedMovesetIds.Contains(m.MovesetId))
+                .Select(m => m.SeriesId)
+                .Distinct()
+                .ToListAsync();
 
             // Get the most recent ActionLog for each series
             var latestLogs = await _context.ActionLogs
@@ -87,11 +88,11 @@ namespace CustomCharInfo.server.Controllers
                     s.SeriesName,
                     s.SeriesIconUrl,
 
-                    // Count only non-private, non-blocked movesets (blocked only visible to admins)
+                    // Count only non-private, non-blocked movesets (blocked only counted for admins asking for hidden content)
                     MovesetCount = _context.Movesets.Count(m =>
                         m.SeriesId == s.SeriesId &&
                         m.PrivateMoveset != true &&
-                        (isAdmin || !AcceptanceStates.Blocked.Contains(
+                        (seeAll || !AcceptanceStates.Blocked.Contains(
                             _context.ActionLogs
                                 .Where(a => a.ItemTypeId == ItemTypes.Moveset && a.ItemId == m.MovesetId)
                                 .OrderByDescending(a => a.CreatedAt)
@@ -169,11 +170,11 @@ namespace CustomCharInfo.server.Controllers
             var hasPublicMovesets = await _context.Movesets
                 .AnyAsync(m => m.SeriesId == id && m.PrivateMoveset != true);
 
-            // Check if user owns a moveset in the series
-            var userOwnsMoveset = modderId != null && await _context.MovesetModders
-                .AnyAsync(mm =>
-                    mm.ModderId == modderId &&
-                    mm.Moveset.SeriesId == id);
+            // Check if user owns or edits a moveset in the series
+            var userOwnsMoveset = modderId != null && await _context.Movesets
+                .AnyAsync(m => m.SeriesId == id &&
+                    (m.MovesetModders.Any(mm => mm.ModderId == modderId)
+                     || m.MovesetEditors.Any(me => me.ModderId == modderId)));
 
             if (!hasPublicMovesets && !isAdmin && !userOwnsMoveset)
                 return Forbid();
@@ -185,6 +186,7 @@ namespace CustomCharInfo.server.Controllers
                     SeriesId = s.SeriesId,
                     SeriesName = s.SeriesName,
                     SeriesIconUrl = s.SeriesIconUrl,
+                    UserOwnsMoveset = userOwnsMoveset,
                     MovesetCount = _context.Movesets.Count(m =>
                         m.SeriesId == s.SeriesId &&
                         m.PrivateMoveset != true &&
@@ -259,10 +261,10 @@ namespace CustomCharInfo.server.Controllers
             return CreatedAtAction(nameof(GetSeries), new { id = series.SeriesId }, series);
         }
 
-        // Attaches an image uploaded just after a create, without writing an ActionLog entry or
-        // affecting review state - completes the create->upload->attach sequence started by
-        // CreateSeries. Only fills the field if it's still empty, so it can't be reused to swap
-        // an existing icon without going through the normal reviewed edit path.
+        // Attaches an image uploaded just after a create, without writing an ActionLog entry or affecting review state.
+        // Completes the create->upload->attach sequence started by CreateSeries.
+        // Only fills the field if it's still empty,
+        // so it can't be reused to swap an existing icon without going through the normal reviewed edit path.
         [Authorize]
         [HttpPatch("{id}/image")]
         public async Task<IActionResult> PatchSeriesImage(int id, [FromBody] SeriesImageDto dto)
@@ -299,8 +301,10 @@ namespace CustomCharInfo.server.Controllers
             if (!seriesExists)
                 return NotFound("Series not found.");
 
-            var hasMoveset = await _context.MovesetModders
-                .AnyAsync(mm => mm.ModderId == modderId && mm.Moveset.SeriesId == id);
+            var hasMoveset = await _context.Movesets
+                .AnyAsync(m => m.SeriesId == id &&
+                    (m.MovesetModders.Any(mm => mm.ModderId == modderId)
+                     || m.MovesetEditors.Any(me => me.ModderId == modderId)));
             if (!hasMoveset)
                 return Forbid();
 

@@ -35,6 +35,33 @@
         </div>
       </section>
 
+      <!-- Movesets the user edits without being credited -->
+      <section v-if="editedMovesets.length > 0" class="content-section">
+        <h2 class="section-title">Movesets I can edit</h2>
+        <div class="moveset-grid">
+          <div v-for="moveset in editedMovesets" :key="moveset.movesetId" class="moveset-wrapper">
+            <MovesetCard :moveset="moveset" />
+            <div
+              v-if="statusPillFor(movesetStates[moveset.movesetId]) || moveset.privateMoveset"
+              class="pill-overlay"
+            >
+              <span
+                v-if="statusPillFor(movesetStates[moveset.movesetId])"
+                class="state-pill"
+                :style="{ backgroundColor: statusPillFor(movesetStates[moveset.movesetId]).color }"
+                >{{ statusPillFor(movesetStates[moveset.movesetId]).label }}</span
+              >
+              <span
+                v-if="moveset.privateMoveset"
+                class="state-pill"
+                :style="{ backgroundColor: PRIVATE_COLOR }"
+                >Private</span
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Series -->
       <section class="content-section">
         <h2 class="section-title">Series</h2>
@@ -91,48 +118,26 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/services/api'
-import { AcceptanceState, ItemType, ALL_ACCEPTANCE_STATES } from '@/globals'
+import { ItemType, ALL_ACCEPTANCE_STATES } from '@/globals'
 import MovesetCard from '@/components/MovesetCard.vue'
 import SeriesCard from '@/components/SeriesCard.vue'
 import { displayVersion } from '@/services/pluginVersion'
+import {
+  PRIVATE_COLOR,
+  CURRENT_COLOR,
+  statusPillFor,
+  pillsFor,
+} from '@/services/acceptanceStateDisplay'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
 const loading = ref(true)
 const movesets = ref([])
+const editedMovesets = ref([])
 const userSeries = ref([])
 const plugins = ref([])
 const movesetStates = ref({})
 const seriesStates = ref({})
-
-const PILL_COLORS = {
-  [AcceptanceState.PendingAdminSoft]: 'rgb(187, 224, 236)',
-  [AcceptanceState.PendingAdminHard]: 'rgb(52, 194, 241)',
-  [AcceptanceState.PendingUserSoft]: 'rgb(241, 241, 142)',
-  [AcceptanceState.PendingUserHard]: 'rgb(241, 241, 52)',
-  [AcceptanceState.Rejected]: 'rgb(241, 52, 52)',
-}
-
-const PILL_LABELS = {
-  [AcceptanceState.PendingAdminSoft]: 'Pending Admin Action (Soft)',
-  [AcceptanceState.PendingAdminHard]: 'Pending Admin Action (Hard)',
-  [AcceptanceState.PendingUserSoft]: 'Pending User Action (Soft)',
-  [AcceptanceState.PendingUserHard]: 'Pending User Action (Hard)',
-  [AcceptanceState.Rejected]: 'Rejected',
-}
-
-const PRIVATE_COLOR = 'rgb(241, 52, 52)'
-const CURRENT_COLOR = 'rgb(129, 199, 132)'
-
-function statusPillFor(stateId) {
-  if (!PILL_LABELS[stateId]) return null
-  return { label: PILL_LABELS[stateId], color: PILL_COLORS[stateId] }
-}
-
-function pillsFor(stateId) {
-  const pill = statusPillFor(stateId)
-  return pill ? [pill] : []
-}
 
 function pluginAttachmentLabel(plugin) {
   if (plugin.movesetId) return `Moveset: ${plugin.movesetName}`
@@ -153,7 +158,7 @@ onMounted(async () => {
   try {
     const user = (await api.get('/auth/me')).data
 
-    const [logsRes, movesetsRes, pluginsRes] = await Promise.all([
+    const [logsRes, movesetsRes, editedRes, pluginsRes] = await Promise.all([
       api.get('/logs', {
         params: {
           acceptanceStates: ALL_ACCEPTANCE_STATES,
@@ -164,11 +169,15 @@ onMounted(async () => {
         ? api.get('/movesets', { params: { modderId: user.modderId } })
         : Promise.resolve({ data: [] }),
       user.modderId
+        ? api.get('/movesets', { params: { editorId: user.modderId } }).catch(() => ({ data: [] }))
+        : Promise.resolve({ data: [] }),
+      user.modderId
         ? api.get('/plugins/mine').catch(() => ({ data: [] }))
         : Promise.resolve({ data: [] }),
     ])
 
     movesets.value = movesetsRes.data
+    editedMovesets.value = editedRes.data
     plugins.value = pluginsRes.data
 
     const logs = logsRes.data

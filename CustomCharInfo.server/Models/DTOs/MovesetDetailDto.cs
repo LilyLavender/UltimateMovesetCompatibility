@@ -52,6 +52,19 @@ namespace CustomCharInfo.server.Models.DTOs
 
         public int LikeCount { get; set; }
         public bool UserLiked { get; set; }
+
+        // Whether the requester can edit this moveset (modder or editor)
+        public bool CanEdit { get; set; }
+        public bool CanManageMembers { get; set; }
+
+        // Only returned when CanEdit is true. Editors are never shown to the public.
+        public List<MovesetEditorDetailDto>? MovesetEditors { get; set; }
+    }
+
+    public class MovesetEditorDetailDto
+    {
+        public ModderSummaryDto Modder { get; set; }
+        public bool FullAccess { get; set; }
     }
 
     public class VanillaCharSummaryDto

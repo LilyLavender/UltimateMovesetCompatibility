@@ -13,6 +13,8 @@ namespace CustomCharInfo.server.Data
         public DbSet<MovesetDependency> MovesetDependencies { get; set; }
         public DbSet<Modder> Modders { get; set; }
         public DbSet<MovesetModder> MovesetModders { get; set; }
+        public DbSet<MovesetEditor> MovesetEditors { get; set; }
+        public DbSet<MovesetAdminNote> MovesetAdminNotes { get; set; }
         public DbSet<Article> Articles { get; set; }
         public DbSet<MovesetArticle> MovesetArticles { get; set; }
         public DbSet<Hook> Hooks { get; set; }
@@ -55,6 +57,9 @@ namespace CustomCharInfo.server.Data
 
             modelBuilder.Entity<MovesetModder>()
                 .HasKey(mm => new { mm.MovesetId, mm.ModderId });
+
+            modelBuilder.Entity<MovesetEditor>()
+                .HasKey(me => new { me.MovesetId, me.ModderId });
 
             modelBuilder.Entity<MovesetArticle>()
                 .HasKey(ma => new { ma.MovesetId, ma.ArticleId });
@@ -112,6 +117,20 @@ namespace CustomCharInfo.server.Data
                 .WithMany(ass => ass.ActionLogs)
                 .HasForeignKey(al => al.AcceptanceStateId);
             
+            // Admin notes: one per moveset, gone with the moveset, editor link cleared if that user is deleted.
+            // No navigation from Moveset on purpose, so the note can never ride along in a public projection.
+            modelBuilder.Entity<MovesetAdminNote>()
+                .HasOne<Moveset>()
+                .WithMany()
+                .HasForeignKey(n => n.MovesetId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<MovesetAdminNote>()
+                .HasOne(n => n.UpdatedBy)
+                .WithMany()
+                .HasForeignKey(n => n.UpdatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // Compatibility Reports
             modelBuilder.Entity<CompatibilityReport>()
                 .HasOne<Moveset>()

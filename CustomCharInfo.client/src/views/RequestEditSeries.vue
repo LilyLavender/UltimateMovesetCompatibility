@@ -39,11 +39,11 @@
         <div v-else class="action-content">
           <h2 class="selected-title mb-4">{{ selected.seriesName }}</h2>
 
-          <!-- Awaiting admin review -->
+          <!-- Pending admin action -->
           <template v-if="currentState === 1 || currentState === 2">
             <v-chip color="blue-lighten-3" variant="tonal" size="small" class="mb-3">
               <v-icon start size="14">mdi-clock-outline</v-icon>
-              Awaiting admin review
+              Pending admin action
             </v-chip>
             <p class="text-medium-emphasis text-sm">
               Your request is pending. An admin will review it soon.

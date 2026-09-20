@@ -182,6 +182,22 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
+        public async Task GetActionLogsByItem_Editor_IsAllowed()
+        {
+            var editor = SeedData.AddUser(_db.Context, "editor-user", userTypeId: UserTypes.Modder, modderId: 21);
+            SeedData.AddModder(_db.Context, 21, editor.Id, "EditorModder");
+            _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 1, ModdedCharName = "Edited", VanillaCharInternalName = "mario", SlottedId = "slotone", ReleaseStateId = ReleaseStates.Released });
+            _db.Context.MovesetEditors.Add(new Models.MovesetEditor { MovesetId = 1, ModderId = 21, FullAccess = false });
+            _db.Context.SaveChanges();
+
+            var controller = CreateController(editor.Id);
+
+            var result = await controller.GetActionLogsByItem(1, 1);
+
+            Assert.IsType<OkObjectResult>(result.Result);
+        }
+
+        [Fact]
         public async Task GetActionLogsByItem_Admin_ReturnsEmptyArray_WhenNoLogsExist()
         {
             SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);

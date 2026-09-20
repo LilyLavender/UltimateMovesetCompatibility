@@ -41,13 +41,15 @@ namespace CustomCharInfo.server.Controllers
             [FromQuery] bool? betaOnly,
             [FromQuery] string? likedByUserId = null,
             [FromQuery] int page = 1,
-            [FromQuery] int pageSize = int.MaxValue
+            [FromQuery] int pageSize = int.MaxValue,
+            [FromQuery] bool includeHidden = false,
+            [FromQuery] int? editorId = null
         )
         {
             var user = await _userManager.GetRequesterSummaryAsync(_context, User);
 
-            
-            bool isAdmin = user?.UserTypeId == UserTypes.Admin;
+            // Admins get the same view as a modder unless they ask for hidden content explicitly.
+            bool seeAll = user?.UserTypeId == UserTypes.Admin && includeHidden;
             int? currentModderId = user?.ModderId;
 
             var query = _context.Movesets
@@ -69,8 +71,10 @@ namespace CustomCharInfo.server.Controllers
                         .OrderByDescending(a => a.CreatedAt)
                         .FirstOrDefault(),
 
+                    // Credited modders and editors both count as owners for visibility.
                     IsOwner = currentModderId != null &&
-                        m.MovesetModders.Any(mm => mm.ModderId == currentModderId)
+                        (m.MovesetModders.Any(mm => mm.ModderId == currentModderId)
+                         || m.MovesetEditors.Any(me => me.ModderId == currentModderId))
                 })
                 .AsQueryable();
 
@@ -87,6 +91,10 @@ namespace CustomCharInfo.server.Controllers
             if (modderId.HasValue)
                 query = query.Where(x =>
                     x.Moveset.MovesetModders.Any(mm => mm.ModderId == modderId));
+
+            if (editorId.HasValue)
+                query = query.Where(x =>
+                    x.Moveset.MovesetEditors.Any(me => me.ModderId == editorId));
 
             if (!string.IsNullOrEmpty(likedByUserId))
                 query = query.Where(x =>
@@ -110,13 +118,12 @@ namespace CustomCharInfo.server.Controllers
                 query = query.Where(x => x.Moveset.ReleaseDate <= today);
 
             // Visibility
-            if (!isAdmin)
+            if (!seeAll)
             {
                 query = query.Where(x =>
                     x.LatestLog == null
                     || !AcceptanceStates.Blocked.Contains(x.LatestLog.AcceptanceStateId)
                     || x.IsOwner
-                    || (modderId.HasValue && x.Moveset.MovesetModders.Any(mm => mm.ModderId == modderId))
                 );
             }
 
@@ -160,26 +167,26 @@ namespace CustomCharInfo.server.Controllers
                     x.Moveset.MovesetId,
 
                     ModdedCharName =
-                        x.Moveset.PrivateMoveset == true && !(isAdmin || x.IsOwner)
+                        x.Moveset.PrivateMoveset == true && !(seeAll || x.IsOwner)
                             ? "???"
                             : x.Moveset.ModdedCharName,
 
                     SeriesIconUrl =
-                        x.Moveset.PrivateMoveset == true && !(isAdmin || x.IsOwner)
+                        x.Moveset.PrivateMoveset == true && !(seeAll || x.IsOwner)
                             ? null
                             : x.Moveset.Series.SeriesIconUrl,
 
                     BackgroundColor = x.Moveset.BackgroundColor,
 
                     ThumbhImageUrl =
-                        x.Moveset.PrivateMoveset == true && !(isAdmin || x.IsOwner)
+                        x.Moveset.PrivateMoveset == true && !(seeAll || x.IsOwner)
                             ? null
                             : x.Moveset.ThumbhImageUrl,
 
                     ReleaseState = x.Moveset.ReleaseState.ReleaseStateName,
 
                     Modders =
-                        x.Moveset.PrivateModder == true && !(isAdmin || x.IsOwner)
+                        x.Moveset.PrivateModder == true && !(seeAll || x.IsOwner)
                             ? new List<string> { "???" }
                             : x.Moveset.MovesetModders
                                 .Where(mm => mm.Modder.User == null || mm.Modder.User.Problematic != true)
@@ -193,7 +200,7 @@ namespace CustomCharInfo.server.Controllers
                     x.Moveset.IsJokeMoveset,
 
                     Subtitle =
-                        x.Moveset.PrivateMoveset == true && !(isAdmin || x.IsOwner)
+                        x.Moveset.PrivateMoveset == true && !(seeAll || x.IsOwner)
                             ? null
                             : x.Moveset.Subtitle,
 
@@ -203,7 +210,7 @@ namespace CustomCharInfo.server.Controllers
                     VanillaCharDisplayName = x.Moveset.VanillaChar != null
                         ? x.Moveset.VanillaChar.DisplayName
                         : x.Moveset.VanillaCharInternalName,
-                    SeriesName = x.Moveset.PrivateMoveset == true && !(isAdmin || x.IsOwner)
+                    SeriesName = x.Moveset.PrivateMoveset == true && !(seeAll || x.IsOwner)
                         ? null
                         : (x.Moveset.Series != null ? x.Moveset.Series.SeriesName : null),
                     ArticleNames = x.Moveset.MovesetArticles
@@ -224,16 +231,16 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public-heavy")]
         [ApiExplorerSettings(GroupName = "public")]
-        public async Task<ActionResult<IEnumerable<object>>> SearchMovesets([FromQuery] string q)
+        public async Task<ActionResult<IEnumerable<object>>> SearchMovesets([FromQuery] string q, [FromQuery] bool includeHidden = false)
         {
             if (string.IsNullOrWhiteSpace(q))
                 return Ok(Array.Empty<object>());
 
             var user = await _userManager.GetRequesterSummaryAsync(_context, User);
 
-            bool isAdmin = user?.UserTypeId == UserTypes.Admin;
+            bool seeAll = user?.UserTypeId == UserTypes.Admin && includeHidden;
             int? currentModderId = user?.ModderId;
-                        var lowered = q.Trim().ToLower();
+            var lowered = q.Trim().ToLower();
 
             var query = _context.Movesets
                 .AsNoTracking()
@@ -244,7 +251,9 @@ namespace CustomCharInfo.server.Controllers
                     m.SlottedId,
                     m.ModdedCharName,
                     m.PrivateMoveset,
-                    IsOwner = currentModderId != null && m.MovesetModders.Any(mm => mm.ModderId == currentModderId),
+                    IsOwner = currentModderId != null
+                        && (m.MovesetModders.Any(mm => mm.ModderId == currentModderId)
+                            || m.MovesetEditors.Any(me => me.ModderId == currentModderId)),
                     LatestLogState = _context.ActionLogs
                         .Where(a => a.ItemTypeId == ItemTypes.Moveset && a.ItemId == m.MovesetId)
                         .OrderByDescending(a => a.CreatedAt)
@@ -252,7 +261,7 @@ namespace CustomCharInfo.server.Controllers
                         .FirstOrDefault()
                 });
 
-            if (!isAdmin)
+            if (!seeAll)
             {
                 query = query.Where(x =>
                     (x.PrivateMoveset != true || x.IsOwner)
@@ -296,11 +305,20 @@ namespace CustomCharInfo.server.Controllers
                 .OrderBy(mm => mm.SortOrder)
                 .ToList();
 
-            // Check ownership
-            bool isOwner =
+            // Ownership: credited modders and editors both count.
+            bool isCredited =
                 user != null
                 && user.ModderId != null
                 && moveset.MovesetModders.Any(mm => mm.Modder.ModderId == user.ModderId);
+            var editorEntry = user?.ModderId == null
+                ? null
+                : moveset.MovesetEditors?.FirstOrDefault(me => me.Modder.ModderId == user.ModderId);
+            bool isOwner = isCredited || editorEntry != null;
+
+            moveset.CanEdit = isOwner;
+            moveset.CanManageMembers = isCredited || (editorEntry != null && editorEntry.FullAccess);
+            if (!isOwner)
+                moveset.MovesetEditors = null;
 
             // Hide if private
             if ((bool)moveset.PrivateMoveset && user?.UserTypeId != UserTypes.Admin && !isOwner)

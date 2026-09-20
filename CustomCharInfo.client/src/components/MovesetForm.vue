@@ -39,6 +39,7 @@
               multiple
               chips
               clearable
+              :disabled="!canManageMembers"
             >
               <template #label>Modders <span class="required-asterisk">*</span></template>
               <!-- Hint -->
@@ -51,6 +52,43 @@
                 >
               </template>
             </v-select>
+          </v-col>
+          <!-- Editors: may edit the moveset but are never credited -->
+          <v-col cols="12" sm="4">
+            <v-select
+              v-model="form.editorIds"
+              variant="outlined"
+              :items="editorCandidates"
+              item-title="name"
+              item-value="modderId"
+              label="Editors"
+              multiple
+              chips
+              clearable
+              :disabled="!canManageMembers"
+              :messages="
+                canManageMembers
+                  ? 'Modders who can edit this moveset but are not credited on it.'
+                  : 'Only credited modders and full-access editors can change who is on this moveset.'
+              "
+            />
+            <div v-if="form.editorIds.length" class="editor-access-list">
+              <div v-for="id in form.editorIds" :key="id" class="editor-access-row">
+                <span class="editor-access-name">{{ modderName(id) }}</span>
+                <v-switch
+                  v-model="editorFullAccess[id]"
+                  density="compact"
+                  hide-details
+                  color="primary"
+                  label="Full access"
+                  :disabled="!canManageMembers"
+                />
+              </div>
+              <p class="editor-access-hint">
+                Full access can also change the Modders and Editors lists. Partial access can edit
+                everything else.
+              </p>
+            </div>
           </v-col>
           <!-- Series -->
           <v-col cols="12" sm="4">
@@ -392,7 +430,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/services/api'
 import ImageUploadField from '@/components/ImageUploadField.vue'
@@ -441,6 +479,7 @@ const form = ref({
   // Basic Info
   moddedCharName: '',
   modderIds: [],
+  editorIds: [],
   seriesId: null,
   slottedId: null,
   replacementId: null,
@@ -485,6 +524,28 @@ const vanillaChars = ref([])
 const seriesList = ref([])
 const releaseStates = ref([])
 const modders = ref([])
+
+// Editors: which modders may edit without credit, and whether each may also manage the member lists.
+// Only credited modders and full-access editors may change either list; partial editors see them disabled.
+const editorFullAccess = ref({})
+const canManageMembers = ref(true)
+
+const editorCandidates = computed(() =>
+  modders.value.filter((m) => !form.value.modderIds.includes(m.modderId))
+)
+
+const modderName = (id) => modders.value.find((m) => m.modderId === id)?.name ?? `#${id}`
+
+// Someone credited as a modder cannot also be an editor.
+watch(
+  () => form.value.modderIds,
+  (ids) => {
+    form.value.editorIds = form.value.editorIds.filter((id) => !ids.includes(id))
+  }
+)
+
+const editorsPayload = () =>
+  form.value.editorIds.map((id) => ({ modderId: id, fullAccess: !!editorFullAccess.value[id] }))
 const dependencies = ref([])
 const articles = ref([])
 const hooks = ref([])
@@ -530,6 +591,11 @@ onMounted(async () => {
         showAdvanced.value = true
       }
       form.value.modderIds = res.data.movesetModders?.map((m) => m.modder.modderId) || []
+      form.value.editorIds = res.data.movesetEditors?.map((e) => e.modder.modderId) || []
+      editorFullAccess.value = Object.fromEntries(
+        (res.data.movesetEditors ?? []).map((e) => [e.modder.modderId, !!e.fullAccess])
+      )
+      canManageMembers.value = res.data.canManageMembers !== false
       form.value.dependencyIds =
         res.data.movesetDependencies?.map((d) => d.dependency.dependencyId) || []
       form.value.articles =
@@ -593,13 +659,16 @@ const submit = async () => {
 
   // Validate modderId
   const user = await api.get('/auth/me')
-  if (!form.value.modderIds.includes(user.data.modderId)) {
+  const stillOnMoveset =
+    form.value.modderIds.includes(user.data.modderId) ||
+    form.value.editorIds.includes(user.data.modderId)
+  if (!stillOnMoveset) {
     if (!isEditMode.value) {
       notify.warning('You cannot save a moveset you do not own.')
       return
     }
     const confirmed = window.confirm(
-      'You are removing yourself as a modder on this moveset. You will lose access to edit it. Continue?'
+      'You are removing yourself from this moveset. You will lose access to edit it. Continue?'
     )
     if (!confirmed) return
   }
@@ -656,7 +725,7 @@ const submit = async () => {
 
     uploadStatus.value = 'Saving moveset...'
     try {
-      await api.put(`/movesets/${props.movesetId}`, { ...form.value })
+      await api.put(`/movesets/${props.movesetId}`, { ...form.value, editors: editorsPayload() })
       markSaved()
       router.push(`/moveset/${props.movesetId}`)
     } catch (err) {
@@ -678,7 +747,7 @@ const submit = async () => {
     ? form.value.movesetHeroImageUrl
     : null
 
-  const payload = { ...form.value }
+  const payload = { ...form.value, editors: editorsPayload() }
   if (stagedThumb) payload.thumbhImageUrl = null
   if (stagedHero) payload.movesetHeroImageUrl = null
 
@@ -731,6 +800,32 @@ const submit = async () => {
 </script>
 
 <style scoped>
+/* Per-editor access switches under the Editors picker */
+.editor-access-list {
+  margin-top: 0.25rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background-color: #1a1a1a;
+}
+.editor-access-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.editor-access-name {
+  font-size: 0.9em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.editor-access-hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.75em;
+  color: #888;
+}
+
 /* General display of form */
 section {
   margin-bottom: 2rem;

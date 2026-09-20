@@ -137,8 +137,9 @@ namespace CustomCharInfo.server.Controllers
                 v.IsCurrent = currentSet.Contains(v);
         }
 
-        private bool IsMovesetModder(Moveset moveset, int? modderId) =>
-            modderId != null && moveset.MovesetModders.Any(mm => mm.ModderId == modderId);
+        // Credited modders and editors may manage a moveset's own plugin.
+        private static bool IsMovesetModder(Moveset moveset, int? modderId) =>
+            MovesetAccess.CanEdit(moveset, modderId);
 
         private async Task<int?> LatestActionLogStateAsync(int itemTypeId, int itemId)
         {
@@ -275,7 +276,7 @@ namespace CustomCharInfo.server.Controllers
             Moveset? moveset = null;
             if (dto.MovesetId != null)
             {
-                moveset = await _context.Movesets.Include(m => m.MovesetModders).FirstOrDefaultAsync(m => m.MovesetId == dto.MovesetId);
+                moveset = await _context.Movesets.Include(m => m.MovesetModders).Include(m => m.MovesetEditors).FirstOrDefaultAsync(m => m.MovesetId == dto.MovesetId);
                 if (moveset == null) return NotFound("Moveset not found.");
                 if (!isAdmin && !IsMovesetModder(moveset, user.ModderId))
                     return Forbid();
@@ -352,7 +353,10 @@ namespace CustomCharInfo.server.Controllers
             var (user, isAdmin) = await GetRequesterAsync();
             if (user == null) return Forbid();
 
-            var plugin = await _context.Plugins.Include(p => p.Moveset).ThenInclude(m => m.MovesetModders).FirstOrDefaultAsync(p => p.PluginId == id);
+            var plugin = await _context.Plugins
+                .Include(p => p.Moveset).ThenInclude(m => m.MovesetModders)
+                .Include(p => p.Moveset).ThenInclude(m => m.MovesetEditors)
+                .FirstOrDefaultAsync(p => p.PluginId == id);
             if (plugin == null) return NotFound();
 
             bool canEdit = isAdmin ||
@@ -378,7 +382,10 @@ namespace CustomCharInfo.server.Controllers
             var (user, isAdmin) = await GetRequesterAsync();
             if (user == null) return Forbid();
 
-            var plugin = await _context.Plugins.Include(p => p.Moveset).ThenInclude(m => m.MovesetModders).FirstOrDefaultAsync(p => p.PluginId == id);
+            var plugin = await _context.Plugins
+                .Include(p => p.Moveset).ThenInclude(m => m.MovesetModders)
+                .Include(p => p.Moveset).ThenInclude(m => m.MovesetEditors)
+                .FirstOrDefaultAsync(p => p.PluginId == id);
             if (plugin == null) return NotFound();
 
             bool canDelete = isAdmin ||
@@ -690,10 +697,7 @@ namespace CustomCharInfo.server.Controllers
             var (user, _) = await GetRequesterAsync();
             if (user == null || user.ModderId == null) return Forbid();
 
-            var modderMovesetIds = await _context.MovesetModders
-                .Where(mm => mm.ModderId == user.ModderId)
-                .Select(mm => mm.MovesetId)
-                .ToListAsync();
+            var modderMovesetIds = await MovesetAccess.EditableMovesetIdsAsync(_context, user.ModderId);
 
             var plugins = await _context.Plugins
                 .Include(p => p.PluginVersions)

@@ -55,12 +55,12 @@ namespace CustomCharInfo.server.Controllers
                 case ItemTypes.Modder:
                     return requester.ModderId == itemId;
                 case ItemTypes.Moveset:
-                    return await _context.MovesetModders
-                        .AnyAsync(mm => mm.ModderId == requester.ModderId && mm.MovesetId == itemId);
+                    return await MovesetAccess.CanEditAsync(_context, itemId, requester.ModderId);
                 case ItemTypes.Series:
                     return await _context.Movesets
                         .AnyAsync(m => m.SeriesId == itemId &&
-                            _context.MovesetModders.Any(mm => mm.ModderId == requester.ModderId && mm.MovesetId == m.MovesetId));
+                            (_context.MovesetModders.Any(mm => mm.ModderId == requester.ModderId && mm.MovesetId == m.MovesetId)
+                             || _context.MovesetEditors.Any(me => me.ModderId == requester.ModderId && me.MovesetId == m.MovesetId)));
                 case ItemTypes.Plugin:
                     return await _context.PluginVersions
                         .AnyAsync(v => v.PluginVersionId == itemId && v.Plugin.OwnerModderId == requester.ModderId);
@@ -253,11 +253,8 @@ namespace CustomCharInfo.server.Controllers
 
                 if (modderId != null)
                 {
-                    // Get movesetIds user is a modder for
-                    var userMovesetIds = await _context.MovesetModders
-                        .Where(mm => mm.ModderId == modderId)
-                        .Select(mm => mm.MovesetId)
-                        .ToListAsync();
+                    // Movesets the user is credited on or edits
+                    var userMovesetIds = await MovesetAccess.EditableMovesetIdsAsync(_context, modderId);
 
                     // Get seriesIds from movesets
                     var seriesIdsFromMovesets = await _context.Movesets

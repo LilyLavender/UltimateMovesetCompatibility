@@ -59,6 +59,7 @@ import AdminPortal from '@/views/AdminPortal.vue'
 import AdminAccepter from '@/views/AdminAccepter.vue'
 import NotificationSimulator from '@/views/NotificationSimulator.vue'
 import AdminPicks from '@/views/AdminPicks.vue'
+import HiddenContentPage from '@/views/HiddenContentPage.vue'
 import AdminPasswordResetter from '@/views/AdminPasswordResetter.vue'
 import UserList from '@/views/UserList.vue'
 import ImageGarbageCollector from '@/views/ImageGarbageCollector.vue'
@@ -254,6 +255,13 @@ const routes = [
     name: 'NotificationSimulator',
     component: NotificationSimulator,
     meta: { title: 'Notification Simulator' },
+    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
+  },
+  {
+    path: '/hidden-content',
+    name: 'HiddenContent',
+    component: HiddenContentPage,
+    meta: { title: 'Hidden Content' },
     beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
   },
   {

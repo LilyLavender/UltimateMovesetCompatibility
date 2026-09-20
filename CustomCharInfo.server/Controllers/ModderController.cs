@@ -84,7 +84,7 @@ namespace CustomCharInfo.server.Controllers
 
         [Authorize]
         [HttpGet]
-        public async Task<ActionResult> GetModders()
+        public async Task<ActionResult> GetModders([FromQuery] bool includeHidden = false)
         {
             var userFromId = await _userManager.GetRequesterAsync(_context, User);
             if (!userFromId.IsModder())
@@ -102,8 +102,8 @@ namespace CustomCharInfo.server.Controllers
                         .FirstOrDefault()
                 });
         
-            // Filter out blocked modders
-            if (userFromId.UserTypeId != UserTypes.Admin)
+            // Filter out blocked modders unless an admin asks for hidden content
+            if (!(userFromId.IsAdmin() && includeHidden))
             {
                 moddersQuery = moddersQuery
                     .Where(x => x.LatestLog == null || !AcceptanceStates.Blocked.Contains(x.LatestLog.AcceptanceStateId));

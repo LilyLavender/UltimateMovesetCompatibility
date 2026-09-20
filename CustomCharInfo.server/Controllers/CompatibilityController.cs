@@ -83,6 +83,7 @@ namespace CustomCharInfo.server.Controllers
         }
 
         private const int MaxPredictMovesets = 10;
+        private const int MaxBatchReportMovesets = 25;
         private static readonly string[] SeverityOrder = { "compatible", "warning", "predicted-incompat", "incompatible" };
 
         // N-way predicted compatibility, ported from CompatibilityCheckPage.vue's runCheck
@@ -261,6 +262,78 @@ namespace CustomCharInfo.server.Controllers
                 UserVote = userReport == null ? (bool?)null : userReport.IsCompatible
             });
         }
+
+        // Marks every pair in a group of movesets compatible for the caller.
+        // Compatible only: a group that runs together proves each pair works, but a crash does not say which pair is at fault.
+        // Upserts rather than toggles, so re-submitting a group never removes an existing vote.
+        [HttpPost("batch")]
+        [Authorize]
+        public async Task<IActionResult> SubmitBatchCompatible([FromBody] BatchCompatibilityReportDto dto)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return Unauthorized();
+
+            var ids = dto?.MovesetIds ?? new List<int>();
+            if (ids.Count < 2)
+                return BadRequest("At least two movesets are required.");
+            if (ids.Count > MaxBatchReportMovesets)
+                return BadRequest($"At most {MaxBatchReportMovesets} movesets are allowed per request.");
+            if (ids.Distinct().Count() != ids.Count)
+                return BadRequest("Duplicate movesets in request.");
+
+            var existingCount = await _context.Movesets.CountAsync(m => ids.Contains(m.MovesetId));
+            if (existingCount != ids.Count)
+                return NotFound("One or more movesets do not exist.");
+
+            var existingReports = await _context.CompatibilityReports
+                .Where(r => r.UserId == userId && ids.Contains(r.MovesetId1) && ids.Contains(r.MovesetId2))
+                .ToListAsync();
+            var byPair = existingReports.ToDictionary(r => (r.MovesetId1, r.MovesetId2));
+
+            var now = DateTime.UtcNow;
+            int created = 0, updated = 0;
+            var sorted = ids.OrderBy(id => id).ToList();
+            for (int i = 0; i < sorted.Count; i++)
+            {
+                for (int j = i + 1; j < sorted.Count; j++)
+                {
+                    var key = (sorted[i], sorted[j]);
+                    if (byPair.TryGetValue(key, out var existing))
+                    {
+                        if (existing.IsCompatible) continue;
+                        existing.IsCompatible = true;
+                        existing.CreatedAt = now;
+                        updated++;
+                    }
+                    else
+                    {
+                        _context.CompatibilityReports.Add(new CompatibilityReport
+                        {
+                            MovesetId1 = key.Item1,
+                            MovesetId2 = key.Item2,
+                            UserId = userId,
+                            IsCompatible = true,
+                            CreatedAt = now
+                        });
+                        created++;
+                    }
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                PairCount = sorted.Count * (sorted.Count - 1) / 2,
+                Created = created,
+                Updated = updated
+            });
+        }
+    }
+
+    public class BatchCompatibilityReportDto
+    {
+        public List<int> MovesetIds { get; set; } = new();
     }
 
     public class CompatibilityReportDto

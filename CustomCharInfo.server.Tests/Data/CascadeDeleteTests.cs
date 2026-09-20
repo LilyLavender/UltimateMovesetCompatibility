@@ -37,6 +37,22 @@ namespace CustomCharInfo.server.Tests.Data
         }
 
         [Fact]
+        public async Task DeletingMoveset_RemovesMovesetEditorRow()
+        {
+            var user = SeedData.AddUser(_db.Context, "editor-user", userTypeId: UserTypes.Modder, modderId: 1);
+            SeedData.AddModder(_db.Context, 1, user.Id, "SomeEditor");
+            var moveset = new Moveset { MovesetId = 1, ModdedCharName = "Test", VanillaCharInternalName = "mario", SlottedId = "slotone", ReleaseStateId = ReleaseStates.Released };
+            _db.Context.Movesets.Add(moveset);
+            _db.Context.MovesetEditors.Add(new MovesetEditor { MovesetId = 1, ModderId = 1, FullAccess = true });
+            await _db.Context.SaveChangesAsync();
+
+            _db.Context.Movesets.Remove(moveset);
+            await _db.Context.SaveChangesAsync();
+
+            Assert.Empty(await _db.Context.MovesetEditors.ToListAsync());
+        }
+
+        [Fact]
         public async Task DeletingMoveset_RemovesMovesetHookRow()
         {
             _db.Context.HookableStatuses.Add(new HookableStatus { HookableStatusId = HookableStatuses.Untested, Name = "Confirmed" });

@@ -198,6 +198,47 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
+        public async Task GetSeries_AdminCountsBlockedMovesetsOnlyWithIncludeHidden()
+        {
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
+            _db.Context.Series.Add(new Series { SeriesId = 100, SeriesName = "Custom" });
+            _db.Context.Movesets.Add(new Moveset { MovesetId = 1, ModdedCharName = "Rejected", VanillaCharInternalName = "mario", SlottedId = "slotone", SeriesId = 100, ReleaseStateId = ReleaseStates.Released });
+            _db.Context.SaveChanges();
+            SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: AcceptanceStates.Rejected, DateTime.UtcNow, userId: "log-author");
+
+            var controller = CreateController("admin-1");
+
+            static int CountFor(IActionResult result)
+            {
+                var ok = Assert.IsType<OkObjectResult>(result);
+                var row = ((IEnumerable<object>)ok.Value!).Single();
+                return (int)row.GetType().GetProperty("MovesetCount")!.GetValue(row)!;
+            }
+
+            Assert.Equal(0, CountFor(await controller.GetSeries()));
+            Assert.Equal(1, CountFor(await controller.GetSeries(includeHidden: true)));
+        }
+
+        [Fact]
+        public async Task RequestSeriesEdit_EditorOfMovesetInSeries_IsAllowed()
+        {
+            var editor = SeedData.AddUser(_db.Context, "editor-1", userTypeId: UserTypes.Modder, modderId: 3);
+            SeedData.AddModder(_db.Context, 3, editor.Id, "Editor");
+            _db.Context.Series.Add(new Series { SeriesId = 100, SeriesName = "Custom" });
+            _db.Context.Movesets.Add(new Moveset { MovesetId = 1, ModdedCharName = "Edited", VanillaCharInternalName = "mario", SlottedId = "slotone", SeriesId = 100, ReleaseStateId = ReleaseStates.Released });
+            _db.Context.MovesetEditors.Add(new MovesetEditor { MovesetId = 1, ModderId = 3, FullAccess = false });
+            _db.Context.SaveChanges();
+
+            var controller = CreateController("editor-1");
+
+            var request = await controller.RequestSeriesEdit(100, new RequestEditSeriesDto { Notes = "Please" });
+            Assert.IsType<OkObjectResult>(request);
+
+            var detail = Assert.IsType<OkObjectResult>((await controller.GetOneSeries(100)).Result);
+            Assert.True(Assert.IsType<ReturnSeriesDto>(detail.Value).UserOwnsMoveset);
+        }
+
+        [Fact]
         public async Task GetOneSeries_UnknownId_ReturnsNotFound()
         {
             var controller = CreateController();

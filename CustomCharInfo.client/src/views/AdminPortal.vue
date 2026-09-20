@@ -18,6 +18,11 @@
         Admin Picks
       </router-link>
 
+      <router-link :to="{ name: 'HiddenContent' }" class="unvisitable ml-2 admin-link">
+        <v-icon left>mdi-eye-off</v-icon>
+        Hidden Content
+      </router-link>
+
       <router-link :to="{ name: 'AddBlogPost' }" class="unvisitable ml-2 admin-link">
         <v-icon left>mdi-post</v-icon>
         Add blog post

@@ -67,12 +67,11 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public-heavy")]
         [ApiExplorerSettings(GroupName = "public")]
-        public async Task<ActionResult<IEnumerable<object>>> GetMovesetsReport()
+        public async Task<ActionResult<IEnumerable<object>>> GetMovesetsReport([FromQuery] bool includeHidden = false)
         {
             var user = await _userManager.GetRequesterSummaryAsync(_context, User);
 
-            
-            var isAdmin = user?.UserTypeId == UserTypes.Admin;
+            var seeAll = user?.UserTypeId == UserTypes.Admin && includeHidden;
             var userModderId = user?.ModderId;
 
             var query = _context.Movesets
@@ -95,11 +94,12 @@ namespace CustomCharInfo.server.Controllers
                         .FirstOrDefault(),
 
                     IsOwner = userModderId != null &&
-                        m.MovesetModders.Any(mm => mm.ModderId == userModderId)
+                        (m.MovesetModders.Any(mm => mm.ModderId == userModderId)
+                         || m.MovesetEditors.Any(me => me.ModderId == userModderId))
                 })
                 .AsQueryable();
 
-            if (user == null || user.UserTypeId != UserTypes.Admin)
+            if (!seeAll)
             {
                 query = query.Where(x =>
                     x.LatestLog == null ||

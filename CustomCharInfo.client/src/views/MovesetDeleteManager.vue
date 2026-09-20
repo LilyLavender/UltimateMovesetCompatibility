@@ -63,7 +63,7 @@ const filtered = computed(() => {
 
 const loadMovesets = async () => {
   try {
-    const res = await api.get('/movesets')
+    const res = await api.get('/movesets', { params: { includeHidden: true } })
     movesets.value = res.data
     loaded.value = true
   } catch (err) {

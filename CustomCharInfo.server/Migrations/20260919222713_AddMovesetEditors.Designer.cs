@@ -3,6 +3,7 @@ using System;
 using CustomCharInfo.server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CustomCharInfo.server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260919222713_AddMovesetEditors")]
+    partial class AddMovesetEditors
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -512,29 +515,6 @@ namespace CustomCharInfo.server.Migrations
                     b.HasIndex("VanillaCharInternalName");
 
                     b.ToTable("Movesets");
-                });
-
-            modelBuilder.Entity("CustomCharInfo.server.Models.MovesetAdminNote", b =>
-                {
-                    b.Property<int>("MovesetId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Note")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("UpdatedByUserId")
-                        .HasColumnType("text");
-
-                    b.HasKey("MovesetId");
-
-                    b.HasIndex("UpdatedByUserId");
-
-                    b.ToTable("MovesetAdminNotes");
                 });
 
             modelBuilder.Entity("CustomCharInfo.server.Models.MovesetArticle", b =>
@@ -1042,22 +1022,6 @@ namespace CustomCharInfo.server.Migrations
                     b.Navigation("Series");
 
                     b.Navigation("VanillaChar");
-                });
-
-            modelBuilder.Entity("CustomCharInfo.server.Models.MovesetAdminNote", b =>
-                {
-                    b.HasOne("CustomCharInfo.server.Models.Moveset", null)
-                        .WithMany()
-                        .HasForeignKey("MovesetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("CustomCharInfo.server.Models.ApplicationUser", "UpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("UpdatedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("UpdatedBy");
                 });
 
             modelBuilder.Entity("CustomCharInfo.server.Models.MovesetArticle", b =>
