@@ -113,9 +113,19 @@ const upcomingReleases = computed(() => {
 
   const withDate = adminPicks.value
     .filter((m) => m.releaseDate && compareDateOnlyStrings(m.releaseDate, todayStr) > 0)
-    .sort((a, b) => compareDateOnlyStrings(a.releaseDate, b.releaseDate))
+    .sort(
+      (a, b) =>
+        compareDateOnlyStrings(a.releaseDate, b.releaseDate) ||
+        (b.likeCount ?? 0) - (a.likeCount ?? 0) ||
+        a.moddedCharName.localeCompare(b.moddedCharName)
+    )
 
-  const noDate = adminPicks.value.filter((m) => !m.releaseDate && !m.privateMoveset)
+  const noDate = adminPicks.value
+    .filter((m) => !m.releaseDate && !m.privateMoveset)
+    .sort(
+      (a, b) =>
+        (b.likeCount ?? 0) - (a.likeCount ?? 0) || a.moddedCharName.localeCompare(b.moddedCharName)
+    )
 
   return [...withDate, ...noDate].slice(0, 6)
 })
