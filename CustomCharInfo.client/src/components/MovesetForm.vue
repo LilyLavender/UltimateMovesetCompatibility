@@ -432,6 +432,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useHead } from '@unhead/vue'
 import api from '@/services/api'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import MovesetPluginsPanel from '@/components/MovesetPluginsPanel.vue'
@@ -475,6 +476,11 @@ const getVanillaCharDisplayName = (internalName) => {
 }
 
 const moveset = ref(null)
+
+useHead(
+  computed(() => (moveset.value ? { title: `UMC | Editing ${moveset.value.moddedCharName}` } : {}))
+)
+
 const form = ref({
   // Basic Info
   moddedCharName: '',
@@ -585,8 +591,6 @@ onMounted(async () => {
       const res = await api.get(`/movesets/${props.movesetId}`)
       moveset.value = res.data
       Object.assign(form.value, res.data)
-      document.title = `UMC | Editing ${moveset.value?.moddedCharName}` // sets page title
-
       if (res.data.isJokeMoveset || res.data.subtitle) {
         showAdvanced.value = true
       }

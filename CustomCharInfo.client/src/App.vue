@@ -15,18 +15,17 @@ import Footer from '@/components/SiteFooter.vue'
 import MobileWarning from '@/components/MobileWarning.vue'
 import AppSnackbar from '@/components/AppSnackbar.vue'
 
-import { watch } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useHead } from '@unhead/vue'
 
 const route = useRoute()
 
-watch(
-  () => route.fullPath,
-  () => {
-    document.title = route.meta.title ? `UMC | ${route.meta.title}` : 'UMC'
-  },
-  { immediate: true }
-)
+// Route-level fallback title.
+// Pages that know their subject register their own useHead title that wins while mounted.
+useHead({
+  title: computed(() => (route.meta.title ? `UMC | ${route.meta.title}` : 'UMC')),
+})
 </script>
 
 <style scoped>

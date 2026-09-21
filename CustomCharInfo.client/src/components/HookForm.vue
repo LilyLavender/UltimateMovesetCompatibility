@@ -127,6 +127,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useHead } from '@unhead/vue'
 import api from '@/services/api'
 import { useNotify } from '@/composables/useNotify'
 import { OffsetState, OFFSET_STATE_NAMES } from '@/globals'
@@ -139,6 +140,8 @@ const props = defineProps({
 })
 
 const isEditMode = computed(() => props.mode === 'edit')
+
+useHead(computed(() => (isEditMode.value ? { title: 'UMC | Editing Hook' } : {})))
 const router = useRouter()
 
 const hook = ref(null)
@@ -166,7 +169,6 @@ onMounted(async () => {
     try {
       const res = await api.get(`/hooks/${props.hookId}`)
       applyHook(res.data)
-      document.title = `UMC | Editing Hook`
     } catch (err) {
       console.error(err)
       router.replace({ name: 'ErrorPage', query: { http: 404 } })

@@ -1,18 +1,18 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import { createUnhead, headSymbol } from '@unhead/vue'
+import { createHead } from '@unhead/vue/client'
 import '@/style.css'
 import App from '@/App.vue'
 import vuetify from '@/plugins/vuetify'
 import router from '@/router'
 
 const app = createApp(App)
-const head = createUnhead()
+const head = createHead()
 
 app.use(createPinia())
 app.use(router)
 app.use(vuetify)
-app.provide(headSymbol, head)
+app.use(head)
 
 app.config.warnHandler = (msg, instance, trace) => {
   if (msg.includes('Invoke the slot function inside the render function instead.')) return
