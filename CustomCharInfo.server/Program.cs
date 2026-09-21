@@ -122,6 +122,9 @@ namespace CustomCharInfo.server
             builder.Services.AddScoped<IpActivityService>();
             builder.Services.AddScoped<ActivityTrackingFilter>();
 
+            // The only writer of per-version hook offsets; keeps Hook.Offset pointed at the newest game version.
+            builder.Services.AddScoped<HookOffsetService>();
+
             // Downloads GitHub release assets that predate GitHub's own digests so the Repo Releases page can hash them.
             builder.Services.AddHttpClient<IReleaseAssetHasher, GitHubAssetHasher>(client =>
             {

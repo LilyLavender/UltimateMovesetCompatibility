@@ -4,8 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using CustomCharInfo.server.Data;
 using CustomCharInfo.server.Models;
 using CustomCharInfo.server.Models.DTOs;
+using CustomCharInfo.server.Services;
 
-using SixLabors.ImageSharp;
 using Microsoft.AspNetCore.Authorization;
 using CustomCharInfo.server.Helpers;
 using Npgsql;
@@ -22,10 +22,44 @@ namespace CustomCharInfo.server.Controllers
 
         private readonly UserManager<ApplicationUser> _userManager;
 
-        public HookController(AppDbContext context, UserManager<ApplicationUser> userManager)
+        private readonly HookOffsetService _offsets;
+
+        public HookController(AppDbContext context, UserManager<ApplicationUser> userManager, HookOffsetService offsets)
         {
             _context = context;
             _userManager = userManager;
+            _offsets = offsets;
+        }
+
+        private IQueryable<HookDto> ProjectHooks(IQueryable<Hook> hooks, GameVersion? latest)
+        {
+            var latestId = latest?.GameVersionId ?? 0;
+            var latestName = latest?.Name;
+            return hooks.Select(h => new HookDto
+            {
+                HookId = h.HookId,
+                Offset = h.Offset,
+                GameVersion = latestName,
+                OffsetStateId = h.HookOffsets
+                    .Where(o => o.GameVersionId == latestId)
+                    .Select(o => (int?)o.OffsetStateId)
+                    .FirstOrDefault(),
+                Offsets = h.HookOffsets
+                    .OrderByDescending(o => o.GameVersion.SortOrder)
+                    .Select(o => new HookOffsetDto
+                    {
+                        GameVersionId = o.GameVersionId,
+                        GameVersion = o.GameVersion.Name,
+                        Offset = o.Offset,
+                        OffsetStateId = o.OffsetStateId,
+                        OffsetState = o.OffsetState.Name,
+                        UpdatedAt = o.UpdatedAt
+                    })
+                    .ToList(),
+                Description = h.Description,
+                HookableStatusId = h.HookableStatusId,
+                HookableStatus = h.HookableStatus.Name
+            });
         }
 
         [HttpGet]
@@ -34,18 +68,8 @@ namespace CustomCharInfo.server.Controllers
         [ApiExplorerSettings(GroupName = "public")]
         public async Task<ActionResult<IEnumerable<HookDto>>> GetHooks()
         {
-            var hooks = await _context.Hooks
-                .Include(h => h.HookableStatus)
-                .Select(h => new HookDto
-                {
-                    HookId = h.HookId,
-                    Offset = h.Offset,
-                    Description = h.Description,
-                    HookableStatusId = h.HookableStatusId,
-                    HookableStatus = h.HookableStatus.Name
-                })
-                .ToListAsync();
-
+            var latest = await _offsets.GetLatestVersionAsync();
+            var hooks = await ProjectHooks(_context.Hooks.AsNoTracking(), latest).ToListAsync();
             return Ok(hooks);
         }
 
@@ -63,7 +87,9 @@ namespace CustomCharInfo.server.Controllers
             var lowered = q.Trim().ToLower();
             var results = await _context.Hooks
                 .AsNoTracking()
-                .Where(h => h.Description.ToLower().Contains(lowered) || h.Offset.ToLower().Contains(lowered))
+                .Where(h => h.Description.ToLower().Contains(lowered)
+                    || h.Offset.ToLower().Contains(lowered)
+                    || h.HookOffsets.Any(o => o.Offset.ToLower().Contains(lowered)))
                 .OrderBy(h => h.Description)
                 .Take(MaxSearchResults)
                 .Select(h => new { Id = h.HookId, Name = h.Description })
@@ -78,17 +104,8 @@ namespace CustomCharInfo.server.Controllers
         [ApiExplorerSettings(GroupName = "public")]
         public async Task<ActionResult<HookDto>> GetHook(int id)
         {
-            var hook = await _context.Hooks
-                .Include(h => h.HookableStatus)
-                .Where(h => h.HookId == id)
-                .Select(h => new HookDto
-                {
-                    HookId = h.HookId,
-                    Offset = h.Offset,
-                    Description = h.Description,
-                    HookableStatusId = h.HookableStatusId,
-                    HookableStatus = h.HookableStatus.Name
-                })
+            var latest = await _offsets.GetLatestVersionAsync();
+            var hook = await ProjectHooks(_context.Hooks.AsNoTracking().Where(h => h.HookId == id), latest)
                 .FirstOrDefaultAsync();
 
             if (hook == null)
@@ -122,31 +139,50 @@ namespace CustomCharInfo.server.Controllers
             if (!userFromId.IsModder())
                 return Forbid();
 
-            if (await _context.Hooks.AnyAsync(h => h.Offset == dto.Offset))
-                return Conflict("A hook with this offset already exists.");
+            var latest = await _offsets.GetLatestVersionAsync();
+            if (latest == null)
+                return BadRequest("No game version exists yet.");
+
+            var version = dto.GameVersionId.HasValue
+                ? await _context.GameVersions.FindAsync(dto.GameVersionId.Value)
+                : latest;
+            if (version == null)
+                return BadRequest("Unknown game version.");
+
+            if (!OffsetFormat.TryNormalize(dto.Offset, out var offset))
+                return BadRequest("Offset must be a hex address of up to eight digits.");
+
+            if (await _context.HookOffsets.AnyAsync(o => o.GameVersionId == version.GameVersionId && o.Offset == offset))
+                return Conflict($"A hook with offset 0x{offset} already exists in {version.Name}.");
 
             var hook = new Hook
             {
-                Offset = dto.Offset,
+                Offset = offset,
                 Description = dto.Description,
                 HookableStatusId = dto.HookableStatusId
             };
-
             _context.Hooks.Add(hook);
+
             try
             {
+                await _offsets.SetOffsetAsync(hook, version, offset, OffsetStates.Confirmed, userFromId.Id);
+                await _offsets.DeriveForwardAsync(hook, version, offset);
                 await _context.SaveChangesAsync();
+            }
+            catch (HookOffsetConflictException ex)
+            {
+                return Conflict(ex.Message);
             }
             catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
             {
                 // The AnyAsync check above is check-then-act; this catches a genuine race against
-                // the unique index on Offset as a backstop.
-                return Conflict("A hook with this offset already exists.");
+                // the unique index on (GameVersionId, Offset) as a backstop.
+                return Conflict($"A hook with offset 0x{offset} already exists in {version.Name}.");
             }
 
             var diff = DiffHelper.Build(new (string, object?, object?)[]
             {
-                ("Offset", null, hook.Offset),
+                ($"Offset ({version.Name})", null, hook.Offset),
                 ("Description", null, hook.Description),
                 ("HookableStatusId", null, hook.HookableStatusId),
             });
@@ -169,12 +205,8 @@ namespace CustomCharInfo.server.Controllers
             if (hook == null)
                 return NotFound();
 
-            var snapOffset = hook.Offset;
             var snapDescription = hook.Description;
             var snapHookableStatusId = hook.HookableStatusId;
-
-            if (dto.Offset != null)
-                hook.Offset = dto.Offset;
 
             if (dto.Description != null)
                 hook.Description = dto.Description;
@@ -184,22 +216,89 @@ namespace CustomCharInfo.server.Controllers
 
             var diff = DiffHelper.Build(new (string, object?, object?)[]
             {
-                ("Offset", snapOffset, hook.Offset),
                 ("Description", snapDescription, hook.Description),
                 ("HookableStatusId", snapHookableStatusId, hook.HookableStatusId),
             });
 
             LogHookAction(userFromId.Id, hook.HookId, acceptanceStateId: AcceptanceStates.PendingAdminSoft, dto.Notes ?? "", diff);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // Confirms or overrides a hook's offset for one game version.
+        // Without an offset in the body, the existing row is marked confirmed as is.
+        [HttpPut("{id}/offsets/{gameVersionId}")]
+        [Authorize]
+        public async Task<ActionResult<HookOffsetDto>> SetHookOffset(int id, int gameVersionId, ConfirmHookOffsetDto dto)
+        {
+            var userFromId = await _userManager.GetRequesterAsync(_context, User);
+            if (!userFromId.IsModder())
+                return Forbid();
+
+            var hook = await _context.Hooks.FindAsync(id);
+            if (hook == null)
+                return NotFound();
+
+            var version = await _context.GameVersions.FindAsync(gameVersionId);
+            if (version == null)
+                return NotFound();
+
+            var existing = await _context.HookOffsets
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.HookId == id && o.GameVersionId == gameVersionId);
+
+            string? offset;
+            if (dto.Offset != null)
+            {
+                if (!OffsetFormat.TryNormalize(dto.Offset, out offset))
+                    return BadRequest("Offset must be a hex address of up to eight digits.");
+            }
+            else if (existing != null)
+            {
+                offset = existing.Offset;
+            }
+            else
+            {
+                return BadRequest($"This hook has no offset for {version.Name} yet; provide one.");
+            }
+
+            var takenBy = await _context.HookOffsets
+                .Where(o => o.GameVersionId == gameVersionId && o.Offset == offset && o.HookId != id)
+                .Select(o => o.Hook.Description)
+                .FirstOrDefaultAsync();
+            if (takenBy != null)
+                return Conflict($"Offset 0x{offset} already belongs to \"{takenBy}\" in {version.Name}.");
+
+            var row = await _offsets.SetOffsetAsync(hook, version, offset, OffsetStates.Confirmed, userFromId.Id);
+
+            var stateNames = await _context.OffsetStates.ToDictionaryAsync(s => s.OffsetStateId, s => s.Name);
+            var diff = DiffHelper.Build(new (string, object?, object?)[]
+            {
+                ($"Offset ({version.Name})", existing?.Offset, offset),
+                ($"Offset state ({version.Name})", existing == null ? null : stateNames[existing.OffsetStateId], stateNames[OffsetStates.Confirmed]),
+            });
+
+            LogHookAction(userFromId.Id, hook.HookId, acceptanceStateId: AcceptanceStates.PendingAdminSoft, dto.Notes ?? "", diff);
+
             try
             {
                 await _context.SaveChangesAsync();
             }
             catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
             {
-                return Conflict("A hook with this offset already exists.");
+                return Conflict($"Offset 0x{offset} already belongs to another hook in {version.Name}.");
             }
 
-            return NoContent();
+            return Ok(new HookOffsetDto
+            {
+                GameVersionId = version.GameVersionId,
+                GameVersion = version.Name,
+                Offset = row.Offset,
+                OffsetStateId = row.OffsetStateId,
+                OffsetState = stateNames[row.OffsetStateId],
+                UpdatedAt = row.UpdatedAt
+            });
         }
 
         [HttpDelete("{id}")]
@@ -227,5 +326,5 @@ namespace CustomCharInfo.server.Controllers
 
             return NoContent();
         }
-       }
+    }
 }

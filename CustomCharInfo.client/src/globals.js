@@ -87,3 +87,21 @@ export const HookableStatus = Object.freeze({
   OnlyOnce: 2,
   MoreThanOnce: 3,
 })
+
+// Mirrors OffsetState.OffsetStateId server-side (seeded in OffsetState lookup table).
+// How a hook's offset for one game version was produced.
+export const OffsetState = Object.freeze({
+  Confirmed: 1,
+  Generated: 2,
+  CarriedForward: 3,
+})
+
+// Offsets the site derived when a game version was added and nobody has checked since.
+export const UNVERIFIED_OFFSET_STATES = [OffsetState.Generated, OffsetState.CarriedForward]
+
+// Display labels. The lookup row for 2 is named "Generated"; the pill says what matters to a modder.
+export const OFFSET_STATE_NAMES = Object.freeze({
+  [OffsetState.Confirmed]: 'Confirmed',
+  [OffsetState.Generated]: 'Unconfirmed',
+  [OffsetState.CarriedForward]: 'Carried forward',
+})

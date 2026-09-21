@@ -47,6 +47,7 @@ import RepoReleasesPage from '@/views/RepoReleasesPage.vue'
 import HooksPage from '@/views/HooksPage.vue'
 import AddHook from '@/views/AddHook.vue'
 import EditHook from '@/views/EditHook.vue'
+import GameVersionsPage from '@/views/GameVersionsPage.vue'
 // Blog
 import BlogPage from '@/views/BlogPage.vue'
 import BlogPostForm from '@/components/BlogPostForm.vue'
@@ -326,6 +327,13 @@ const routes = [
     name: 'RepoReleases',
     component: RepoReleasesPage,
     meta: { title: 'Repo Releases' },
+    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
+  },
+  {
+    path: '/game-versions',
+    name: 'GameVersions',
+    component: GameVersionsPage,
+    meta: { title: 'Game Versions' },
     beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
   },
   {

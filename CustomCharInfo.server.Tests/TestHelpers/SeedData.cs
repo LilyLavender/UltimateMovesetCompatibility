@@ -63,6 +63,31 @@ namespace CustomCharInfo.server.Tests.TestHelpers
             return user;
         }
 
+        public static GameVersion AddGameVersion(AppDbContext context, int id, string name, int sortOrder)
+        {
+            var version = new GameVersion { GameVersionId = id, Name = name, SortOrder = sortOrder, CreatedAt = DateTime.UtcNow };
+            context.GameVersions.Add(version);
+            context.SaveChanges();
+            return version;
+        }
+
+        // A hook whose offset is recorded for one game version the way the migration seeds existing hooks.
+        public static Hook AddHookWithOffset(AppDbContext context, int hookId, string offset, int gameVersionId, string description = "Hook", int offsetStateId = OffsetStates.Confirmed)
+        {
+            var hook = new Hook { HookId = hookId, Offset = offset, Description = description, HookableStatusId = HookableStatuses.Untested };
+            context.Hooks.Add(hook);
+            context.HookOffsets.Add(new HookOffset
+            {
+                Hook = hook,
+                GameVersionId = gameVersionId,
+                Offset = offset,
+                OffsetStateId = offsetStateId,
+                UpdatedAt = DateTime.UtcNow
+            });
+            context.SaveChanges();
+            return hook;
+        }
+
         public static Modder AddModder(AppDbContext context, int modderId, string userId, string name)
         {
             var modder = new Modder { ModderId = modderId, UserId = userId, Name = name };

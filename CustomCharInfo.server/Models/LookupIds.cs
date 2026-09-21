@@ -59,4 +59,15 @@ namespace CustomCharInfo.server.Models
         public const int OnlyOnce = 2;
         public const int MoreThanOnce = 3;
     }
+
+    // How a hook's offset for one game version was produced.
+    // Confirmed means a person entered or checked it; the other two were derived when a game version was added.
+    public static class OffsetStates
+    {
+        public const int Confirmed = 1;
+        public const int Generated = 2;
+        public const int CarriedForward = 3;
+
+        public static readonly int[] Unverified = { Generated, CarriedForward };
+    }
 }
