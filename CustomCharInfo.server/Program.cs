@@ -3,6 +3,7 @@ using CustomCharInfo.server.Models;
 using CustomCharInfo.server.Data;
 using CustomCharInfo.server.Services;
 using CustomCharInfo.server.Filters;
+using CustomCharInfo.server.Middleware;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -110,7 +111,7 @@ namespace CustomCharInfo.server
             builder.Services.AddAuthorization();
 
             // Render terminates TLS at its own proxy in front of the app, so the raw connection IP is Render's proxy, not the client.
-            // Trust X-Forwarded-For to recover the real client IP.
+            // Trust X-Forwarded-For as a first pass; ClientIpMiddleware then corrects it from the Cloudflare headers Render forwards.
             // KnownNetworks/KnownProxies are cleared because Render's proxy IP isn't fixed/published.
             builder.Services.Configure<ForwardedHeadersOptions>(options =>
             {
@@ -228,6 +229,7 @@ namespace CustomCharInfo.server
                 });
             }
             app.UseForwardedHeaders();
+            app.UseMiddleware<ClientIpMiddleware>();
             app.UseCors();
             app.UseHttpsRedirection();
             app.UseAuthentication();
