@@ -4,8 +4,11 @@ namespace CustomCharInfo.server.Models.DTOs
 {
     public class CreateHookDto
     {
-        [Required, MaxLength(10)]
+        [Required, MaxLength(12)]
         public string Offset { get; set; }
+
+        // The game version Offset was read from. Defaults to the newest version.
+        public int? GameVersionId { get; set; }
 
         [Required]
         public string Description { get; set; }

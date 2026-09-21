@@ -62,6 +62,11 @@
         <v-icon left>mdi-github</v-icon>
         Repo Releases
       </router-link>
+
+      <router-link :to="{ name: 'GameVersions' }" class="unvisitable ml-2 admin-link">
+        <v-icon left>mdi-update</v-icon>
+        Game Versions
+      </router-link>
     </div>
 
     <!-- Action Log Dashboard -->

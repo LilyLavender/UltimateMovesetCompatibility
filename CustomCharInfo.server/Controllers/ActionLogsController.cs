@@ -269,11 +269,19 @@ namespace CustomCharInfo.server.Controllers
                         .Select(v => v.PluginVersionId)
                         .ToListAsync();
 
+                    // Hooks any of those movesets use, so offset changes reach the modders they affect.
+                    var usedHookIds = await _context.MovesetHooks
+                        .Where(mh => userMovesetIds.Contains(mh.MovesetId))
+                        .Select(mh => mh.HookId)
+                        .Distinct()
+                        .ToListAsync();
+                    var visibleHookIds = editedHookIds.Union(usedHookIds).ToList();
+
                     query = query.Where(a =>
                         (a.ItemTypeId == ItemTypes.Modder && a.ItemId == modderId) ||
                         (a.ItemTypeId == ItemTypes.Moveset && userMovesetIds.Contains(a.ItemId)) ||
                         (a.ItemTypeId == ItemTypes.Series && seriesIdsFromMovesets.Contains(a.ItemId)) ||
-                        (a.ItemTypeId == ItemTypes.Hook && editedHookIds.Contains(a.ItemId)) ||
+                        (a.ItemTypeId == ItemTypes.Hook && visibleHookIds.Contains(a.ItemId)) ||
                         (a.ItemTypeId == ItemTypes.Plugin && ownedPluginVersionIds.Contains(a.ItemId))
                     );
                 }

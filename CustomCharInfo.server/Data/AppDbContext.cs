@@ -20,6 +20,10 @@ namespace CustomCharInfo.server.Data
         public DbSet<Hook> Hooks { get; set; }
         public DbSet<MovesetHook> MovesetHooks { get; set; }
         public DbSet<HookableStatus> HookableStatuses { get; set; }
+        public DbSet<GameVersion> GameVersions { get; set; }
+        public DbSet<GameVersionShift> GameVersionShifts { get; set; }
+        public DbSet<HookOffset> HookOffsets { get; set; }
+        public DbSet<OffsetState> OffsetStates { get; set; }
         public DbSet<VanillaChar> VanillaChars { get; set; }
         public DbSet<ReleaseState> ReleaseStates { get; set; }
         public DbSet<Series> Series { get; set; }
@@ -92,15 +96,74 @@ namespace CustomCharInfo.server.Data
                 .WithMany()
                 .HasForeignKey(b => b.UserId);
 
-            // DB-level backstop for the client-side uniqueness pre-checks in HookForm.vue/SeriesForm.vue,
-            // which are check-then-act and can't prevent a genuine race on their own.
-            modelBuilder.Entity<Hook>()
-                .HasIndex(h => h.Offset)
-                .IsUnique();
-
+            // DB-level backstop for the client-side uniqueness pre-check in SeriesForm.vue,
+            // which is check-then-act and can't prevent a genuine race on its own.
             modelBuilder.Entity<Series>()
                 .HasIndex(s => s.SeriesName)
                 .IsUnique();
+
+            // Hook offsets are unique per game version, not on Hooks.Offset itself:
+            // applying a version can move one hook onto the address another is leaving in the same batch.
+            modelBuilder.Entity<HookOffset>()
+                .HasKey(ho => new { ho.HookId, ho.GameVersionId });
+
+            modelBuilder.Entity<HookOffset>()
+                .HasIndex(ho => new { ho.GameVersionId, ho.Offset })
+                .IsUnique();
+
+            modelBuilder.Entity<HookOffset>()
+                .HasOne(ho => ho.Hook)
+                .WithMany(h => h.HookOffsets)
+                .HasForeignKey(ho => ho.HookId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<HookOffset>()
+                .HasOne(ho => ho.GameVersion)
+                .WithMany(gv => gv.HookOffsets)
+                .HasForeignKey(ho => ho.GameVersionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<HookOffset>()
+                .HasOne(ho => ho.SetBy)
+                .WithMany()
+                .HasForeignKey(ho => ho.SetByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<GameVersion>()
+                .HasIndex(gv => gv.Name)
+                .IsUnique();
+
+            modelBuilder.Entity<GameVersion>()
+                .HasIndex(gv => gv.SortOrder)
+                .IsUnique();
+
+            modelBuilder.Entity<GameVersion>()
+                .HasOne(gv => gv.CreatedBy)
+                .WithMany()
+                .HasForeignKey(gv => gv.CreatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<GameVersionShift>()
+                .HasIndex(s => new { s.FromGameVersionId, s.ToGameVersionId, s.RangeStart })
+                .IsUnique();
+
+            modelBuilder.Entity<GameVersionShift>()
+                .HasOne(s => s.FromGameVersion)
+                .WithMany()
+                .HasForeignKey(s => s.FromGameVersionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<GameVersionShift>()
+                .HasOne(s => s.ToGameVersion)
+                .WithMany()
+                .HasForeignKey(s => s.ToGameVersionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Qualified because the OffsetStates DbSet above shadows the static class of the same name here.
+            modelBuilder.Entity<OffsetState>().HasData(
+                new OffsetState { OffsetStateId = Models.OffsetStates.Confirmed, Name = "Confirmed" },
+                new OffsetState { OffsetStateId = Models.OffsetStates.Generated, Name = "Generated" },
+                new OffsetState { OffsetStateId = Models.OffsetStates.CarriedForward, Name = "Carried Forward" });
 
             // Action Logs
             modelBuilder.Entity<ActionLog>()

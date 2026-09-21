@@ -134,6 +134,47 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
+        public async Task GetActionLogs_ModderSeesHooksTheirMovesetsUse()
+        {
+            var owner = SeedData.AddUser(_db.Context, "modder-user", userTypeId: UserTypes.Modder, modderId: 20);
+            SeedData.AddModder(_db.Context, 20, owner.Id, "MyModder");
+            var editor = SeedData.AddUser(_db.Context, "editor-user", userTypeId: UserTypes.Modder, modderId: 21);
+            SeedData.AddModder(_db.Context, 21, editor.Id, "EditorModder");
+            var otherUser = SeedData.AddUser(_db.Context, "someone-else-1", userTypeId: UserTypes.Modder);
+
+            // Owner is credited on moveset 1, editor edits it, nobody is on moveset 2.
+            _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 1, ModdedCharName = "Owned", VanillaCharInternalName = "mario", SlottedId = "slotone", ReleaseStateId = ReleaseStates.Released });
+            _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 2, ModdedCharName = "NotOwned", VanillaCharInternalName = "mario", SlottedId = "slottwo", ReleaseStateId = ReleaseStates.Released });
+            _db.Context.MovesetModders.Add(new Models.MovesetModder { MovesetId = 1, ModderId = 20, SortOrder = 0 });
+            _db.Context.MovesetEditors.Add(new Models.MovesetEditor { MovesetId = 1, ModderId = 21, FullAccess = false });
+            _db.Context.HookableStatuses.Add(new HookableStatus { HookableStatusId = HookableStatuses.Untested, Name = "Untested" });
+            _db.Context.Hooks.Add(new Hook { HookId = 1, Offset = "1000", Description = "Used", HookableStatusId = HookableStatuses.Untested });
+            _db.Context.Hooks.Add(new Hook { HookId = 2, Offset = "2000", Description = "Unused", HookableStatusId = HookableStatuses.Untested });
+            _db.Context.MovesetHooks.Add(new Models.MovesetHook { MovesetId = 1, HookId = 1, SortOrder = 0 });
+            _db.Context.MovesetHooks.Add(new Models.MovesetHook { MovesetId = 2, HookId = 2, SortOrder = 0 });
+            _db.Context.SaveChanges();
+
+            // Both hooks were only ever touched by someone else.
+            var usedHookLog = new ActionLog { ItemTypeId = ItemTypes.Hook, ItemId = 1, AcceptanceStateId = AcceptanceStates.PendingAdminSoft, UserId = otherUser.Id, Notes = "", CreatedAt = DateTime.UtcNow };
+            var unusedHookLog = new ActionLog { ItemTypeId = ItemTypes.Hook, ItemId = 2, AcceptanceStateId = AcceptanceStates.PendingAdminSoft, UserId = otherUser.Id, Notes = "", CreatedAt = DateTime.UtcNow };
+            _db.Context.ActionLogs.AddRange(usedHookLog, unusedHookLog);
+            _db.Context.SaveChanges();
+
+            foreach (var viewer in new[] { owner, editor })
+            {
+                var controller = CreateController(viewer.Id);
+
+                var result = await controller.GetActionLogs();
+
+                var ok = Assert.IsType<OkObjectResult>(result.Result);
+                var logs = ((IEnumerable<GetActionLogDto>)ok.Value!).ToList();
+                var hookLogs = logs.Where(l => l.ItemType.ItemTypeId == ItemTypes.Hook).ToList();
+                Assert.Single(hookLogs);
+                Assert.Equal(usedHookLog.ActionLogId, hookLogs[0].ActionLogId);
+            }
+        }
+
+        [Fact]
         public async Task GetActionLogs_NonModderUserSeesHookTheyveEditedBefore()
         {
             // Admins can edit hooks too, so a non-modder admin's own hook edits must still show
