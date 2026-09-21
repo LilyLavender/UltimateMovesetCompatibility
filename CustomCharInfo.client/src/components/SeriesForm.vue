@@ -72,6 +72,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useHead } from '@unhead/vue'
 import api from '@/services/api'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import { IMAGE_UPLOAD_SPECS } from '@/globals'
@@ -89,6 +90,9 @@ const isEditMode = computed(() => props.mode === 'edit')
 const router = useRouter()
 
 const series = ref(null)
+
+useHead(computed(() => (series.value ? { title: `UMC | Editing ${series.value.seriesName}` } : {})))
+
 const form = ref({
   seriesName: '',
   seriesIconUrl: '',
@@ -116,7 +120,6 @@ onMounted(async () => {
       series.value = res.data
       Object.assign(form.value, res.data)
       originalName.value = res.data.seriesName
-      document.title = `UMC | Editing ${series.value?.seriesName}` // sets page title
     } catch (err) {
       console.error(err)
       router.replace({ name: 'ErrorPage', query: { http: 404, reason: 'Series not found' } })

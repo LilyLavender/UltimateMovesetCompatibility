@@ -146,8 +146,9 @@ async function submit() {
       note: draft.value ?? '',
     })
     // 204 means the note was cleared.
-    note.value = res.status === 204 || !res.data ? null : res.data
-    notify.success(note.value ? 'Note saved.' : 'Note cleared.')
+    const saved = res.status === 204 || !res.data ? null : res.data
+    note.value = saved
+    notify.success(saved ? 'Note saved.' : 'Note cleared.')
   } catch (err) {
     notify.error('Could not save the note.', err)
   } finally {
