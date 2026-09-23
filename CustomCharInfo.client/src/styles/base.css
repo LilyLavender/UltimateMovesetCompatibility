@@ -1,0 +1,225 @@
+/*
+  Reset, typography, links, focus, texture, and reduced motion.
+  Page-level layout lives in layout.css; Vuetify overrides in vuetify.css.
+*/
+:root {
+  color-scheme: dark;
+  font-family: var(--font-body);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body {
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  color: var(--tx);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: var(--white);
+  color: #000;
+}
+
+/* Headings. DFHeiGB is reserved for the one main title per page (.page-title). */
+h1,
+h2,
+h3,
+h4 {
+  margin: 0 0 0.4em;
+  line-height: 1.15;
+  font-weight: 700;
+}
+
+h2,
+h3 {
+  font-family: var(--font-condensed);
+}
+
+h2 {
+  font-size: 1.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+
+h3 {
+  font-size: 1.25rem;
+}
+
+p {
+  margin: 0 0 0.75em;
+}
+
+strong,
+b {
+  font-weight: 600;
+}
+
+small {
+  font-size: 0.85em;
+}
+
+/* Code and identifiers */
+code,
+kbd,
+pre,
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+code {
+  background: var(--panel-2);
+  padding: 0.1rem 0.3rem 0.2rem;
+  margin: 0 0.2rem;
+  word-wrap: break-word;
+}
+
+/* Links */
+a {
+  color: var(--tx);
+  text-decoration-color: var(--tx-3);
+  text-underline-offset: 2px;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+a:hover {
+  color: var(--white);
+  text-decoration-color: var(--white);
+}
+
+a.offsite {
+  position: relative;
+  padding-right: 1.2em;
+}
+
+a.offsite::after {
+  content: '\F03CC';
+  font-family: 'Material Design Icons';
+  position: relative;
+  display: inline-block;
+  font-size: 0.9em;
+  text-decoration: none;
+  right: -2px;
+  top: -2px;
+}
+
+a.unvisitable,
+a.unvisitable:visited {
+  color: unset;
+}
+
+a.question {
+  cursor: help;
+}
+
+/* Focus: one ring everywhere, only for keyboard focus */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: 2px;
+}
+
+/* The grid texture behind every page: full strength at the edges, gone by the content column */
+.page-texture {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.075) 1px, transparent 1px);
+  background-size: 28px 28px;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    #000 0%,
+    rgba(0, 0, 0, 0.45) 14%,
+    transparent 30%,
+    transparent 70%,
+    rgba(0, 0, 0, 0.45) 86%,
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    #000 0%,
+    rgba(0, 0, 0, 0.45) 14%,
+    transparent 30%,
+    transparent 70%,
+    rgba(0, 0, 0, 0.45) 86%,
+    #000 100%
+  );
+}
+
+/* Helpers */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.muted {
+  color: var(--tx-2);
+}
+
+.faint {
+  color: var(--tx-3);
+}
+
+/* Legacy helpers still used by views that phase 3 converts to PageShell; removed in phase 5 */
+.title-font,
+.page-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.page-title {
+  font-size: 64px;
+}
+
+.display-above-hero {
+  position: relative;
+  z-index: 3;
+  margin-top: -180px;
+}
+
+.router-link {
+  margin-top: -0.5em;
+  margin-bottom: 0.5em;
+  margin-left: 1em;
+  display: block;
+}
+
+.router-link.mini {
+  margin-top: -1em;
+  margin-bottom: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

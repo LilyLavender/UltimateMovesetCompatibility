@@ -71,12 +71,18 @@ const backgroundGradient = computed(() => {
 </script>
 
 <style scoped>
+/*
+  The card mimics the official Smash site and must not change.
+  Roboto Condensed Bold is pinned here because the page body font is Inter and the old build only shipped the bold face.
+*/
 .moveset-card {
   display: flex;
   width: 340px;
   height: 82px;
   background-color: black;
   flex: 0 1 33.333%;
+  font-family: 'Roboto Condensed', sans-serif;
+  font-weight: 700;
 }
 
 .moveset-card__link {
@@ -149,7 +155,8 @@ const backgroundGradient = computed(() => {
   margin-top: 7.5%;
   margin-left: 1.4em;
   font-size: larger;
-  font-family: 'Roboto Condensed';
+  font-family: 'Roboto Condensed', sans-serif;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
@@ -164,7 +171,7 @@ const backgroundGradient = computed(() => {
 .moveset-card__subtitle {
   font-size: 0.65em;
   opacity: 0.65;
-  font-weight: normal;
+  font-weight: 700;
   letter-spacing: 0;
 }
 </style>

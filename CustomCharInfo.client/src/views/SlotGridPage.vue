@@ -43,7 +43,9 @@
             <div class="slots-col" :style="{ height: HEADER_H + 'px' }">
               <template v-for="(t, idx) in headerTicks" :key="t">
                 <div class="tick-line" :style="{ left: slotXPct(t) }" />
-                <div v-if="idx > 0" class="tick-label" :style="{ left: slotXPct(t) }">c{{ t }}</div>
+                <div v-if="idx > 0" class="tick-label" :style="{ left: slotXPct(t) }">
+                  {{ formatSlot(t) }}
+                </div>
               </template>
             </div>
           </div>
@@ -113,6 +115,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
+import { formatSlot, formatSlotRange } from '@/services/slots'
 
 const HEADER_H = 36
 const LANE_H = 26
@@ -166,10 +169,6 @@ function slotWPct(start, end) {
   return ((end - start + 1) / numSlots.value) * 100 + '%'
 }
 
-function pad(n) {
-  return String(n).padStart(3, '0')
-}
-
 function iconUrl(internalName) {
   return `${import.meta.env.BASE_URL}vanilla-stock-icons/chara_2_${internalName}.png`
 }
@@ -179,7 +178,7 @@ function rowHeight(row) {
 }
 
 function slotRangeText(m) {
-  return `c${pad(m.slotsStart)}–c${pad(m.slotsEnd)}`
+  return formatSlotRange(m.slotsStart, m.slotsEnd)
 }
 
 function displayName(m) {

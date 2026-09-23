@@ -87,15 +87,16 @@
   </v-col>
 
   <!-- Slot alignment warning -->
-  <v-dialog v-model="slotWarningDialog" max-width="480">
+  <v-dialog v-bind="dialogProps" v-model="slotWarningDialog" max-width="480">
     <v-card color="#2e2e2e">
       <v-card-title>
         <v-icon>mdi-alert</v-icon>
         Unusual Slot Range
       </v-card-title>
       <v-card-text>
-        Slots c{{ slotsStart }} through c{{ slotsEnd }} aren't a standard 8-slot-aligned range (e.g.
-        c08-c15, c120-c127). Please double-check this is intentional before saving.
+        Slots {{ formatSlot(slotsStart) }} through {{ formatSlot(slotsEnd) }} aren't a standard
+        8-slot-aligned range (e.g. c08-c15, c120-c127). Please double-check this is intentional
+        before saving.
       </v-card-text>
       <v-card-actions>
         <v-spacer />
@@ -107,6 +108,9 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { formatSlot } from '@/services/slots'
+import { useDialogProps } from '@/composables/useDialogProps'
+const dialogProps = useDialogProps()
 
 // The identity block of the moveset form: internal IDs, vanilla character, and costume slot range.
 // Renders as a fragment of v-cols so the parent's v-row keeps its layout.

@@ -108,6 +108,7 @@
 import { ref, onMounted, computed } from 'vue'
 import api from '@/services/api'
 import { ReleaseState, RELEASE_STATE_NAMES } from '@/globals'
+import { formatOffset } from '@/services/offsets'
 
 const movesets = ref([])
 
@@ -199,7 +200,7 @@ const headers = computed(() => [
   })),
 
   ...hookKeys.value.map((h) => ({
-    title: `0x${h}`,
+    title: formatOffset(h),
     key: `hook:${h}`,
   })),
 ])

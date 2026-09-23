@@ -1,0 +1,32 @@
+/* Self-hosted fonts. Inter, Roboto Condensed, and JetBrains Mono are variable fonts, one file each. */
+@font-face {
+  font-family: 'Inter';
+  src: url('@/assets/fonts/inter-variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Roboto Condensed';
+  src: url('@/assets/fonts/roboto-condensed-variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('@/assets/fonts/jetbrains-mono-variable.woff2') format('woff2');
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DFHeiGB';
+  src: url('@/assets/fonts/df_hei_gb-w12.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}

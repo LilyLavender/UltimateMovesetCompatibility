@@ -138,9 +138,8 @@
                       : 'Slots:'
                   }}
                   <strong
-                    >{{ moveset.vanillaChar?.displayName }} c{{
-                      String(moveset.slotsStart).padStart(2, '0')
-                    }}-c{{ String(moveset.slotsEnd).padStart(2, '0') }}</strong
+                    >{{ moveset.vanillaChar?.displayName }}
+                    {{ formatSlotRange(moveset.slotsStart, moveset.slotsEnd) }}</strong
                   >
                 </p>
                 <p v-else>
@@ -316,7 +315,7 @@
                 >
                   <div>
                     <strong :title="mh.hook.description" class="hastooltip">
-                      0x{{ mh.hook.offset }}
+                      {{ formatOffset(mh.hook.offset) }}
                     </strong>
                   </div>
                   <div class="hook-usage">
@@ -350,6 +349,8 @@ import {
   ReleaseState,
 } from '@/globals'
 import { dateOnlyStringToLocalDate } from '@/services/dateOnly'
+import { formatOffset } from '@/services/offsets'
+import { formatSlotRange } from '@/services/slots'
 
 const route = useRoute()
 const router = useRouter()

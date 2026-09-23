@@ -64,9 +64,9 @@
           <h3>
             Hook:
             <router-link v-if="log.item?.hookId" :to="{ name: 'Hooks' }" class="unvisitable">
-              0x{{ log.item.offset }}
+              {{ formatOffset(log.item.offset) }}
             </router-link>
-            <span v-else>{{ log.item?.offset ? `0x${log.item.offset}` : '(deleted)' }}</span>
+            <span v-else>{{ log.item?.offset ? formatOffset(log.item.offset) : '(deleted)' }}</span>
             <router-link
               v-if="log.item?.hookId"
               :to="{ name: 'EditHook', params: { hookId: log.item.hookId } }"
@@ -119,6 +119,8 @@
 import { computed } from 'vue'
 import { format } from 'date-fns'
 import { ItemType, AcceptanceState } from '@/globals'
+import { PILL_COLORS } from '@/services/acceptanceStateDisplay'
+import { formatOffset } from '@/services/offsets'
 
 const props = defineProps({
   log: { type: Object, required: true },
@@ -146,18 +148,8 @@ const parsedDiff = computed(() => {
 
 const acceptanceStyle = computed(() => {
   const id = props.log.acceptanceState.acceptanceStateId
-  const bgColors = {
-    [AcceptanceState.PendingAdminSoft]: 'rgb(187, 224, 236)',
-    [AcceptanceState.PendingAdminHard]: 'rgb(52, 194, 241)',
-    [AcceptanceState.PendingUserSoft]: 'rgb(241, 241, 142)',
-    [AcceptanceState.PendingUserHard]: 'rgb(241, 241, 52)',
-    [AcceptanceState.Accepted]: 'rgb(52, 241, 52)',
-    [AcceptanceState.Rejected]: 'rgb(241, 52, 52)',
-    [AcceptanceState.AutoAccepted]: 'rgb(52, 241, 52)',
-  }
-
   return {
-    backgroundColor: bgColors[id],
+    backgroundColor: PILL_COLORS[id],
     color: 'rgb(20, 20, 20)',
     fontWeight: 'bold',
   }

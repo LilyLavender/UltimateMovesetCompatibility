@@ -1,0 +1,67 @@
+/*
+  Design tokens. Every color, font, width, and duration in the app comes from here.
+  See docs/reference/design-system.md before adding a value anywhere else.
+*/
+:root {
+  /* Surfaces */
+  --bg: #000;
+  --panel: #0c0c0c;
+  --panel-2: #151515;
+  --line: #242424;
+  --line-2: #3d3d3d;
+
+  /* Text */
+  --tx: #f2f2f2;
+  --tx-2: #b4b4b4;
+  --tx-3: #7a7a7a;
+  --white: #fff;
+
+  /* Functional colors */
+  --ok: #43a047;
+  --info: #2f9ee0;
+  --warn: #f1f134;
+  --err: #f13434;
+
+  /* Acceptance states; the values match the review pills the site has always used */
+  --state-pending-admin-soft: rgb(187, 224, 236);
+  --state-pending-admin-hard: rgb(52, 194, 241);
+  --state-pending-user-soft: rgb(241, 241, 142);
+  --state-pending-user-hard: rgb(241, 241, 52);
+  --state-accepted: var(--ok);
+  --state-rejected: rgb(241, 52, 52);
+
+  /* Offset states; Confirmed shares Accepted's green */
+  --offset-confirmed: var(--ok);
+  --offset-generated: #fbc02d;
+  --offset-carried: #ef6c00;
+
+  /* Type */
+  --font-display: 'DFHeiGB', 'Roboto Condensed', sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-condensed: 'Roboto Condensed', 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Page tiers */
+  --w-narrow: 720px;
+  --w-standard: 1080px;
+  --w-wide: 1360px;
+  --gutter: 16px;
+
+  /* Motion */
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 300ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (min-width: 600px) {
+  :root {
+    --gutter: 24px;
+  }
+}
+
+@media (min-width: 960px) {
+  :root {
+    --gutter: 32px;
+  }
+}

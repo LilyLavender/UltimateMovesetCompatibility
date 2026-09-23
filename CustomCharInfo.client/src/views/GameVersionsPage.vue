@@ -114,11 +114,11 @@
         :items-per-page="50"
       >
         <template #item.oldOffset="{ item }">
-          <span class="mono">0x{{ item.oldOffset }}</span>
+          <span class="mono">{{ formatOffset(item.oldOffset) }}</span>
         </template>
         <template #item.newOffset="{ item }">
           <span class="mono" :class="{ changed: item.oldOffset !== item.newOffset }">
-            0x{{ item.newOffset }}
+            {{ formatOffset(item.newOffset) }}
           </span>
         </template>
         <template #item.offsetStateId="{ item }">
@@ -130,7 +130,7 @@
     </template>
 
     <!-- Delete confirmation -->
-    <v-dialog v-model="deleteOpen" max-width="480px">
+    <v-dialog v-bind="dialogProps" v-model="deleteOpen" max-width="480px">
       <v-card color="#1e1e1e">
         <v-card-title>Delete {{ deleteTarget?.name }}?</v-card-title>
         <v-card-text>
@@ -155,6 +155,9 @@ import { format } from 'date-fns'
 import api from '@/services/api'
 import { useNotify } from '@/composables/useNotify'
 import { OffsetState, OFFSET_STATE_NAMES } from '@/globals'
+import { useDialogProps } from '@/composables/useDialogProps'
+import { formatOffset } from '@/services/offsets'
+const dialogProps = useDialogProps()
 
 const notify = useNotify()
 

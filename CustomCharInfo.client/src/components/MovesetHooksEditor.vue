@@ -26,7 +26,7 @@
               v-model="draft.hookId"
               variant="outlined"
               :items="hookOptions"
-              :item-title="(item) => `0x${item.offset} (${item.description})`"
+              :item-title="(item) => `${formatOffset(item.offset)} (${item.description})`"
               item-value="hookId"
               label="Hook Offset"
               hide-details
@@ -53,7 +53,8 @@
     <v-list>
       <v-list-item v-for="(entry, i) in hooks" :key="i">
         <v-list-item-title>
-          0x{{ entry.offset }} <span class="hook-usage-dim">({{ entry.hookDescription }})</span> –
+          {{ formatOffset(entry.offset) }}
+          <span class="hook-usage-dim">({{ entry.hookDescription }})</span> –
           <span class="hook-usage-dim">{{ entry.description }}</span>
         </v-list-item-title>
         <template #append>
@@ -80,6 +81,7 @@
 <script setup>
 import { ref } from 'vue'
 import { moveItem } from '@/services/listUtils'
+import { formatOffset } from '@/services/offsets'
 
 // Editable list of the hooks a moveset uses: { hookId, offset, hookDescription, description }.
 // offset and hookDescription are copied from the chosen hook so the list can render without a lookup.

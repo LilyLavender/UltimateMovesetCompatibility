@@ -1,0 +1,223 @@
+/*
+  Vuetify overrides that its SASS variables cannot express (see settings.scss for those).
+*/
+.v-application {
+  background: var(--bg) !important;
+  color: var(--tx) !important;
+  font-family: var(--font-body) !important;
+}
+
+.v-application__wrap {
+  position: relative;
+  z-index: 1;
+}
+
+/* Buttons: square, no shadow, inversion on hover, no ripple */
+.v-btn {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+
+.v-btn .v-btn__overlay,
+.v-btn .v-btn__underlay {
+  display: none;
+}
+
+.v-btn--variant-outlined:hover,
+.v-btn--variant-text:hover {
+  background: var(--white);
+  color: #000;
+}
+
+.v-btn--variant-elevated,
+.v-btn--variant-flat {
+  box-shadow: none;
+}
+
+/* Fields: hairline outline, white when focused, red when invalid */
+.v-field {
+  --v-field-border-opacity: 1;
+  font-family: var(--font-body);
+}
+
+.v-field--variant-outlined {
+  background: var(--panel);
+}
+
+.v-field__outline {
+  color: var(--line-2);
+}
+
+.v-field--focused .v-field__outline {
+  color: var(--white);
+}
+
+.v-field--error .v-field__outline {
+  color: var(--err);
+}
+
+.v-label {
+  color: var(--tx-2);
+  opacity: 1;
+}
+
+.v-field__input::placeholder {
+  color: var(--tx-3);
+}
+
+.v-messages {
+  color: var(--tx-3);
+}
+
+/* Menus and lists, black panel, hairline border, white-on-black hover */
+.v-menu > .v-overlay__content,
+.v-autocomplete__content,
+.v-select__content {
+  background: #050505;
+  border: 1px solid var(--line-2);
+  box-shadow: none;
+}
+
+.v-list {
+  background: transparent;
+  color: var(--tx);
+}
+
+.v-list-item .v-list-item__overlay {
+  display: none;
+}
+
+.v-list-item--link:hover,
+.v-list-item--active,
+.v-list-item[aria-selected='true'] {
+  background: var(--white);
+  color: #000;
+}
+
+.v-list-item--link:hover .v-icon,
+.v-list-item--active .v-icon {
+  color: #000;
+}
+
+/* Cards, sheets, dialogs, tooltips */
+.v-card,
+.v-sheet {
+  background: var(--panel);
+  color: var(--tx);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+.v-dialog > .v-overlay__content > .v-card {
+  border-color: var(--line-2);
+}
+
+.v-overlay__scrim {
+  background: #000;
+  opacity: 0.6;
+}
+
+.v-tooltip > .v-overlay__content {
+  background: var(--white);
+  color: #000;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Data tables and plain tables */
+.v-table,
+.v-data-table {
+  background: var(--panel);
+  color: var(--tx);
+  border: 1px solid var(--line);
+}
+
+.v-data-table__th,
+.v-table th {
+  background: var(--panel);
+  color: var(--tx-2);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid var(--white) !important;
+}
+
+.v-data-table__th--sorted {
+  color: var(--white);
+}
+
+.v-data-table__td,
+.v-table td {
+  color: var(--tx);
+  border-bottom: 1px solid var(--line) !important;
+}
+
+.v-data-table__tr:hover > .v-data-table__td,
+.v-table tbody tr:hover > td {
+  background: var(--panel-2);
+}
+
+.v-data-table-footer {
+  background: var(--panel);
+  color: var(--tx-2);
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+
+/* Cell cap that App.vue used to apply through .dark-table; the class goes away in phase 5 */
+.dark-table .v-data-table__td {
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+/* Alerts, chips, snackbar, progress */
+.v-alert {
+  border: 1px solid currentColor;
+  background: var(--panel);
+}
+
+.v-chip {
+  font-weight: 600;
+}
+
+.v-snackbar__wrapper {
+  border: 1px solid var(--line-2);
+  box-shadow: none;
+}
+
+.v-progress-circular,
+.v-progress-linear {
+  color: var(--white);
+}
+
+/* Selection controls */
+.v-selection-control .v-selection-control__input::before {
+  display: none;
+}
+
+.v-checkbox .v-selection-control__input .v-icon,
+.v-radio .v-selection-control__input .v-icon {
+  color: var(--tx-2);
+}
+
+.v-selection-control--dirty .v-selection-control__input .v-icon {
+  color: var(--white);
+}
+
+/* Tabs: used by the header until phase 2 replaces it */
+.v-tab {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.v-tab .v-btn__overlay {
+  display: none;
+}

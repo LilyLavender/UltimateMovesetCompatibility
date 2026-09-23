@@ -17,7 +17,7 @@
     </v-data-table>
 
     <!-- Dialog -->
-    <v-dialog v-model="dialog" max-width="600px">
+    <v-dialog v-bind="dialogProps" v-model="dialog" max-width="600px">
       <v-card color="#2e2e2e">
         <v-card-title>Password Reset Token</v-card-title>
 
@@ -45,6 +45,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/services/api'
+import { useDialogProps } from '@/composables/useDialogProps'
+const dialogProps = useDialogProps()
 
 const users = ref([])
 const error = ref('')

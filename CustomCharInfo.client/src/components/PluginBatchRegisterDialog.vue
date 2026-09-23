@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="open" max-width="1100px" scrollable>
+  <v-dialog v-bind="dialogProps" v-model="open" max-width="1100px" scrollable>
     <v-card color="#2e2e2e">
       <v-card-title class="d-flex align-center">
         <span>Register {{ selectedCount }} of {{ lines.length }} releases</span>
@@ -169,6 +169,8 @@ import api from '@/services/api'
 import { normalizeVersionLabel } from '@/services/pluginVersion'
 import { repoUrl } from '@/services/githubReleases'
 import { useNotify } from '@/composables/useNotify'
+import { useDialogProps } from '@/composables/useDialogProps'
+const dialogProps = useDialogProps()
 
 const open = defineModel({ type: Boolean, default: false })
 const props = defineProps({

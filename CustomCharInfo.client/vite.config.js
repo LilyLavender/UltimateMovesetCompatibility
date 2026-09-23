@@ -5,7 +5,10 @@ import path from 'path'
 
 export default defineConfig({
   base: '/UltimateMovesetCompatibility/',
-  plugins: [vue(), vuetify({ autoImport: true })],
+  plugins: [
+    vue(),
+    vuetify({ autoImport: true, styles: { configFile: 'src/styles/settings.scss' } }),
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

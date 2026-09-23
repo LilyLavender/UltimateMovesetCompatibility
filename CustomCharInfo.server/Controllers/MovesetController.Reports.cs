@@ -158,7 +158,7 @@ namespace CustomCharInfo.server.Controllers
                             ? "???"
                             : x.Moveset.ReplacementId,
 
-                    SlotsRange = $"c{x.Moveset.SlotsStart:D3}-c{x.Moveset.SlotsEnd:D3}",
+                    SlotsRange = $"c{x.Moveset.SlotsStart:D2}-c{x.Moveset.SlotsEnd:D2}",
                     ReleaseState = x.Moveset.ReleaseState.ReleaseStateName,
 
                     // Flags

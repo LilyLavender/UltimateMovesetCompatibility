@@ -137,7 +137,7 @@
                   <span class="group-pair__label">{{ GROUP_SEVERITY[pair.severity].label }}</span>
                   <span v-if="pair.hookOffsets.length" class="group-pair__hooks">
                     shared hook{{ pair.hookOffsets.length === 1 ? '' : 's' }}:
-                    {{ pair.hookOffsets.map((o) => `0x${o}`).join(', ') }}
+                    {{ pair.hookOffsets.map(formatOffset).join(', ') }}
                   </span>
                   <span v-else-if="pair.articleCount" class="group-pair__hooks">
                     {{ pair.articleCount }} shared article{{ pair.articleCount === 1 ? '' : 's' }}
@@ -280,7 +280,7 @@
               />
               {{ result.a.vanillaChar?.displayName ?? '-' }}
               <span v-if="result.a.slotsStart != null" class="meta-slots"
-                >(c{{ pad(result.a.slotsStart) }}–c{{ pad(result.a.slotsEnd) }})</span
+                >({{ formatSlotRange(result.a.slotsStart, result.a.slotsEnd) }})</span
               >
             </div>
             <div class="compare-section">
@@ -318,7 +318,7 @@
                     class="conflict-icon"
                     >mdi-alert</v-icon
                   >
-                  0x{{ mh.hook.offset }}
+                  {{ formatOffset(mh.hook.offset) }}
                 </li>
                 <li v-if="!result.a.movesetHooks.length" class="compare-none">none</li>
               </ul>
@@ -344,7 +344,7 @@
               />
               {{ result.b.vanillaChar?.displayName ?? '-' }}
               <span v-if="result.b.slotsStart != null" class="meta-slots"
-                >(c{{ pad(result.b.slotsStart) }}–c{{ pad(result.b.slotsEnd) }})</span
+                >({{ formatSlotRange(result.b.slotsStart, result.b.slotsEnd) }})</span
               >
             </div>
             <div class="compare-section">
@@ -382,7 +382,7 @@
                     class="conflict-icon"
                     >mdi-alert</v-icon
                   >
-                  0x{{ mh.hook.offset }}
+                  {{ formatOffset(mh.hook.offset) }}
                 </li>
                 <li v-if="!result.b.movesetHooks.length" class="compare-none">none</li>
               </ul>
@@ -393,7 +393,7 @@
     </Transition>
 
     <!-- Confirm a group report that includes a predicted-incompatible pair -->
-    <v-dialog v-model="confirmDialog" max-width="480">
+    <v-dialog v-bind="dialogProps" v-model="confirmDialog" max-width="480">
       <v-card color="#2e2e2e">
         <v-card-title>
           <v-icon class="mr-1">mdi-alert</v-icon>
@@ -427,6 +427,10 @@ import {
   ALL_ACCEPTANCE_STATES,
   HookableStatus,
 } from '@/globals'
+import { formatOffset } from '@/services/offsets'
+import { formatSlotRange } from '@/services/slots'
+import { useDialogProps } from '@/composables/useDialogProps'
+const dialogProps = useDialogProps()
 
 const apiUrl = import.meta.env.VITE_API_URL
 
@@ -645,9 +649,6 @@ const overlayStyle = (m) => {
   }
 }
 
-function pad(n) {
-  return String(n).padStart(3, '0')
-}
 function iconUrl(internalName) {
   return `${import.meta.env.BASE_URL}vanilla-stock-icons/chara_2_${internalName}.png`
 }
@@ -693,17 +694,17 @@ const runCheck = async () => {
       if (sid === HookableStatus.MoreThanOnce) {
         issues.push({
           severity: 'warning',
-          message: `Both movesets use hook 0x${mhA.hook.offset}. This hook supports multiple uses, but too many at the same offset may still cause issues.`,
+          message: `Both movesets use hook ${formatOffset(mhA.hook.offset)}. This hook supports multiple uses, but too many at the same offset may still cause issues.`,
         })
       } else if (sid === HookableStatus.OnlyOnce) {
         issues.push({
           severity: 'incompatible',
-          message: `Both movesets use hook 0x${mhA.hook.offset} - this hook can only be used once and will cause a crash.`,
+          message: `Both movesets use hook ${formatOffset(mhA.hook.offset)} - this hook can only be used once and will cause a crash.`,
         })
       } else {
         issues.push({
           severity: 'predicted-incompat',
-          message: `Both movesets use hook 0x${mhA.hook.offset}. This hook's behavior with multiple users is untested. It will likely crash.`,
+          message: `Both movesets use hook ${formatOffset(mhA.hook.offset)}. This hook's behavior with multiple users is untested. It will likely crash.`,
         })
       }
     }

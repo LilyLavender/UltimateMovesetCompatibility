@@ -240,7 +240,7 @@
           <div v-if="selectedFull && form.itemTypeId === ItemType.Hook" class="mb-3">
             <h2 class="mb-1">Preview</h2>
             <div class="hook-preview">
-              <div><strong>Offset:</strong> 0x{{ selectedFull.offset }}</div>
+              <div><strong>Offset:</strong> {{ formatOffset(selectedFull.offset) }}</div>
               <div><strong>Description:</strong> {{ selectedFull.description }}</div>
               <div><strong>Status:</strong> {{ selectedFull.hookableStatus }}</div>
             </div>
@@ -268,6 +268,7 @@ import ActionLogGroup from '@/components/ActionLogGroup.vue'
 import MovesetCard from '@/components/MovesetCard.vue'
 import seriesIconUnknown from '@/assets/series_icon_unknown.png'
 import { ItemType, AcceptanceState } from '@/globals'
+import { formatOffset } from '@/services/offsets'
 
 const apiUrl = import.meta.env.VITE_API_URL
 const resolveIconUrl = (path) =>
@@ -360,7 +361,7 @@ const getItemName = (log) =>
   log.item?.moddedCharName ??
   log.item?.name ??
   log.item?.seriesName ??
-  (log.item?.offset ? `0x${log.item.offset}` : undefined) ??
+  (log.item?.offset ? formatOffset(log.item.offset) : undefined) ??
   log.item?.label ??
   '(deleted)'
 

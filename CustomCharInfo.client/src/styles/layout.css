@@ -1,0 +1,69 @@
+/* Page tiers, panels, and shared layout blocks. Views pick a tier and never set their own width. */
+.tier {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+.tier-narrow {
+  max-width: calc(var(--w-narrow) + 2 * var(--gutter));
+}
+
+.tier-standard {
+  max-width: calc(var(--w-standard) + 2 * var(--gutter));
+}
+
+.tier-wide {
+  max-width: calc(var(--w-wide) + 2 * var(--gutter));
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 20px;
+}
+
+.panel-raised {
+  background: var(--panel-2);
+}
+
+.hairline {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 16px 0;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.row-wrap {
+  flex-wrap: wrap;
+}
+
+.savebar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  background: #050505;
+  border-top: 1px solid var(--line-2);
+  padding: 12px var(--gutter);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}

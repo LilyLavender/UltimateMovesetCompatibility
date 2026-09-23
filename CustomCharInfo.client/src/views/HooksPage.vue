@@ -44,7 +44,7 @@
       <!-- Offset with 0x and a pill when nobody has confirmed it for the selected version -->
       <template #item.offset="{ item }">
         <template v-if="item.entry">
-          <span class="mono">0x{{ item.entry.offset }}</span>
+          <span class="mono">{{ formatOffset(item.entry.offset) }}</span>
           <OffsetStatePill
             v-if="isUnverified(item.entry.offsetStateId)"
             class="ml-2"
@@ -84,7 +84,7 @@
               <tbody>
                 <tr v-for="entry in item.offsets" :key="entry.gameVersionId">
                   <td class="version-name">{{ entry.gameVersion }}</td>
-                  <td class="mono">0x{{ entry.offset }}</td>
+                  <td class="mono">{{ formatOffset(entry.offset) }}</td>
                   <td>
                     <OffsetStatePill
                       :entry="entry"
@@ -112,6 +112,7 @@ import { format } from 'date-fns'
 import api from '@/services/api'
 import { UserType, UNVERIFIED_OFFSET_STATES } from '@/globals'
 import OffsetStatePill from '@/components/OffsetStatePill.vue'
+import { formatOffset } from '@/services/offsets'
 
 const user = ref(null)
 const hooks = ref([])

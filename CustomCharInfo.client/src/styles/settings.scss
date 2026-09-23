@@ -1,0 +1,13 @@
+// Vuetify SASS variables. Wired through vite.config.js (vuetify({ styles: { configFile } })).
+// Only what its CSS custom properties cannot reach; everything else is in vuetify.css.
+@use 'vuetify/settings' with (
+  $border-radius-root: 0,
+  $chip-border-radius: 0,
+  $button-text-transform: none,
+  $button-font-weight: 600,
+  $body-font-family: (
+    'Inter',
+    system-ui,
+    sans-serif,
+  )
+);
