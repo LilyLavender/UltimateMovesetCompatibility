@@ -1,84 +1,99 @@
 <template>
-  <!-- <div v-if="$vuetify.display.mobile"> -->
-  <header class="umc-header">
-    <div class="umc-logo-container">
-      <router-link to="/">
-        <v-img :src="umcLogo" alt="UMC Logo" class="umc-logo" />
-      </router-link>
-    </div>
-    <div class="nav-bg-wrapper">
-      <v-tabs v-model="activeTab" class="globalheader-util mb-0">
-        <v-tab
-          v-for="link in links"
-          :key="link.title"
-          :to="link.route"
-          :value="link.route"
-          class="globalheader-util__item"
-        >
-          <template v-if="link.isAccount">
-            <div class="account-icon-wrapper">
-              <span v-if="userPendingCount > 0" class="notif-badge" :style="userBadgeStyle">
-                {{ userPendingCount }}
+  <header class="site-header" :class="`site-header--${variant}`">
+    <router-link to="/" class="site-logo" aria-label="UMC home">
+      <img :src="umcLogo" alt="" />
+    </router-link>
+
+    <div class="nav-band">
+      <nav class="nav nav--desktop" aria-label="Main">
+        <template v-for="item in headerItems" :key="item.key">
+          <NavDropdown
+            v-if="item.menu && (!item.menuWhen || item.menuWhen(user))"
+            :items="visibleItems(menus[item.menu], user)"
+            :label="item.icon ? '' : item.label"
+            :icon="item.icon"
+            :active="section === item.key"
+            :align="item.key === 'account' ? 'right' : 'left'"
+          >
+            <template v-if="item.key === 'account'" #trigger>
+              <span class="account-icon">
+                <span v-if="userPendingCount > 0" class="badge badge--user">
+                  {{ userPendingCount }}
+                </span>
+                <v-icon>mdi-account</v-icon>
+                <span v-if="adminPendingCount > 0" class="badge badge--admin">
+                  {{ adminPendingCount }}
+                </span>
               </span>
-              <v-icon>mdi-account</v-icon>
-              <span v-if="adminPendingCount > 0" class="notif-badge" :style="adminBadgeStyle">
-                {{ adminPendingCount }}
-              </span>
-            </div>
-          </template>
-          <template v-else-if="link.title.startsWith('mdi-')">
-            <v-icon>{{ link.title }}</v-icon>
-          </template>
-          <template v-else>
-            {{ link.title }}
-          </template>
-        </v-tab>
-      </v-tabs>
+            </template>
+          </NavDropdown>
+          <router-link
+            v-else
+            :to="item.to"
+            class="nav__item"
+            :class="{ 'nav__item--active': section === item.key }"
+            :aria-label="item.icon ? item.label : undefined"
+          >
+            <v-icon v-if="item.icon">{{ item.icon }}</v-icon>
+            <template v-else>{{ item.label }}</template>
+          </router-link>
+        </template>
+      </nav>
+
+      <div class="nav nav--mobile">
+        <router-link :to="{ name: 'UserActions' }" class="nav__item" aria-label="Account">
+          <span class="account-icon">
+            <span v-if="userPendingCount > 0" class="badge badge--user">{{
+              userPendingCount
+            }}</span>
+            <v-icon>mdi-account</v-icon>
+            <span v-if="adminPendingCount > 0" class="badge badge--admin">
+              {{ adminPendingCount }}
+            </span>
+          </span>
+        </router-link>
+        <button type="button" class="nav__item" aria-label="Open menu" @click="drawerOpen = true">
+          <v-icon>mdi-menu</v-icon>
+        </button>
+      </div>
     </div>
+
+    <MobileNavDrawer
+      v-model="drawerOpen"
+      :user-pending="userPendingCount"
+      :admin-pending="adminPendingCount"
+    />
   </header>
 </template>
 
 <script setup>
-import { useRoute } from 'vue-router'
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import api from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { AcceptanceState, ALL_ACCEPTANCE_STATES } from '@/globals'
+import { headerItems, menus, visibleItems, sectionOf } from '@/navigation'
+import NavDropdown from '@/components/NavDropdown.vue'
+import MobileNavDrawer from '@/components/MobileNavDrawer.vue'
 import umcLogo from '@/assets/umc-logo.svg'
 
-const authStore = useAuthStore()
-
-const links = [
-  { title: 'Home', route: '/' },
-  { title: 'Movesets', route: '/movesets' },
-  { title: 'Series', route: '/series' },
-  { title: 'Modders', route: '/modders' },
-  { title: 'Blog', route: '/blog' },
-  { title: 'mdi-account', route: '/user-actions', isAccount: true },
-]
+/*
+  The header. `hero` keeps the transparent look over the home page collage;
+  `solid` is the black bar with a hairline used on every other page.
+*/
+defineProps({
+  variant: { type: String, default: 'solid' },
+})
 
 const route = useRoute()
-
-const activeTab = computed(() => {
-  const tabRoutes = links.map((link) => link.route)
-  return tabRoutes.includes(route.path) ? route.path : null
-})
+const authStore = useAuthStore()
+const user = computed(() => authStore.user)
+const section = computed(() => sectionOf(route.name))
+const drawerOpen = ref(false)
 
 // Notification counts
 const userPendingCount = ref(0)
 const adminPendingCount = ref(0)
-const hasUserHard = ref(false)
-const hasAdminHard = ref(false)
-
-const userBadgeStyle = computed(() => ({
-  backgroundColor: hasUserHard.value ? 'rgb(241, 241, 52)' : 'rgb(241, 241, 142)',
-  color: 'rgb(20, 20, 20)',
-}))
-
-const adminBadgeStyle = computed(() => ({
-  backgroundColor: hasAdminHard.value ? 'rgb(52, 194, 241)' : 'rgb(187, 224, 236)',
-  color: 'rgb(20, 20, 20)',
-}))
 
 const fetchNotifications = async () => {
   if (!authStore.isLoggedIn) {
@@ -97,31 +112,33 @@ const fetchNotifications = async () => {
       groupMap.get(key).push(log)
     }
 
-    let userSoft = 0,
-      userHard = 0,
-      adminSoft = 0,
-      adminHard = 0
+    let userPending = 0
+    let adminPending = 0
     for (const [, groupLogs] of groupMap) {
       groupLogs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       const stateId = groupLogs[0].acceptanceState.acceptanceStateId
-      if (stateId === AcceptanceState.PendingUserSoft) userSoft++
-      else if (stateId === AcceptanceState.PendingUserHard) userHard++
-      else if (stateId === AcceptanceState.PendingAdminSoft) adminSoft++
-      else if (stateId === AcceptanceState.PendingAdminHard) adminHard++
+      if (
+        stateId === AcceptanceState.PendingUserSoft ||
+        stateId === AcceptanceState.PendingUserHard
+      ) {
+        userPending++
+      } else if (
+        stateId === AcceptanceState.PendingAdminSoft ||
+        stateId === AcceptanceState.PendingAdminHard
+      ) {
+        adminPending++
+      }
     }
 
-    userPendingCount.value = userSoft + userHard
-    adminPendingCount.value = adminSoft + adminHard
-    hasUserHard.value = userHard > 0
-    hasAdminHard.value = adminHard > 0
+    userPendingCount.value = userPending
+    adminPendingCount.value = adminPending
   } catch {
     userPendingCount.value = 0
     adminPendingCount.value = 0
   }
 }
 
-// Refetch when login state changes (e.g. logging in/out without a page reload) instead of
-// only on mount, now that isLoggedIn is reactive shared state.
+// Refetch when login state changes so the badges never wait for a reload.
 watch(
   () => authStore.isLoggedIn,
   () => {
@@ -135,92 +152,164 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.umc-header {
-  z-index: 10;
+.site-header {
+  position: relative;
+  z-index: 20;
+  height: 56px;
 }
 
-.umc-logo-container {
-  background-color: rgba(200, 200, 200, 0.75);
+.site-header--hero {
+  height: 0;
+}
+
+.site-header--solid {
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.site-logo {
   position: absolute;
   left: 0;
-  padding: 4px 6px 6px 4px;
-  border-bottom-right-radius: 16px;
+  top: 0;
+  display: block;
+  padding: 3px 8px;
+  line-height: 0;
 }
 
-.umc-logo {
-  height: 60px;
-  width: 60px;
+.site-logo img {
+  width: 50px;
+  height: 50px;
+  display: block;
 }
 
-/* Plain div wrapper */
-.nav-bg-wrapper {
+/* Skewed band on the nav. Its right offset compensates for the skew at the band's center. */
+.nav-band {
   position: absolute;
   right: 0;
   top: 0;
-  height: 40px;
+  height: 44px;
   display: flex;
-  align-items: center;
+  align-items: stretch;
+  padding-left: 40px;
 }
 
-/*
-  The skewed background.
-  `right` only needs to compensate for the skew shift at the element's center:
-    shift = (height/2) * tan(skewAngle) = 20 * tan(29°) ≈ 11px
-  Adding a 4px buffer → right: -15px.
-  This value is purely geometric and never needs updating when nav width changes.
-*/
-.nav-bg-wrapper::before {
-  all: unset;
+.nav-band::before {
   content: '';
-  display: block;
-  width: calc(100% + 30px);
-  height: 40px;
-  -webkit-transform: skewX(29deg);
-  transform: skewX(29deg);
   position: absolute;
-  background: rgba(0, 0, 0, 0.8);
+  top: 0;
+  bottom: 0;
+  left: 0;
   right: -19px;
-  top: 0px;
+  background: rgba(0, 0, 0, 0.8);
+  transform: skewX(29deg);
+  transform-origin: top left;
 }
 
-.globalheader-util {
-  all: unset;
-  display: flex;
-  -webkit-box-align: center;
-  -ms-flex-align: center;
-  align-items: center;
+.site-header--solid .nav-band::before {
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--line-2);
 }
 
-.globalheader-util__item {
-  text-align: center;
+.nav {
   position: relative;
-  height: 40px !important;
-  padding: 0 12px;
-  min-width: fit-content !important;
-  font-size: 1.05rem;
-  text-transform: unset;
+  display: flex;
+  align-items: stretch;
+  margin-right: 8px;
 }
 
-.globalheader-util__item:not(:has(.mdi)) {
-  width: 80px;
+.nav--mobile {
+  display: none;
 }
 
-.account-icon-wrapper {
+.nav__item {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
+  padding: 0 14px;
+  border: 0;
+  background: none;
+  color: var(--tx-2);
+  font: inherit;
+  font-weight: 500;
+  font-size: 15px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease);
 }
 
-.notif-badge {
+.nav__item:hover,
+.nav__item--active {
+  color: var(--white);
+}
+
+.nav__item--active::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 3px;
+  background: var(--white);
+}
+
+.account-icon {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  font-size: 0.8rem;
-  font-weight: bold;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 11px;
+  font-weight: 700;
   line-height: 1;
-  flex-shrink: 0;
+  color: #141414;
+}
+
+.badge--user {
+  background: var(--state-pending-user-hard);
+}
+
+.badge--admin {
+  background: var(--state-pending-admin-hard);
+}
+
+@media (max-width: 959px) {
+  .nav--desktop {
+    display: none;
+  }
+
+  .nav--mobile {
+    display: flex;
+  }
+
+  .nav-band {
+    padding-left: 34px;
+  }
+}
+
+@media (max-width: 599px) {
+  .site-header {
+    height: 52px;
+  }
+
+  .site-header--hero {
+    height: 0;
+  }
+
+  .site-logo img {
+    width: 44px;
+    height: 44px;
+  }
+
+  .nav-band {
+    height: 40px;
+  }
 }
 </style>

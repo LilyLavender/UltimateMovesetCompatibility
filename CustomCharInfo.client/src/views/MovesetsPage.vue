@@ -1,64 +1,14 @@
 <template>
-  <div class="p-6 mx-auto">
-    <!-- Page title -->
-    <h1 class="mb-1 title-font page-title no-select text-center">All Movesets</h1>
-
-    <!-- Actions -->
-    <div class="mb-5 pb-5 d-flex justify-center">
-      <!-- View table -->
-      <router-link :to="{ name: 'MovesetsList' }" class="unvisitable text-decoration-none">
-        <i class="mdi mdi-arrow-right-bottom"></i>
-        Moveset table
-      </router-link>
-
-      <!-- View slot grid -->
-      <router-link :to="{ name: 'SlotGrid' }" class="unvisitable text-decoration-none ml-5">
-        <i class="mdi mdi-grid"></i>
-        Slot grid
-      </router-link>
-
-      <!-- Compatibility check -->
-      <router-link
-        :to="{ name: 'CompatibilityCheck' }"
-        class="unvisitable text-decoration-none ml-5"
-      >
-        <i class="mdi mdi-swap-horizontal"></i>
-        Compatibility check
-      </router-link>
-
-      <!-- Plugin lookup -->
-      <router-link :to="{ name: 'PluginLookup' }" class="unvisitable text-decoration-none ml-5">
-        <i class="mdi mdi-file-search"></i>
-        Plugin lookup
-      </router-link>
-
-      <!-- Add moveset -->
-      <router-link
-        v-if="user && user.userTypeId >= UserType.Modder"
-        :to="{ name: 'AddMoveset' }"
-        class="unvisitable text-decoration-none ml-5"
-      >
-        <v-icon>mdi-plus</v-icon>
-        Submit moveset
-      </router-link>
-    </div>
-
-    <!-- Moveset List -->
+  <PageShell title="All movesets">
+    <template #subnav>
+      <SubNav section="movesets" label="Movesets" />
+    </template>
     <MovesetList show-controls />
-  </div>
+  </PageShell>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import api from '@/services/api'
+import PageShell from '@/components/PageShell.vue'
+import SubNav from '@/components/SubNav.vue'
 import MovesetList from '@/components/MovesetList.vue'
-import { UserType } from '@/globals'
-
-const user = ref(null)
-
-onMounted(async () => {
-  user.value = (await api.get('/auth/me')).data
-})
 </script>
-
-<style scoped></style>

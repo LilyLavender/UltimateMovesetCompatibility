@@ -2,7 +2,7 @@
   <ScrollingHero />
 
   <!-- Disabled message -->
-  <div v-if="siteDisabled" class="text-center mb-5">
+  <div v-if="siteDisabled" class="tier tier-standard text-center mb-5">
     <blockquote class="twitter-tweet" data-theme="dark" data-dnt="true" align="center">
       <p lang="en" dir="ltr">
         UMC is currently down due to high site traffic. Please be patient as I come up with a
@@ -18,48 +18,31 @@
   </div>
 
   <!-- Main site -->
-  <template v-else>
-    <v-container max-width="1080px" class="p-6 mx-auto display-above-hero">
-      <!-- Header -->
-      <h1 class="mb-4 title-font page-title no-select text-center">Custom Movesets</h1>
+  <PageShell v-else title="Custom Movesets" size="lg" over-hero :head="false">
+    <SectionHeading title="Recent releases" :to="{ name: 'Movesets' }" link-label="All movesets" />
+    <SkeletonList v-if="loading" />
+    <MovesetList v-else :movesets="recentReleases" />
 
-      <!-- Sections -->
-      <div>
-        <h1>Recent Releases</h1>
-        <MovesetList :movesets="recentReleases" />
-      </div>
+    <SectionHeading title="Upcoming releases" />
+    <SkeletonList v-if="loading" />
+    <MovesetList v-else :movesets="upcomingReleases" />
 
-      <div>
-        <h1>Upcoming Releases</h1>
-        <MovesetList :movesets="upcomingReleases" />
+    <template v-if="latestBlogPost">
+      <SectionHeading title="Latest from the blog" :to="{ name: 'Blog' }" link-label="View blog" />
+      <div class="panel">
+        <BlogPost :post="latestBlogPost" />
       </div>
+    </template>
 
-      <div v-if="latestBlogPost" class="mb-10">
-        <h1>Latest from the Blog</h1>
-        <v-container>
-          <BlogPost :post="latestBlogPost" />
-          <router-link to="/blog" class="unvisitable text-decoration-none router-link mini">
-            <i class="mdi mdi-arrow-right-bottom"></i>
-            View Blog
-          </router-link>
-        </v-container>
-      </div>
+    <template v-if="showBetaSection">
+      <SectionHeading title="Currently in beta" />
+      <MovesetList :movesets="betaMovesets" />
+    </template>
 
-      <div v-if="showBetaSection">
-        <h1>Currently in Beta</h1>
-        <MovesetList :movesets="betaMovesets" />
-      </div>
-
-      <div>
-        <h1>Featured</h1>
-        <router-link to="/movesets" class="unvisitable text-decoration-none router-link">
-          <i class="mdi mdi-arrow-right-bottom"></i>
-          View All Movesets
-        </router-link>
-        <MovesetList :movesets="adminPicks" />
-      </div>
-    </v-container>
-  </template>
+    <SectionHeading title="Featured" :to="{ name: 'Movesets' }" link-label="All movesets" />
+    <SkeletonList v-if="loading" />
+    <MovesetList v-else :movesets="adminPicks" />
+  </PageShell>
 </template>
 
 <script setup>
@@ -70,6 +53,11 @@ import { ReleaseState } from '@/globals'
 import { localDateToDateOnlyString, compareDateOnlyStrings } from '@/services/dateOnly'
 
 import ScrollingHero from '@/components/ScrollingHero.vue'
+import PageShell from '@/components/PageShell.vue'
+import SectionHeading from '@/components/SectionHeading.vue'
+import SkeletonList from '@/components/SkeletonList.vue'
+import MovesetList from '@/components/MovesetList.vue'
+import BlogPost from '@/components/BlogPost.vue'
 
 useHead({
   title: 'Ultimate Moveset Compatibility',
@@ -90,12 +78,11 @@ useHead({
     },
   ],
 })
-import MovesetList from '@/components/MovesetList.vue'
-import BlogPost from '@/components/BlogPost.vue'
 
 const allMovesets = ref([])
 const latestBlogPost = ref(null)
 const siteDisabled = ref(false)
+const loading = ref(true)
 
 const adminPicks = computed(() => allMovesets.value.filter((m) => m.adminPick))
 
@@ -163,6 +150,7 @@ onMounted(async () => {
   try {
     const res = await api.get('/movesets')
     allMovesets.value = res.data
+    loading.value = false
     await fetchLatestBlogPost()
   } catch {
     siteDisabled.value = true
@@ -171,5 +159,3 @@ onMounted(async () => {
   }
 })
 </script>
-
-<style scoped></style>

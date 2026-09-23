@@ -418,4 +418,9 @@ const routes = [
 export default createRouter({
   history: createWebHashHistory('/UltimateMovesetCompatibility/'),
   routes,
+  // Back and forward restore where the reader was; any other navigation opens the page at its title.
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition
+    return { top: 0 }
+  },
 })

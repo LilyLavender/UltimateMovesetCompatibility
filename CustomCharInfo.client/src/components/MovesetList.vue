@@ -1,58 +1,47 @@
 <template>
   <div class="moveset-list-all no-select">
     <!-- Controls -->
-    <v-row v-if="showControls" dense align="center" class="controls mb-3">
-      <!-- Search -->
-      <v-col cols="12" sm="12" md="4">
+    <div v-if="showControls" class="filters">
+      <LabeledField label="Search" class="filters__search">
         <v-text-field
           v-model="searchQuery"
-          label="Search"
-          placeholder="Name, series, creator…"
-          variant="outlined"
+          placeholder="Name, series, creator"
           density="compact"
           hide-details
           clearable
           prepend-inner-icon="mdi-magnify"
         />
-      </v-col>
+      </LabeledField>
 
-      <!-- Sort -->
-      <v-col cols="6" sm="4" md="2">
+      <LabeledField label="Sort">
         <v-select
           v-model="sortMode"
-          label="Sort"
-          variant="outlined"
           density="compact"
           hide-details
           :items="[
             { title: 'Alphabetical', value: 'alpha' },
-            { title: 'Release Date', value: 'releaseDate' },
-            { title: 'Most Popular', value: 'popularity' },
+            { title: 'Release date', value: 'releaseDate' },
+            { title: 'Most popular', value: 'popularity' },
           ]"
         />
-      </v-col>
+      </LabeledField>
 
-      <!-- Release State -->
-      <v-col cols="6" sm="4" md="2">
+      <LabeledField label="Release state">
         <v-select
           v-model="filterReleaseState"
-          label="Release State"
+          placeholder="Any"
           clearable
-          variant="outlined"
           density="compact"
           hide-details
           :items="releaseStates"
           item-title="releaseStateName"
           item-value="releaseStateName"
         />
-      </v-col>
+      </LabeledField>
 
-      <!-- Privacy -->
-      <v-col cols="6" sm="4" md="2">
+      <LabeledField label="Privacy">
         <v-select
           v-model="filterPrivacy"
-          label="Privacy"
-          variant="outlined"
           density="compact"
           hide-details
           :items="[
@@ -61,25 +50,13 @@
             { title: 'Private', value: 'private' },
           ]"
         />
-      </v-col>
+      </LabeledField>
 
-      <!-- Show Joke Movesets -->
-      <v-col cols="auto" class="joke-toggle-col d-flex align-center">
-        <v-checkbox
-          v-model="showJokeMovesets"
-          hide-details
-          density="compact"
-          label="Joke Movesets"
-        />
-      </v-col>
-
-      <!-- Vanilla Character -->
-      <v-col cols="12" sm="6" md="4">
+      <LabeledField label="Vanilla character" class="filters__wide">
         <v-autocomplete
           v-model="filterVanillaChar"
-          label="Vanilla Character"
+          placeholder="Any character"
           clearable
-          variant="outlined"
           density="compact"
           hide-details
           :items="vanillaChars"
@@ -94,6 +71,7 @@
                 <img
                   :src="`/UltimateMovesetCompatibility/vanilla-stock-icons/chara_2_${item.raw.internalName}.png`"
                   class="vc-stock-icon"
+                  alt=""
                 />
                 <span>{{ item.raw.displayName }}</span>
               </div>
@@ -104,59 +82,65 @@
               <img
                 :src="`/UltimateMovesetCompatibility/vanilla-stock-icons/chara_2_${item.raw.internalName}.png`"
                 class="vc-stock-icon"
+                alt=""
               />
               <span>{{ item.raw.displayName }}</span>
             </div>
           </template>
         </v-autocomplete>
-      </v-col>
+      </LabeledField>
 
-      <!-- Vanilla Article -->
-      <v-col cols="12" sm="6" md="4">
+      <LabeledField label="Vanilla article" class="filters__wide">
         <v-autocomplete
           v-model="filterArticle"
-          label="Vanilla Article"
+          placeholder="Any article"
           clearable
-          variant="outlined"
           density="compact"
           hide-details
           :items="articleNames"
           auto-select-first
         />
-      </v-col>
+      </LabeledField>
 
-      <!-- Open Source -->
-      <v-col cols="6" sm="3" md="2">
+      <LabeledField label="Source">
         <v-select
           v-model="filterOpenSource"
-          label="Source"
-          variant="outlined"
           density="compact"
           hide-details
           :items="[
             { title: 'All', value: 'all' },
-            { title: 'Open Source', value: 'yes' },
-            { title: 'Closed Source', value: 'no' },
+            { title: 'Open source', value: 'yes' },
+            { title: 'Closed source', value: 'no' },
           ]"
         />
-      </v-col>
+      </LabeledField>
 
-      <!-- On Mods Wiki -->
-      <v-col cols="6" sm="3" md="2">
+      <LabeledField label="Mods wiki">
         <v-select
           v-model="filterOnModsWiki"
-          label="Mods Wiki"
-          variant="outlined"
           density="compact"
           hide-details
           :items="[
             { title: 'All', value: 'all' },
-            { title: 'On Mods Wiki', value: 'yes' },
-            { title: 'Not on Mods Wiki', value: 'no' },
+            { title: 'On mods wiki', value: 'yes' },
+            { title: 'Not on mods wiki', value: 'no' },
           ]"
         />
-      </v-col>
-    </v-row>
+      </LabeledField>
+
+      <div class="filters__check">
+        <v-checkbox
+          v-model="showJokeMovesets"
+          hide-details
+          density="compact"
+          label="Joke movesets"
+        />
+      </div>
+    </div>
+
+    <p v-if="showControls" class="filters__count">
+      Showing {{ processedMovesets.length }} of {{ displayedMovesets.length }} movesets
+    </p>
 
     <!-- Moveset List -->
     <div class="moveset-grid">
@@ -168,12 +152,18 @@
         :blocked-series-icon-urls="blockedSeriesIconUrls"
       />
     </div>
+    <EmptyState
+      v-if="showControls && !processedMovesets.length"
+      message="No movesets match these filters."
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import MovesetCard from './MovesetCard.vue'
+import LabeledField from '@/components/LabeledField.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import api from '@/services/api'
 import { UserType, ItemType, ALL_ACCEPTANCE_STATES } from '@/globals'
 import { compareDateOnlyStrings } from '@/services/dateOnly'
@@ -422,41 +412,56 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* The cards are 340px wide, never stretch, and pack edge to edge. */
 .moveset-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 340px);
   justify-content: center;
-  margin: 0 auto;
-  width: 1020px;
-  max-width: 100%;
-}
-
-.moveset-card {
-  flex: 0 1 33.33%;
-  min-width: 340px;
-  box-sizing: border-box;
-}
-
-@media (max-width: 768px) {
-  .moveset-card {
-    flex: 0 1 50%;
-    min-width: unset;
-  }
-}
-
-@media (max-width: 480px) {
-  .moveset-card {
-    flex: 0 1 100%;
-  }
+  gap: 0;
 }
 
 .moveset-list-all {
   margin-bottom: 4em;
 }
 
-.joke-toggle-col {
-  padding-top: 0;
-  padding-bottom: 0;
+.filters {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px 16px;
+  margin-bottom: 14px;
+}
+
+.filters__search,
+.filters__wide {
+  grid-column: span 2;
+}
+
+.filters__check {
+  display: flex;
+  align-items: flex-end;
+  grid-column: span 2;
+}
+
+.filters__count {
+  margin: 0 0 14px;
+  color: var(--tx-2);
+  font-size: 13px;
+}
+
+@media (max-width: 959px) {
+  .filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 599px) {
+  .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filters__check {
+    grid-column: span 1;
+  }
 }
 
 /* Vanilla char filter dropdown */

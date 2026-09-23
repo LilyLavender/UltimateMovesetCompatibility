@@ -1,7 +1,7 @@
 <template>
   <v-app>
     <div class="page-texture" aria-hidden="true"></div>
-    <Header />
+    <Header :variant="route.name === 'Home' ? 'hero' : 'solid'" />
     <router-view />
     <Footer />
 
