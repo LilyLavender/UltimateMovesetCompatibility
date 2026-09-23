@@ -1,17 +1,34 @@
 <template>
-  <div class="moveset-table-page">
-    <h1 class="page-title no-select mb-3">Moveset Table</h1>
+  <PageShell title="Moveset table" tier="wide">
+    <template #subnav>
+      <SubNav section="movesets" label="Movesets">
+        <template #actions>
+          <AppButton
+            variant="ghost"
+            size="sm"
+            icon="mdi-file-download"
+            :disabled="!normalizedMovesets.length"
+            @click="downloadCSV"
+          >
+            Download CSV
+          </AppButton>
+        </template>
+      </SubNav>
+    </template>
 
-    <!-- Controls row -->
-    <div class="controls-row mb-3">
-      <button class="dl-btn" @click="downloadCSV">
-        <span class="mdi mdi-file-download" />
-        Download CSV
-      </button>
-    </div>
+    <p class="table-hint">
+      Every moveset with its slots, release state, functions, articles, and hooks. Scroll sideways
+      for the full width; the character column stays put.
+    </p>
 
-    <!-- Table -->
-    <div class="scroll-container">
+    <SkeletonTable
+      v-if="loading"
+      :headers="['Creators', 'Modded char', 'Vanilla char', 'Slotted', 'Slots', 'Release']"
+      :columns="[1.5, 1.5, 1.2, 1.2, 1, 1]"
+      :rows="10"
+    />
+
+    <TableScroll v-else>
       <v-data-table
         :headers="headers"
         :items="normalizedMovesets"
@@ -29,79 +46,42 @@
 
         <!-- Slotted/Replacement ID -->
         <template #item.slotReplacementId="{ item }">
-          <span v-if="item.slottedId === item.replacementId">
+          <span v-if="item.slottedId === item.replacementId" class="mono">
             {{ item.slottedId }}
           </span>
-          <span v-else> {{ item.slottedId }} / {{ item.replacementId }} </span>
+          <span v-else class="mono"> {{ item.slottedId }} / {{ item.replacementId }} </span>
+        </template>
+
+        <template #item.slotsRange="{ value }">
+          <span class="mono">{{ value }}</span>
         </template>
 
         <!-- Release state -->
         <template #item.releaseState="{ item }">
-          <span
-            class="release-pill"
-            :class="{
-              released: item.releaseState === RELEASE_STATE_NAMES[ReleaseState.Released],
-              upcoming: item.releaseState === RELEASE_STATE_NAMES[ReleaseState.Upcoming],
-              pending: item.releaseState === RELEASE_STATE_NAMES[ReleaseState.PendingUpdate],
-              beta: item.releaseState === RELEASE_STATE_NAMES[ReleaseState.OpenBeta],
-              deprecated: item.releaseState === RELEASE_STATE_NAMES[ReleaseState.Deprecated],
-            }"
-          >
-            {{ item.releaseState }}
-          </span>
+          <StatusTag :variant="releaseTone(item.releaseState)">{{ item.releaseState }}</StatusTag>
         </template>
 
         <!-- Bools -->
-        <template #item.hasGlobalOpff="{ value }">
-          <span :class="['bool-pill', value ? 'yes' : 'no']">
-            {{ value ? 'Yes' : 'No' }}
-          </span>
-        </template>
-
-        <template #item.hasCharacterOpff="{ value }">
-          <span :class="['bool-pill', value ? 'yes' : 'no']">
-            {{ value ? 'Yes' : 'No' }}
-          </span>
-        </template>
-
-        <template #item.hasAgentInit="{ value }">
-          <span :class="['bool-pill', value ? 'yes' : 'no']">
-            {{ value ? 'Yes' : 'No' }}
-          </span>
-        </template>
-
-        <template #item.hasGlobalOnLinePre="{ value }">
-          <span :class="['bool-pill', value ? 'yes' : 'no']">
-            {{ value ? 'Yes' : 'No' }}
-          </span>
-        </template>
-
-        <template #item.hasGlobalOnLineEnd="{ value }">
-          <span :class="['bool-pill', value ? 'yes' : 'no']">
-            {{ value ? 'Yes' : 'No' }}
-          </span>
+        <template v-for="key in boolKeys" :key="`bool-${key}`" #[`item.${key}`]="{ value }">
+          <StatusTag :variant="value ? 'ok' : 'err'">{{ value ? 'Yes' : 'No' }}</StatusTag>
         </template>
 
         <!-- Articles -->
         <template
-          v-for="key in [...articleKeys, ...hookKeys]"
+          v-for="key in articleKeys"
           :key="`article-${key}`"
           #[`item.article:${key}`]="{ value }"
         >
-          <div v-if="value" class="usage-pill">
-            {{ value }}
-          </div>
+          <StatusTag v-if="value" variant="neutral">{{ value }}</StatusTag>
         </template>
 
         <!-- Hooks -->
         <template v-for="key in hookKeys" :key="`hook-${key}`" #[`item.hook:${key}`]="{ value }">
-          <div v-if="value" class="usage-pill">
-            {{ value }}
-          </div>
+          <StatusTag v-if="value" variant="neutral">{{ value }}</StatusTag>
         </template>
       </v-data-table>
-    </div>
-  </div>
+    </TableScroll>
+  </PageShell>
 </template>
 
 <script setup>
@@ -109,8 +89,32 @@ import { ref, onMounted, computed } from 'vue'
 import api from '@/services/api'
 import { ReleaseState, RELEASE_STATE_NAMES } from '@/globals'
 import { formatOffset } from '@/services/offsets'
+import PageShell from '@/components/PageShell.vue'
+import SubNav from '@/components/SubNav.vue'
+import AppButton from '@/components/AppButton.vue'
+import StatusTag from '@/components/StatusTag.vue'
+import TableScroll from '@/components/TableScroll.vue'
+import SkeletonTable from '@/components/SkeletonTable.vue'
 
 const movesets = ref([])
+const loading = ref(true)
+
+const boolKeys = [
+  'hasGlobalOpff',
+  'hasCharacterOpff',
+  'hasAgentInit',
+  'hasGlobalOnLinePre',
+  'hasGlobalOnLineEnd',
+]
+
+const RELEASE_TONES = {
+  [RELEASE_STATE_NAMES[ReleaseState.Released]]: 'ok',
+  [RELEASE_STATE_NAMES[ReleaseState.Upcoming]]: 'warn',
+  [RELEASE_STATE_NAMES[ReleaseState.PendingUpdate]]: 'warn',
+  [RELEASE_STATE_NAMES[ReleaseState.OpenBeta]]: 'info',
+  [RELEASE_STATE_NAMES[ReleaseState.Deprecated]]: 'err',
+}
+const releaseTone = (name) => RELEASE_TONES[name] ?? 'neutral'
 
 // Headers before processing
 const baseHeaders = [
@@ -121,19 +125,19 @@ const baseHeaders = [
     cellProps: { class: 'core-col' },
   },
   {
-    title: 'Modded Char',
+    title: 'Modded char',
     key: 'moddedCharName',
     headerProps: { class: 'sticky core-col' },
     cellProps: { class: 'sticky core-col' },
   },
   {
-    title: 'Vanilla Char',
+    title: 'Vanilla char',
     key: 'vanillaCharName',
     headerProps: { class: 'core-col' },
     cellProps: { class: 'core-col' },
   },
   {
-    title: 'Slotted/Replacement',
+    title: 'Slotted / replacement',
     key: 'slotReplacementId',
     headerProps: { class: 'core-col' },
     cellProps: { class: 'core-col' },
@@ -228,6 +232,7 @@ const normalizedMovesets = computed(() =>
 onMounted(async () => {
   const res = await api.get('/movesets/report')
   movesets.value = res.data
+  loading.value = false
 })
 
 // Download table as csv
@@ -251,15 +256,7 @@ function downloadCSV() {
           val = [row.slottedId, row.replacementId]
         } else {
           val = row[h.key] ?? ''
-          if (
-            [
-              'hasGlobalOpff',
-              'hasCharacterOpff',
-              'hasAgentInit',
-              'hasGlobalOnLinePre',
-              'hasGlobalOnLineEnd',
-            ].includes(h.key)
-          ) {
+          if (boolKeys.includes(h.key)) {
             val = val ? 'Yes' : 'No'
           }
         }
@@ -291,91 +288,41 @@ function downloadCSV() {
 </script>
 
 <style scoped>
-/* Page */
-.moveset-table-page {
-  padding: 1.5rem;
-}
-
-.page-title {
-  text-align: center;
-}
-
-/* Controls row */
-.controls-row {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-/* Download button — styled like slot-grid sort-btn, but larger */
-.dl-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  padding: 5px 16px;
-  border-radius: 4px;
-  border: 1px solid #444;
-  background: #1e1e1e;
-  color: #ccc;
-  cursor: pointer;
-  transition:
-    background 0.1s,
-    color 0.1s;
-}
-
-.dl-btn:hover {
-  background: #2a2a2a;
-}
-
-/* Table container */
-.scroll-container {
-  border: 1px solid #333;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-/* Vuetify table overrides */
-:deep(.umc-table) {
-  background: transparent !important;
+.table-hint {
+  margin: 0 0 14px;
+  color: var(--tx-3);
+  font-size: 13px;
 }
 
 :deep(.umc-table .v-data-table__th) {
-  padding: 3px 10px !important;
-  font-size: 13px !important;
+  padding: 4px 10px !important;
   white-space: nowrap;
-  border-bottom: 1px solid #333 !important;
-  color: #fff !important;
 }
 
 :deep(.umc-table .v-data-table__td) {
   max-width: none !important;
-  padding: 3px 10px !important;
+  padding: 4px 10px !important;
   font-size: 13px !important;
   white-space: nowrap;
-  border-bottom: 1px solid #252525 !important;
-  color: #fff !important;
-}
-
-:deep(.umc-table .v-data-table__tr:hover td) {
-  background: #181818 !important;
 }
 
 /* Section dividers */
 :deep(.section-divider) {
-  border-right: 2px solid #1a1a1a !important;
+  border-right: 2px solid var(--line-2) !important;
 }
 
-/* Core columns (#121212 background) */
-:deep(.umc-table .v-data-table__th.core-col) {
-  background: #121212 !important;
-}
-
+/* Core columns sit on the panel color so they read as one block */
+:deep(.umc-table .v-data-table__th.core-col),
 :deep(.umc-table .v-data-table__td.core-col) {
-  background: #121212 !important;
+  background: var(--panel) !important;
+}
+
+:deep(.umc-table .v-data-table__tr:hover .v-data-table__td.core-col) {
+  background: var(--panel-2) !important;
 }
 
 /* Sticky char name column */
+:deep(.v-data-table__th.sticky),
 :deep(.v-data-table__td.sticky) {
   position: sticky;
   left: 0;
@@ -387,60 +334,5 @@ function downloadCSV() {
   font-size: 0.85em;
   opacity: 0.5;
   font-weight: normal;
-}
-
-/* Pills — flat corners to match slot-grid */
-.bool-pill {
-  display: inline-block;
-  text-align: center;
-  padding: 1px 8px;
-  border-radius: 3px;
-  font-size: 12px;
-  color: #fff;
-}
-
-.bool-pill.yes {
-  background-color: #2e7d32;
-}
-
-.bool-pill.no {
-  background-color: #c62828;
-}
-
-.usage-pill {
-  display: inline-block;
-  background-color: #1565c0cc;
-  border: 1px solid #1976d2;
-  color: #fff;
-  padding: 1px 6px;
-  border-radius: 3px;
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.release-pill {
-  display: inline-block;
-  padding: 1px 8px;
-  border-radius: 3px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #fff;
-  white-space: nowrap;
-}
-
-.release-pill.released {
-  background-color: #2e7d32;
-}
-.release-pill.upcoming,
-.release-pill.pending {
-  background-color: #fbc02d;
-  color: #000;
-}
-.release-pill.beta {
-  background-color: #acba22;
-  color: #000;
-}
-.release-pill.deprecated {
-  background-color: #c62828;
 }
 </style>

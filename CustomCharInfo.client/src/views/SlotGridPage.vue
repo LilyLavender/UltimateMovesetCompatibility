@@ -1,121 +1,126 @@
 <template>
-  <div class="slot-grid-page">
-    <h1 class="page-title no-select mb-4">Moveset Slots</h1>
-
-    <div v-if="loading" class="text-center py-10">Loading...</div>
-
-    <template v-else>
-      <!-- Legend + sort controls -->
-      <div class="controls-row mb-3">
-        <div class="legend">
-          <span class="swatch swatch-normal" />
-          <span class="legend-text">No overlap</span>
-          <span class="swatch swatch-overlap ml-4" />
-          <span class="legend-text">Slot overlap</span>
-          <p class="slot-note ml-5">
-            Most movesets allow their slots to be changed, so two movesets sharing a slot range
-            isn't necessarily a dealbreaker.
-          </p>
-        </div>
-        <div class="sort-btns">
-          <span class="sort-label">Sort:</span>
-          <button
-            :class="['sort-btn', sortOrder === 'alpha' ? 'sort-btn--active' : '']"
-            @click="sortOrder = 'alpha'"
-          >
-            A–Z
-          </button>
-          <button
-            :class="['sort-btn', sortOrder === 'count' ? 'sort-btn--active' : '']"
-            @click="sortOrder = 'count'"
-          >
-            Moveset Count
-          </button>
-        </div>
-      </div>
-
-      <!-- Table -->
-      <div class="scroll-container">
-        <div class="grid-table">
-          <!-- Header row -->
-          <div class="g-row header-row">
-            <div class="char-col">Character</div>
-            <div class="slots-col" :style="{ height: HEADER_H + 'px' }">
-              <template v-for="(t, idx) in headerTicks" :key="t">
-                <div class="tick-line" :style="{ left: slotXPct(t) }" />
-                <div v-if="idx > 0" class="tick-label" :style="{ left: slotXPct(t) }">
-                  {{ formatSlot(t) }}
-                </div>
-              </template>
-            </div>
-          </div>
-
-          <!-- Character rows -->
-          <div v-for="row in processedGrid" :key="row.vanillaChar" class="g-row">
-            <div class="char-col" :style="{ height: rowHeight(row) + 'px' }">
-              <img
-                :src="iconUrl(row.vanillaChar)"
-                class="char-icon"
-                :alt="row.displayName"
-                loading="lazy"
-              />
-              <span class="char-name"
-                >{{ row.displayName }}
-                <span class="char-count">({{ row.movesetCount }})</span></span
-              >
-            </div>
-            <div class="slots-col" :style="{ height: rowHeight(row) + 'px' }">
-              <div
-                v-for="t in headerTicks"
-                :key="'tl' + t"
-                class="tick-line tick-line-row"
-                :style="{ left: slotXPct(t) }"
-              />
-              <template v-for="m in row.movesets" :key="m.movesetId">
-                <!-- Private: non-clickable -->
-                <div
-                  v-if="m.isPrivate"
-                  class="moveset-bar bar-private"
-                  :class="{ 'bar-overlap': m.hasOverlap }"
-                  :style="{
-                    left: slotXPct(m.slotsStart),
-                    width: slotWPct(m.slotsStart, m.slotsEnd),
-                    top: m.lane * LANE_H + 2 + 'px',
-                    height: LANE_H - 4 + 'px',
-                  }"
-                >
-                  <v-tooltip activator="parent" location="top" :text="slotRangeText(m)" />
-                  <span class="bar-label">???</span>
-                </div>
-                <!-- Public: clickable -->
-                <router-link
-                  v-else
-                  :to="{ name: 'MovesetDetail', params: { movesetId: m.movesetId } }"
-                  class="moveset-bar"
-                  :class="{ 'bar-overlap': m.hasOverlap }"
-                  :style="{
-                    left: slotXPct(m.slotsStart),
-                    width: slotWPct(m.slotsStart, m.slotsEnd),
-                    top: m.lane * LANE_H + 2 + 'px',
-                    height: LANE_H - 4 + 'px',
-                  }"
-                >
-                  <v-tooltip activator="parent" location="top" :text="tooltipText(m)" />
-                  <span class="bar-label">{{ displayName(m) }}</span>
-                </router-link>
-              </template>
-            </div>
-          </div>
-        </div>
-      </div>
+  <PageShell title="Slot grid" tier="wide">
+    <template #subnav>
+      <SubNav section="movesets" label="Movesets" />
     </template>
-  </div>
+
+    <!-- Legend + sort controls -->
+    <div class="controls-row">
+      <div class="legend">
+        <span class="swatch swatch-normal" />
+        <span class="legend-text">No overlap</span>
+        <span class="swatch swatch-overlap" />
+        <span class="legend-text">Slot overlap</span>
+        <p class="slot-note">
+          Most movesets allow their slots to be changed, so two movesets sharing a slot range isn't
+          necessarily a dealbreaker.
+        </p>
+      </div>
+      <div class="sort-btns">
+        <span class="sort-label">Sort</span>
+        <AppButton
+          size="sm"
+          :variant="sortOrder === 'alpha' ? 'primary' : 'ghost'"
+          @click="sortOrder = 'alpha'"
+        >
+          A to Z
+        </AppButton>
+        <AppButton
+          size="sm"
+          :variant="sortOrder === 'count' ? 'primary' : 'ghost'"
+          @click="sortOrder = 'count'"
+        >
+          Moveset count
+        </AppButton>
+      </div>
+    </div>
+
+    <SkeletonTable v-if="loading" :headers="['Character', 'Slots']" :columns="[1, 6]" :rows="12" />
+
+    <TableScroll v-else min-width="720px">
+      <div class="grid-table">
+        <!-- Header row -->
+        <div class="g-row header-row">
+          <div class="char-col">Character</div>
+          <div class="slots-col" :style="{ height: HEADER_H + 'px' }">
+            <template v-for="(t, idx) in headerTicks" :key="t">
+              <div class="tick-line" :style="{ left: slotXPct(t) }" />
+              <div v-if="idx > 0" class="tick-label" :style="{ left: slotXPct(t) }">
+                {{ formatSlot(t) }}
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Character rows -->
+        <div v-for="row in processedGrid" :key="row.vanillaChar" class="g-row">
+          <div class="char-col" :style="{ height: rowHeight(row) + 'px' }">
+            <img
+              :src="iconUrl(row.vanillaChar)"
+              class="char-icon"
+              :alt="row.displayName"
+              loading="lazy"
+            />
+            <span class="char-name"
+              >{{ row.displayName }} <span class="char-count">({{ row.movesetCount }})</span></span
+            >
+          </div>
+          <div class="slots-col" :style="{ height: rowHeight(row) + 'px' }">
+            <div
+              v-for="t in headerTicks"
+              :key="'tl' + t"
+              class="tick-line tick-line-row"
+              :style="{ left: slotXPct(t) }"
+            />
+            <template v-for="m in row.movesets" :key="m.movesetId">
+              <!-- Private: non-clickable -->
+              <div
+                v-if="m.isPrivate"
+                class="moveset-bar bar-private"
+                :class="{ 'bar-overlap': m.hasOverlap }"
+                :style="{
+                  left: slotXPct(m.slotsStart),
+                  width: slotWPct(m.slotsStart, m.slotsEnd),
+                  top: m.lane * LANE_H + 2 + 'px',
+                  height: LANE_H - 4 + 'px',
+                }"
+              >
+                <v-tooltip activator="parent" location="top" :text="slotRangeText(m)" />
+                <span class="bar-label">???</span>
+              </div>
+              <!-- Public: clickable -->
+              <router-link
+                v-else
+                :to="{ name: 'MovesetDetail', params: { movesetId: m.movesetId } }"
+                class="moveset-bar"
+                :class="{ 'bar-overlap': m.hasOverlap }"
+                :style="{
+                  left: slotXPct(m.slotsStart),
+                  width: slotWPct(m.slotsStart, m.slotsEnd),
+                  top: m.lane * LANE_H + 2 + 'px',
+                  height: LANE_H - 4 + 'px',
+                }"
+              >
+                <v-tooltip activator="parent" location="top" :text="tooltipText(m)" />
+                <span class="bar-label">{{ displayName(m) }}</span>
+              </router-link>
+            </template>
+          </div>
+        </div>
+      </div>
+    </TableScroll>
+  </PageShell>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 import { formatSlot, formatSlotRange } from '@/services/slots'
+import PageShell from '@/components/PageShell.vue'
+import SubNav from '@/components/SubNav.vue'
+import AppButton from '@/components/AppButton.vue'
+import TableScroll from '@/components/TableScroll.vue'
+import SkeletonTable from '@/components/SkeletonTable.vue'
 
 const HEADER_H = 36
 const LANE_H = 26
@@ -266,22 +271,11 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.page-title {
-  text-align: center;
-}
-
-.slot-grid-page {
-  padding: 1.5rem;
-}
-
-.scroll-container {
-  border: 1px solid #333;
-  border-radius: 6px;
-}
-
 .grid-table {
   display: block;
   width: 100%;
+  border: 1px solid var(--line);
+  background: var(--panel);
   font-size: 12px;
 }
 
@@ -289,11 +283,15 @@ onMounted(async () => {
 .g-row {
   display: flex;
   align-items: stretch;
-  border-bottom: 1px solid #252525;
+  border-bottom: 1px solid var(--line);
+}
+
+.g-row:last-child {
+  border-bottom: 0;
 }
 
 .g-row:not(.header-row):hover {
-  background: #181818;
+  background: var(--panel-2);
 }
 
 /* Sticky character column */
@@ -303,28 +301,36 @@ onMounted(async () => {
   position: sticky;
   left: 0;
   z-index: 1;
-  background: #121212;
+  background: var(--panel);
   padding: 0 8px;
   display: flex;
   align-items: center;
   gap: 6px;
-  border-right: 2px solid #333;
-  font-size: 15px;
+  border-right: 2px solid var(--line-2);
+  font-size: 14px;
   white-space: nowrap;
   overflow: hidden;
+}
+
+.g-row:not(.header-row):hover .char-col {
+  background: var(--panel-2);
 }
 
 .header-row {
   position: sticky;
   top: 0;
   z-index: 3;
-  background: #121212;
+  background: var(--panel);
+  border-bottom: 1px solid var(--white);
 }
 
 .header-row .char-col {
   z-index: 4;
-  font-size: 16px;
   height: 36px;
+  color: var(--tx-2);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
 }
 
 .char-icon {
@@ -352,20 +358,21 @@ onMounted(async () => {
   top: 0;
   bottom: 0;
   width: 1px;
-  background: #2e2e2e;
+  background: var(--line-2);
   pointer-events: none;
 }
 
 .tick-line-row {
-  background: #1e1e1e;
+  background: var(--line);
 }
 
 /* Tick labels in header */
 .tick-label {
   position: absolute;
-  bottom: 4px;
-  font-size: 16px;
-  color: #888;
+  bottom: 6px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--tx-2);
   transform: translateX(-50%);
   white-space: nowrap;
   pointer-events: none;
@@ -375,16 +382,15 @@ onMounted(async () => {
 /* Moveset bars */
 .moveset-bar {
   position: absolute;
-  border-radius: 3px;
-  background: #1565c0cc;
-  border: 1px solid #1976d2;
+  background: color-mix(in srgb, var(--info) 55%, #000);
+  border: 1px solid var(--info);
   cursor: pointer;
   text-decoration: none;
   overflow: hidden;
   display: flex;
   align-items: center;
   min-width: 2px;
-  transition: filter 0.1s;
+  transition: filter var(--dur-fast) var(--ease);
 }
 
 .moveset-bar:hover {
@@ -393,8 +399,8 @@ onMounted(async () => {
 }
 
 .moveset-bar.bar-overlap {
-  background: #4fc3f7cc;
-  border-color: #81d4fa;
+  background: color-mix(in srgb, var(--warn) 55%, #000);
+  border-color: var(--warn);
 }
 
 .moveset-bar.bar-private {
@@ -407,7 +413,7 @@ onMounted(async () => {
 
 .bar-label {
   font-size: 10px;
-  color: #fff;
+  color: var(--white);
   white-space: nowrap;
   padding: 0 3px;
   overflow: hidden;
@@ -424,88 +430,68 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 8px 16px;
+  margin-bottom: 14px;
 }
 
 /* Legend */
 .legend {
   display: flex;
   align-items: center;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 6px 8px;
   font-size: 12px;
-}
-
-/* Sort buttons */
-.sort-btns {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.sort-label {
-  font-size: 12px;
-  color: #888;
-  margin-right: 2px;
-}
-
-.sort-btn {
-  font-size: 12px;
-  padding: 2px 10px;
-  border-radius: 4px;
-  border: 1px solid #444;
-  background: #1e1e1e;
-  color: #ccc;
-  cursor: pointer;
-  transition:
-    background 0.1s,
-    color 0.1s;
-}
-
-.sort-btn:hover {
-  background: #2a2a2a;
-}
-
-.sort-btn--active {
-  background: #1565c0;
-  border-color: #1976d2;
-  color: #fff;
-}
-
-/* Slot note */
-.slot-note {
-  font-size: 12px;
-  color: #888;
-  margin: 0;
-}
-
-/* Char count badge */
-.char-count {
-  color: #666;
-  font-size: 0.85em;
 }
 
 .swatch {
   display: inline-block;
   width: 20px;
   height: 14px;
-  border-radius: 3px;
 }
 
 .swatch-normal {
-  background: #1565c0cc;
-  border: 1px solid #1976d2;
+  background: color-mix(in srgb, var(--info) 55%, #000);
+  border: 1px solid var(--info);
 }
 
 .swatch-overlap {
-  background: #4fc3f7cc;
-  border: 1px solid #81d4fa;
+  background: color-mix(in srgb, var(--warn) 55%, #000);
+  border: 1px solid var(--warn);
+  margin-left: 8px;
 }
 
 .legend-text {
-  color: #ccc;
+  color: var(--tx-2);
 }
 
-.ml-4 {
-  margin-left: 1rem;
+.slot-note {
+  font-size: 12px;
+  color: var(--tx-3);
+  margin: 0 0 0 12px;
+}
+
+/* Sort buttons */
+.sort-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sort-label {
+  font-size: 12px;
+  color: var(--tx-3);
+  margin-right: 2px;
+}
+
+.char-count {
+  color: var(--tx-3);
+  font-size: 0.85em;
+}
+
+@media (max-width: 599px) {
+  .slot-note {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
 }
 </style>

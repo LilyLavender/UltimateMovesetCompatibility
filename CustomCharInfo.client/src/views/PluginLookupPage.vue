@@ -1,69 +1,64 @@
 <template>
-  <div class="lookup-page">
-    <h1 class="page-title no-select">Plugin Lookup</h1>
-    <p class="subtitle">
+  <PageShell title="Plugin lookup">
+    <template #subnav>
+      <SubNav section="movesets" label="Movesets" />
+    </template>
+
+    <p class="lookup-intro">
       Not sure what a <code>.nro</code> is or whether it's up to date? Upload the file below to hash
-      entirely in the browser and check with UMC's database. You can also drop several files or your
-      whole <code>plugins</code> folder to check everything at once. If you have a plugin and wish
-      to add it to the database, go to the
-      <router-link to="/plugins/add" class="unvisitable">submission page</router-link>.
+      it entirely in the browser and check it against UMC's database. You can also drop several
+      files or your whole <code>plugins</code> folder to check everything at once. Have a plugin
+      that is not in the database yet? Go to the
+      <router-link to="/plugins/add">submission page</router-link>.
     </p>
 
     <div class="picker-row">
       <PluginBatchDropZone v-model="entries" large />
     </div>
 
-    <div v-if="loading" class="status-msg">
-      <v-progress-circular indeterminate size="20" />
-      {{ loadingLabel }}
-    </div>
+    <AppLoading v-if="loading" :label="loadingLabel" />
 
-    <div v-else-if="error" class="result-card result-card--error">
-      <v-icon class="result-icon">mdi-alert-circle</v-icon>
+    <div v-else-if="error" class="result result--err">
+      <v-icon class="result__icon">mdi-alert-circle</v-icon>
       <span>{{ error }}</span>
     </div>
 
     <!-- One file: the single result card -->
     <template v-else-if="rows && rows.length === 1">
-      <div v-if="!singleResult" class="result-card result-card--unknown">
-        <v-icon class="result-icon">mdi-help-circle</v-icon>
+      <div v-if="!singleResult" class="result result--neutral">
+        <v-icon class="result__icon">mdi-help-circle</v-icon>
         <div>
-          <div class="result-title">Not recognized</div>
-          <div class="result-sub">
-            This hash doesn't match any plugin in our database! If you know what it is, please
-            <router-link to="/plugins/add" class="unvisitable">submit it</router-link>.
+          <div class="result__title">Not recognized</div>
+          <div class="result__sub">
+            This hash doesn't match any plugin in the database. If you know what it is, please
+            <router-link to="/plugins/add">submit it</router-link>.
           </div>
         </div>
       </div>
 
-      <div
-        v-else
-        class="result-card"
-        :class="singleResult.isCurrent ? 'result-card--current' : 'result-card--outdated'"
-      >
-        <v-icon class="result-icon">{{
+      <div v-else class="result" :class="singleResult.isCurrent ? 'result--ok' : 'result--warn'">
+        <v-icon class="result__icon">{{
           singleResult.isCurrent ? 'mdi-check-circle' : 'mdi-alert'
         }}</v-icon>
-        <div class="result-body">
-          <div class="result-title">
+        <div class="result__body">
+          <div class="result__title">
             <router-link
               v-if="singleResult.attachmentType === 'Moveset'"
               :to="{ name: 'MovesetDetail', params: { movesetId: singleResult.movesetId } }"
-              class="unvisitable"
               >{{ singleResult.pluginName }}</router-link
             >
             <template v-else>{{ singleResult.pluginName }}</template>
           </div>
-          <div class="result-sub">Version {{ singleResult.matchedVersionLabel }}</div>
+          <div class="result__sub">Version {{ singleResult.matchedVersionLabel }}</div>
           <p
             v-if="singleResult.attachmentType === 'Other' && singleResult.pluginDescription"
-            class="result-desc"
+            class="result__desc"
           >
             {{ singleResult.pluginDescription }}
           </p>
 
-          <div class="result-version-row">
-            <span v-if="singleResult.isCurrent">Up to date! This is the most recent version.</span>
+          <div class="result__version">
+            <span v-if="singleResult.isCurrent">Up to date. This is the most recent version.</span>
             <span v-else>
               There is a
               <a
@@ -71,12 +66,11 @@
                 :href="singleResult.learnMoreUrl"
                 target="_blank"
                 rel="noopener"
-                class="unvisitable"
                 >newer version of this {{ thingLabel(singleResult) }}</a
               ><template v-else>newer version of this {{ thingLabel(singleResult) }}</template>
-              available!<template v-if="singleResult.currentVersionLabel">
+              available<template v-if="singleResult.currentVersionLabel">
                 ({{ displayVersion(singleResult.currentVersionLabel) }})</template
-              >
+              >.
             </span>
           </div>
 
@@ -94,7 +88,7 @@
             :href="singleResult.learnMoreUrl"
             target="_blank"
             rel="noopener"
-            class="unvisitable learn-more-link"
+            class="learn-more-link"
           >
             View mod page <v-icon size="small">mdi-open-in-new</v-icon>
           </a>
@@ -105,18 +99,14 @@
     <!-- Several files: summary line and table -->
     <template v-else-if="rows && rows.length > 1">
       <div class="batch-summary">
-        <span class="summary-pill summary-pill--current">
-          <v-icon size="small">mdi-check-circle</v-icon> {{ summary.current }} up to date
-        </span>
-        <span class="summary-pill summary-pill--outdated">
-          <v-icon size="small">mdi-alert</v-icon> {{ summary.outdated }} outdated
-        </span>
-        <span class="summary-pill summary-pill--unknown">
-          <v-icon size="small">mdi-help-circle</v-icon> {{ summary.unknown }} not recognized
-        </span>
+        <StatusTag variant="ok" icon="mdi-check-circle">{{ summary.current }} up to date</StatusTag>
+        <StatusTag variant="warn" icon="mdi-alert">{{ summary.outdated }} outdated</StatusTag>
+        <StatusTag variant="outline" icon="mdi-help-circle"
+          >{{ summary.unknown }} not recognized</StatusTag
+        >
       </div>
 
-      <div class="batch-table-wrap">
+      <TableScroll min-width="640px">
         <table class="batch-table">
           <thead>
             <tr>
@@ -129,20 +119,19 @@
           </thead>
           <tbody>
             <tr v-for="row in rows" :key="row.path + row.hash">
-              <td class="cell-file" :title="row.path">{{ row.path }}</td>
+              <td class="cell-file mono" :title="row.path">{{ row.path }}</td>
 
               <td v-if="row.found">
                 <router-link
                   v-if="row.result.attachmentType === 'Moveset'"
                   :to="{ name: 'MovesetDetail', params: { movesetId: row.result.movesetId } }"
-                  class="unvisitable"
                   >{{ row.result.pluginName }}</router-link
                 >
                 <template v-else>{{ row.result.pluginName }}</template>
               </td>
               <td v-else class="cell-muted">
                 Unknown.
-                <router-link to="/plugins/add" class="unvisitable">Submit it?</router-link>
+                <router-link to="/plugins/add">Submit it?</router-link>
               </td>
 
               <td>
@@ -150,7 +139,7 @@
               </td>
 
               <td>
-                <span class="status-pill" :class="`status-pill--${rowStatus(row)}`">
+                <StatusTag :variant="STATUS_TONES[rowStatus(row)]">
                   <template v-if="rowStatus(row) === 'current'">Up to date</template>
                   <template v-else-if="rowStatus(row) === 'outdated'">
                     Newer available<template v-if="row.result.currentVersionLabel">
@@ -158,7 +147,7 @@
                     >
                   </template>
                   <template v-else>Not recognized</template>
-                </span>
+                </StatusTag>
               </td>
 
               <td>
@@ -167,7 +156,7 @@
                   :href="row.result.learnMoreUrl"
                   target="_blank"
                   rel="noopener"
-                  class="unvisitable learn-more-link learn-more-link--inline"
+                  class="learn-more-link learn-more-link--inline"
                   title="View mod page"
                 >
                   <v-icon size="small">mdi-open-in-new</v-icon>
@@ -176,14 +165,19 @@
             </tr>
           </tbody>
         </table>
-      </div>
+      </TableScroll>
     </template>
-  </div>
+  </PageShell>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
 import api from '@/services/api'
+import PageShell from '@/components/PageShell.vue'
+import SubNav from '@/components/SubNav.vue'
+import AppLoading from '@/components/AppLoading.vue'
+import StatusTag from '@/components/StatusTag.vue'
+import TableScroll from '@/components/TableScroll.vue'
 import PluginBatchDropZone from '@/components/PluginBatchDropZone.vue'
 import { hashFile } from '@/services/hashFile'
 import { displayVersion } from '@/services/pluginVersion'
@@ -196,6 +190,7 @@ import {
 } from '@/services/pluginBatch'
 
 const MAX_FILES = 200
+const STATUS_TONES = { current: 'ok', outdated: 'warn', unknown: 'outline' }
 
 const entries = ref([])
 const loading = ref(false)
@@ -220,7 +215,7 @@ async function runLookup(list) {
 
   loading.value = true
   loadingLabel.value =
-    list.length === 1 ? 'Hashing and checking…' : `Hashing ${list.length} files and checking…`
+    list.length === 1 ? 'Hashing and checking' : `Hashing ${list.length} files and checking`
   try {
     const hashes = await Promise.all(list.map((entry) => hashFile(entry.file)))
     const unique = [...new Set(hashes)]
@@ -245,204 +240,153 @@ watch(entries, runLookup)
 </script>
 
 <style scoped>
-.lookup-page {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem 4rem;
+.lookup-intro {
+  max-width: 720px;
+  margin: 0 0 20px;
+  color: var(--tx-2);
+  line-height: 1.55;
 }
 
-.page-title {
-  font-size: 4em;
-  margin-bottom: 0.15em;
-}
-.subtitle {
-  color: #aaa;
-  margin-bottom: 1.5rem;
-  line-height: 1.5;
-}
-.subtitle code {
-  background-color: #222;
-  padding: 0.1em 0.35em;
-  border-radius: 3px;
+.lookup-intro a,
+.result a,
+.batch-table a {
+  color: var(--white);
+  text-decoration: underline;
 }
 
 .picker-row {
-  margin-bottom: 1.5rem;
+  margin-bottom: 20px;
 }
 
-.status-msg {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  color: #aaa;
-  padding: 1rem 0;
-}
-
-.result-card {
+/* One result */
+.result {
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
-  padding: 1rem 1.25rem;
-  border-radius: 6px;
+  gap: 12px;
+  padding: 16px 20px;
+  border: 1px solid var(--line-2);
+  border-left-width: 4px;
+  background: var(--panel);
+  color: var(--tx);
 }
 
-.result-icon {
-  font-size: 1.6em;
+.result--ok {
+  border-left-color: var(--ok);
+}
+
+.result--ok .result__icon {
+  color: var(--ok);
+}
+
+.result--warn {
+  border-left-color: var(--warn);
+}
+
+.result--warn .result__icon {
+  color: var(--warn);
+}
+
+.result--err {
+  border-left-color: var(--err);
+}
+
+.result--err .result__icon {
+  color: var(--err);
+}
+
+.result--neutral {
+  border-left-color: var(--tx-3);
+}
+
+.result__icon {
+  font-size: 1.5em;
   flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--tx-2);
+}
+
+.result__title {
+  font-size: 1.15em;
+  font-weight: 600;
+}
+
+.result__sub {
+  font-size: 0.85em;
+  color: var(--tx-2);
   margin-top: 2px;
 }
-.result-title {
-  font-size: 1.15em;
-  font-weight: bold;
-}
-.result-sub {
-  font-size: 0.85em;
-  opacity: 0.75;
-  margin-top: 0.1rem;
-}
-.result-desc {
-  margin: 0.5rem 0 0;
+
+.result__desc {
+  margin: 8px 0 0;
   font-size: 0.92em;
   line-height: 1.4;
 }
 
-.result-version-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-  margin-top: 0.6rem;
+.result__version {
+  margin-top: 10px;
   font-size: 0.92em;
 }
 
 .learn-more-link {
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
-  margin-top: 0.6rem;
+  gap: 4px;
+  margin-top: 10px;
   font-size: 0.88em;
-  color: #90caf9;
-  text-decoration: none;
 }
-.learn-more-link:hover {
-  text-decoration: underline;
-}
+
 .learn-more-link--inline {
   margin-top: 0;
 }
 
-.result-card--error {
-  background-color: #3a1010;
-  color: #ef9a9a;
-  border: 1px solid #c62828;
-}
-.result-card--unknown {
-  background-color: #1a1a1a;
-  color: #ccc;
-  border: 1px solid #333;
-}
-.result-card--current {
-  background-color: #1b3a1b;
-  color: #c8e6c9;
-  border: 1px solid #388e3c;
-}
-.result-card--outdated {
-  background-color: #3a2f00;
-  color: #ffe082;
-  border: 1px solid #f9a825;
-}
-
-/* Batch summary */
+/* Batch */
 .batch-summary {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
-  margin-bottom: 0.9rem;
-}
-.summary-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.7rem;
-  border-radius: 999px;
-  font-size: 0.88em;
-  border: 1px solid;
-}
-.summary-pill--current {
-  background-color: #1b3a1b;
-  color: #c8e6c9;
-  border-color: #388e3c;
-}
-.summary-pill--outdated {
-  background-color: #3a2f00;
-  color: #ffe082;
-  border-color: #f9a825;
-}
-.summary-pill--unknown {
-  background-color: #1a1a1a;
-  color: #ccc;
-  border-color: #333;
+  gap: 8px;
+  margin-bottom: 14px;
 }
 
-/* Batch table */
-.batch-table-wrap {
-  border: 1px solid #333;
-  border-radius: 6px;
-  overflow-x: auto;
-}
 .batch-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9em;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 14px;
 }
+
 .batch-table th,
 .batch-table td {
-  padding: 0.45rem 0.75rem;
+  padding: 8px 12px;
   text-align: left;
-  border-bottom: 1px solid #252525;
+  border-bottom: 1px solid var(--line);
   vertical-align: middle;
   white-space: nowrap;
 }
+
 .batch-table th {
-  background-color: #121212;
-  color: #fff;
+  color: var(--tx-2);
+  font-size: 12px;
   font-weight: 600;
-  border-bottom: 1px solid #333;
+  letter-spacing: 0.03em;
+  border-bottom-color: var(--white);
 }
+
 .batch-table tbody tr:hover td {
-  background-color: #181818;
+  background: var(--panel-2);
 }
+
 .batch-table tbody tr:last-child td {
-  border-bottom: none;
+  border-bottom: 0;
 }
+
 .cell-file {
   max-width: 320px;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: monospace;
-  font-size: 0.92em;
-}
-.cell-muted {
-  color: #888;
 }
 
-.status-pill {
-  display: inline-block;
-  padding: 1px 8px;
-  border-radius: 3px;
-  font-size: 0.9em;
-  white-space: nowrap;
-}
-.status-pill--current {
-  background-color: #2e7d32;
-  color: #fff;
-}
-.status-pill--outdated {
-  background-color: #fbc02d;
-  color: #000;
-}
-.status-pill--unknown {
-  background-color: #333;
-  color: #ccc;
+.cell-muted {
+  color: var(--tx-3);
 }
 </style>
