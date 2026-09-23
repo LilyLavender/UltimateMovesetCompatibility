@@ -1,41 +1,32 @@
 <template>
-  <v-container v-if="series">
-    <!-- Header -->
-    <v-row class="series-header">
-      <v-col cols="12" class="d-flex align-center gap">
-        <v-img
-          v-if="series.seriesIconUrl"
-          :src="getFullImageUrl(series.seriesIconUrl)"
-          :alt="`${series.seriesName} icon`"
-          width="64"
-          max-width="64"
-          height="64"
-          max-height="64"
-          class="series-icon"
-        />
-        <div>
-          <h1 class="series-name">{{ series.seriesName }}</h1>
-          <p class="series-count">
-            {{ series.movesetCount }} {{ series.movesetCount === 1 ? 'moveset' : 'movesets' }}
-          </p>
-        </div>
-        <router-link
-          v-if="canEdit"
-          :to="{ name: 'EditSeries', params: { seriesId: series.seriesId } }"
-          class="unvisitable ml-4"
-        >
-          <v-icon>mdi-pencil</v-icon>
-        </router-link>
-      </v-col>
-    </v-row>
+  <PageShell :title="series?.seriesName ?? 'Series'" :head="false">
+    <div v-if="series" class="series-meta">
+      <img
+        v-if="series.seriesIconUrl"
+        :src="getFullImageUrl(series.seriesIconUrl)"
+        :alt="`${series.seriesName} icon`"
+        class="series-meta__icon"
+      />
+      <span class="series-meta__count">
+        {{ series.movesetCount }} {{ series.movesetCount === 1 ? 'moveset' : 'movesets' }}
+      </span>
+      <AppButton
+        v-if="canEdit"
+        :to="{ name: 'EditSeries', params: { seriesId: series.seriesId } }"
+        variant="ghost"
+        size="sm"
+        icon="mdi-pencil"
+      >
+        Edit series
+      </AppButton>
+    </div>
 
-    <!-- Movesets -->
-    <v-row>
-      <v-col cols="12">
-        <MovesetList :movesets="movesets" />
-      </v-col>
-    </v-row>
-  </v-container>
+    <SkeletonList v-if="loading" />
+    <template v-else-if="series">
+      <MovesetList v-if="movesets.length" :movesets="movesets" />
+      <EmptyState v-else message="No movesets in this series yet." />
+    </template>
+  </PageShell>
 </template>
 
 <script setup>
@@ -43,6 +34,10 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useHead } from '@unhead/vue'
 import api from '@/services/api'
+import PageShell from '@/components/PageShell.vue'
+import AppButton from '@/components/AppButton.vue'
+import SkeletonList from '@/components/SkeletonList.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import MovesetList from '@/components/MovesetList.vue'
 import { UserType } from '@/globals'
 
@@ -53,6 +48,7 @@ const seriesId = parseInt(route.params.seriesId)
 const series = ref(null)
 const movesets = ref([])
 const canEdit = ref(false)
+const loading = ref(true)
 const apiUrl = import.meta.env.VITE_API_URL
 
 const getFullImageUrl = (path) => (path?.startsWith('/') ? `${apiUrl}${path}` : path)
@@ -112,28 +108,28 @@ onMounted(async () => {
         query: { httpCode: '404 Not Found', reason: 'This series is not available.' },
       })
     }
+  } finally {
+    loading.value = false
   }
 })
 </script>
 
 <style scoped>
-.series-header {
-  margin-top: 1.5em;
-  margin-bottom: 1em;
+.series-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
 }
-.gap {
-  gap: 1.25rem;
-}
-.series-icon {
+
+.series-meta__icon {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
   filter: brightness(4.35);
-  flex-shrink: 0;
 }
-.series-name {
-  font-size: 3em;
-  line-height: 1.1;
-}
-.series-count {
-  color: #888;
-  margin-top: 0.1em;
+
+.series-meta__count {
+  color: var(--tx-2);
 }
 </style>

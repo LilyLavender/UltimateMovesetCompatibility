@@ -1,22 +1,31 @@
 <template>
-  <v-container>
-    <h1 class="mb-4 page-title no-select">Blog</h1>
+  <PageShell title="Blog">
+    <template #subnav>
+      <SubNav section="blog" label="Blog" />
+    </template>
 
-    <v-alert v-if="error" type="error" class="mb-4">{{ error }}</v-alert>
+    <p v-if="error" class="note note--err">{{ error }}</p>
 
-    <div v-else>
-      <p class="router-link">
-        <i class="mdi mdi-arrow-right-bottom"></i>
-        Want to add to the blog? Contact an admin
-      </p>
-
-      <BlogPost v-for="post in blogPosts" :key="post.blogPostId" :post="post" />
-    </div>
-  </v-container>
+    <template v-else>
+      <p class="blog-hint">Want to add to the blog? Contact an admin.</p>
+      <div v-if="loading" class="blog-list" aria-busy="true">
+        <SkeletonPanel :lines="4" />
+        <SkeletonPanel :lines="3" />
+      </div>
+      <div v-else-if="blogPosts.length" class="blog-list">
+        <BlogPost v-for="post in blogPosts" :key="post.blogPostId" :post="post" />
+      </div>
+      <EmptyState v-else message="No posts yet." />
+    </template>
+  </PageShell>
 </template>
 
 <script setup>
 import { onMounted, ref } from 'vue'
+import PageShell from '@/components/PageShell.vue'
+import SubNav from '@/components/SubNav.vue'
+import SkeletonPanel from '@/components/SkeletonPanel.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import BlogPost from '@/components/BlogPost.vue'
 import api from '@/services/api'
 
@@ -29,7 +38,7 @@ onMounted(async () => {
     const response = await api.get('/blog')
     blogPosts.value = response.data.sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate))
   } catch {
-    error.value = 'Failed to load blog posts.'
+    error.value = 'Could not load the blog. Try again in a moment.'
   } finally {
     loading.value = false
   }
@@ -37,13 +46,28 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.page-title {
-  font-size: 5em;
-  margin-top: 0.5em;
+.blog-hint {
+  margin: 0 0 18px;
+  color: var(--tx-3);
+  font-size: 13px;
 }
 
-.router-link {
-  margin-top: -1.75em;
-  margin-bottom: 1em;
+.blog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.note {
+  padding: 10px 14px;
+  border: 1px solid var(--line-2);
+  border-left: 4px solid var(--tx-3);
+  background: var(--panel);
+  color: var(--tx-2);
+  font-size: 14px;
+}
+
+.note--err {
+  border-left-color: var(--err);
 }
 </style>

@@ -31,12 +31,43 @@ namespace CustomCharInfo.server.Controllers
             _offsets = offsets;
         }
 
-        private IQueryable<HookDto> ProjectHooks(IQueryable<Hook> hooks, GameVersion? latest)
+        // Which movesets the requester may count or list as users of a hook.
+        // Admins see every moveset; a modder sees public ones plus their own; anyone else sees public ones.
+        // Blocked review states hide a moveset from everyone but its owner and admins, as on every public listing.
+        private sealed record HookVisibility(int? ModderId, bool SeeAll, List<int> BlockedMovesetIds);
+
+        private async Task<HookVisibility> GetHookVisibilityAsync()
+        {
+            var user = await _userManager.GetRequesterSummaryAsync(_context, User);
+            var seeAll = user?.IsAdmin == true;
+            var logs = await _context.ActionLogs
+                .AsNoTracking()
+                .Where(a => a.ItemTypeId == ItemTypes.Moveset)
+                .Select(a => new { a.ItemId, a.AcceptanceStateId, a.CreatedAt })
+                .ToListAsync();
+            var blocked = logs
+                .GroupBy(l => l.ItemId)
+                .Select(g => g.OrderByDescending(l => l.CreatedAt).First())
+                .Where(l => AcceptanceStates.Blocked.Contains(l.AcceptanceStateId))
+                .Select(l => l.ItemId)
+                .ToList();
+            return new HookVisibility(user?.ModderId, seeAll, blocked);
+        }
+
+        private IQueryable<HookDto> ProjectHooks(IQueryable<Hook> hooks, GameVersion? latest, HookVisibility visibility)
         {
             var latestId = latest?.GameVersionId ?? 0;
             var latestName = latest?.Name;
+            var modderId = visibility.ModderId;
+            var seeAll = visibility.SeeAll;
+            var blocked = visibility.BlockedMovesetIds;
             return hooks.Select(h => new HookDto
             {
+                UsedByCount = h.MovesetHooks.Count(mh => seeAll
+                    || (modderId != null
+                        && (mh.Moveset.MovesetModders.Any(mm => mm.ModderId == modderId)
+                            || mh.Moveset.MovesetEditors.Any(me => me.ModderId == modderId)))
+                    || (mh.Moveset.PrivateMoveset != true && !blocked.Contains(mh.MovesetId))),
                 HookId = h.HookId,
                 Offset = h.Offset,
                 GameVersion = latestName,
@@ -69,7 +100,8 @@ namespace CustomCharInfo.server.Controllers
         public async Task<ActionResult<IEnumerable<HookDto>>> GetHooks()
         {
             var latest = await _offsets.GetLatestVersionAsync();
-            var hooks = await ProjectHooks(_context.Hooks.AsNoTracking(), latest).ToListAsync();
+            var visibility = await GetHookVisibilityAsync();
+            var hooks = await ProjectHooks(_context.Hooks.AsNoTracking(), latest, visibility).ToListAsync();
             return Ok(hooks);
         }
 
@@ -105,11 +137,32 @@ namespace CustomCharInfo.server.Controllers
         public async Task<ActionResult<HookDto>> GetHook(int id)
         {
             var latest = await _offsets.GetLatestVersionAsync();
-            var hook = await ProjectHooks(_context.Hooks.AsNoTracking().Where(h => h.HookId == id), latest)
+            var visibility = await GetHookVisibilityAsync();
+            var hook = await ProjectHooks(_context.Hooks.AsNoTracking().Where(h => h.HookId == id), latest, visibility)
                 .FirstOrDefaultAsync();
 
             if (hook == null)
                 return NotFound();
+
+            var modderId = visibility.ModderId;
+            var seeAll = visibility.SeeAll;
+            var blocked = visibility.BlockedMovesetIds;
+            hook.UsedBy = await _context.MovesetHooks
+                .AsNoTracking()
+                .Where(mh => mh.HookId == id)
+                .Where(mh => seeAll
+                    || (modderId != null
+                        && (mh.Moveset.MovesetModders.Any(mm => mm.ModderId == modderId)
+                            || mh.Moveset.MovesetEditors.Any(me => me.ModderId == modderId)))
+                    || (mh.Moveset.PrivateMoveset != true && !blocked.Contains(mh.MovesetId)))
+                .OrderBy(mh => mh.Moveset.ModdedCharName)
+                .Select(mh => new HookUsedByDto
+                {
+                    MovesetId = mh.MovesetId,
+                    ModdedCharName = mh.Moveset.ModdedCharName,
+                    SlottedId = mh.Moveset.SlottedId
+                })
+                .ToListAsync();
 
             return Ok(hook);
         }

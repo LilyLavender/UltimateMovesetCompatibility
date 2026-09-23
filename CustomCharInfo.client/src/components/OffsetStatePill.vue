@@ -1,34 +1,29 @@
 <template>
   <v-menu open-on-hover :open-delay="150" :close-on-content-click="false" location="bottom">
     <template #activator="{ props: menuProps }">
-      <span
+      <StatusTag
         v-bind="{ ...menuProps, ...$attrs }"
+        :offset-state="entry.offsetStateId"
         class="offset-pill"
-        :class="`offset-state-${entry.offsetStateId}`"
         tabindex="0"
-      >
-        {{ OFFSET_STATE_NAMES[entry.offsetStateId] || entry.offsetState }}
-      </span>
+      />
     </template>
 
-    <v-card color="#262626" max-width="360px" class="pill-card">
-      <v-card-text class="pill-text">
-        <p>{{ explanation }}</p>
-        <p v-if="!isConfirmed && canConfirm" class="mt-2">
-          Checked it in {{ entry.gameVersion }} yourself? Confirm it so other modders know it is
-          right, or open the hook to correct it.
-        </p>
-        <p v-else-if="!isConfirmed" class="mt-2">
-          A modder who has checked it in the game can confirm it from here.
-        </p>
-      </v-card-text>
-      <v-card-actions v-if="!isConfirmed && canConfirm">
-        <v-spacer />
-        <v-btn size="small" class="confirm-button" :loading="saving" @click="confirm">
+    <div class="panel pill-card">
+      <p class="pill-text">{{ explanation }}</p>
+      <p v-if="!isConfirmed && canConfirm" class="pill-text">
+        Checked it in {{ entry.gameVersion }} yourself? Confirm it so other modders know it is
+        right, or open the hook to correct it.
+      </p>
+      <p v-else-if="!isConfirmed" class="pill-text">
+        A modder who has checked it in the game can confirm it from here.
+      </p>
+      <div v-if="!isConfirmed && canConfirm" class="pill-actions">
+        <AppButton size="sm" variant="primary" icon="mdi-check" :busy="saving" @click="confirm">
           Confirm for {{ entry.gameVersion }}
-        </v-btn>
-      </v-card-actions>
-    </v-card>
+        </AppButton>
+      </div>
+    </div>
   </v-menu>
 </template>
 
@@ -37,11 +32,13 @@ import { ref, computed } from 'vue'
 import { format } from 'date-fns'
 import api from '@/services/api'
 import { useNotify } from '@/composables/useNotify'
-import { OffsetState, OFFSET_STATE_NAMES } from '@/globals'
+import { OffsetState } from '@/globals'
+import StatusTag from '@/components/StatusTag.vue'
+import AppButton from '@/components/AppButton.vue'
 
-// A hook offset's state as a pill. Hovering explains how the offset came to be;
+// A hook offset's state as a tag. Hovering explains how the offset came to be;
 // modders can confirm an unverified one without leaving the page.
-// Attributes such as a margin class go on the pill itself, not on the menu that wraps it.
+// Attributes such as a margin class go on the tag itself, not on the menu that wraps it.
 defineOptions({ inheritAttrs: false })
 
 const props = defineProps({
@@ -90,36 +87,28 @@ const confirm = async () => {
 
 <style scoped>
 .offset-pill {
-  display: inline-block;
-  padding: 1px 7px;
-  border-radius: 10px;
-  font-size: 0.7rem;
-  font-weight: 500;
-  white-space: nowrap;
-  vertical-align: middle;
   cursor: help;
 }
-.offset-state-1 {
-  background-color: #2e7d32;
-  color: white;
-}
-.offset-state-2 {
-  background-color: #fbc02d;
-  color: black;
-}
-.offset-state-3 {
-  background-color: #ef6c00;
-  color: white;
+
+.pill-card {
+  max-width: 360px;
+  padding: 14px 16px;
+  border-color: var(--line-2);
 }
 
 .pill-text {
-  font-size: 0.85rem;
-  line-height: 1.4;
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
 }
 
-.confirm-button {
-  background-color: #2e7d32;
-  color: white;
-  text-transform: none;
+.pill-text + .pill-text {
+  margin-top: 8px;
+}
+
+.pill-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
 }
 </style>

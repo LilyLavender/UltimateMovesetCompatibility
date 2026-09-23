@@ -29,20 +29,15 @@
           </h1>
         </div>
         <div class="left-overlay">
-          <div v-if="moveset.isJokeMoveset" class="moveset-warning joke-warning">
-            <span class="pill pill--joke"
-              ><v-icon size="14">mdi-egg-easter</v-icon> Joke Moveset</span
-            >
+          <div v-if="moveset.isJokeMoveset">
+            <StatusTag variant="warn" icon="mdi-egg-easter">Joke moveset</StatusTag>
           </div>
           <div v-if="warningInfo" class="moveset-warning">
             This moveset is
-            <span v-if="warningInfo.isPrivate" class="pill pill--private">Private</span
-            ><span v-if="warningInfo.isPrivate && warningInfo.pendingType"> and </span
-            ><span
-              v-if="warningInfo.pendingType"
-              :class="['pill', warningInfo.pendingType === 'Admin' ? 'pill--admin' : 'pill--user']"
-              >Pending {{ warningInfo.pendingType }} Action</span
-            >. It can only be seen by {{ singleModder ? 'you' : 'its creators' }} and site admins.
+            <StatusTag v-if="warningInfo.isPrivate" variant="err">Private</StatusTag>
+            <span v-if="warningInfo.isPrivate && warningInfo.pendingType"> and </span>
+            <StatusTag v-if="warningInfo.pendingType" :state="warningInfo.stateId" />. It can only
+            be seen by {{ singleModder ? 'you' : 'its creators' }} and site admins.
           </div>
           <div class="like-row">
             <button
@@ -53,15 +48,15 @@
             >
               <v-icon>{{ userLiked ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
             </button>
-            <span class="like-count">{{ likeCount }}</span>
-            <router-link
+            <HudReadout label="Likes" :value="likeCount" tone="info" />
+            <AppButton
               v-if="canEdit"
               :to="{ name: 'EditMoveset', params: { movesetId: route.params.movesetId } }"
-              class="edit-link unvisitable"
-              title="Edit moveset"
-            >
-              <v-icon>mdi-pencil</v-icon>
-            </router-link>
+              variant="ghost"
+              size="sm"
+              icon="mdi-pencil"
+              aria-label="Edit moveset"
+            />
           </div>
         </div>
         <img
@@ -81,7 +76,7 @@
           <v-col cols="12" md="5">
             <div class="info-card basic-info-card">
               <!-- Header -->
-              <h1>Basic Info</h1>
+              <h3 class="info-card__title">Basic info</h3>
 
               <!-- Creator(s) -->
               <div v-if="moveset.movesetModders?.length" class="align-center">
@@ -193,7 +188,7 @@
           <!-- Function usage -->
           <v-col cols="12" md="3">
             <div class="mb-4 info-card">
-              <h1>Functions</h1>
+              <h3 class="info-card__title">Functions</h3>
               <div class="functions-list">
                 <v-tooltip
                   text="Runs once every frame for all characters"
@@ -257,7 +252,7 @@
           <!-- Dependencies -->
           <v-col cols="12" md="4">
             <div class="mb-4 info-card">
-              <h1>Dependencies</h1>
+              <h3 class="info-card__title">Dependencies</h3>
               <ul v-if="moveset.movesetDependencies.length > 0">
                 <li v-for="md in moveset.movesetDependencies" :key="md.dependencyId">
                   •
@@ -280,7 +275,7 @@
           <!-- Articles -->
           <v-col cols="12" md="6">
             <div class="mb-4 info-card">
-              <h1>Articles</h1>
+              <h3 class="info-card__title">Articles</h3>
               <ul v-if="moveset.movesetArticles.length > 0">
                 <li
                   v-for="ma in moveset.movesetArticles"
@@ -306,7 +301,7 @@
           <!-- Hooks -->
           <v-col cols="12" md="6">
             <div class="info-card">
-              <h1>Hooks</h1>
+              <h3 class="info-card__title">Hooks</h3>
               <ul v-if="moveset.movesetHooks.length > 0">
                 <li
                   v-for="mh in moveset.movesetHooks"
@@ -351,6 +346,9 @@ import {
 import { dateOnlyStringToLocalDate } from '@/services/dateOnly'
 import { formatOffset } from '@/services/offsets'
 import { formatSlotRange } from '@/services/slots'
+import StatusTag from '@/components/StatusTag.vue'
+import HudReadout from '@/components/HudReadout.vue'
+import AppButton from '@/components/AppButton.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -425,7 +423,7 @@ const warningInfo = computed(() => {
         ? 'User'
         : null
   if (!isPrivate && !pendingType) return null
-  return { isPrivate, pendingType }
+  return { isPrivate, pendingType, stateId }
 })
 
 // Calculate the releaseState to display
@@ -707,21 +705,28 @@ const StatusIcon = defineComponent({
 }
 
 .basic-info-card p {
-  color: #999;
+  color: var(--tx-2);
 }
 .basic-info-card p strong,
 .basic-info-card p a {
-  color: #dedede;
+  color: var(--tx);
 }
 
 .info-card {
   background-color: #12121280;
-  padding: 0.5em 1em 0.5em 1em;
+  border: 1px solid var(--line);
+  padding: 0.6em 1em 0.7em;
   margin: 1em 0.5em;
-  border-radius: 3px;
   position: relative;
   z-index: 20;
   backdrop-filter: blur(2px) saturate(0.8) brightness(0.9);
+}
+
+.info-card__title {
+  margin: 0 0 0.35em;
+  font-size: 1.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
 }
 
 .inline-series {
@@ -785,16 +790,6 @@ strong {
   display: inline-block;
 }
 
-.edit-link {
-  display: inline-block;
-  font-size: 16px;
-  transition: color 0.2s ease-in-out;
-}
-
-.edit-link:hover {
-  color: #fff;
-}
-
 .left-overlay {
   position: absolute;
   top: 5.5em;
@@ -806,52 +801,14 @@ strong {
 }
 
 .moveset-warning {
-  font-size: 0.75em;
-  color: #ccc;
-  max-width: 22.5em;
+  font-size: 0.8em;
+  color: var(--tx-2);
+  max-width: 24em;
   background-color: #12121299;
-  padding: 0.35em 0.6em;
-  border-radius: 4px;
+  border: 1px solid var(--line);
+  padding: 0.4em 0.7em;
   backdrop-filter: blur(3px);
-  line-height: 1.5;
-}
-
-.pill {
-  display: inline-block;
-  font-size: 0.9em;
-  padding: 0.05em 0.45em;
-  border-radius: 999px;
-  font-weight: bold;
-  color: #111;
-  vertical-align: baseline;
-}
-
-.pill--private {
-  background-color: rgb(220, 50, 50);
-  color: #fff;
-}
-
-.pill--admin {
-  background-color: rgb(52, 194, 241);
-}
-
-.pill--user {
-  background-color: rgb(241, 241, 52);
-}
-
-.pill--joke {
-  background-color: #ff733c;
-  color: #111;
-  display: inline-flex;
-  align-items: center;
-  font-size: 12px;
-  gap: 4px;
-}
-
-.joke-warning {
-  background: none;
-  padding: 0;
-  backdrop-filter: none;
+  line-height: 1.6;
 }
 
 .page-title-subtitle {
@@ -865,25 +822,33 @@ strong {
 .like-row {
   display: flex;
   align-items: center;
-  gap: 0.4em;
-  color: #ccc;
+  gap: 0.6em;
+  color: var(--tx-2);
 }
 
 .like-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
   background: none;
-  border: none;
+  border: 1px solid var(--line-2);
+  color: var(--tx);
   cursor: pointer;
   padding: 0;
   line-height: 1;
-  transition: color 0.15s;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
 }
 
-.like-btn:hover {
-  color: #fff;
-}
-
-.like-count {
-  font-size: 0.9em;
+.like-btn:hover,
+.like-btn--liked {
+  background: var(--white);
+  border-color: var(--white);
+  color: #000;
 }
 
 /* Display of checkmark/x */
@@ -899,10 +864,57 @@ li {
 }
 
 .mdi-check-bold {
-  color: lime;
+  color: var(--ok);
 }
 
 .mdi-close-thick {
-  color: red;
+  color: var(--err);
+}
+
+/* Mobile: the two columns stack, the character art sits above the cards, and the title keeps its slab. */
+@media (max-width: 959px) {
+  .moveset-detail {
+    padding: 1rem;
+  }
+
+  .moveset-columns {
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .column-left {
+    min-height: 0;
+  }
+
+  .character-image {
+    position: relative;
+    width: 100%;
+    margin-top: 1em;
+  }
+
+  .title-container {
+    position: relative;
+    width: auto;
+    max-width: 100%;
+  }
+
+  .page-title {
+    font-size: 2.8em;
+    margin: 0 0.25em 0 0.6em;
+    white-space: normal;
+  }
+
+  .left-overlay {
+    position: static;
+    margin: 1em 0 0;
+  }
+
+  .column-right {
+    margin-top: 1.5em;
+  }
+
+  .info-card {
+    margin: 0.5em 0;
+  }
 }
 </style>

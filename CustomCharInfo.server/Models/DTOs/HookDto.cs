@@ -13,5 +13,18 @@ namespace CustomCharInfo.server.Models.DTOs
         public string Description { get; set; }
         public int HookableStatusId { get; set; }
         public string HookableStatus { get; set; }
+
+        // How many movesets the requester may see use this hook.
+        public int UsedByCount { get; set; }
+
+        // Those movesets, filled in by GET {id} only.
+        public List<HookUsedByDto>? UsedBy { get; set; }
+    }
+
+    public class HookUsedByDto
+    {
+        public int MovesetId { get; set; }
+        public string ModdedCharName { get; set; }
+        public string SlottedId { get; set; }
     }
 }
