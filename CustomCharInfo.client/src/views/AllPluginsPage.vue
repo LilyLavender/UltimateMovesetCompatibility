@@ -1,66 +1,84 @@
 <template>
-  <v-container max-width="1200px">
-    <h1 class="mb-5 page-title no-select">All Plugins</h1>
+  <PageShell
+    title="All plugins"
+    tier="wide"
+    :back-to="{ name: 'AdminPortal' }"
+    back-label="Admin portal"
+  >
+    <SectionHeading title="Registered versions" :count="versionRows.length" />
+    <SkeletonTable v-if="loading" :headers="headers.map((h) => h.title)" :rows="8" />
+    <TableScroll v-else min-width="900px">
+      <v-data-table
+        :items="versionRows"
+        :headers="headers"
+        item-key="pluginVersionId"
+        density="comfortable"
+      >
+        <template #item.isCurrent="{ value }">
+          <StatusTag v-if="value" variant="ok">Current</StatusTag>
+          <span v-else class="faint">No</span>
+        </template>
+        <template #item.firstCheckedAt="{ item }">
+          {{ item.firstCheckedAt ? new Date(item.firstCheckedAt).toLocaleString() : 'Never' }}
+        </template>
+        <template #item.lastCheckedAt="{ item }">
+          {{ item.lastCheckedAt ? new Date(item.lastCheckedAt).toLocaleString() : 'Never' }}
+        </template>
+      </v-data-table>
+    </TableScroll>
 
-    <v-data-table
-      class="dark-table"
-      :items="versionRows"
-      :headers="headers"
-      item-key="pluginVersionId"
-      density="comfortable"
-    >
-      <template #item.firstCheckedAt="{ item }">
-        {{ item.firstCheckedAt ? new Date(item.firstCheckedAt).toLocaleString() : 'Never' }}
-      </template>
-      <template #item.lastCheckedAt="{ item }">
-        {{ item.lastCheckedAt ? new Date(item.lastCheckedAt).toLocaleString() : 'Never' }}
-      </template>
-    </v-data-table>
-
-    <h2 class="mt-8 mb-3">Unmatched Hashes</h2>
-    <p class="mb-4 helper-text">
-      Hashes people have checked that don't match any registered plugin version.
-    </p>
-
-    <v-data-table
-      class="dark-table"
-      :items="unknownHashes"
-      :headers="unknownHeaders"
-      item-key="hash"
-      density="comfortable"
-    >
-      <template #item.firstCheckedAt="{ item }">
-        {{ new Date(item.firstCheckedAt).toLocaleString() }}
-      </template>
-      <template #item.lastCheckedAt="{ item }">
-        {{ new Date(item.lastCheckedAt).toLocaleString() }}
-      </template>
-    </v-data-table>
-  </v-container>
+    <SectionHeading title="Unmatched hashes" :count="unknownHashes.length" />
+    <p class="hint">Hashes people have checked that don't match any registered plugin version.</p>
+    <SkeletonTable v-if="loading" :headers="unknownHeaders.map((h) => h.title)" :rows="4" />
+    <TableScroll v-else min-width="720px">
+      <v-data-table
+        :items="unknownHashes"
+        :headers="unknownHeaders"
+        item-key="hash"
+        density="comfortable"
+      >
+        <template #item.hash="{ value }">
+          <span class="mono">{{ value }}</span>
+        </template>
+        <template #item.firstCheckedAt="{ item }">
+          {{ new Date(item.firstCheckedAt).toLocaleString() }}
+        </template>
+        <template #item.lastCheckedAt="{ item }">
+          {{ new Date(item.lastCheckedAt).toLocaleString() }}
+        </template>
+      </v-data-table>
+    </TableScroll>
+  </PageShell>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
+import PageShell from '@/components/PageShell.vue'
+import SectionHeading from '@/components/SectionHeading.vue'
+import StatusTag from '@/components/StatusTag.vue'
+import TableScroll from '@/components/TableScroll.vue'
+import SkeletonTable from '@/components/SkeletonTable.vue'
 
 const plugins = ref([])
 const unknownHashes = ref([])
+const loading = ref(true)
 
 const headers = [
   { title: 'Plugin', key: 'pluginName' },
-  { title: 'Attached To', key: 'attachedTo' },
+  { title: 'Attached to', key: 'attachedTo' },
   { title: 'Version', key: 'versionLabel' },
   { title: 'Current', key: 'isCurrent' },
-  { title: 'Check Count', key: 'checkCount' },
-  { title: 'First Checked', key: 'firstCheckedAt' },
-  { title: 'Last Checked', key: 'lastCheckedAt' },
+  { title: 'Checks', key: 'checkCount', align: 'end' },
+  { title: 'First checked', key: 'firstCheckedAt' },
+  { title: 'Last checked', key: 'lastCheckedAt' },
 ]
 
 const unknownHeaders = [
   { title: 'Hash', key: 'hash' },
-  { title: 'Check Count', key: 'checkCount' },
-  { title: 'First Checked', key: 'firstCheckedAt' },
-  { title: 'Last Checked', key: 'lastCheckedAt' },
+  { title: 'Checks', key: 'checkCount', align: 'end' },
+  { title: 'First checked', key: 'firstCheckedAt' },
+  { title: 'Last checked', key: 'lastCheckedAt' },
 ]
 
 // Flatten to one row per version so check counts/dates are visible per-version
@@ -89,15 +107,16 @@ onMounted(async () => {
     unknownHashes.value = unknownRes.data
   } catch (err) {
     console.error('Failed to fetch plugins:', err)
+  } finally {
+    loading.value = false
   }
 })
 </script>
 
 <style scoped>
-.page-title {
-  font-size: 2.5rem;
-}
-.helper-text {
-  color: #b0b0b0;
+.hint {
+  margin: -6px 0 12px;
+  color: var(--tx-3);
+  font-size: 13px;
 }
 </style>

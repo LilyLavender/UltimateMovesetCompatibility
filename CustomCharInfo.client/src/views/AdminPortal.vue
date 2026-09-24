@@ -1,108 +1,92 @@
 <template>
-  <v-container max-width="1020px">
-    <h1 class="mb-4 page-title no-select">Admin Portal</h1>
+  <PageShell title="Admin portal">
+    <template v-for="group in adminTiles" :key="group.group">
+      <SectionHeading :title="group.group" />
+      <div class="tiles">
+        <ToolTile
+          v-for="tile in group.items"
+          :key="tile.label"
+          :to="tile.to"
+          :icon="tile.icon"
+          :label="tile.label"
+          :description="tile.description"
+          :badge="tile.badge === 'pendingAdmin' && pendingAdminCount ? pendingAdminCount : ''"
+        />
+      </div>
+    </template>
 
-    <div class="admin-links">
-      <router-link :to="{ name: 'AdminAccepter' }" class="unvisitable ml-2 admin-link">
-        <v-icon left>mdi-shield-check</v-icon>
-        Action Log Manager
-      </router-link>
-
-      <router-link :to="{ name: 'NotificationSimulator' }" class="unvisitable ml-2 admin-link">
-        <v-icon left>mdi-bell-cog</v-icon>
-        Notification Simulator
-      </router-link>
-
-      <router-link :to="{ name: 'AdminPicks' }" class="unvisitable ml-2 admin-link">
-        <v-icon left>mdi-account-check</v-icon>
-        Admin Picks
-      </router-link>
-
-      <router-link :to="{ name: 'HiddenContent' }" class="unvisitable ml-2 admin-link">
-        <v-icon left>mdi-eye-off</v-icon>
-        Hidden Content
-      </router-link>
-
-      <router-link :to="{ name: 'AddBlogPost' }" class="unvisitable ml-2 admin-link">
-        <v-icon left>mdi-post</v-icon>
-        Add blog post
-      </router-link>
-
-      <router-link :to="{ name: 'UserList' }" class="unvisitable ml-2 admin-link">
-        <v-icon left>mdi-account-group</v-icon>
-        All users
-      </router-link>
-
-      <router-link :to="{ name: 'AdminPasswordResetter' }" class="unvisitable ml-2 admin-link">
-        <v-icon left>mdi-account-lock-open</v-icon>
-        Reset passwords
-      </router-link>
-
-      <router-link :to="{ name: 'ImageGarbageCollector' }" class="unvisitable ml-2 admin-link">
-        <v-icon left>mdi-image-remove</v-icon>
-        Image Garbage Collector
-      </router-link>
-
-      <router-link :to="{ name: 'BannerImageManager' }" class="unvisitable ml-2 admin-link">
-        <v-icon left>mdi-image-multiple</v-icon>
-        Manage Banner Images
-      </router-link>
-
-      <router-link :to="{ name: 'MovesetDeleteManager' }" class="unvisitable ml-2 admin-link">
-        <v-icon left>mdi-delete-sweep</v-icon>
-        Delete Movesets
-      </router-link>
-
-      <router-link :to="{ name: 'AllPlugins' }" class="unvisitable ml-2 admin-link">
-        <v-icon left>mdi-puzzle</v-icon>
-        All Plugins
-      </router-link>
-
-      <router-link :to="{ name: 'RepoReleases' }" class="unvisitable ml-2 admin-link">
-        <v-icon left>mdi-github</v-icon>
-        Repo Releases
-      </router-link>
-
-      <router-link :to="{ name: 'GameVersions' }" class="unvisitable ml-2 admin-link">
-        <v-icon left>mdi-update</v-icon>
-        Game Versions
-      </router-link>
-    </div>
-
-    <!-- Action Log Dashboard -->
-    <ActionLogList view-all class="mt-5" />
-  </v-container>
+    <SectionHeading
+      title="Notifications"
+      :to="{ name: 'AdminAccepter' }"
+      link-label="Action log manager"
+    />
+    <section class="panel">
+      <ActionLogList view-all />
+    </section>
+  </PageShell>
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
+import api from '@/services/api'
+import { ItemType, PENDING_ADMIN_STATES } from '@/globals'
+import { latestLogsByItem } from '@/services/acceptanceStateDisplay'
+import { adminTiles } from '@/navigation'
+import PageShell from '@/components/PageShell.vue'
+import SectionHeading from '@/components/SectionHeading.vue'
+import ToolTile from '@/components/ToolTile.vue'
 import ActionLogList from '@/components/ActionLogList.vue'
+
+const pendingAdminCount = ref(0)
+
+// The badge on the action log manager tile: items whose newest log is waiting on an admin.
+onMounted(async () => {
+  try {
+    const res = await api.get('/logs', {
+      params: {
+        acceptanceStates: PENDING_ADMIN_STATES,
+        itemTypes: Object.values(ItemType),
+        viewAll: true,
+      },
+    })
+    let count = 0
+    for (const typeId of Object.values(ItemType)) {
+      for (const log of latestLogsByItem(
+        res.data,
+        typeId,
+        (item) =>
+          item?.movesetId ??
+          item?.modderId ??
+          item?.seriesId ??
+          item?.hookId ??
+          item?.pluginVersionId
+      ).values()) {
+        if (PENDING_ADMIN_STATES.includes(log.acceptanceState?.acceptanceStateId)) count++
+      }
+    }
+    pendingAdminCount.value = count
+  } catch {
+    pendingAdminCount.value = 0
+  }
+})
 </script>
 
 <style scoped>
-.page-title {
-  font-size: 5em;
-  margin-top: 0.5em;
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
 }
 
-.admin-links {
-  margin: 0 auto;
-  width: fit-content;
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 0.75em;
-  max-width: 75%;
+@media (max-width: 959px) {
+  .tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-.admin-links > * {
-  background-color: #1e1e1e;
-  padding: 0.5em 1em;
-  border-radius: 6px;
-  text-decoration: none;
-  text-wrap: nowrap;
-}
-
-.admin-link .v-icon {
-  margin-top: -4px;
+@media (max-width: 599px) {
+  .tiles {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

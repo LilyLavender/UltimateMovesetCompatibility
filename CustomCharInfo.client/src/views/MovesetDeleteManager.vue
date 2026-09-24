@@ -1,50 +1,61 @@
 <template>
-  <v-container max-width="1020px">
-    <h1 class="mb-5 page-title no-select">Moveset Delete Manager</h1>
+  <PageShell
+    title="Delete movesets"
+    :back-to="{ name: 'AdminPortal' }"
+    back-label="Admin portal"
+    lede="Permanently deletes a moveset and everything tied to it. Action log history is kept for audit purposes."
+  >
+    <div class="toolbar">
+      <LabeledField label="Search" class="toolbar__search">
+        <v-text-field
+          v-model="search"
+          placeholder="Character name"
+          density="compact"
+          hide-details
+          clearable
+          prepend-inner-icon="mdi-magnify"
+        />
+      </LabeledField>
+      <p v-if="loaded" class="toolbar__count">
+        {{ filtered.length }} {{ pluralize(filtered.length, 'moveset') }}
+      </p>
+    </div>
 
-    <p class="mb-4 helper-text">
-      Permanently deletes a moveset and everything tied to it. Action log history is kept for audit
-      purposes.
-    </p>
-
-    <v-text-field
-      v-model="search"
-      label="Search by character name"
-      density="comfortable"
-      class="mb-4"
-      clearable
-    />
-
-    <p v-if="loaded" class="mb-4 summary-text">
-      {{ filtered.length }} {{ pluralize(filtered.length, 'moveset') }}.
-    </p>
-
-    <div class="rows">
-      <div v-for="item in filtered" :key="item.movesetId" class="row">
-        <div class="row-info">
-          <div class="row-name">{{ item.moddedCharName }}</div>
-          <div class="row-meta">
-            {{ item.modders.join(', ') || 'No modders listed' }} · {{ item.releaseState }}
+    <SkeletonLog v-if="!loaded" :rows="6" />
+    <ul v-else-if="filtered.length" class="rows">
+      <li v-for="item in filtered" :key="item.movesetId" class="row">
+        <div class="row__info">
+          <div class="row__name">{{ item.moddedCharName }}</div>
+          <div class="row__meta">
+            {{ item.modders.join(', ') || 'No modders listed' }}
+            <StatusTag variant="outline">{{ item.releaseState }}</StatusTag>
           </div>
         </div>
-        <v-btn
-          class="delete-btn"
-          :loading="deletingId === item.movesetId"
+        <AppButton
+          variant="danger"
+          size="sm"
+          icon="mdi-delete"
+          :busy="deletingId === item.movesetId"
           @click="deleteMoveset(item)"
         >
-          <v-icon class="mr-1">mdi-delete</v-icon>
           Delete
-        </v-btn>
-      </div>
-      <p v-if="loaded && filtered.length === 0" class="helper-text">No movesets match.</p>
-    </div>
-  </v-container>
+        </AppButton>
+      </li>
+    </ul>
+    <EmptyState v-else message="No movesets match." icon="mdi-magnify" />
+  </PageShell>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 import { useNotify } from '@/composables/useNotify'
+import PageShell from '@/components/PageShell.vue'
+import LabeledField from '@/components/LabeledField.vue'
+import AppButton from '@/components/AppButton.vue'
+import StatusTag from '@/components/StatusTag.vue'
+import SkeletonLog from '@/components/SkeletonLog.vue'
+import EmptyState from '@/components/EmptyState.vue'
 
 const notify = useNotify()
 
@@ -96,45 +107,57 @@ onMounted(loadMovesets)
 </script>
 
 <style scoped>
-.page-title {
-  font-size: 2.5rem;
+.toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
 }
-.helper-text {
-  color: #b0b0b0;
+
+.toolbar__search {
+  flex: 1;
+  max-width: 420px;
 }
-.summary-text {
-  color: #d0d0d0;
-  font-size: 1.05em;
-}
-.delete-btn {
-  text-transform: unset;
-  background-color: #7a1f1f !important;
-  color: #ffffff !important;
+
+.toolbar__count {
+  margin: 0 0 10px;
+  color: var(--tx-2);
+  font-size: 13px;
 }
 
 .rows {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  background: var(--panel);
 }
 
 .row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1em;
-  background-color: #1e1e1e;
-  border-radius: 8px;
-  padding: 0.75em 1em;
+  gap: 16px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
 }
 
-.row-name {
-  font-weight: 600;
-  color: #e2e2e2;
+.row:last-child {
+  border-bottom: 0;
 }
-.row-meta {
-  font-size: 0.85em;
-  color: #8a8a8a;
-  margin-top: 0.15em;
+
+.row__name {
+  font-weight: 600;
+}
+
+.row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+  font-size: 13px;
+  color: var(--tx-3);
 }
 </style>

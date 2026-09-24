@@ -1,72 +1,55 @@
 <template>
-  <v-container max-width="700px">
-    <!-- Page title -->
-    <h1 class="mb-1 page-title no-select">Image Hosting</h1>
+  <PageShell title="Image hosting" tier="narrow">
+    <div class="prose">
+      <p>
+        UMC used to require users to host images themselves. This requirement has been lifted, but if you still wish to self-host, here are some guidelines:
+      </p>
+      <ul>
+        <li>Make sure you're linking to an image directly and not the page the image is on.</li>
+      </ul>
 
-    <!-- Main content -->
-    <div>
-      <div class="mb-5">
-        Because UMC no longer hosts images itself, users must find a place to host moveset/series
-        images on the site. This is fairly simple, but here's some guidelines:
-        <ul>
-          <li>Make sure you're linking to an image directly and not the page the image is on.</li>
-        </ul>
-      </div>
-      <div class="mb-5">
-        Good image hosts to use include:
-        <ul>
-          <li>
-            <a href="https://lensdump.com" class="unvisitable" target="_blank">lensdump.com</a> -
-            Doesn't require sign-in, doesn't compress images.
-          </li>
-          <li>
-            <a href="https://postimage.io" class="unvisitable" target="_blank">postimage.io</a> -
-            Doesn't require sign-in, doesn't compress images.
-          </li>
-          <li>
-            <a href="https://catbox.moe" class="unvisitable" target="_blank">catbox.moe</a> -
-            Doesn't require sign-in, doesn't compress images.
-          </li>
-          <li>
-            <span class="underline">GameBanana Bitpit</span> - Works just as well as any other, but
-            needs to be unlocked. Great option if already unlocked.
-          </li>
-          <li><span class="underline">GitHub Pages</span> - Good for developers.</li>
-          <li>
-            <span class="underline">Google Drive</span> - Requires you to get the DIRECT link to the
-            image (should contain "drive-viewer"), which can be hard to access. Also needs to be
-            shared. If the image isn't embedding, one of these things is incorrect.
-          </li>
-        </ul>
-        Image hosts to avoid:
-        <ul>
-          <li>
-            Discord - Images uploaded to Discord can only be embedded for three days after upload.
-          </li>
-          <li>Imgur - Compresses images</li>
-          <li>Tinypic - Compresses images</li>
-        </ul>
-      </div>
+      <h2>Good image hosts</h2>
+      <ul>
+        <li>
+          <a href="https://lensdump.com" target="_blank" rel="noopener">lensdump.com</a>: doesn't
+          require sign-in, doesn't compress images.
+        </li>
+        <li>
+          <a href="https://postimage.io" target="_blank" rel="noopener">postimage.io</a>: doesn't
+          require sign-in, doesn't compress images.
+        </li>
+        <li>
+          <a href="https://catbox.moe" target="_blank" rel="noopener">catbox.moe</a>: doesn't
+          require sign-in, doesn't compress images.
+        </li>
+        <li>
+          <strong>GameBanana Bitpit</strong>: works just as well as any other, but needs to be
+          unlocked. Great option if already unlocked.
+        </li>
+        <li><strong>GitHub Pages</strong>: good for developers.</li>
+        <li>
+          <strong>Google Drive</strong>: requires you to get the direct link to the image (it should
+          contain "drive-viewer"), which can be hard to access. Also needs to be shared. If the
+          image isn't embedding, one of these things is incorrect.
+        </li>
+      </ul>
 
-      <p>If you have suggestions for image hosts to add, feel free to message Lily</p>
+      <h2>Image hosts to avoid</h2>
+      <ul>
+        <li>
+          Discord: images uploaded to Discord can only be embedded for three days after upload.
+        </li>
+        <li>Imgur: compresses images.</li>
+        <li>Tinypic: compresses images.</li>
+      </ul>
+
+      <p class="prose-closing">
+        If you have suggestions for image hosts to add, feel free to message Lily.
+      </p>
     </div>
-  </v-container>
+  </PageShell>
 </template>
 
-<style scoped>
-ul {
-  font-size: 16px;
-  margin-left: 2em;
-  color: grey;
-}
-code {
-  font-size: 13px;
-  background-color: #2a2a2a;
-  padding: 1px 5px;
-  border-radius: 4px;
-  color: #d4d4d4;
-}
-.underline {
-  text-decoration: underline;
-}
-</style>
+<script setup>
+import PageShell from '@/components/PageShell.vue'
+</script>

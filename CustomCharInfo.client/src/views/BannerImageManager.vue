@@ -1,56 +1,58 @@
 <template>
-  <v-container max-width="1300px">
-    <h1 class="mb-5 page-title no-select">Banner Image Manager</h1>
+  <PageShell
+    title="Banner images"
+    :back-to="{ name: 'AdminPortal' }"
+    back-label="Admin portal"
+    lede="The images in the scrolling banner on the home page."
+  >
+    <div class="toolbar">
+      <AppButton icon="mdi-upload" :busy="uploading" @click="fileInput?.click()">
+        Upload an image
+      </AppButton>
+      <input
+        ref="fileInput"
+        type="file"
+        accept="image/png,image/jpeg,image/gif,image/webp"
+        class="hidden-input"
+        @change="onFileSelected"
+      />
+      <p v-if="loaded" class="toolbar__count">
+        {{ images.length }} {{ pluralize(images.length, 'image') }}
+      </p>
+    </div>
 
-    <p class="mb-4 helper-text">
-      Manages the images shown in the scrolling banner on the home page.
-    </p>
-
-    <v-row class="mb-4" align="center">
-      <v-col cols="12" sm="6">
-        <v-btn color="primary" class="btn" :loading="uploading" @click="fileInput?.click()">
-          <v-icon class="mr-1">mdi-upload</v-icon>
-          Upload Image
-        </v-btn>
-        <input
-          ref="fileInput"
-          type="file"
-          accept="image/png,image/jpeg,image/gif,image/webp"
-          class="d-none"
-          @change="onFileSelected"
-        />
-      </v-col>
-    </v-row>
-
-    <p v-if="loaded" class="mb-4 summary-text">
-      {{ images.length }} {{ pluralize(images.length, 'image') }}.
-    </p>
-
-    <div class="tile-grid">
+    <div v-if="!loaded" class="tile-grid" aria-busy="true">
+      <Skeleton v-for="n in 6" :key="n" variant="image" width="260px" height="220px" />
+    </div>
+    <div v-else-if="images.length" class="tile-grid">
       <div v-for="item in images" :key="item.bannerImageId" class="tile">
-        <div class="tile-img-box">
-          <a :href="item.imageUrl" target="_blank" rel="noopener">
-            <img :src="item.imageUrl" class="tile-img" loading="lazy" alt="" />
-          </a>
-        </div>
-        <v-btn
-          class="delete-btn"
+        <a :href="item.imageUrl" target="_blank" rel="noopener" class="tile__img-box">
+          <img :src="item.imageUrl" class="tile__img" loading="lazy" alt="" />
+        </a>
+        <AppButton
+          variant="danger"
+          size="sm"
+          icon="mdi-delete"
           block
-          :loading="deletingId === item.bannerImageId"
+          :busy="deletingId === item.bannerImageId"
           @click="deleteImage(item)"
         >
-          <v-icon class="mr-1">mdi-delete</v-icon>
           Delete
-        </v-btn>
+        </AppButton>
       </div>
     </div>
-  </v-container>
+    <EmptyState v-else message="No banner images yet." icon="mdi-image-multiple" />
+  </PageShell>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/services/api'
 import { useNotify } from '@/composables/useNotify'
+import PageShell from '@/components/PageShell.vue'
+import AppButton from '@/components/AppButton.vue'
+import Skeleton from '@/components/Skeleton.vue'
+import EmptyState from '@/components/EmptyState.vue'
 
 const notify = useNotify()
 
@@ -114,54 +116,55 @@ onMounted(loadImages)
 </script>
 
 <style scoped>
-.page-title {
-  font-size: 2.5rem;
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
 }
-.helper-text {
-  color: #b0b0b0;
+
+.toolbar__count {
+  margin: 0;
+  color: var(--tx-2);
+  font-size: 13px;
 }
-.summary-text {
-  color: #d0d0d0;
-  font-size: 1.05em;
-}
-.btn {
-  text-transform: unset;
-  letter-spacing: 0.009375em;
-  font-size: medium;
-  background-color: #2e2e2e;
-  color: #e2e2e2;
-}
-.delete-btn {
-  text-transform: unset;
-  background-color: #7a1f1f !important;
-  color: #ffffff !important;
+
+.hidden-input {
+  display: none;
 }
 
 .tile-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 1em;
+  gap: 12px;
 }
 
 .tile {
   display: flex;
   flex-direction: column;
   width: 260px;
-  background-color: #1e1e1e;
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.tile__img-box {
+  display: block;
+  height: 150px;
+  background: var(--bg);
   overflow: hidden;
 }
 
-.tile-img-box {
-  position: relative;
-  background-color: #111;
-  height: 180px;
-  overflow: hidden;
-}
-.tile-img {
+.tile__img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+@media (max-width: 599px) {
+  .tile {
+    width: 100%;
+  }
 }
 </style>

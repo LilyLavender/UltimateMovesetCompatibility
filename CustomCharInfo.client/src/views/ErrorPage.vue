@@ -1,13 +1,21 @@
 <template>
-  <div class="center">
-    <h1>{{ httpCode }}</h1>
-    <h2>{{ reason }}</h2>
-    <p>{{ extra }}</p>
-  </div>
+  <PageShell :title="httpCode" tier="narrow" :lede="reason" :head="false">
+    <p v-if="extra" class="error-extra">{{ extra }}</p>
+    <div class="error-actions">
+      <AppButton :to="{ name: 'Home' }" icon="mdi-home">Back to home</AppButton>
+      <AppButton :to="{ name: 'Movesets' }" variant="ghost" icon="mdi-view-list">
+        All movesets
+      </AppButton>
+    </div>
+  </PageShell>
 </template>
 
 <script setup>
-defineProps({
+import { useHead } from '@unhead/vue'
+import PageShell from '@/components/PageShell.vue'
+import AppButton from '@/components/AppButton.vue'
+
+const props = defineProps({
   httpCode: {
     type: String,
     default: '404 Error',
@@ -21,24 +29,19 @@ defineProps({
     default: '',
   },
 })
+
+useHead({ title: `UMC | ${props.httpCode}` })
 </script>
 
 <style scoped>
-.center {
-  margin: 0 auto;
-  text-align: center;
+.error-extra {
+  margin: 0 0 20px;
+  color: var(--tx-2);
 }
 
-h1 {
-  font-size: 6em;
-  margin-top: 2em;
-}
-
-h2 {
-  margin-top: -1em;
-}
-
-p {
-  margin-top: 3em;
+.error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 </style>

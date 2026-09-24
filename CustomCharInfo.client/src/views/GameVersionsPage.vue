@@ -1,152 +1,146 @@
 <template>
-  <v-container max-width="1200px">
-    <h1 class="mb-2 page-title no-select">Game Versions</h1>
-    <p class="helper-text mb-5">
-      Every hook keeps one offset per game version. Adding a version takes the update's shift table
-      and works out every hook's new offset, marked unverified until a modder confirms it.
-    </p>
-
+  <PageShell
+    title="Game versions"
+    tier="wide"
+    :back-to="{ name: 'AdminPortal' }"
+    back-label="Admin portal"
+    lede="Every hook keeps one offset per game version. Adding a version takes the update's shift table and works out every hook's new offset, marked unverified until a modder confirms it."
+  >
     <!-- Existing versions -->
-    <h2 class="mb-2">Versions</h2>
-    <v-table class="dark-table mb-8" density="comfortable">
-      <thead>
-        <tr>
-          <th>Version</th>
-          <th>Added</th>
-          <th>Confirmed</th>
-          <th>Generated</th>
-          <th>Carried forward</th>
-          <th>No offset</th>
-          <th class="text-right"></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="version in versions" :key="version.gameVersionId">
-          <td>
-            <strong>{{ version.name }}</strong>
-            <span v-if="version.isLatest" class="latest-marker">current</span>
-          </td>
-          <td class="helper-text">{{ formatDate(version.createdAt) }}</td>
-          <td>{{ countFor(version, OffsetState.Confirmed) }}</td>
-          <td>{{ countFor(version, OffsetState.Generated) }}</td>
-          <td>{{ countFor(version, OffsetState.CarriedForward) }}</td>
-          <td>{{ missingFor(version) }}</td>
-          <td class="text-right">
-            <v-btn
-              v-if="version.isLatest && versions.length > 1"
-              size="small"
-              variant="text"
-              icon="mdi-delete"
-              title="Delete this version and its offsets"
-              @click="confirmDelete(version)"
-            />
-          </td>
-        </tr>
-      </tbody>
-    </v-table>
+    <SectionHeading title="Versions" :count="versions.length" />
+    <TableScroll min-width="720px">
+      <v-table density="comfortable">
+        <thead>
+          <tr>
+            <th>Version</th>
+            <th>Added</th>
+            <th>Confirmed</th>
+            <th>Generated</th>
+            <th>Carried forward</th>
+            <th>No offset</th>
+            <th class="text-right"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="version in versions" :key="version.gameVersionId">
+            <td>
+              <span class="mono version-name">{{ version.name }}</span>
+              <StatusTag v-if="version.isLatest" variant="ok" class="ml-2">Current</StatusTag>
+            </td>
+            <td class="muted">{{ formatDate(version.createdAt) }}</td>
+            <td>{{ countFor(version, OffsetState.Confirmed) }}</td>
+            <td>{{ countFor(version, OffsetState.Generated) }}</td>
+            <td>{{ countFor(version, OffsetState.CarriedForward) }}</td>
+            <td>{{ missingFor(version) }}</td>
+            <td class="text-right">
+              <AppButton
+                v-if="version.isLatest && versions.length > 1"
+                variant="danger"
+                size="sm"
+                icon="mdi-delete"
+                aria-label="Delete this version and its offsets"
+                @click="confirmDelete(version)"
+              />
+            </td>
+          </tr>
+        </tbody>
+      </v-table>
+    </TableScroll>
 
     <!-- Add a version -->
-    <h2 class="mb-2">Add a version</h2>
-    <p class="helper-text mb-3">
-      One range per line. First and last address in the old version, then how far that range moved
-      between old and new. Addresses outside every range are copied unchanged.
-    </p>
-    <v-row dense>
-      <v-col cols="12" sm="3">
-        <v-text-field
-          v-model="name"
-          variant="outlined"
-          density="comfortable"
-          label="Version"
-          placeholder="XX.X.X"
+    <SectionHeading title="Add a version" />
+    <section class="panel add-version">
+      <p class="hint">
+        One range per line. First and last address in the old version, then how far that range moved
+        between old and new. Addresses outside every range are copied unchanged.
+      </p>
+      <LabeledField label="Version" required class="add-version__name">
+        <v-text-field v-model="name" placeholder="XX.X.X" density="comfortable" hide-details />
+      </LabeledField>
+      <LabeledField label="Shift table" required>
+        <v-textarea
+          v-model="shiftTable"
+          class="shift-table"
+          placeholder="0x0          0x169c3bf    +0x0&#10;0x169ef70    0x178b563    -0x1a0&#10;0x52a9000    0x7446100    +0x1000"
+          rows="8"
+          auto-grow
           hide-details
         />
-      </v-col>
-    </v-row>
-    <v-textarea
-      v-model="shiftTable"
-      variant="outlined"
-      class="shift-table mt-3"
-      label="Shift table"
-      placeholder="0x0          0x169c3bf    +0x0&#10;0x169ef70    0x178b563    -0x1a0&#10;0x52a9000    0x7446100    +0x1000"
-      rows="8"
-      auto-grow
-      hide-details
-    />
-    <div class="d-flex ga-3 mt-3">
-      <v-btn
-        class="btn action-button"
-        :disabled="!canPreview || previewing"
-        :loading="previewing"
-        @click="preview"
-      >
-        Preview
-      </v-btn>
-      <v-btn
-        class="btn action-button"
-        :disabled="!canApply || applying"
-        :loading="applying"
-        @click="apply"
-      >
-        Apply to every hook
-      </v-btn>
-    </div>
+      </LabeledField>
+      <div class="add-version__actions">
+        <AppButton icon="mdi-eye" :disabled="!canPreview" :busy="previewing" @click="preview">
+          Preview
+        </AppButton>
+        <AppButton
+          variant="primary"
+          icon="mdi-check"
+          :disabled="!canApply"
+          :busy="applying"
+          @click="apply"
+        >
+          Apply to every hook
+        </AppButton>
+      </div>
+    </section>
 
     <!-- Preview -->
     <template v-if="previewResult">
-      <h2 class="mt-8 mb-2">Preview for {{ previewedName }}</h2>
-      <div class="d-flex ga-2 mb-3 flex-wrap">
-        <span class="status-pill offset-state-2">{{ previewResult.generated }} generated</span>
-        <span class="status-pill offset-state-3">
-          {{ previewResult.carriedForward }} carried forward
-        </span>
-        <span v-if="!previewCurrent" class="helper-text align-self-center">
+      <SectionHeading :title="`Preview for ${previewedName}`" />
+      <div class="preview-summary">
+        <StatusTag
+          :offset-state="OffsetState.Generated"
+          :label="`${previewResult.generated} generated`"
+        />
+        <StatusTag
+          :offset-state="OffsetState.CarriedForward"
+          :label="`${previewResult.carriedForward} carried forward`"
+        />
+        <span v-if="!previewCurrent" class="preview-summary__stale">
           Inputs changed since this preview. Preview again before applying.
         </span>
       </div>
-      <v-data-table
-        class="dark-table"
-        :items="previewRows"
-        :headers="previewHeaders"
-        :sort-by="previewSortBy"
-        item-value="hookId"
-        density="compact"
-        :items-per-page="50"
-      >
-        <template #item.oldOffset="{ item }">
-          <span class="mono">{{ formatOffset(item.oldOffset) }}</span>
-        </template>
-        <template #item.newOffset="{ item }">
-          <span class="mono" :class="{ changed: item.oldOffset !== item.newOffset }">
-            {{ formatOffset(item.newOffset) }}
-          </span>
-        </template>
-        <template #item.offsetStateId="{ item }">
-          <span class="status-pill" :class="`offset-state-${item.offsetStateId}`">
-            {{ OFFSET_STATE_NAMES[item.offsetStateId] }}
-          </span>
-        </template>
-      </v-data-table>
+      <TableScroll min-width="720px">
+        <v-data-table
+          :items="previewRows"
+          :headers="previewHeaders"
+          :sort-by="previewSortBy"
+          item-value="hookId"
+          density="compact"
+          :items-per-page="50"
+        >
+          <template #item.oldOffset="{ item }">
+            <span class="mono">{{ formatOffset(item.oldOffset) }}</span>
+          </template>
+          <template #item.newOffset="{ item }">
+            <span class="mono" :class="{ changed: item.oldOffset !== item.newOffset }">
+              {{ formatOffset(item.newOffset) }}
+            </span>
+          </template>
+          <template #item.offsetStateId="{ item }">
+            <StatusTag :offset-state="item.offsetStateId" />
+          </template>
+        </v-data-table>
+      </TableScroll>
     </template>
 
     <!-- Delete confirmation -->
     <v-dialog v-bind="dialogProps" v-model="deleteOpen" max-width="480px">
-      <v-card color="#1e1e1e">
-        <v-card-title>Delete {{ deleteTarget?.name }}?</v-card-title>
+      <v-card>
+        <v-card-title class="dialog-title">Delete {{ deleteTarget?.name }}?</v-card-title>
         <v-card-text>
           Every hook's offset for {{ deleteTarget?.name }} and the shift table that produced them
           will be removed. Offsets shown across the site go back to the previous version.
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="deleteOpen = false">Cancel</v-btn>
-          <v-btn variant="text" color="#ef5350" :loading="deleting" @click="deleteVersion">
+          <AppButton variant="ghost" @click="deleteOpen = false">Cancel</AppButton>
+          <AppButton variant="danger" icon="mdi-delete" :busy="deleting" @click="deleteVersion">
             Delete
-          </v-btn>
+          </AppButton>
         </v-card-actions>
       </v-card>
     </v-dialog>
-  </v-container>
+  </PageShell>
 </template>
 
 <script setup>
@@ -154,9 +148,15 @@ import { ref, computed, onMounted } from 'vue'
 import { format } from 'date-fns'
 import api from '@/services/api'
 import { useNotify } from '@/composables/useNotify'
-import { OffsetState, OFFSET_STATE_NAMES } from '@/globals'
+import { OffsetState } from '@/globals'
 import { useDialogProps } from '@/composables/useDialogProps'
 import { formatOffset } from '@/services/offsets'
+import PageShell from '@/components/PageShell.vue'
+import SectionHeading from '@/components/SectionHeading.vue'
+import LabeledField from '@/components/LabeledField.vue'
+import AppButton from '@/components/AppButton.vue'
+import StatusTag from '@/components/StatusTag.vue'
+import TableScroll from '@/components/TableScroll.vue'
 const dialogProps = useDialogProps()
 
 const notify = useNotify()
@@ -297,61 +297,57 @@ onMounted(load)
 </script>
 
 <style scoped>
-.page-title {
-  font-size: 4em;
+.version-name {
+  font-weight: 600;
 }
 
-.helper-text {
-  opacity: 0.7;
-  font-size: 0.9rem;
+.add-version {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.latest-marker {
-  margin-left: 8px;
-  padding: 1px 7px;
-  border-radius: 10px;
-  font-size: 0.7rem;
-  background-color: #2e7d32;
-  color: white;
+.hint {
+  margin: 0;
+  color: var(--tx-2);
+  font-size: 14px;
+}
+
+.add-version__name {
+  max-width: 240px;
 }
 
 .shift-table :deep(textarea) {
-  font-family: monospace;
-  font-size: 0.85rem;
+  font-family: var(--font-mono);
+  font-size: 13px;
 }
 
-.action-button {
-  background-color: #2e2e2e;
-  color: #e2e2e2;
-  box-shadow: none;
+.add-version__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.mono {
-  font-family: monospace;
+.preview-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.preview-summary__stale {
+  color: var(--warn);
+  font-size: 13px;
 }
 
 .changed {
-  color: #ffd54f;
+  color: var(--warn);
 }
 
-.status-pill {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.offset-state-1 {
-  background-color: #2e7d32;
-  color: white;
-}
-.offset-state-2 {
-  background-color: #fbc02d;
-  color: black;
-}
-.offset-state-3 {
-  background-color: #ef6c00;
-  color: white;
+.dialog-title {
+  font-family: var(--font-condensed);
+  font-weight: 700;
+  text-transform: uppercase;
 }
 </style>

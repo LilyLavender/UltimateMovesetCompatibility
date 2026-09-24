@@ -37,12 +37,11 @@
         </LabeledField>
       </FormSection>
 
-      <template #savebar>
-        <span class="savebar-spacer"></span>
+      <div class="form-actions">
         <AppButton variant="primary" icon="mdi-check" :busy="isSubmitting" @click="submit">
           {{ uploadStatus || 'Publish post' }}
         </AppButton>
-      </template>
+      </div>
     </FormLayout>
   </PageShell>
 </template>
@@ -167,7 +166,9 @@ const submit = async () => {
   max-width: 480px;
 }
 
-.savebar-spacer {
-  flex: 1;
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
 }
 </style>

@@ -1,102 +1,100 @@
 <template>
-  <v-container max-width="1300px">
-    <h1 class="mb-5 page-title no-select">Image Garbage Collector</h1>
+  <PageShell
+    title="Image garbage collector"
+    tier="wide"
+    :back-to="{ name: 'AdminPortal' }"
+    back-label="Admin portal"
+    lede="Every image uploaded to R2 and whether a moveset, series, blog post, modder profile, or banner still references it."
+  >
+    <div class="toolbar">
+      <AppButton icon="mdi-magnify" :busy="scanning" @click="scan">Scan images</AppButton>
+      <AppButton
+        variant="danger"
+        icon="mdi-delete"
+        :busy="deleting"
+        :disabled="unusedCount === 0"
+        @click="deleteAllUnused"
+      >
+        Delete unused images ({{ unusedCount }})
+      </AppButton>
+      <p
+        v-if="hasScanned"
+        class="toolbar__summary"
+        :class="{ 'toolbar__summary--good': unusedCount === 0 }"
+      >
+        <template v-if="unusedCount === 0">All images are used.</template>
+        <template v-else>
+          {{ images.length }} {{ pluralize(images.length, 'image') }} found,
+          {{ unusedCount }} unused.
+        </template>
+      </p>
+    </div>
 
-    <p class="mb-4 helper-text">
-      Lists every image uploaded to R2, showing which ones are still referenced by either a moveset,
-      series, blog post, modder profile, or banner image.
-    </p>
-
-    <!-- Controls -->
-    <v-row class="mb-4" align="center">
-      <v-col cols="12" sm="6">
-        <v-btn color="primary" class="btn" :loading="scanning" @click="scan">
-          <v-icon class="mr-1">mdi-magnify</v-icon>
-          Scan Images
-        </v-btn>
-      </v-col>
-      <v-col cols="12" sm="6">
-        <div class="d-flex justify-sm-end">
-          <v-btn
-            class="btn delete-btn"
-            :loading="deleting"
-            :disabled="unusedCount === 0"
-            @click="deleteAllUnused"
-          >
-            <v-icon class="mr-1">mdi-delete</v-icon>
-            Delete Unused Images ({{ unusedCount }})
-          </v-btn>
-        </div>
-      </v-col>
-    </v-row>
-
-    <p v-if="hasScanned" class="mb-4 summary-text" :class="{ 'summary-good': unusedCount === 0 }">
-      <template v-if="unusedCount === 0">All images are used. You're good.</template>
-      <template v-else>
-        {{ images.length }} {{ pluralize(images.length, 'image') }} found, {{ unusedCount }} unused.
-      </template>
-    </p>
+    <EmptyState
+      v-if="!hasScanned && !scanning"
+      message="Run a scan to list every image and mark the ones nothing references."
+      icon="mdi-image-search"
+    />
 
     <div v-if="hasScanned" class="groups">
       <template v-for="group in topGroups" :key="group.name">
         <div v-for="sub in group.subGroups" :key="`${group.name}/${sub.name}`" class="sub-group">
-          <div
-            class="sub-group-label"
-            role="button"
-            tabindex="0"
+          <button
+            type="button"
+            class="sub-group__label"
+            :aria-expanded="!isCollapsed(`${group.name}/${sub.name}`, sub.unused)"
             @click="toggleGroup(`${group.name}/${sub.name}`, sub.unused)"
-            @keydown.enter="toggleGroup(`${group.name}/${sub.name}`, sub.unused)"
           >
-            <v-icon size="18" class="mr-1">
+            <v-icon size="18">
               {{
                 isCollapsed(`${group.name}/${sub.name}`, sub.unused)
                   ? 'mdi-chevron-right'
                   : 'mdi-chevron-down'
               }}
             </v-icon>
-            <span class="sub-group-path"
+            <span class="sub-group__path mono"
               >{{ group.name }}/{{ sub.name ? sub.name + '/' : '' }}</span
             >
-            <span class="sub-group-count"
-              >{{ sub.items.length }}{{ sub.unused > 0 ? ` (${sub.unused} unused)` : '' }}</span
-            >
-          </div>
+            <span class="sub-group__count">{{ sub.items.length }}</span>
+            <StatusTag v-if="sub.unused > 0" variant="warn">{{ sub.unused }} unused</StatusTag>
+          </button>
           <div v-show="!isCollapsed(`${group.name}/${sub.name}`, sub.unused)" class="tile-grid">
             <div
               v-for="item in sub.items"
               :key="item.key"
               class="tile"
+              :class="{ 'tile--unused': !item.inUse }"
               :style="{ width: tileSize(item).w + 'px' }"
             >
-              <div class="tile-img-box" :style="{ height: tileSize(item).h + 'px' }">
-                <div v-if="!item.inUse" class="tile-warning">
-                  <v-icon size="14" class="mr-1">mdi-alert</v-icon>
+              <a
+                :href="item.url"
+                target="_blank"
+                rel="noopener"
+                class="tile__img-box"
+                :style="{ height: tileSize(item).h + 'px' }"
+              >
+                <StatusTag v-if="!item.inUse" variant="warn" icon="mdi-alert" class="tile__flag">
                   Unused
-                </div>
-                <a :href="item.url" target="_blank" rel="noopener">
-                  <img
-                    :src="item.url"
-                    class="tile-img"
-                    loading="lazy"
-                    alt=""
-                    @load="onImgLoad(item, $event)"
-                  />
-                </a>
-              </div>
-              <div class="tile-info">
-                <div class="tile-name" :title="item.fileName">{{ item.displayName }}</div>
-                <div class="tile-date">
-                  <v-icon size="14" class="mr-1">mdi-clock-outline</v-icon
-                  >{{ formatDate(item.lastModified) }}
-                </div>
-                <div class="tile-meta">{{ formatSize(item.sizeBytes) }}</div>
+                </StatusTag>
+                <img
+                  :src="item.url"
+                  class="tile__img"
+                  loading="lazy"
+                  alt=""
+                  @load="onImgLoad(item, $event)"
+                />
+              </a>
+              <div class="tile__info">
+                <div class="tile__name mono" :title="item.fileName">{{ item.displayName }}</div>
+                <div class="tile__date">{{ formatDate(item.lastModified) }}</div>
+                <div class="tile__meta">{{ formatSize(item.sizeBytes) }}</div>
               </div>
             </div>
           </div>
         </div>
       </template>
     </div>
-  </v-container>
+  </PageShell>
 </template>
 
 <script setup>
@@ -104,6 +102,10 @@ import { ref, computed } from 'vue'
 import api from '@/services/api'
 import { IMAGE_UPLOAD_SPECS } from '@/globals'
 import { useNotify } from '@/composables/useNotify'
+import PageShell from '@/components/PageShell.vue'
+import AppButton from '@/components/AppButton.vue'
+import StatusTag from '@/components/StatusTag.vue'
+import EmptyState from '@/components/EmptyState.vue'
 
 const notify = useNotify()
 
@@ -253,136 +255,118 @@ const deleteAllUnused = async () => {
 </script>
 
 <style scoped>
-.page-title {
-  font-size: 2.5rem;
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 20px;
 }
-.helper-text {
-  color: #b0b0b0;
+
+.toolbar__summary {
+  margin: 0 0 0 auto;
+  color: var(--tx-2);
+  font-size: 14px;
 }
-.summary-text {
-  color: #d0d0d0;
-  font-size: 1.05em;
-}
-.summary-good {
-  color: #66bb6a;
+
+.toolbar__summary--good {
+  color: var(--ok);
   font-weight: 600;
-}
-.btn {
-  text-transform: unset;
-  letter-spacing: 0.009375em;
-  font-size: medium;
-  background-color: #2e2e2e;
-  color: #e2e2e2;
-}
-.btn:disabled {
-  background-color: grey !important;
-}
-.delete-btn {
-  background-color: #7a1f1f !important;
-  color: #ffffff !important;
-}
-.delete-btn:disabled {
-  background-color: #3a2a2a !important;
-  color: #8a8a8a !important;
 }
 
 .groups {
   display: flex;
   flex-direction: column;
-  gap: 1.5em;
+  gap: 24px;
 }
 
-.sub-group {
-  margin-bottom: 1.5em;
-}
-.sub-group-label {
+.sub-group__label {
   display: flex;
-  align-items: baseline;
-  gap: 0.6em;
-  padding-bottom: 0.4em;
-  border-bottom: 1px solid #333;
-  margin-bottom: 0.75em;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 0;
+  margin-bottom: 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line-2);
+  background: none;
+  color: var(--tx);
+  font: inherit;
+  text-align: left;
   cursor: pointer;
-  user-select: none;
 }
-.sub-group-label:hover {
-  border-bottom-color: #555;
+
+.sub-group__label:hover {
+  border-bottom-color: var(--white);
 }
-.sub-group-label .v-icon {
-  align-self: center;
+
+.sub-group__path {
+  font-size: 14px;
 }
-.sub-group-path {
-  font-family: monospace;
-  font-size: 1em;
-  color: #e2e2e2;
-}
-.sub-group-count {
-  color: #8a8a8a;
-  font-size: 0.8em;
+
+.sub-group__count {
+  color: var(--tx-3);
+  font-size: 13px;
 }
 
 .tile-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 1em;
+  gap: 12px;
 }
 
 .tile {
   display: flex;
   flex-direction: column;
-  background-color: #1e1e1e;
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.tile--unused {
+  border-color: color-mix(in srgb, var(--warn) 50%, var(--line));
+}
+
+.tile__img-box {
+  position: relative;
+  display: block;
+  background: var(--bg);
   overflow: hidden;
 }
 
-.tile-img-box {
-  position: relative;
-  background-color: #111;
-  overflow: hidden;
-}
-.tile-img {
+.tile__img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
-.tile-warning {
+
+.tile__flag {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.3em 0.5em;
-  font-size: 0.75em;
-  font-weight: 600;
-  color: #1a1a1a;
-  background-color: rgba(255, 179, 0, 0.9);
+  top: 6px;
+  left: 6px;
+  z-index: 1;
 }
 
-.tile-info {
-  padding: 0.6em 0.75em 0.75em;
+.tile__info {
+  padding: 8px 10px 10px;
 }
-.tile-name {
-  font-family: monospace;
-  font-size: 0.82em;
-  color: #e2e2e2;
+
+.tile__name {
+  font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.tile-date {
-  display: flex;
-  align-items: center;
-  font-size: 0.95em;
+
+.tile__date {
+  margin-top: 4px;
+  font-size: 13px;
   font-weight: 600;
-  color: #f2f2f2;
-  margin-top: 0.4em;
 }
-.tile-meta {
-  font-size: 0.75em;
-  color: #8a8a8a;
-  margin-top: 0.15em;
+
+.tile__meta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--tx-3);
 }
 </style>
