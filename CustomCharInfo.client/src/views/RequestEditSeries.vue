@@ -1,109 +1,114 @@
 <template>
-  <v-container max-width="1000px">
-    <h1 class="mb-3 page-title">Request to Edit a Series</h1>
-    <p class="mb-6 text-medium-emphasis">
-      Series edits require admin approval. Select a series below, then submit a request explaining
-      what you'd like to change. An admin will review it and grant or deny edit access.
-    </p>
+  <PageShell
+    title="Request to edit a series"
+    lede="Series edits require admin approval. Pick a series, then explain what you would like to change. An admin will review the request and grant or deny edit access."
+  >
+    <template #subnav>
+      <SubNav section="series" label="Series" />
+    </template>
 
-    <div v-if="loading" class="text-center py-10">
-      <v-progress-circular indeterminate color="grey" />
+    <div v-if="loading" class="request-layout" aria-busy="true">
+      <div class="series-grid">
+        <Skeleton v-for="n in 12" :key="n" variant="line" height="110px" />
+      </div>
+      <SkeletonPanel :lines="3" />
     </div>
 
-    <p v-else-if="!mySeries.length" class="text-medium-emphasis">
-      You don't have any movesets assigned to a series yet.
-    </p>
+    <EmptyState
+      v-else-if="!mySeries.length"
+      message="You don't have any movesets assigned to a series yet."
+      icon="mdi-shape-outline"
+    />
 
-    <div v-else class="page-layout">
+    <div v-else class="request-layout">
       <!-- Left: series grid -->
       <div class="series-grid">
-        <div
+        <button
           v-for="s in mySeries"
           :key="s.seriesId"
+          type="button"
           class="series-item"
           :class="{ 'series-item--selected': selected?.seriesId === s.seriesId }"
           @click="select(s)"
         >
-          <img :src="resolveIconUrl(s.seriesIconUrl)" class="series-icon" alt="" />
-          <span class="series-label">{{ s.seriesName }}</span>
-        </div>
+          <img :src="resolveIconUrl(s.seriesIconUrl)" class="series-item__icon" alt="" />
+          <span class="series-item__label">{{ s.seriesName }}</span>
+        </button>
       </div>
 
       <!-- Right: action panel -->
-      <div class="action-panel">
+      <div class="panel action-panel">
         <div v-if="!selected" class="action-placeholder">
-          <v-icon size="32" class="mb-2 text-medium-emphasis">mdi-cursor-default-click</v-icon>
-          <p class="text-medium-emphasis">Select a series to request an edit.</p>
+          <v-icon size="30">mdi-cursor-default-click</v-icon>
+          <p>Select a series to request an edit.</p>
         </div>
 
         <div v-else class="action-content">
-          <h2 class="selected-title mb-4">{{ selected.seriesName }}</h2>
+          <h3 class="action-title">{{ selected.seriesName }}</h3>
 
           <!-- Pending admin action -->
-          <template v-if="currentState === 1 || currentState === 2">
-            <v-chip color="blue-lighten-3" variant="tonal" size="small" class="mb-3">
-              <v-icon start size="14">mdi-clock-outline</v-icon>
-              Pending admin action
-            </v-chip>
-            <p class="text-medium-emphasis text-sm">
-              Your request is pending. An admin will review it soon.
-            </p>
+          <template v-if="PENDING_ADMIN_STATES.includes(currentState)">
+            <StatusTag :state="currentState" />
+            <p class="muted small">Your request is pending. An admin will review it soon.</p>
           </template>
 
           <!-- Edit access granted -->
-          <template v-else-if="currentState === 3 || currentState === 4">
-            <v-chip color="green-lighten-2" variant="tonal" size="small" class="mb-4">
-              <v-icon start size="14">mdi-check-circle</v-icon>
-              Edit access granted
-            </v-chip>
-            <div>
-              <v-btn
-                :to="{ name: 'EditSeries', params: { seriesId: selected.seriesId } }"
-                prepend-icon="mdi-pencil"
-                variant="outlined"
-                class="form-btn"
-              >
-                Edit {{ selected.seriesName }}
-              </v-btn>
-            </div>
+          <template v-else-if="PENDING_USER_STATES.includes(currentState)">
+            <StatusTag variant="ok" icon="mdi-check-circle">Edit access granted</StatusTag>
+            <AppButton
+              :to="{ name: 'EditSeries', params: { seriesId: selected.seriesId } }"
+              icon="mdi-pencil"
+              block
+            >
+              Edit {{ selected.seriesName }}
+            </AppButton>
           </template>
 
           <!-- Request form -->
           <template v-else>
-            <v-textarea
-              v-model="notes[selected.seriesId]"
-              variant="outlined"
+            <LabeledField
               label="Why do you want to edit this series?"
-              placeholder="Required. Shown to admins only."
-              rows="4"
-              auto-grow
-              class="mb-3"
-              :error="!!notesErrors[selected.seriesId]"
-              :error-messages="notesErrors[selected.seriesId]"
-            />
-            <v-btn
-              variant="outlined"
-              class="form-btn"
-              :loading="submitting[selected.seriesId]"
+              required
+              note="admins only"
+              :error="notesErrors[selected.seriesId]"
+            >
+              <v-textarea
+                v-model="notes[selected.seriesId]"
+                rows="4"
+                auto-grow
+                :error="!!notesErrors[selected.seriesId]"
+              />
+            </LabeledField>
+            <AppButton
+              variant="primary"
+              icon="mdi-send"
+              block
+              :busy="submitting[selected.seriesId]"
               @click="requestEdit(selected.seriesId)"
             >
               Request to edit {{ selected.seriesName }}
-            </v-btn>
-            <p v-if="submitted[selected.seriesId]" class="text-green text-sm mt-3">
-              Request submitted!
-            </p>
+            </AppButton>
+            <p v-if="submitted[selected.seriesId]" class="note note--ok">Request submitted.</p>
           </template>
         </div>
       </div>
     </div>
-  </v-container>
+  </PageShell>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import api from '@/services/api'
 import seriesIconUnknown from '@/assets/series_icon_unknown.png'
-import { ItemType } from '@/globals'
+import { ItemType, AcceptanceState, PENDING_ADMIN_STATES, PENDING_USER_STATES } from '@/globals'
+import PageShell from '@/components/PageShell.vue'
+import SubNav from '@/components/SubNav.vue'
+import Skeleton from '@/components/Skeleton.vue'
+import SkeletonPanel from '@/components/SkeletonPanel.vue'
+import EmptyState from '@/components/EmptyState.vue'
+import StatusTag from '@/components/StatusTag.vue'
+import LabeledField from '@/components/LabeledField.vue'
+import AppButton from '@/components/AppButton.vue'
 
 const apiUrl = import.meta.env.VITE_API_URL
 const resolveIconUrl = (path) =>
@@ -170,7 +175,7 @@ const requestEdit = async (seriesId) => {
     await api.post(`/series/${seriesId}/request-edit`, { notes: note })
     submitted[seriesId] = true
     latestLogBySeries[seriesId] = {
-      acceptanceState: { acceptanceStateId: 1 },
+      acceptanceState: { acceptanceStateId: AcceptanceState.PendingAdminSoft },
     }
   } catch (err) {
     notesErrors[seriesId] = err.response?.data ?? 'Failed to submit request. Please try again.'
@@ -182,72 +187,67 @@ const requestEdit = async (seriesId) => {
 </script>
 
 <style scoped>
-.page-title {
-  font-size: 3em;
+.request-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(280px, 2fr);
+  gap: 28px;
+  align-items: start;
 }
 
-.page-layout {
-  display: flex;
-  gap: 2rem;
-  align-items: flex-start;
-}
-
-/* ── Series grid (left) ── */
+/* Series grid (left) */
 .series-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   gap: 8px;
-  flex: 3 1 0;
-  min-width: 0;
 }
 
 .series-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   padding: 12px 8px;
-  border-radius: 10px;
-  border: 2px solid transparent;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--tx-2);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.25;
+  text-align: center;
   cursor: pointer;
   transition:
-    border-color 150ms ease,
-    background-color 150ms ease;
-  text-align: center;
+    border-color var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 }
 
 .series-item:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background: var(--panel-2);
+  color: var(--white);
 }
 
-.series-item--selected {
-  border-color: rgba(255, 255, 255, 0.55);
-  background-color: rgba(255, 255, 255, 0.06);
+.series-item--selected,
+.series-item--selected:hover {
+  border-color: var(--white);
+  background: var(--panel-2);
+  color: var(--white);
 }
 
-.series-icon {
-  width: 62px;
-  height: 62px;
+.series-item__icon {
+  width: 56px;
+  height: 56px;
   object-fit: contain;
+  filter: brightness(4.35);
 }
 
-.series-label {
-  line-height: 1.25;
-  color: #ccc;
+.series-item__label {
   word-break: break-word;
 }
 
-/* ── Action panel (right) ── */
+/* Action panel (right) */
 .action-panel {
-  flex: 2 1 0;
-  max-width: 380px;
-  flex-shrink: 0;
   position: sticky;
-  top: 80px;
-  background-color: #1e1e1e;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 1.25rem;
+  top: 20px;
   min-height: 200px;
 }
 
@@ -256,34 +256,51 @@ const requestEdit = async (seriesId) => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   height: 160px;
+  color: var(--tx-3);
   text-align: center;
+}
+
+.action-placeholder p {
+  margin: 0;
 }
 
 .action-content {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
 }
 
-.selected-title {
-  font-size: 1.3em;
-  font-weight: 600;
-  line-height: 1.3;
+.action-title {
+  margin: 0;
+  font-size: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
 }
 
-.form-btn {
-  text-transform: none;
-  letter-spacing: normal;
-  border-color: rgba(255, 255, 255, 0.28);
-  color: #e2e2e2;
-  width: 100%;
+.action-content > .field {
+  align-self: stretch;
 }
 
-.form-btn:hover {
-  border-color: rgba(255, 255, 255, 0.55);
+.note {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--line-2);
+  border-left: 4px solid var(--ok);
+  background: var(--panel);
+  font-size: 14px;
+  align-self: stretch;
 }
 
-.text-sm {
-  font-size: 0.875rem;
+@media (max-width: 959px) {
+  .request-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .action-panel {
+    position: static;
+  }
 }
 </style>

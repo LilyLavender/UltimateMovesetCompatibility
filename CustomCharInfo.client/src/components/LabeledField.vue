@@ -1,7 +1,8 @@
 <template>
   <div class="field" :class="{ 'field--error': !!error }">
-    <label v-if="label" class="field__label" :for="forId">
-      {{ label }}<i v-if="required" class="field__required" aria-hidden="true">*</i>
+    <label v-if="label || $slots.label" class="field__label" :for="forId">
+      <slot name="label">{{ label }}</slot
+      ><i v-if="required" class="field__required" aria-hidden="true">*</i>
       <span v-if="note" class="field__note">{{ note }}</span>
     </label>
     <slot />
@@ -13,7 +14,7 @@
 <script setup>
 /*
   A label above an input, with an optional required mark, a small note beside the label,
-  and a hint or error line beneath. Vuetify inputs inside it should not pass their own `label`.
+  and a hint or error line beneath. The label slot takes an icon before the text. Vuetify inputs inside it should not pass their own `label`.
 */
 defineProps({
   label: { type: String, default: '' },
@@ -34,6 +35,9 @@ defineProps({
 }
 
 .field__label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-size: 12px;
   font-weight: 600;
   color: var(--tx-2);
@@ -43,11 +47,11 @@ defineProps({
 .field__required {
   font-style: normal;
   color: var(--err);
-  margin-left: 2px;
+  margin-left: -3px;
 }
 
 .field__note {
-  margin-left: 8px;
+  margin-left: 3px;
   font-weight: 400;
   color: var(--tx-3);
 }

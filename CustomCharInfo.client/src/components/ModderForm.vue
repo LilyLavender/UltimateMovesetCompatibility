@@ -1,222 +1,151 @@
 <template>
-  <div v-if="(isEditMode && modder) || !isEditMode">
-    <v-container max-width="1020px">
-      <h1 v-if="!isEditMode" class="mt-5 mb-5">Apply to Become a Modder</h1>
-      <h1 v-else class="mt-5 mb-5">Edit Your Modder Profile</h1>
-
-      <v-form v-if="user" @submit.prevent="isEditMode ? save() : submit()">
-        <!-- Row 1: PFP preview + Username + GB ID + Discord -->
-        <v-row align="center" class="mb-0">
-          <!-- PFP preview -->
-          <v-col cols="auto">
-            <div class="pfp-preview-wrap">
-              <img
-                v-if="pfpPreviewUrl"
-                :src="pfpPreviewUrl"
-                class="pfp-preview"
-                alt="PFP preview"
-              />
-              <v-icon v-else size="48" class="pfp-preview-placeholder">mdi-account</v-icon>
+  <PageShell
+    v-if="(isEditMode && modder) || !isEditMode"
+    :title="isEditMode ? 'Edit your modder profile' : 'Apply to become a modder'"
+    :head="false"
+  >
+    <form v-if="user" @submit.prevent="isEditMode ? save() : submit()">
+      <FormLayout>
+        <FormSection id="profile" title="Profile">
+          <div class="profile-grid">
+            <div class="pfp-preview">
+              <img v-if="pfpPreviewUrl" :src="pfpPreviewUrl" alt="Profile picture preview" />
+              <v-icon v-else size="40">mdi-account</v-icon>
             </div>
-          </v-col>
 
-          <!-- Username -->
-          <v-col cols="12" sm>
-            <v-text-field
-              v-model="user.userName"
-              label="Username"
-              variant="outlined"
-              class="disabled"
-              disabled
-            >
-              <template #details>
-                <span>
-                  Edit your username in&nbsp;
-                  <router-link to="/user-actions" class="offsite unvisitable" target="_blank">
-                    user settings
-                  </router-link>
-                  <span v-if="!isEditMode">
-                    This must be done before submitting a modder application.
-                  </span>
-                </span>
-              </template>
-            </v-text-field>
-          </v-col>
+            <div class="form-grid form-grid--2">
+              <LabeledField label="Username">
+                <v-text-field v-model="user.userName" disabled />
+                <p class="field-hint">
+                  Change your username in
+                  <router-link to="/user-actions" target="_blank">account settings</router-link
+                  ><template v-if="!isEditMode"> before submitting a modder application</template>.
+                </p>
+              </LabeledField>
 
-          <!-- GameBanana ID -->
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model.number="modder.gamebananaId"
-              variant="outlined"
-              label="GameBanana ID"
-              :prefix="GB_MEMBER_URL"
-              @input="digitsOnly('gamebananaId')"
-            >
-              <template #label>
-                <img
-                  src="https://images.gamebanana.com/img/ico/games/banana.gif"
-                  class="field-platform-icon"
-                  alt=""
+              <LabeledField label="GameBanana ID">
+                <template #label>
+                  <img
+                    src="https://images.gamebanana.com/img/ico/games/banana.gif"
+                    class="platform-icon"
+                    alt=""
+                  />
+                  GameBanana ID
+                </template>
+                <v-text-field
+                  v-model.number="modder.gamebananaId"
+                  :prefix="GB_MEMBER_URL"
+                  inputmode="numeric"
+                  @input="digitsOnly('gamebananaId')"
                 />
-                GameBanana ID
-              </template>
-            </v-text-field>
-          </v-col>
+              </LabeledField>
 
-          <!-- Discord -->
-          <v-col cols="12" sm="3">
-            <v-text-field
-              v-model="modder.discordUsername"
-              variant="outlined"
-              label="Discord"
-              prefix="@"
-            >
+              <LabeledField label="Bio" hint="Shown on your modder page." class="span-2">
+                <v-textarea v-model="modder.bio" rows="3" auto-grow />
+              </LabeledField>
+            </div>
+          </div>
+        </FormSection>
+
+        <FormSection id="links" title="Links and picture">
+          <div class="form-grid">
+            <LabeledField label="Discord">
               <template #label>
                 <img
                   src="https://cdn.simpleicons.org/discord/5865F2"
-                  class="field-platform-icon"
+                  class="platform-icon"
                   alt=""
                 />
                 Discord
               </template>
-            </v-text-field>
-          </v-col>
-        </v-row>
-
-        <!-- Row 2: Twitter, Bluesky, GitHub -->
-        <v-row class="mb-0">
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model="modder.twitterUsername"
-              variant="outlined"
-              label="Twitter / X"
-              prefix="x.com/"
-            >
+              <v-text-field v-model="modder.discordUsername" prefix="@" />
+            </LabeledField>
+            <LabeledField label="Twitter">
               <template #label>
-                <img
-                  src="https://cdn.simpleicons.org/x/ffffff"
-                  class="field-platform-icon"
-                  alt=""
-                />
+                <img src="https://cdn.simpleicons.org/x/ffffff" class="platform-icon" alt="" />
                 Twitter
               </template>
-            </v-text-field>
-          </v-col>
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model="modder.blueskyHandle"
-              variant="outlined"
-              label="Bluesky"
-              prefix="bsky.app/profile/"
-            >
+              <v-text-field v-model="modder.twitterUsername" prefix="x.com/" />
+            </LabeledField>
+            <LabeledField label="Bluesky">
               <template #label>
                 <img
                   src="https://cdn.simpleicons.org/bluesky/0085FF"
-                  class="field-platform-icon"
+                  class="platform-icon"
                   alt=""
                 />
                 Bluesky
               </template>
-            </v-text-field>
-          </v-col>
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model="modder.githubUsername"
-              variant="outlined"
-              label="GitHub"
-              prefix="github.com/"
-            >
+              <v-text-field v-model="modder.blueskyHandle" prefix="bsky.app/profile/" />
+            </LabeledField>
+            <LabeledField label="GitHub">
               <template #label>
-                <img
-                  src="https://cdn.simpleicons.org/github/ffffff"
-                  class="field-platform-icon"
-                  alt=""
-                />
+                <img src="https://cdn.simpleicons.org/github/ffffff" class="platform-icon" alt="" />
                 GitHub
               </template>
-            </v-text-field>
-          </v-col>
-        </v-row>
-
-        <!-- Row 3: PFP URL -->
-        <v-row class="mb-0">
-          <v-col cols="12">
-            <v-text-field
-              v-model="modder.pfpUrl"
-              variant="outlined"
-              label="Profile Picture URL"
-              placeholder="Any square image URL (jpg, png, gif…)"
-              clearable
+              <v-text-field v-model="modder.githubUsername" prefix="github.com/" />
+            </LabeledField>
+            <LabeledField
+              label="Profile picture URL"
+              hint="Any square image link. Falls back to your GameBanana avatar if left empty."
+              class="span-2"
             >
-              <template #details>
-                <span class="hint-text">Falls back to GameBanana avatar if left empty.</span>
-              </template>
-            </v-text-field>
-          </v-col>
-        </v-row>
+              <v-text-field v-model="modder.pfpUrl" clearable />
+            </LabeledField>
+          </div>
+        </FormSection>
 
-        <!-- Row 4: Bio -->
-        <v-row class="mb-3">
-          <v-col cols="12">
-            <v-textarea
-              v-model="modder.bio"
-              variant="outlined"
-              label="Bio"
-              placeholder="Displayed on your modder profile page."
-              rows="3"
-              auto-grow
-              hide-details
-            />
-          </v-col>
-        </v-row>
+        <p v-if="error" class="note note--err">{{ error }}</p>
+        <p v-if="success" class="note note--ok">
+          {{ isEditMode ? 'Saved successfully.' : 'Application submitted.' }}
+        </p>
 
-        <!-- Notes + Submit -->
-        <div class="d-flex align-start ga-3 justify-end mt-3">
-          <v-textarea
-            v-model="modder.notes"
-            variant="outlined"
-            density="compact"
+        <template #savebar>
+          <LabeledField
             :label="isEditMode ? 'Editing notes' : 'Submission notes'"
-            placeholder="Optional, shown to admins only."
-            rows="1"
-            auto-grow
-            hide-details
-            class="notes-field"
-          />
-          <v-btn class="btn mt-1" type="submit">
-            {{ isEditMode ? 'Save Profile' : 'Apply for Modder' }}
-          </v-btn>
-        </div>
-
-        <!-- Feedback -->
-        <v-row>
-          <v-col cols="12">
-            <p v-if="success" class="text-green">
-              {{ isEditMode ? 'Saved successfully!' : 'Application submitted!' }}
-            </p>
-            <p v-if="error" class="text-red">{{ error }}</p>
-          </v-col>
-        </v-row>
-      </v-form>
-    </v-container>
-  </div>
+            note="admins only"
+            class="savebar-notes"
+          >
+            <v-textarea v-model="modder.notes" density="compact" rows="1" auto-grow hide-details />
+          </LabeledField>
+          <span class="savebar-spacer"></span>
+          <AppButton type="submit" variant="primary" icon="mdi-check" :busy="saving">
+            {{ isEditMode ? 'Save profile' : 'Apply for modder' }}
+          </AppButton>
+        </template>
+      </FormLayout>
+    </form>
+  </PageShell>
 </template>
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useHead } from '@unhead/vue'
 import axios from 'axios'
 import api from '@/services/api'
 import { GB_MEMBER_URL } from '@/globals'
+import PageShell from '@/components/PageShell.vue'
+import FormLayout from '@/components/FormLayout.vue'
+import FormSection from '@/components/FormSection.vue'
+import LabeledField from '@/components/LabeledField.vue'
+import AppButton from '@/components/AppButton.vue'
 
 const props = defineProps({
   mode: { type: String, default: 'apply' },
 })
 const isEditMode = computed(() => props.mode === 'edit')
 
+useHead(
+  computed(() => ({
+    title: isEditMode.value ? 'UMC | Editing modder page' : 'UMC | Apply for modder',
+  }))
+)
+
 const user = ref(null)
 const success = ref(false)
 const error = ref(null)
+const saving = ref(false)
 
 const modder = ref({
   bio: '',
@@ -272,6 +201,7 @@ const fetchUserAndModder = async () => {
         twitterUsername: modderRes.data.twitterUsername || '',
         blueskyHandle: modderRes.data.blueskyHandle || '',
         githubUsername: modderRes.data.githubUsername || '',
+        notes: '',
       }
     }
   } catch {
@@ -292,6 +222,7 @@ const digitsOnly = (field) => {
 }
 
 const submit = async () => {
+  saving.value = true
   try {
     await api.post('/modders', {
       ...modder.value,
@@ -305,10 +236,13 @@ const submit = async () => {
   } catch {
     success.value = false
     error.value = 'Failed to submit application.'
+  } finally {
+    saving.value = false
   }
 }
 
 const save = async () => {
+  saving.value = true
   try {
     await api.put(`/modders/${modderId.value}`, {
       bio: modder.value.bio,
@@ -326,83 +260,117 @@ const save = async () => {
   } catch {
     success.value = false
     error.value = 'Failed to update modder info.'
+  } finally {
+    saving.value = false
   }
 }
 </script>
 
 <style scoped>
-h1 {
-  font-size: 3.25em;
-}
-
-section {
-  margin-bottom: 2rem;
-  background-color: #1e1e1e;
-  padding: 1em;
-  border-radius: 10px;
-}
-
-.btn {
-  text-transform: unset;
-  background-color: #2e2e2e;
-  color: #e2e2e2;
-}
-
-.disabled :deep(input) {
-  color: #484848;
-}
-
-:deep(.v-text-field__prefix__text) {
-  font-size: 0.85em;
-  color: #484848;
-}
-
-.pfp-preview-wrap {
-  width: 80px;
-  height: 80px;
-  border-radius: 8px;
-  overflow: hidden;
-  background-color: #2e2e2e;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+.profile-grid {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
 }
 
 .pfp-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--tx-3);
+}
+
+.pfp-preview img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.pfp-preview-placeholder {
-  color: #555;
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
 }
 
-.field-platform-icon {
+.form-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.span-2 {
+  grid-column: span 2;
+}
+
+.span-3 {
+  grid-column: span 3;
+}
+
+.platform-icon {
   width: 14px;
   height: 14px;
-  vertical-align: middle;
-  margin-right: 3px;
-  margin-bottom: 2px;
+  object-fit: contain;
   opacity: 0.85;
 }
 
-.hint-text {
-  font-size: 0.78rem;
-  color: #777;
+.field-hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--tx-3);
 }
 
-.notes-field {
-  max-width: 400px;
+.field-hint a {
+  color: var(--tx-2);
+  text-decoration: underline;
 }
-.notes-field :deep(.v-field__input) {
-  font-size: 0.85rem;
-  padding-top: 6px;
-  padding-bottom: 6px;
+
+:deep(.v-text-field__prefix__text) {
+  color: var(--tx-3);
+  font-size: 13px;
 }
-.notes-field :deep(.v-label) {
-  font-style: italic;
-  color: #6e6e6e !important;
+
+.note {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--line-2);
+  border-left: 4px solid var(--tx-3);
+  background: var(--panel);
+  color: var(--tx);
+  font-size: 14px;
+}
+
+.note--err {
+  border-left-color: var(--err);
+}
+
+.note--ok {
+  border-left-color: var(--ok);
+}
+
+.savebar-notes {
+  flex: 1 1 320px;
+  max-width: 480px;
+}
+
+.savebar-spacer {
+  flex: 1;
+}
+
+@media (max-width: 959px) {
+  .profile-grid,
+  .form-grid,
+  .form-grid--2 {
+    grid-template-columns: 1fr;
+  }
+
+  .span-2,
+  .span-3 {
+    grid-column: span 1;
+  }
 }
 </style>

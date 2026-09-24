@@ -16,13 +16,17 @@ body {
   background: var(--bg);
 }
 
+/* Horizontal clipping lives on html so it reaches the viewport; on body it would make body the scroll container and break position: sticky. */
+html {
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   color: var(--tx);
   font-family: var(--font-body);
   font-size: 15px;
   line-height: 1.5;
-  overflow-x: hidden;
 }
 
 *,

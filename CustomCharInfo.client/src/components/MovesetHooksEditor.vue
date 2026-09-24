@@ -1,87 +1,97 @@
 <template>
-  <section>
-    <h2>
-      Hooks
-      <v-btn
-        variant="text"
-        density="compact"
-        icon="mdi-plus"
-        class="rotate-toggle"
-        :class="{ rotated: showForm }"
-        @click="toggleForm"
-      />
-    </h2>
-    <p class="subheader">
-      <router-link to="/hooks/add" class="unvisitable" target="_blank">
-        Don't see your hook?
+  <div class="list-editor">
+    <div class="list-editor__head">
+      <router-link to="/hooks/add" target="_blank" class="list-editor__hint">
+        Don't see your hook? Submit it.
       </router-link>
-    </p>
+      <AppButton
+        variant="ghost"
+        size="sm"
+        :icon="showForm ? 'mdi-close' : 'mdi-plus'"
+        @click="toggleForm"
+      >
+        {{ showForm ? 'Cancel' : 'Add a hook' }}
+      </AppButton>
+    </div>
 
     <!-- Add / edit -->
     <v-expand-transition>
-      <div v-if="showForm">
-        <v-row>
-          <v-col cols="12">
-            <v-autocomplete
-              v-model="draft.hookId"
-              variant="outlined"
-              :items="hookOptions"
-              :item-title="(item) => `${formatOffset(item.offset)} (${item.description})`"
-              item-value="hookId"
-              label="Hook Offset"
-              hide-details
-            />
-          </v-col>
-          <v-col cols="12" sm="10">
-            <v-text-field
-              v-model="draft.description"
-              variant="outlined"
-              label="Hook Usage"
-              :placeholder="`What does ${characterName || 'the character'} use this for?`"
-            />
-          </v-col>
-          <v-col cols="12" sm="2" class="justify-content-center">
-            <v-btn class="btn add-button" @click="commitDraft">
-              {{ editingIndex !== null ? 'Update Hook' : 'Add Hook' }}
-            </v-btn>
-          </v-col>
-        </v-row>
+      <div v-if="showForm" class="list-editor__form">
+        <LabeledField label="Hook" required class="list-editor__wide">
+          <v-autocomplete
+            v-model="draft.hookId"
+            :items="hookOptions"
+            :item-title="(item) => `${formatOffset(item.offset)} (${item.description})`"
+            item-value="hookId"
+            density="compact"
+            hide-details
+          />
+        </LabeledField>
+        <LabeledField label="What it is used for" class="list-editor__wide">
+          <v-text-field
+            v-model="draft.description"
+            :placeholder="`What does ${characterName || 'the character'} use this for?`"
+            density="compact"
+            hide-details
+          />
+        </LabeledField>
+        <AppButton size="sm" icon="mdi-check" class="list-editor__commit" @click="commitDraft">
+          {{ editingIndex !== null ? 'Update hook' : 'Add hook' }}
+        </AppButton>
       </div>
     </v-expand-transition>
 
     <!-- List -->
-    <v-list>
-      <v-list-item v-for="(entry, i) in hooks" :key="i">
-        <v-list-item-title>
-          {{ formatOffset(entry.offset) }}
-          <span class="hook-usage-dim">({{ entry.hookDescription }})</span> –
-          <span class="hook-usage-dim">{{ entry.description }}</span>
-        </v-list-item-title>
-        <template #append>
-          <v-icon
-            class="reorder-icon"
-            :class="{ invisible: i === 0 }"
+    <ul v-if="hooks.length" class="list-editor__list">
+      <li v-for="(entry, i) in hooks" :key="i" class="list-editor__row">
+        <span class="list-editor__text">
+          <strong class="mono">{{ formatOffset(entry.offset) }}</strong>
+          <span class="muted">{{ entry.hookDescription }}</span>
+          <span v-if="entry.description" class="faint">{{ entry.description }}</span>
+        </span>
+        <span class="list-editor__actions">
+          <button
+            type="button"
+            class="icon-btn"
+            :class="{ 'icon-btn--hidden': i === 0 }"
+            aria-label="Move up"
             @click="moveItem(hooks, i, -1)"
-            >mdi-arrow-up</v-icon
           >
-          <v-icon
-            class="reorder-icon"
-            :class="{ invisible: i === hooks.length - 1 }"
+            <v-icon size="18">mdi-arrow-up</v-icon>
+          </button>
+          <button
+            type="button"
+            class="icon-btn"
+            :class="{ 'icon-btn--hidden': i === hooks.length - 1 }"
+            aria-label="Move down"
             @click="moveItem(hooks, i, 1)"
-            >mdi-arrow-down</v-icon
           >
-          <v-icon class="edit-icon" @click="editEntry(i)">mdi-pencil</v-icon>
-          <v-icon class="delete-icon" @click="hooks.splice(i, 1)">mdi-delete</v-icon>
-        </template>
-      </v-list-item>
-    </v-list>
-  </section>
+            <v-icon size="18">mdi-arrow-down</v-icon>
+          </button>
+          <button type="button" class="icon-btn" aria-label="Edit" @click="editEntry(i)">
+            <v-icon size="18">mdi-pencil</v-icon>
+          </button>
+          <button
+            type="button"
+            class="icon-btn icon-btn--danger"
+            aria-label="Remove"
+            @click="hooks.splice(i, 1)"
+          >
+            <v-icon size="18">mdi-delete</v-icon>
+          </button>
+        </span>
+      </li>
+    </ul>
+    <p v-else class="list-editor__empty">No hooks yet.</p>
+  </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import { moveItem } from '@/services/listUtils'
 import { formatOffset } from '@/services/offsets'
+import LabeledField from '@/components/LabeledField.vue'
+import AppButton from '@/components/AppButton.vue'
 
 // Editable list of the hooks a moveset uses: { hookId, offset, hookDescription, description }.
 // offset and hookDescription are copied from the chosen hook so the list can render without a lookup.
@@ -137,57 +147,108 @@ const editEntry = (i) => {
 </script>
 
 <style scoped>
-h2 {
-  font-size: 2.25em;
-  margin-bottom: 10px;
+.list-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
-.subheader {
-  margin-top: -1.5em;
-  margin-bottom: 0.5em;
+
+.list-editor__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.list-editor__hint {
   font-size: 12px;
+  color: var(--tx-2);
 }
-.btn {
-  text-transform: unset;
-  letter-spacing: 0.009375em;
-  font-size: medium;
+
+.list-editor__form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+  padding: 14px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
 }
-.add-button {
-  background-color: #2e2e2e;
-  color: #e2e2e2;
-  margin-top: 10px;
-  margin-left: 10px;
-  box-shadow: none;
+
+.list-editor__commit {
+  margin-bottom: 5px;
 }
-.edit-icon,
-.delete-icon,
-.reorder-icon {
+
+.list-editor__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list-editor__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.list-editor__row:last-child {
+  border-bottom: 0;
+}
+
+.list-editor__text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.list-editor__actions {
+  display: flex;
+  gap: 2px;
+  flex: none;
+}
+
+.list-editor__empty {
+  margin: 0;
+  color: var(--tx-3);
+  font-size: 13px;
+}
+
+.icon-btn {
+  display: flex;
+  padding: 4px;
+  border: 0;
   background: none;
-  font-size: 20px;
-  margin-left: 8px;
-  color: #aaaaaa;
-  transition: color 150ms ease-in-out;
+  color: var(--tx-2);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease);
 }
-.edit-icon:hover,
-.delete-icon:hover,
-.reorder-icon:hover {
-  color: #dddddd;
+
+.icon-btn:hover {
+  color: var(--white);
 }
-.edit-icon::before,
-.delete-icon::before,
-.reorder-icon::before {
-  margin-top: -4px;
+
+.icon-btn--danger:hover {
+  color: var(--err);
 }
-.invisible {
+
+.icon-btn--hidden {
   visibility: hidden;
   pointer-events: none;
 }
-.hook-usage-dim {
-  opacity: 0.6;
-}
-:deep(.rotate-toggle > span > i::before) {
-  transition: transform 250ms ease-in-out;
-}
-:deep(.rotate-toggle.rotated span > i::before) {
-  transform: rotate(-45deg);
+
+@media (max-width: 959px) {
+  .list-editor__form {
+    grid-template-columns: 1fr;
+  }
+
+  .list-editor__commit {
+    margin-bottom: 0;
+  }
 }
 </style>

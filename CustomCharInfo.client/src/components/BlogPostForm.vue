@@ -1,77 +1,50 @@
 <template>
-  <v-container max-width="1020px">
-    <!-- Header -->
-    <h1 class="mb-4">Add Blog Post</h1>
+  <PageShell title="Add a blog post" :back-to="{ name: 'AdminPortal' }" back-label="Admin portal">
+    <FormLayout>
+      <FormSection id="post" title="Post">
+        <LabeledField label="Title" required>
+          <v-text-field v-model="form.blogTitle" />
+        </LabeledField>
 
-    <!-- Blog Form -->
-    <section>
-      <v-row>
-        <!-- Blog Title -->
-        <v-col cols="12">
-          <v-text-field
-            v-model="form.blogTitle"
-            variant="outlined"
-            label="Post Title"
-            hide-details
-          />
-        </v-col>
-
-        <!-- Blog Text + Preview -->
-        <v-col cols="12">
-          <div class="editor-header">
-            <span class="editor-label">Post Content</span>
-            <div class="tab-group">
-              <button
-                class="tab-btn"
-                :class="{ active: tab === 'write' }"
-                type="button"
-                @click="tab = 'write'"
-              >
-                Write
-              </button>
-              <button
-                class="tab-btn"
-                :class="{ active: tab === 'preview' }"
-                type="button"
-                @click="tab = 'preview'"
-              >
-                Preview
-              </button>
-            </div>
+        <LabeledField label="Content" required hint="Markdown is supported.">
+          <div class="editor-tabs">
+            <AppButton
+              size="sm"
+              :variant="tab === 'write' ? 'primary' : 'ghost'"
+              @click="tab = 'write'"
+            >
+              Write
+            </AppButton>
+            <AppButton
+              size="sm"
+              :variant="tab === 'preview' ? 'primary' : 'ghost'"
+              @click="tab = 'preview'"
+            >
+              Preview
+            </AppButton>
           </div>
-
-          <v-textarea
-            v-if="tab === 'write'"
-            v-model="form.blogText"
-            variant="outlined"
-            placeholder="Markdown is supported."
-            auto-grow
-            rows="5"
-            hide-details
-          />
+          <v-textarea v-if="tab === 'write'" v-model="form.blogText" auto-grow rows="8" />
           <div v-else class="preview-box">
             <!-- Content is DOMPurify-sanitized -->
             <!-- eslint-disable-next-line vue/no-v-html -->
             <div v-if="renderedPreview" class="preview-content" v-html="renderedPreview" />
             <span v-else class="preview-empty">Nothing to preview.</span>
           </div>
-        </v-col>
+        </LabeledField>
 
-        <!-- Blog Image -->
-        <v-col cols="12" sm="6">
-          <p class="field-label">Post Image</p>
+        <LabeledField label="Image" note="optional" class="image-field">
           <ImageUploadField v-model="form.blogImageUrl" />
-        </v-col>
-      </v-row>
-    </section>
+        </LabeledField>
+      </FormSection>
 
-    <!-- Submit -->
-    <div class="d-flex justify-end">
-      <v-btn class="submit-button" :loading="isSubmitting" :disabled="isSubmitting" @click="submit">
-        {{ uploadStatus || 'Add Blog Post' }}
-      </v-btn>
-    </div>
-  </v-container>
+      <template #savebar>
+        <span class="savebar-spacer"></span>
+        <AppButton variant="primary" icon="mdi-check" :busy="isSubmitting" @click="submit">
+          {{ uploadStatus || 'Publish post' }}
+        </AppButton>
+      </template>
+    </FormLayout>
+  </PageShell>
 </template>
 
 <script setup>
@@ -80,6 +53,11 @@ import { useRouter } from 'vue-router'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import api from '@/services/api'
+import PageShell from '@/components/PageShell.vue'
+import FormLayout from '@/components/FormLayout.vue'
+import FormSection from '@/components/FormSection.vue'
+import LabeledField from '@/components/LabeledField.vue'
+import AppButton from '@/components/AppButton.vue'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import { useImageUpload, isStagedFile } from '@/composables/useImageUpload'
 import { useNotify } from '@/composables/useNotify'
@@ -104,7 +82,7 @@ const { uploadIfNeeded } = useImageUpload('/upload/blog-image')
 
 const submit = async () => {
   if (!form.value.blogTitle?.trim() || !form.value.blogText?.trim()) {
-    notify.warning('Blog Title and Blog Text are required.')
+    notify.warning('A title and content are required.')
     return
   }
 
@@ -114,7 +92,7 @@ const submit = async () => {
   isSubmitting.value = true
   const stagedImage = isStagedFile(form.value.blogImageUrl) ? form.value.blogImageUrl : null
 
-  uploadStatus.value = 'Posting...'
+  uploadStatus.value = 'Posting'
 
   let newId
   try {
@@ -133,7 +111,7 @@ const submit = async () => {
   }
 
   if (stagedImage) {
-    uploadStatus.value = 'Uploading image...'
+    uploadStatus.value = 'Uploading image'
     try {
       const blogImageUrl = await uploadIfNeeded(stagedImage)
       await api.patch(`/blog/${newId}/image`, { blogImageUrl })
@@ -153,81 +131,43 @@ const submit = async () => {
 </script>
 
 <style scoped>
-section {
-  margin-bottom: 2rem;
-  background-color: #1e1e1e;
-  padding: 1em;
-  border-radius: 10px;
-}
-h1 {
-  font-size: 3.25em;
-}
-.submit-button {
-  background-color: #2e2e2e;
-  color: #e2e2e2;
-  text-transform: unset;
-}
-.field-label {
-  font-size: 0.85rem;
-  color: #b0b0b0;
-  margin-bottom: 4px;
-}
-
-.editor-header {
+.editor-tabs {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 6px;
-}
-.editor-label {
-  font-size: 0.9rem;
-  color: #9e9e9e;
-}
-.tab-group {
-  display: flex;
-  border: 1px solid #444;
-  border-radius: 6px;
-  overflow: hidden;
-}
-.tab-btn {
-  background: transparent;
-  color: #9e9e9e;
-  border: none;
-  padding: 4px 14px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition:
-    background 150ms,
-    color 150ms;
-}
-.tab-btn:hover {
-  background: #2e2e2e;
-  color: #e2e2e2;
-}
-.tab-btn.active {
-  background: #2e2e2e;
-  color: #e2e2e2;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
 .preview-box {
-  border: 1px solid #444;
-  border-radius: 4px;
-  min-height: 140px;
+  min-height: 160px;
   padding: 12px 16px;
+  border: 1px solid var(--line-2);
+  background: var(--panel-2);
 }
+
 .preview-empty {
-  color: #555;
+  color: var(--tx-3);
   font-style: italic;
 }
+
 .preview-content :deep(p) {
   margin-bottom: 0.75em;
 }
+
 .preview-content :deep(ol),
 .preview-content :deep(ul) {
   padding-left: 1.5em;
   margin-bottom: 0.75em;
 }
+
 .preview-content :deep(li) {
   margin-bottom: 0.2em;
+}
+
+.image-field {
+  max-width: 480px;
+}
+
+.savebar-spacer {
+  flex: 1;
 }
 </style>

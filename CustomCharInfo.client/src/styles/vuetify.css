@@ -221,3 +221,45 @@
 .v-tab .v-btn__overlay {
   display: none;
 }
+
+/* Date picker, used by the moveset form's release date */
+.v-date-picker {
+  background: var(--panel);
+  color: var(--tx);
+  border: 1px solid var(--line-2);
+}
+
+.v-date-picker .v-btn--variant-outlined {
+  border: 0;
+}
+
+.v-date-picker .v-btn--active {
+  background: var(--white);
+  color: #000;
+}
+
+/* Radio groups and switches */
+.v-radio .v-selection-control__input .v-icon {
+  color: var(--tx-2);
+}
+
+.v-radio.v-selection-control--dirty .v-selection-control__input .v-icon {
+  color: var(--white);
+}
+
+.v-switch .v-switch__track {
+  background: var(--line-2);
+  opacity: 1;
+}
+
+.v-switch .v-selection-control--dirty .v-switch__track {
+  background: var(--white);
+}
+
+.v-switch .v-switch__thumb {
+  background: var(--tx);
+}
+
+.v-switch .v-selection-control--dirty .v-switch__thumb {
+  background: #000;
+}

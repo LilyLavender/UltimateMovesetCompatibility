@@ -1,54 +1,43 @@
 <template>
-  <v-container max-width="1020px">
-    <h1 class="mb-4 page-title no-select">Reset Password</h1>
+  <PageShell title="Reset password" tier="narrow">
+    <p v-if="error" class="note note--err">{{ error }}</p>
 
-    <v-alert v-if="error" type="error" class="mb-4">
-      {{ error }}
-    </v-alert>
+    <div v-if="success" class="note note--ok">
+      Password reset. You can now
+      <router-link :to="{ name: 'UserActions' }">log in</router-link>.
+    </div>
 
-    <v-alert v-if="success" type="success" class="mb-4">
-      Password successfully reset. You can now log in.
-    </v-alert>
-
-    <v-form v-if="!success" @submit.prevent="submit">
-      <v-row>
-        <!-- Password -->
-        <v-col cols="12" sm="6">
-          <v-text-field
-            v-model="password"
-            variant="outlined"
-            label="New Password"
-            type="password"
-            required
-          />
-        </v-col>
-
-        <!-- Confirm -->
-        <v-col cols="12" sm="6">
-          <v-text-field
-            v-model="confirm"
-            variant="outlined"
-            label="Confirm Password"
-            type="password"
-            required
-          />
-        </v-col>
-
-        <!-- Button -->
-        <v-col cols="12" sm="2">
-          <v-btn color="primary" block :loading="loading" type="submit" class="btn">
-            Reset Password
-          </v-btn>
-        </v-col>
-      </v-row>
-    </v-form>
-  </v-container>
+    <form v-else class="panel reset-form" @submit.prevent="submit">
+      <LabeledField label="New password" required for-id="reset-password">
+        <v-text-field
+          id="reset-password"
+          v-model="password"
+          type="password"
+          autocomplete="new-password"
+        />
+      </LabeledField>
+      <LabeledField label="Confirm password" required for-id="reset-confirm">
+        <v-text-field
+          id="reset-confirm"
+          v-model="confirm"
+          type="password"
+          autocomplete="new-password"
+        />
+      </LabeledField>
+      <AppButton type="submit" variant="primary" icon="mdi-lock-reset" :busy="loading">
+        Reset password
+      </AppButton>
+    </form>
+  </PageShell>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/services/api'
+import PageShell from '@/components/PageShell.vue'
+import LabeledField from '@/components/LabeledField.vue'
+import AppButton from '@/components/AppButton.vue'
 
 const route = useRoute()
 
@@ -85,12 +74,38 @@ const submit = async () => {
 </script>
 
 <style scoped>
-.page-title {
-  font-size: 4em;
-  margin-top: 0.5em;
+.reset-form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  max-width: 480px;
 }
 
-.btn {
-  margin-top: -1em;
+.reset-form > .field {
+  align-self: stretch;
+}
+
+.note {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--line-2);
+  border-left: 4px solid var(--tx-3);
+  background: var(--panel);
+  color: var(--tx);
+  font-size: 14px;
+}
+
+.note--err {
+  border-left-color: var(--err);
+}
+
+.note--ok {
+  border-left-color: var(--ok);
+}
+
+.note a {
+  color: var(--white);
+  text-decoration: underline;
 }
 </style>

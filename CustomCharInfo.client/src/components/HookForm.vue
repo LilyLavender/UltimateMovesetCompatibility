@@ -1,127 +1,101 @@
 <template>
-  <div v-if="(isEditMode && hook) || (!isEditMode && form)">
-    <v-container max-width="1020px">
-      <!-- Header -->
-      <h1 v-if="isEditMode">Edit Hook</h1>
-      <h1 v-else>Add Hook</h1>
-
-      <!-- Basic Info -->
-      <section>
-        <v-row>
+  <PageShell
+    v-if="(isEditMode && hook) || (!isEditMode && form)"
+    :title="isEditMode ? 'Edit hook' : 'Submit a hook'"
+    :head="false"
+  >
+    <FormLayout>
+      <FormSection id="hook" title="Hook">
+        <div class="form-grid">
           <!-- Offset and the version it was read from (add mode only; edits go per version below) -->
           <template v-if="!isEditMode">
-            <v-col cols="12" sm="4">
+            <LabeledField label="Offset" required hint="Hex, without leading zeros.">
               <v-text-field
                 v-model="offsetInput"
-                variant="outlined"
-                label="Offset (hex)"
                 placeholder="123ABC"
                 prefix="0x"
+                class="mono-input"
               />
-            </v-col>
-
-            <v-col cols="12" sm="4">
+            </LabeledField>
+            <LabeledField label="Game version" required>
               <v-select
                 v-model="form.gameVersionId"
-                variant="outlined"
                 :items="gameVersions"
                 item-title="name"
                 item-value="gameVersionId"
-                label="Game Version"
               />
-            </v-col>
+            </LabeledField>
           </template>
 
-          <!-- Hookable Status -->
-          <v-col cols="12" sm="4">
+          <LabeledField label="Hookable status" required>
             <v-select
               v-model="form.hookableStatusId"
-              variant="outlined"
               :items="hookableStatuses"
               item-title="name"
               item-value="hookableStatusId"
-              label="Hookable Status"
             />
-          </v-col>
-        </v-row>
+          </LabeledField>
 
-        <v-row>
-          <!-- Description -->
-          <v-col cols="12">
-            <v-textarea
-              v-model="form.description"
-              variant="outlined"
-              label="Description (what the hook normally handles)"
-              auto-grow
-              rows="1"
-            />
-          </v-col>
-        </v-row>
-      </section>
+          <LabeledField
+            label="Description"
+            required
+            hint="What the hook normally handles."
+            class="span-3"
+          >
+            <v-textarea v-model="form.description" auto-grow rows="1" />
+          </LabeledField>
+        </div>
+      </FormSection>
 
       <!-- Offsets by version -->
-      <section v-if="isEditMode">
-        <h2>Offsets by version</h2>
-        <p class="help-text">
-          Confirm an offset once you have checked it against that version of the game, or type a
-          corrected one and save it.
-        </p>
-
-        <v-row v-for="row in versionRows" :key="row.gameVersionId" class="version-row" dense>
-          <v-col cols="12" sm="2" class="version-label">{{ row.name }}</v-col>
-          <v-col cols="12" sm="4">
+      <FormSection
+        v-if="isEditMode"
+        id="offsets"
+        title="Offsets by version"
+        description="Confirm an offset once you have checked it against that version of the game, or type a corrected one and save it."
+      >
+        <div class="version-rows">
+          <div v-for="row in versionRows" :key="row.gameVersionId" class="version-row">
+            <span class="version-row__name">{{ row.name }}</span>
             <v-text-field
               v-model="offsetDrafts[row.gameVersionId]"
-              variant="outlined"
               density="compact"
               prefix="0x"
               :placeholder="row.entry ? '' : 'not recorded'"
               hide-details
+              class="mono-input version-row__input"
             />
-          </v-col>
-          <v-col cols="12" sm="3" class="d-flex align-center">
-            <span
-              v-if="row.entry"
-              class="offset-pill"
-              :class="`offset-state-${row.entry.offsetStateId}`"
-            >
-              {{ OFFSET_STATE_NAMES[row.entry.offsetStateId] || row.entry.offsetState }}
-            </span>
-            <span v-else class="offset-pill offset-state-none">No offset</span>
-          </v-col>
-          <v-col cols="12" sm="3" class="d-flex align-center justify-end">
-            <v-btn
-              class="btn version-button"
-              size="small"
-              :disabled="!canSubmitRow(row) || savingVersionId === row.gameVersionId"
-              :loading="savingVersionId === row.gameVersionId"
+            <StatusTag v-if="row.entry" :offset-state="row.entry.offsetStateId" />
+            <StatusTag v-else variant="outline">No offset</StatusTag>
+            <AppButton
+              size="sm"
+              :variant="rowChanged(row) ? 'primary' : 'default'"
+              :disabled="!canSubmitRow(row)"
+              :busy="savingVersionId === row.gameVersionId"
+              class="version-row__button"
               @click="submitRow(row)"
             >
               {{ rowButtonLabel(row) }}
-            </v-btn>
-          </v-col>
-        </v-row>
-      </section>
+            </AppButton>
+          </div>
+        </div>
+      </FormSection>
 
-      <!-- Notes + Submit -->
-      <div class="d-flex align-start ga-3 justify-end">
-        <v-textarea
-          v-model="form.notes"
-          variant="outlined"
-          density="compact"
+      <template #savebar>
+        <LabeledField
           :label="isEditMode ? 'Editing notes' : 'Submission notes'"
-          placeholder="Optional, shown to admins only."
-          rows="1"
-          auto-grow
-          hide-details
-          class="notes-field"
-        />
-        <v-btn class="btn submit-button mt-1" @click="submit">
-          {{ isEditMode ? 'Save' : 'Add Hook' }}
-        </v-btn>
-      </div>
-    </v-container>
-  </div>
+          note="admins only"
+          class="savebar-notes"
+        >
+          <v-textarea v-model="form.notes" density="compact" rows="1" auto-grow hide-details />
+        </LabeledField>
+        <span class="savebar-spacer"></span>
+        <AppButton variant="primary" icon="mdi-check" :busy="isSubmitting" @click="submit">
+          {{ isEditMode ? 'Save changes' : 'Submit hook' }}
+        </AppButton>
+      </template>
+    </FormLayout>
+  </PageShell>
 </template>
 
 <script setup>
@@ -130,7 +104,13 @@ import { useRouter } from 'vue-router'
 import { useHead } from '@unhead/vue'
 import api from '@/services/api'
 import { useNotify } from '@/composables/useNotify'
-import { OffsetState, OFFSET_STATE_NAMES } from '@/globals'
+import { OffsetState } from '@/globals'
+import PageShell from '@/components/PageShell.vue'
+import FormLayout from '@/components/FormLayout.vue'
+import FormSection from '@/components/FormSection.vue'
+import LabeledField from '@/components/LabeledField.vue'
+import AppButton from '@/components/AppButton.vue'
+import StatusTag from '@/components/StatusTag.vue'
 
 const notify = useNotify()
 
@@ -141,7 +121,9 @@ const props = defineProps({
 
 const isEditMode = computed(() => props.mode === 'edit')
 
-useHead(computed(() => (isEditMode.value ? { title: 'UMC | Editing Hook' } : {})))
+useHead(
+  computed(() => ({ title: isEditMode.value ? 'UMC | Editing hook' : 'UMC | Submit a hook' }))
+)
 const router = useRouter()
 
 const hook = ref(null)
@@ -157,6 +139,7 @@ const form = ref({
 const offsetInput = ref('')
 const hookableStatuses = ref([])
 const gameVersions = ref([])
+const isSubmitting = ref(false)
 
 // Edit mode: one draft per game version, keyed by id, compared against the saved entry to decide the button.
 const offsetDrafts = ref({})
@@ -273,6 +256,7 @@ const submit = async () => {
       }
     : { ...form.value }
 
+  isSubmitting.value = true
   try {
     if (isEditMode.value && props.hookId) {
       await api.put(`/hooks/${props.hookId}`, payload)
@@ -287,87 +271,80 @@ const submit = async () => {
     }
     console.error('Submit failed:', JSON.stringify(err.response?.data) || err.message)
     notify.error('Failed to save hook.', err)
+  } finally {
+    isSubmitting.value = false
   }
 }
 </script>
 
 <style scoped>
-section {
-  margin-bottom: 2rem;
-  background-color: #1e1e1e;
-  padding: 1em;
-  border-radius: 10px;
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
 }
 
-h1 {
-  font-size: 3.25em;
+.span-3 {
+  grid-column: span 3;
 }
 
-h2 {
-  font-size: 1.6em;
-  margin-bottom: 0.25em;
+.mono-input :deep(input),
+.mono-input :deep(.v-text-field__prefix__text) {
+  font-family: var(--font-mono);
 }
 
-.help-text {
-  font-size: 0.85rem;
-  opacity: 0.7;
-  margin-bottom: 1em;
+.version-rows {
+  display: flex;
+  flex-direction: column;
 }
 
 .version-row {
+  display: grid;
+  grid-template-columns: 90px minmax(160px, 1fr) auto auto;
+  gap: 12px;
   align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
 }
 
-.version-label {
-  font-weight: bold;
+.version-row:last-child {
+  border-bottom: 0;
 }
 
-.version-button {
-  background-color: #2e2e2e;
-  color: #e2e2e2;
-  box-shadow: none;
+.version-row__name {
+  font-family: var(--font-mono);
+  font-weight: 600;
 }
 
-.submit-button {
-  background-color: #1e1e1e;
-  color: #e2e2e2;
+.version-row__button {
+  min-width: 110px;
 }
 
-.offset-pill {
-  display: inline-block;
-  padding: 1px 7px;
-  border-radius: 10px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.offset-state-1 {
-  background-color: #2e7d32;
-  color: white;
-}
-.offset-state-2 {
-  background-color: #fbc02d;
-  color: black;
-}
-.offset-state-3 {
-  background-color: #ef6c00;
-  color: white;
-}
-.offset-state-none {
-  background-color: #3a3a3a;
-  color: #bbbbbb;
+.savebar-notes {
+  flex: 1 1 320px;
+  max-width: 480px;
 }
 
-.notes-field {
-  max-width: 400px;
+.savebar-spacer {
+  flex: 1;
 }
-.notes-field :deep(.v-field__input) {
-  font-size: 0.85rem;
-  padding-top: 6px;
-  padding-bottom: 6px;
-}
-.notes-field :deep(.v-label) {
-  font-style: italic;
-  color: #6e6e6e !important;
+
+@media (max-width: 959px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .span-3 {
+    grid-column: span 1;
+  }
+
+  .version-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .version-row__input {
+    grid-column: span 2;
+  }
 }
 </style>

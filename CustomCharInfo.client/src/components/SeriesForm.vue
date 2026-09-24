@@ -1,72 +1,56 @@
 <template>
-  <div v-if="(isEditMode && series) || (!isEditMode && form)">
-    <v-container max-width="1020px">
-      <!-- Header -->
-      <h1 v-if="isEditMode">Edit {{ series.seriesName }}</h1>
-      <h1 v-else>Add Series</h1>
-
-      <!-- Basic Info -->
-      <section>
-        <!-- Add mode intro para -->
-        <p v-if="!isEditMode" class="mb-3">
+  <PageShell
+    v-if="(isEditMode && series) || (!isEditMode && form)"
+    :title="isEditMode ? `Edit ${series.seriesName}` : 'Submit a series'"
+    :head="false"
+  >
+    <FormLayout>
+      <FormSection id="series" title="Series">
+        <p v-if="!isEditMode" class="section-note">
           Please do not upload series that are meant to be private. Instead, set the series of your
           private moveset to &quot;Super Smash Bros.&quot;
         </p>
-        <p class="mb-3">
+        <p class="section-note">
           For information on image hosting in UMC, see
-          <router-link to="/image-hosting" class="unvisitable" target="_blank">here</router-link>.
+          <router-link to="/image-hosting" target="_blank">image hosting</router-link>.
         </p>
 
-        <v-row>
-          <!-- Series Name -->
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model="form.seriesName"
-              variant="outlined"
-              label="Series Name"
-              :error="!!nameError"
-              :error-messages="nameError"
-            />
-          </v-col>
+        <div class="form-grid">
+          <LabeledField label="Series name" required :error="nameError">
+            <v-text-field v-model="form.seriesName" :error="!!nameError" />
+          </LabeledField>
 
-          <!-- Image URL -->
-          <v-col cols="12" sm="8">
-            <p class="field-label">Series Icon (800x800)</p>
+          <LabeledField
+            label="Series icon"
+            note="800 by 800"
+            hint="Series icons must be #333333 on an 800 by 800 canvas with 100px of padding on each side. See other series icons for reference."
+            class="span-2"
+          >
             <ImageUploadField
               v-model="form.seriesIconUrl"
               :required-width="IMAGE_UPLOAD_SPECS.series_icon.width"
               :required-height="IMAGE_UPLOAD_SPECS.series_icon.height"
-              hint="Series icons MUST be #333333 on a 800x800 canvas with 100px of padding on each side. See other series icons for reference."
               :preview-max-height="180"
             />
-          </v-col>
-        </v-row>
-      </section>
+          </LabeledField>
+        </div>
+      </FormSection>
 
-      <!-- Notes + Submit -->
-      <div class="d-flex align-start ga-3 justify-end">
-        <v-textarea
-          v-model="form.notes"
-          variant="outlined"
-          density="compact"
+      <template #savebar>
+        <LabeledField
           :label="isEditMode ? 'Editing notes' : 'Submission notes'"
-          placeholder="Optional, shown to admins only."
-          rows="1"
-          auto-grow
-          hide-details
-          class="notes-field"
-        />
-        <v-btn
-          class="btn submit-button mt-1"
-          :loading="isSubmitting"
-          :disabled="isSubmitting"
-          @click="submit"
+          note="admins only"
+          class="savebar-notes"
         >
-          {{ uploadStatus || (isEditMode ? 'Save' : 'Add Series') }}
-        </v-btn>
-      </div>
-    </v-container>
-  </div>
+          <v-textarea v-model="form.notes" density="compact" rows="1" auto-grow hide-details />
+        </LabeledField>
+        <span class="savebar-spacer"></span>
+        <AppButton variant="primary" icon="mdi-check" :busy="isSubmitting" @click="submit">
+          {{ uploadStatus || (isEditMode ? 'Save changes' : 'Submit series') }}
+        </AppButton>
+      </template>
+    </FormLayout>
+  </PageShell>
 </template>
 
 <script setup>
@@ -74,6 +58,11 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useHead } from '@unhead/vue'
 import api from '@/services/api'
+import PageShell from '@/components/PageShell.vue'
+import FormLayout from '@/components/FormLayout.vue'
+import FormSection from '@/components/FormSection.vue'
+import LabeledField from '@/components/LabeledField.vue'
+import AppButton from '@/components/AppButton.vue'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import { IMAGE_UPLOAD_SPECS } from '@/globals'
 import { useImageUpload, isStagedFile } from '@/composables/useImageUpload'
@@ -91,7 +80,11 @@ const router = useRouter()
 
 const series = ref(null)
 
-useHead(computed(() => (series.value ? { title: `UMC | Editing ${series.value.seriesName}` } : {})))
+useHead(
+  computed(() => ({
+    title: series.value ? `UMC | Editing ${series.value.seriesName}` : 'UMC | Submit a series',
+  }))
+)
 
 const form = ref({
   seriesName: '',
@@ -155,7 +148,7 @@ const submit = async () => {
 
   if (props.mode === 'edit' && props.seriesId) {
     // Edit mode: the series already exists, so upload first (as before) and save in one request.
-    uploadStatus.value = 'Uploading image...'
+    uploadStatus.value = 'Uploading image'
     try {
       form.value.seriesIconUrl = await uploadIfNeeded(form.value.seriesIconUrl, {
         type: 'series_icon',
@@ -169,7 +162,7 @@ const submit = async () => {
       return
     }
 
-    uploadStatus.value = 'Saving series...'
+    uploadStatus.value = 'Saving series'
     try {
       await api.put(`/series/${props.seriesId}`, { ...form.value })
       router.push('/series')
@@ -194,7 +187,7 @@ const submit = async () => {
   const payload = { ...form.value }
   if (stagedIcon) payload.seriesIconUrl = null
 
-  uploadStatus.value = 'Saving series...'
+  uploadStatus.value = 'Saving series'
 
   let newId
   try {
@@ -213,7 +206,7 @@ const submit = async () => {
   }
 
   if (stagedIcon) {
-    uploadStatus.value = 'Uploading image...'
+    uploadStatus.value = 'Uploading image'
     try {
       const seriesIconUrl = await uploadIfNeeded(stagedIcon, {
         type: 'series_icon',
@@ -241,40 +234,45 @@ watch(() => form.value.seriesName, validateSeriesName)
 </script>
 
 <style scoped>
-/* General display of form */
-section {
-  margin-bottom: 2rem;
-  background-color: #1e1e1e;
-  padding: 1em;
-  border-radius: 10px;
+.section-note {
+  margin: 0 0 4px;
+  color: var(--tx-2);
+  font-size: 14px;
 }
-h1 {
-  font-size: 3.25em;
+
+.section-note a {
+  color: var(--white);
+  text-decoration: underline;
 }
-section h2 {
-  font-size: 2.25em;
-  margin-bottom: 10px;
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+  margin-top: 10px;
 }
-.submit-button {
-  background-color: #2e2e2e;
-  color: #e2e2e2;
-  text-transform: unset;
+
+.span-2 {
+  grid-column: span 2;
 }
-.field-label {
-  font-size: 0.85rem;
-  color: #b0b0b0;
-  margin-bottom: 4px;
+
+.savebar-notes {
+  flex: 1 1 320px;
+  max-width: 480px;
 }
-.notes-field {
-  max-width: 400px;
+
+.savebar-spacer {
+  flex: 1;
 }
-.notes-field :deep(.v-field__input) {
-  font-size: 0.85rem;
-  padding-top: 6px;
-  padding-bottom: 6px;
-}
-.notes-field :deep(.v-label) {
-  font-style: italic;
-  color: #6e6e6e !important;
+
+@media (max-width: 959px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .span-2 {
+    grid-column: span 1;
+  }
 }
 </style>

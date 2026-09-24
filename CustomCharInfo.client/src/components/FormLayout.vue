@@ -115,7 +115,6 @@ onBeforeUnmount(() => observer?.disconnect())
 
 .form-layout__savebar {
   grid-column: 1 / -1;
-  margin: 0 calc(-1 * var(--gutter));
 }
 
 @media (max-width: 959px) {
