@@ -158,14 +158,6 @@ async function submit() {
 </script>
 
 <style scoped>
-/* Motion tokens */
-.note-toggle,
-.note-popover {
-  --duration-quick: 150ms;
-  --duration-fast: 250ms;
-  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
 /* Corner marker on the card */
 .note-toggle {
   position: absolute;
@@ -177,23 +169,22 @@ async function submit() {
   justify-content: center;
   width: 24px;
   height: 24px;
-  border-radius: 50%;
-  border: 1px solid #f9a825;
-  background-color: rgba(18, 18, 18, 0.85);
-  color: #ffd54f;
+  border: 1px solid var(--warn);
+  background: rgba(0, 0, 0, 0.85);
+  color: var(--warn);
   cursor: pointer;
   transition:
-    color var(--duration-quick) var(--ease-smooth-out),
-    border-color var(--duration-quick) var(--ease-smooth-out),
-    background-color var(--duration-quick) var(--ease-smooth-out);
+    color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease);
 }
 .note-toggle:hover {
-  color: #fff;
-  border-color: #ffd54f;
+  color: var(--white);
+  border-color: var(--white);
 }
 .note-toggle--pinned {
-  background-color: #ffd54f;
-  color: #111;
+  background: var(--warn);
+  color: #000;
 }
 
 /* Floating panel below the card */
@@ -204,119 +195,118 @@ async function submit() {
   transform-origin: top center;
   width: 100%;
   z-index: 70;
-  padding: 0.5rem 0.6rem 0.6rem;
-  background-color: #1a1a1a;
-  border: 1px solid #444;
-  border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  padding: 8px 10px 10px;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
   cursor: default;
 }
 
 .note-popover__header {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  margin-bottom: 0.35rem;
+  gap: 6px;
+  margin-bottom: 6px;
 }
 .note-popover__title {
-  font-size: 0.85em;
-  font-weight: bold;
-  color: #ddd;
+  font-size: 13px;
+  font-weight: 700;
 }
 .note-popover__private {
-  font-size: 0.7em;
-  padding: 0 0.45rem;
-  border-radius: 999px;
-  background-color: #2e2e2e;
-  color: #aaa;
+  font-size: 11px;
+  padding: 0 6px;
+  background: var(--panel-2);
+  color: var(--tx-2);
 }
 .note-popover__pick {
   margin-left: auto;
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  font-size: 0.75em;
+  gap: 4px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
   padding: 1px 8px;
-  border-radius: 4px;
-  border: 1px solid #2e7d32;
-  background: #1b3a1b;
-  color: #c8e6c9;
+  border: 1px solid var(--ok);
+  background: transparent;
+  color: var(--ok);
   cursor: pointer;
   transition:
-    background-color var(--duration-quick) var(--ease-smooth-out),
-    border-color var(--duration-quick) var(--ease-smooth-out),
-    color var(--duration-quick) var(--ease-smooth-out);
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 }
 .note-popover__pick:hover {
-  background: #245224;
+  background: var(--ok);
+  color: #000;
 }
 .note-popover__pick--remove {
-  border-color: #c62828;
-  background: #3a1010;
-  color: #ef9a9a;
+  border-color: var(--err);
+  color: var(--err);
 }
 .note-popover__pick--remove:hover {
-  background: #4d1515;
+  background: var(--err);
+  color: #000;
 }
 
 .note-popover__input {
   width: 100%;
   resize: vertical;
   font: inherit;
-  font-size: 0.85em;
-  color: #ddd;
-  background-color: #121212;
-  border: 1px solid #333;
-  border-radius: 4px;
-  padding: 0.3rem 0.45rem;
-  transition: border-color var(--duration-quick) var(--ease-smooth-out);
+  font-size: 13px;
+  color: var(--tx);
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  padding: 5px 8px;
+  transition: border-color var(--dur-fast) var(--ease);
 }
 .note-popover__input:focus {
   outline: none;
-  border-color: #64b5f6;
+  border-color: var(--white);
 }
 
 .note-popover__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
-  margin-top: 0.3rem;
+  gap: 8px;
+  margin-top: 6px;
 }
 .note-popover__meta {
-  font-size: 0.72em;
-  color: #777;
+  font-size: 11px;
+  color: var(--tx-3);
 }
 .note-popover__save {
-  font-size: 0.78em;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
   padding: 2px 10px;
-  border-radius: 4px;
-  border: 1px solid #444;
-  background: #1e1e1e;
-  color: #ccc;
+  border: 1px solid var(--white);
+  background: transparent;
+  color: var(--white);
   cursor: pointer;
   transition:
-    background-color var(--duration-quick) var(--ease-smooth-out),
-    opacity var(--duration-quick) var(--ease-smooth-out);
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease);
 }
 .note-popover__save:hover:not(:disabled) {
-  background: #2a2a2a;
+  background: var(--white);
+  color: #000;
 }
 .note-popover__save:disabled {
   opacity: 0.4;
   cursor: default;
 }
 
-/* Open and close: a short scale-up from the card's edge with a fade */
+/* Open and close: a short scale-up from the card edge with a fade */
 .pop-enter-active {
   transition:
-    transform var(--duration-fast) var(--ease-smooth-out),
-    opacity var(--duration-fast) var(--ease-smooth-out);
+    transform var(--dur-base) var(--ease),
+    opacity var(--dur-base) var(--ease);
 }
 .pop-leave-active {
   transition:
-    transform var(--duration-quick) var(--ease-smooth-out),
-    opacity var(--duration-quick) var(--ease-smooth-out);
+    transform var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease);
 }
 .pop-enter-from,
 .pop-leave-to {

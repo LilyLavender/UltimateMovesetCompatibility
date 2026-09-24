@@ -1,154 +1,93 @@
 <template>
-  <v-card class="pa-4" :max-width="cardMaxWidth">
-    <!-- Sign in/out/up -->
-    <div>
-      <!-- Sign in/up -->
-      <div v-if="!authStore.isLoggedIn">
-        <!-- Email/password -->
-        <v-text-field v-model="email" label="Email" variant="outlined" />
-        <v-text-field v-model="password" label="Password" type="password" variant="outlined">
-          <template #details>
-            <router-link to="/forgot-password" class="offsite unvisitable" target="_blank"
-              >Forgot Password?</router-link
-            >
-          </template>
-        </v-text-field>
+  <section class="panel auth-panel">
+    <!-- Signed out: log in or register -->
+    <template v-if="!authStore.isLoggedIn">
+      <h3 class="auth-panel__title">Log in</h3>
+      <form class="auth-panel__form" @submit.prevent="login">
+        <LabeledField label="Email" for-id="auth-email">
+          <v-text-field id="auth-email" v-model="email" type="email" autocomplete="email" />
+        </LabeledField>
+        <LabeledField label="Password" for-id="auth-password">
+          <v-text-field
+            id="auth-password"
+            v-model="password"
+            type="password"
+            autocomplete="current-password"
+          />
+          <router-link to="/forgot-password" class="auth-panel__forgot"
+            >Forgot password?</router-link
+          >
+        </LabeledField>
 
-        <!-- Register/login buttons -->
-        <div>
-          <v-btn class="multibtn user-link" @click="register">
-            <v-icon>mdi-account-plus</v-icon>
-            Register
-          </v-btn>
-          <v-btn class="multibtn user-link" @click="login">
-            <v-icon>mdi-login</v-icon>
+        <div class="auth-panel__actions">
+          <AppButton type="submit" variant="primary" icon="mdi-login" :busy="busy === 'login'">
             Log in
-          </v-btn>
+          </AppButton>
+          <AppButton
+            type="button"
+            variant="ghost"
+            icon="mdi-account-plus"
+            :busy="busy === 'register'"
+            @click="register"
+          >
+            Register
+          </AppButton>
         </div>
 
-        <!-- Errors -->
-        <div v-if="errorMsgs.length" class="error">
-          <h3>Error:</h3>
+        <div v-if="errorMsgs.length" class="auth-panel__errors" role="alert">
           <p v-for="(msg, index) in errorMsgs" :key="index">{{ msg }}</p>
         </div>
+      </form>
+    </template>
+
+    <!-- Signed in -->
+    <template v-else-if="user">
+      <h3 class="auth-panel__title">Signed in</h3>
+      <dl class="auth-panel__facts">
+        <dt>Username</dt>
+        <dd>
+          <strong>{{ user.userName }}</strong>
+        </dd>
+        <dt>Role</dt>
+        <dd>{{ roleName }}</dd>
+      </dl>
+
+      <div class="auth-panel__actions">
+        <AppButton
+          variant="ghost"
+          size="sm"
+          :icon="editProfileForm ? 'mdi-close' : 'mdi-account-edit'"
+          @click="editProfileForm = !editProfileForm"
+        >
+          {{ editProfileForm ? 'Cancel' : 'Change username' }}
+        </AppButton>
+        <AppButton variant="danger" size="sm" icon="mdi-logout" @click="logout">Log out</AppButton>
       </div>
 
-      <!-- Username -->
-      <div v-else-if="user">
-        <div class="d-flex mb-2">
-          <p>
-            You are logged in as <code>{{ user.userName }}</code>
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Signed-in -->
-    <div v-if="user" class="user-links">
-      <!-- Signed-in (ANY) actions -->
-      <div>
-        <!-- Logout button -->
-        <v-btn class="user-link" @click="logout">
-          <v-icon>mdi-logout</v-icon>
-          Log out
-        </v-btn>
-
-        <!-- Change username -->
-        <v-btn class="user-link" @click="editProfileForm = !editProfileForm">
-          <v-icon class="rotate-toggle" :class="{ rotated: editProfileForm }"> mdi-cog </v-icon>
-          Change username
-        </v-btn>
-      </div>
-
-      <!-- Change username form -->
-      <v-expand-transition class="no-user-link-styling">
-        <div v-show="editProfileForm">
-          <div class="d-flex mb-2 align-center">
-            <!-- Text -->
-            <v-text-field
-              v-model="editedUsername"
-              label="New Username"
-              class="mr-3 w-75"
-              variant="outlined"
-              hide-details
-            />
-
-            <!-- Button -->
-            <v-btn class="user-link" @click="updateUsername">
-              <v-icon>mdi-account-check</v-icon>
-              Update
-            </v-btn>
-          </div>
-        </div>
+      <v-expand-transition>
+        <form v-show="editProfileForm" class="auth-panel__rename" @submit.prevent="updateUsername">
+          <LabeledField label="New username" for-id="auth-new-username">
+            <v-text-field id="auth-new-username" v-model="editedUsername" density="compact" />
+          </LabeledField>
+          <AppButton type="submit" size="sm" icon="mdi-check" :busy="busy === 'rename'">
+            Save
+          </AppButton>
+        </form>
       </v-expand-transition>
 
-      <!-- Signed-in (USER) actions -->
-      <div v-if="!user?.modderId && !pendingApproval">
-        <!-- apply for modder -->
-        <router-link :to="{ name: 'ApplyModder' }" class="router-link unvisitable user-link">
-          <v-icon>mdi-account-plus</v-icon>
+      <!-- Modder application -->
+      <div v-if="!user.modderId && !pendingApproval" class="auth-panel__apply">
+        <p class="muted small">Make movesets? Apply for a modder page to submit them here.</p>
+        <AppButton :to="{ name: 'ApplyModder' }" size="sm" icon="mdi-account-plus">
           Apply for modder
-        </router-link>
+        </AppButton>
       </div>
-
-      <!-- Signed-in (LIMBO) actions -->
-      <div v-if="pendingApproval">
-        <p>
-          <v-icon>mdi-account-clock</v-icon>
-          Awaiting approval of your modder application. Sit tight!
-        </p>
-      </div>
-
-      <!-- Signed-in (MODDER) actions -->
-      <div v-if="user?.modderId" class="actions-section">
-        <!-- View profile -->
-        <router-link
-          :to="{ name: 'ModderDetail', params: { id: user.modderId } }"
-          class="router-link unvisitable user-link"
-        >
-          <v-icon>mdi-account-eye</v-icon>
-          View my profile
-        </router-link>
-
-        <!-- Edit profile -->
-        <router-link
-          :to="{ name: 'EditModder', params: { id: user.modderId } }"
-          class="router-link unvisitable user-link"
-        >
-          <v-icon>mdi-account-edit</v-icon>
-          Edit my profile
-        </router-link>
-
-        <!-- My content -->
-        <router-link :to="{ name: 'MyContent' }" class="router-link unvisitable user-link">
-          <v-icon>mdi-view-list</v-icon>
-          My content
-        </router-link>
-
-        <!-- My likes -->
-        <router-link :to="{ name: 'MyLikes' }" class="router-link unvisitable user-link">
-          <v-icon>mdi-heart</v-icon>
-          My likes
-        </router-link>
-
-        <!-- Add plugin -->
-        <router-link :to="{ name: 'AddPlugin' }" class="router-link unvisitable user-link">
-          <v-icon>mdi-file-code</v-icon>
-          Submit a plugin
-        </router-link>
-
-        <!-- Admin portal -->
-        <router-link
-          v-if="user?.userTypeId === UserType.Admin"
-          :to="{ name: 'AdminPortal' }"
-          class="router-link unvisitable user-link"
-        >
-          <v-icon>mdi-shield-account</v-icon>
-          Admin Portal
-        </router-link>
-      </div>
-    </div>
-  </v-card>
+      <p v-else-if="pendingApproval" class="auth-panel__pending">
+        <v-icon size="18">mdi-account-clock</v-icon>
+        Awaiting approval of your modder application. Sit tight!
+      </p>
+    </template>
+  </section>
 </template>
 
 <script setup>
@@ -157,6 +96,8 @@ import api from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { UserType, ItemType, AcceptanceState } from '@/globals'
 import { useNotify } from '@/composables/useNotify'
+import LabeledField from '@/components/LabeledField.vue'
+import AppButton from '@/components/AppButton.vue'
 
 const notify = useNotify()
 
@@ -168,8 +109,16 @@ const password = ref('')
 const editProfileForm = ref(false)
 const errorMsgs = ref([])
 const editedUsername = ref('')
+const busy = ref('')
+
+const roleName = computed(() => {
+  if (user.value?.userTypeId === UserType.Admin) return 'Admin'
+  if (user.value?.userTypeId === UserType.Modder) return 'Modder'
+  return 'User'
+})
 
 const register = async () => {
+  busy.value = 'register'
   try {
     errorMsgs.value = []
     await authStore.register(email.value, password.value)
@@ -177,10 +126,13 @@ const register = async () => {
   } catch (err) {
     console.error('Register Failed:', err)
     errorMsgs.value = extractErrorMessages(err)
+  } finally {
+    busy.value = ''
   }
 }
 
 const login = async () => {
+  busy.value = 'login'
   try {
     errorMsgs.value = []
     await authStore.login(email.value, password.value)
@@ -188,10 +140,13 @@ const login = async () => {
   } catch (err) {
     console.error('Login Failed:', err)
     errorMsgs.value = extractErrorMessages(err)
+  } finally {
+    busy.value = ''
   }
 }
 
 const updateUsername = async () => {
+  busy.value = 'rename'
   try {
     await api.put(`/auth/edit-username`, {
       newUserName: editedUsername.value,
@@ -202,6 +157,8 @@ const updateUsername = async () => {
   } catch (err) {
     console.error('Failed to update username:', err)
     notify.error('Failed to update username.')
+  } finally {
+    busy.value = ''
   }
 }
 
@@ -237,10 +194,6 @@ function extractErrorMessages(err) {
   return ['An error occurred.']
 }
 
-const cardMaxWidth = computed(() =>
-  user.value?.modderId && user.value?.userTypeId === UserType.Admin ? '560px' : '420px'
-)
-
 const pendingApproval = ref(false)
 
 async function checkPendingApproval() {
@@ -275,76 +228,98 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.v-card {
-  margin: 0 auto;
-  background-color: #1e1e1e;
-  color: #dedede;
+.auth-panel__title {
+  margin: 0 0 14px;
+  font-size: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
 }
 
-.multibtn:not(:last-of-type) {
-  margin-right: 1em;
-}
-
-.error {
-  margin-top: 1em;
-  color: #ff6b6b;
-}
-
-.rotate-toggle::before {
-  transition: transform 250ms ease-in-out;
-}
-
-.rotate-toggle.rotated::before {
-  transform: rotate(90deg);
-}
-
-.user-links {
-  margin: 1.25em auto -0.5em auto;
-  width: 90%;
-}
-
-.user-links > *:not(.no-user-link-styling) {
+.auth-panel__form {
   display: flex;
-  justify-content: center;
-  gap: 0.6em;
-  margin-bottom: 0.6em;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.actions-section {
+.auth-panel__forgot {
+  align-self: flex-start;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--tx-2);
+}
+
+.auth-panel__actions {
+  display: flex;
   flex-wrap: wrap;
+  gap: 8px;
 }
 
-.actions-section > * {
-  flex: 0 0 auto;
+.auth-panel__errors {
+  padding: 10px 14px;
+  border: 1px solid var(--line-2);
+  border-left: 4px solid var(--err);
+  background: var(--panel-2);
+  color: var(--tx);
+  font-size: 14px;
 }
 
-.user-link {
-  background-color: #151515;
-  padding: 0.4em 0.75em;
+.auth-panel__errors p {
   margin: 0;
-  border-radius: 6px;
-  text-decoration: none;
-  text-transform: unset;
-  letter-spacing: 0.1px;
-  font-size: 15px;
-  box-shadow: none;
-
-  transition: background-color 200ms ease-in-out;
 }
 
-.user-link:hover {
-  background-color: #191919 !important;
+.auth-panel__errors p + p {
+  margin-top: 4px;
 }
 
-.user-link > .v-btn__overlay {
-  background-color: unset;
+.auth-panel__facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+  margin: 0 0 14px;
+  font-size: 14px;
 }
 
-.user-link.router-link .v-icon {
-  margin-top: -4px;
+.auth-panel__facts dt {
+  color: var(--tx-3);
 }
 
-.user-link:not(.router-link) .v-icon {
-  margin-right: 3px;
+.auth-panel__facts dd {
+  margin: 0;
+}
+
+.auth-panel__rename {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.auth-panel__rename > :first-child {
+  flex: 1;
+}
+
+.auth-panel__apply {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.auth-panel__apply p {
+  margin: 0;
+}
+
+.auth-panel__pending {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  color: var(--tx-2);
+  font-size: 14px;
 }
 </style>
