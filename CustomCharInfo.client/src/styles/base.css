@@ -172,6 +172,17 @@ a.question {
   );
 }
 
+/* Content that replaces a skeleton fades in so the swap reads as one motion */
+.reveal {
+  animation: reveal var(--dur-base) var(--ease-out) backwards;
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+  }
+}
+
 /* Helpers */
 .no-select {
   -webkit-user-select: none;

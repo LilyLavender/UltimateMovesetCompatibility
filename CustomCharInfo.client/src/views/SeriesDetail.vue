@@ -23,7 +23,7 @@
 
     <SkeletonList v-if="loading" />
     <template v-else-if="series">
-      <MovesetList v-if="movesets.length" :movesets="movesets" />
+      <MovesetList v-if="movesets.length" class="reveal" :movesets="movesets" />
       <EmptyState v-else message="No movesets in this series yet." />
     </template>
   </PageShell>

@@ -54,7 +54,7 @@
     />
 
     <template v-else>
-      <TableScroll v-if="hooks.length" min-width="820px">
+      <TableScroll v-if="hooks.length" min-width="820px" class="reveal">
         <v-data-table
           v-model:expanded="expanded"
           :headers="headers"

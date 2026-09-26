@@ -88,6 +88,12 @@
   color: var(--tx);
 }
 
+.v-list-item {
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
 .v-list-item .v-list-item__overlay {
   display: none;
 }
@@ -155,6 +161,7 @@
 .v-table td {
   color: var(--tx);
   border-bottom: 1px solid var(--line) !important;
+  transition: background-color var(--dur-fast) var(--ease);
 }
 
 .v-data-table__tr:hover > .v-data-table__td,
@@ -191,6 +198,44 @@
 .v-snackbar__wrapper {
   border: 1px solid var(--line-2);
   box-shadow: none;
+}
+
+/* Snackbar rises from the bottom edge. Arrival is slower than leaving */
+.umc-toast-enter-active {
+  transition:
+    opacity var(--dur-slow) var(--ease-out),
+    transform var(--dur-slow) var(--ease-out);
+}
+
+.umc-toast-leave-active {
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+.umc-toast-enter-from,
+.umc-toast-leave-to {
+  opacity: 0;
+  transform: translateY(calc(var(--shift) * 2)) scale(0.97);
+}
+
+/* Desktop dialogs fade with a short scale, mobile uses Vuetify's bottom sheet transition */
+.umc-dialog-enter-active {
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+.umc-dialog-leave-active {
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.umc-dialog-enter-from,
+.umc-dialog-leave-to {
+  opacity: 0;
+  transform: scale(0.98);
 }
 
 .v-progress-circular,

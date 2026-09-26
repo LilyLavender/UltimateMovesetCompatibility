@@ -22,7 +22,7 @@
     </div>
 
     <SkeletonLog v-if="!loaded" :rows="6" />
-    <ul v-else-if="filtered.length" class="rows">
+    <ul v-else-if="filtered.length" class="rows reveal">
       <li v-for="item in filtered" :key="item.movesetId" class="row">
         <div class="row__info">
           <div class="row__name">{{ item.moddedCharName }}</div>

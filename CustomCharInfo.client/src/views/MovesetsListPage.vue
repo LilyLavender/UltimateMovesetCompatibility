@@ -28,7 +28,7 @@
       :rows="10"
     />
 
-    <TableScroll v-else>
+    <TableScroll v-else class="reveal">
       <v-data-table
         :headers="headers"
         :items="normalizedMovesets"

@@ -24,7 +24,7 @@
     <div v-if="!loaded" class="tile-grid" aria-busy="true">
       <Skeleton v-for="n in 6" :key="n" variant="image" width="260px" height="220px" />
     </div>
-    <div v-else-if="images.length" class="tile-grid">
+    <div v-else-if="images.length" class="tile-grid reveal">
       <div v-for="item in images" :key="item.bannerImageId" class="tile">
         <a :href="item.imageUrl" target="_blank" rel="noopener" class="tile__img-box">
           <img :src="item.imageUrl" class="tile__img" loading="lazy" alt="" />

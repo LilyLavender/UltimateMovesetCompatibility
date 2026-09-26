@@ -65,7 +65,7 @@
       <div v-if="loading" class="moveset-grid" aria-busy="true">
         <Skeleton v-for="n in 24" :key="n" variant="line" width="163px" height="50px" />
       </div>
-      <div v-else class="moveset-grid">
+      <div v-else class="moveset-grid reveal">
         <button
           v-for="m in visibleMovesets"
           :key="m.movesetId"

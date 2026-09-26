@@ -8,7 +8,7 @@
     <p v-if="error" class="note note--err">{{ error }}</p>
 
     <SkeletonTable v-if="loading" :headers="['Username', 'Email', 'Role', '']" :rows="6" />
-    <TableScroll v-else min-width="640px">
+    <TableScroll v-else min-width="640px" class="reveal">
       <v-data-table :items="users" :headers="headers" item-key="id">
         <template #item.userTypeId="{ value }">
           <StatusTag :variant="roleTone(value)">{{ roleName(value) }}</StatusTag>

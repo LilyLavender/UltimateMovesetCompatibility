@@ -4,6 +4,7 @@
     :color="notifyState.color"
     :timeout="notifyState.timeout"
     location="bottom"
+    transition="umc-toast"
     multi-line
     @update:model-value="onToggle"
   >

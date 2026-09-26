@@ -37,7 +37,7 @@
 
     <SkeletonTable v-if="loading" :headers="['Character', 'Slots']" :columns="[1, 6]" :rows="12" />
 
-    <TableScroll v-else min-width="720px">
+    <TableScroll v-else min-width="720px" class="reveal">
       <div class="grid-table">
         <!-- Header row -->
         <div class="g-row header-row">

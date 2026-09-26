@@ -20,7 +20,7 @@
       icon="mdi-shape-outline"
     />
 
-    <div v-else class="request-layout">
+    <div v-else class="request-layout reveal">
       <!-- Left: series grid -->
       <div class="series-grid">
         <button

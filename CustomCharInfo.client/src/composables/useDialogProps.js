@@ -7,6 +7,6 @@ export function useDialogProps() {
   const { smAndDown } = useDisplay()
   return computed(() => ({
     fullscreen: smAndDown.value,
-    transition: smAndDown.value ? 'dialog-bottom-transition' : 'fade-transition',
+    transition: smAndDown.value ? 'dialog-bottom-transition' : 'umc-dialog',
   }))
 }

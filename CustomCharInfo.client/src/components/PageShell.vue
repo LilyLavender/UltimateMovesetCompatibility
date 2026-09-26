@@ -10,7 +10,9 @@
         <span class="page-tail" aria-hidden="true"></span>
       </div>
       <p v-if="lede" class="page-lede">{{ lede }}</p>
-      <slot name="subnav" />
+      <div v-if="$slots.subnav" class="page-subnav">
+        <slot name="subnav" />
+      </div>
       <div class="page-body">
         <slot />
       </div>
@@ -26,6 +28,7 @@ import { useHead } from '@unhead/vue'
   Every view renders inside one of these. It sets the width tier, draws the one DFHeiGB title
   per page with its striped tail, hosts the sub-nav, and registers the tab title.
   Tiers: narrow (prose), standard (hubs, details, forms, account), wide (tables and tools).
+  Mounting plays the page-enter reveal; the shell mounts once per route, so in-page state changes never replay it.
 */
 const props = defineProps({
   title: { type: String, required: true },
@@ -85,6 +88,7 @@ if (props.head) {
   text-transform: uppercase;
   letter-spacing: 0.01em;
   white-space: nowrap;
+  animation: page-enter-title var(--dur-slow) var(--ease-out) backwards;
 }
 
 .page-title--lg {
@@ -98,7 +102,9 @@ if (props.head) {
   opacity: 0.4;
   background: url('@/assets/ptn_diagonal_12.png') repeat;
   background-size: 12px 12px;
-  animation: page-tail-drift 1.2s linear infinite;
+  animation:
+    page-tail-drift 1.2s linear infinite,
+    page-enter-tail var(--dur-slow) var(--ease-out) var(--stagger) backwards;
 }
 
 .page-lede {
@@ -107,8 +113,45 @@ if (props.head) {
   color: var(--tx-2);
 }
 
+.page-lede,
+.page-subnav {
+  animation: page-enter-rise var(--dur-base) var(--ease-out) calc(var(--stagger) * 2) backwards;
+}
+
 .page-body {
   margin-top: 22px;
+  animation: page-enter-rise var(--dur-base) var(--ease-out) calc(var(--stagger) * 3) backwards;
+}
+
+/* 
+  Reveal:
+  1. title slides in
+  2. tail extends after it
+  3. sub-nav and body rise
+  about 360ms total
+*/
+@keyframes page-enter-title {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--shift) * -2));
+  }
+}
+
+@keyframes page-enter-tail {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes page-enter-rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--shift));
+  }
 }
 
 @keyframes page-tail-drift {
@@ -148,7 +191,11 @@ if (props.head) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .page-tail {
+  .page-title,
+  .page-tail,
+  .page-lede,
+  .page-subnav,
+  .page-body {
     animation: none;
   }
 }

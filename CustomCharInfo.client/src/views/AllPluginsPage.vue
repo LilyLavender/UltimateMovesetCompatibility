@@ -7,7 +7,7 @@
   >
     <SectionHeading title="Registered versions" :count="versionRows.length" />
     <SkeletonTable v-if="loading" :headers="headers.map((h) => h.title)" :rows="8" />
-    <TableScroll v-else min-width="900px">
+    <TableScroll v-else min-width="900px" class="reveal">
       <v-data-table
         :items="versionRows"
         :headers="headers"
@@ -30,7 +30,7 @@
     <SectionHeading title="Unmatched hashes" :count="unknownHashes.length" />
     <p class="hint">Hashes people have checked that don't match any registered plugin version.</p>
     <SkeletonTable v-if="loading" :headers="unknownHeaders.map((h) => h.title)" :rows="4" />
-    <TableScroll v-else min-width="720px">
+    <TableScroll v-else min-width="720px" class="reveal">
       <v-data-table
         :items="unknownHashes"
         :headers="unknownHeaders"

@@ -40,7 +40,7 @@
 
     <SectionHeading title="Admin picks" :count="adminPicksList.length" />
     <SkeletonList v-if="loading" :count="6" />
-    <div v-else class="moveset-grid">
+    <div v-else class="moveset-grid reveal">
       <div
         v-for="m in adminPicksList"
         :key="m.movesetId"
@@ -69,7 +69,7 @@
 
     <SectionHeading title="Other movesets" :count="nonAdminPicksList.length" />
     <SkeletonList v-if="loading" :count="9" />
-    <div v-else class="moveset-grid">
+    <div v-else class="moveset-grid reveal">
       <div
         v-for="m in nonAdminPicksList"
         :key="m.movesetId"

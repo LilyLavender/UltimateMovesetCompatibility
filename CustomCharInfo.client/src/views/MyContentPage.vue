@@ -11,7 +11,7 @@
       <SkeletonPanel :title="false" :lines="2" />
     </template>
 
-    <template v-else>
+    <div v-else class="reveal">
       <!-- Movesets -->
       <SectionHeading title="Movesets" :count="movesets.length" />
       <EmptyState v-if="movesets.length === 0" message="No movesets yet." icon="mdi-view-list">
@@ -85,7 +85,7 @@
           </span>
         </li>
       </ul>
-    </template>
+    </div>
   </PageShell>
 </template>
 

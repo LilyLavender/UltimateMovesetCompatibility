@@ -47,11 +47,14 @@
   --w-wide: 1360px;
   --gutter: 16px;
 
-  /* Motion */
+  /* Motion. --ease for color and fill changes; --ease-out for anything that moves into place. */
   --dur-fast: 120ms;
   --dur-base: 180ms;
   --dur-slow: 300ms;
+  --stagger: 60ms;
+  --shift: 8px;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (min-width: 600px) {

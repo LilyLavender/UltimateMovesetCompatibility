@@ -5,7 +5,8 @@
     </router-link>
 
     <div class="nav-band">
-      <nav class="nav nav--desktop" aria-label="Main">
+      <nav ref="desktopNav" class="nav nav--desktop" aria-label="Main">
+        <span ref="underline" class="nav__underline" aria-hidden="true"></span>
         <template v-for="item in headerItems" :key="item.key">
           <NavDropdown
             v-if="item.menu && (!item.menuWhen || item.menuWhen(user))"
@@ -14,6 +15,7 @@
             :icon="item.icon"
             :active="section === item.key"
             :align="item.key === 'account' ? 'right' : 'left'"
+            :data-active="section === item.key || undefined"
           >
             <template v-if="item.key === 'account'" #trigger>
               <span class="account-icon">
@@ -33,6 +35,7 @@
             class="nav__item"
             :class="{ 'nav__item--active': section === item.key }"
             :aria-label="item.icon ? item.label : undefined"
+            :data-active="section === item.key || undefined"
           >
             <v-icon v-if="item.icon">{{ item.icon }}</v-icon>
             <template v-else>{{ item.label }}</template>
@@ -67,7 +70,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
@@ -90,6 +93,38 @@ const authStore = useAuthStore()
 const user = computed(() => authStore.user)
 const section = computed(() => sectionOf(route.name))
 const drawerOpen = ref(false)
+
+// The active underline is one element that slides to the current item on route change.
+// It snaps into place on mount, on resize, and when the fonts finish loading.
+const desktopNav = ref(null)
+const underline = ref(null)
+const UNDERLINE_INSET = 12
+
+const placeUnderline = (animate) => {
+  const bar = underline.value
+  if (!bar) return
+  const target = desktopNav.value?.querySelector('[data-active]')
+  if (!animate) bar.style.transition = 'none'
+  if (target) {
+    bar.style.transform = `translateX(${target.offsetLeft + UNDERLINE_INSET}px)`
+    bar.style.width = `${Math.max(target.offsetWidth - UNDERLINE_INSET * 2, 0)}px`
+    bar.style.opacity = '1'
+  } else {
+    bar.style.opacity = '0'
+  }
+  if (!animate) {
+    void bar.offsetWidth
+    bar.style.transition = ''
+  }
+}
+
+const snapUnderline = () => placeUnderline(false)
+let navObserver = null
+
+watch(section, async () => {
+  await nextTick()
+  placeUnderline(true)
+})
 
 // Notification counts
 const userPendingCount = ref(0)
@@ -139,7 +174,19 @@ watch(
 )
 
 onMounted(async () => {
+  snapUnderline()
+  window.addEventListener('resize', snapUnderline)
+  if (typeof ResizeObserver !== 'undefined' && desktopNav.value) {
+    navObserver = new ResizeObserver(snapUnderline)
+    navObserver.observe(desktopNav.value)
+  }
+  document.fonts?.ready?.then(snapUnderline)
   await fetchNotifications()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', snapUnderline)
+  navObserver?.disconnect()
 })
 </script>
 
@@ -235,14 +282,20 @@ onMounted(async () => {
   color: var(--white);
 }
 
-.nav__item--active::after {
-  content: '';
+.nav__underline {
   position: absolute;
-  left: 12px;
-  right: 12px;
+  left: 0;
   bottom: 0;
+  width: 0;
   height: 3px;
   background: var(--white);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--dur-base) var(--ease-out),
+    width var(--dur-base) var(--ease-out),
+    opacity var(--dur-fast) var(--ease);
+  will-change: transform, width;
 }
 
 .account-icon {

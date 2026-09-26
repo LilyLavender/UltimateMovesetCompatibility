@@ -2,7 +2,8 @@
   <PageShell title="Image hosting" tier="narrow">
     <div class="prose">
       <p>
-        UMC used to require users to host images themselves. This requirement has been lifted, but if you still wish to self-host, here are some guidelines:
+        UMC used to require users to host images themselves. This requirement has been lifted, but
+        if you still wish to self-host, here are some guidelines:
       </p>
       <ul>
         <li>Make sure you're linking to an image directly and not the page the image is on.</li>

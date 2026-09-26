@@ -7,7 +7,7 @@
     <div v-if="loading" class="modders-grid" aria-busy="true">
       <Skeleton v-for="n in 10" :key="n" variant="line" height="58px" />
     </div>
-    <div v-else class="modders-grid">
+    <div v-else class="modders-grid reveal">
       <router-link
         v-for="modder in modders"
         :key="modder.modderId"

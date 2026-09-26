@@ -129,7 +129,7 @@
     <SectionHeading title="Movesets" :count="movesets.length" />
     <SkeletonList v-if="loading" :count="3" />
     <template v-else>
-      <MovesetList v-if="movesets.length" :movesets="movesets" />
+      <MovesetList v-if="movesets.length" class="reveal" :movesets="movesets" />
       <EmptyState v-else message="This modder doesn't have any movesets yet..." />
     </template>
   </PageShell>

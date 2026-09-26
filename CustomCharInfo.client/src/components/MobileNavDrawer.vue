@@ -338,7 +338,7 @@ onBeforeUnmount(() => {
 
 .drawer-enter-active .drawer,
 .drawer-leave-active .drawer {
-  transition: transform var(--dur-slow) var(--ease);
+  transition: transform var(--dur-slow) var(--ease-out);
 }
 
 .drawer-enter-from,

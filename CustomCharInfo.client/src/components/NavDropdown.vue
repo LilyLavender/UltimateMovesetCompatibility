@@ -193,16 +193,6 @@ onBeforeUnmount(() => {
   color: var(--white);
 }
 
-.navdrop__trigger--active::after {
-  content: '';
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 0;
-  height: 3px;
-  background: var(--white);
-}
-
 .navdrop__caret {
   opacity: 0.7;
   transition: transform var(--dur-fast) var(--ease);
@@ -288,16 +278,21 @@ onBeforeUnmount(() => {
   margin: 6px 0;
 }
 
-.navmenu-enter-active,
+.navmenu-enter-active {
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
 .navmenu-leave-active {
   transition:
-    opacity var(--dur-base) var(--ease),
-    transform var(--dur-base) var(--ease);
+    opacity var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
 }
 
 .navmenu-enter-from,
 .navmenu-leave-to {
   opacity: 0;
-  transform: translateY(-6px);
+  transform: translateY(calc(var(--shift) * -1));
 }
 </style>

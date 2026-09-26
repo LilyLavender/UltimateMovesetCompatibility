@@ -17,7 +17,7 @@
           </AppButton>
         </template>
       </EmptyState>
-      <MovesetList v-else :movesets="movesets" />
+      <MovesetList v-else class="reveal" :movesets="movesets" />
     </template>
   </PageShell>
 </template>

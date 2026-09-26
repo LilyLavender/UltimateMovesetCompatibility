@@ -11,7 +11,7 @@
       :headers="['Username', 'Email', 'Modder', 'Last active']"
       :rows="6"
     />
-    <TableScroll v-else min-width="1200px">
+    <TableScroll v-else min-width="1200px" class="reveal">
       <v-data-table :items="inBoth" :headers="bothHeaders" item-key="user.id" density="comfortable">
         <template #item.user.id="{ value }">
           <span class="clamp mono" :title="value">{{ value }}</span>
@@ -30,7 +30,7 @@
 
     <SectionHeading title="Users without a modder profile" :count="onlyUsers.length" />
     <SkeletonTable v-if="loading" :headers="['Username', 'Email', 'Last active']" :rows="4" />
-    <TableScroll v-else min-width="900px">
+    <TableScroll v-else min-width="900px" class="reveal">
       <v-data-table :items="onlyUsers" :headers="userHeaders" item-key="id" density="comfortable">
         <template #item.id="{ value }">
           <span class="clamp mono" :title="value">{{ value }}</span>
@@ -46,7 +46,7 @@
 
     <SectionHeading title="Modders without a user account" :count="onlyModders.length" />
     <SkeletonTable v-if="loading" :headers="['Name', 'Bio', 'GameBanana']" :rows="3" />
-    <TableScroll v-else min-width="900px">
+    <TableScroll v-else min-width="900px" class="reveal">
       <v-data-table
         :items="onlyModders"
         :headers="modderHeaders"

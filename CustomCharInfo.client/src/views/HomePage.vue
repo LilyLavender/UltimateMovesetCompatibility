@@ -21,11 +21,11 @@
   <PageShell v-else title="Custom Movesets" size="lg" over-hero :head="false">
     <SectionHeading title="Recent releases" :to="{ name: 'Movesets' }" link-label="All movesets" />
     <SkeletonList v-if="loading" />
-    <MovesetList v-else :movesets="recentReleases" />
+    <MovesetList v-else class="reveal" :movesets="recentReleases" />
 
     <SectionHeading title="Upcoming releases" />
     <SkeletonList v-if="loading" />
-    <MovesetList v-else :movesets="upcomingReleases" />
+    <MovesetList v-else class="reveal" :movesets="upcomingReleases" />
 
     <template v-if="latestBlogPost">
       <SectionHeading title="Latest from the blog" :to="{ name: 'Blog' }" link-label="View blog" />
@@ -41,7 +41,7 @@
 
     <SectionHeading title="Featured" :to="{ name: 'Movesets' }" link-label="All movesets" />
     <SkeletonList v-if="loading" />
-    <MovesetList v-else :movesets="adminPicks" />
+    <MovesetList v-else class="reveal" :movesets="adminPicks" />
   </PageShell>
 </template>
 

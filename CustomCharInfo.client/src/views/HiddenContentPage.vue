@@ -12,7 +12,7 @@
       <SkeletonPanel :title="false" :lines="2" />
     </template>
 
-    <template v-else>
+    <div v-else class="reveal">
       <!-- Movesets grouped by hidden reason -->
       <template v-for="group in movesetGroups" :key="group.key">
         <SectionHeading :title="group.title" :count="group.items.length" />
@@ -58,7 +58,7 @@
           <StatusTag v-for="stateId in modderTagStates(m)" :key="stateId" :state="stateId" />
         </li>
       </ul>
-    </template>
+    </div>
   </PageShell>
 </template>
 

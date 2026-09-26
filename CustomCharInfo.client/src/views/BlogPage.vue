@@ -12,7 +12,7 @@
         <SkeletonPanel :lines="4" />
         <SkeletonPanel :lines="3" />
       </div>
-      <div v-else-if="blogPosts.length" class="blog-list">
+      <div v-else-if="blogPosts.length" class="blog-list reveal">
         <BlogPost v-for="post in blogPosts" :key="post.blogPostId" :post="post" />
       </div>
       <EmptyState v-else message="No posts yet." />

@@ -23,7 +23,7 @@
     <div v-if="loading" class="series-grid" aria-busy="true">
       <Skeleton v-for="n in 8" :key="n" variant="line" height="72px" />
     </div>
-    <div v-else-if="filteredAndSortedSeries.length" class="series-grid">
+    <div v-else-if="filteredAndSortedSeries.length" class="series-grid reveal">
       <SeriesCard
         v-for="s in filteredAndSortedSeries"
         :key="s.seriesId"
