@@ -188,7 +188,7 @@ onBeforeUnmount(() => {
   width: min(300px, 86vw);
   display: flex;
   flex-direction: column;
-  background: #050505;
+  background: var(--menu);
   border-left: 1px solid var(--line-2);
   overflow-y: auto;
   outline: none;
@@ -309,7 +309,7 @@ onBeforeUnmount(() => {
   font-size: 11px;
   font-weight: 700;
   line-height: 1;
-  color: #141414;
+  color: var(--ink);
 }
 
 .badge--user {

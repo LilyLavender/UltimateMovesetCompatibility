@@ -72,7 +72,7 @@ defineProps({
   font-size: 11px;
   font-weight: 700;
   line-height: 1;
-  color: #141414;
+  color: var(--ink);
 }
 
 .tile__badge--admin {
@@ -96,7 +96,7 @@ defineProps({
 
 .tile:hover .tile__description,
 .tile:focus-visible .tile__description {
-  color: #444;
+  color: var(--ink-2);
 }
 
 .tile--large {

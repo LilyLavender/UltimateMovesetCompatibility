@@ -10,17 +10,23 @@
   --line: #242424;
   --line-2: #3d3d3d;
 
-  /* Text */
+  /* Text. --menu is the dropdown and drawer surface; --ink and --ink-2 are text on a colored badge or an inverted surface; --logo is the mark's grey. */
   --tx: #f2f2f2;
   --tx-2: #b4b4b4;
   --tx-3: #7a7a7a;
   --white: #fff;
+  --menu: #050505;
+  --ink: #141414;
+  --ink-2: #444;
+  --logo: #dedede;
 
-  /* Functional colors */
+  /* Functional colors. --orange and --purple are only for the compatibility verdicts and the carried-forward offset state. */
   --ok: #43a047;
   --info: #2f9ee0;
   --warn: #f1f134;
   --err: #f13434;
+  --orange: #ef6c00;
+  --purple: #ce93d8;
 
   /* Acceptance states; the values match the review pills the site has always used */
   --state-pending-admin-soft: rgb(187, 224, 236);
@@ -33,7 +39,7 @@
   /* Offset states; Confirmed shares Accepted's green */
   --offset-confirmed: var(--ok);
   --offset-generated: #fbc02d;
-  --offset-carried: #ef6c00;
+  --offset-carried: var(--orange);
 
   /* Type */
   --font-display: 'DFHeiGB', 'Roboto Condensed', sans-serif;

@@ -77,7 +77,7 @@
             'ms-card--vote-preview': showVotePreview(m) && !pairSummary(m.movesetId),
           }"
           :style="{
-            '--bg-color': showVotePreview(m) ? '#808080' : `#${normalizedBgColor(m)}`,
+            '--bg-color': showVotePreview(m) ? 'var(--tx-3)' : `#${normalizedBgColor(m)}`,
           }"
           @click="toggleSelect(m)"
         >
@@ -1118,7 +1118,7 @@ onMounted(async () => {
   position: relative;
   width: 163px;
   height: 50px;
-  background-color: var(--bg-color, #111);
+  background-color: var(--bg-color, var(--panel-2));
   border: 3px solid transparent;
   overflow: hidden;
   cursor: pointer;
@@ -1150,11 +1150,11 @@ onMounted(async () => {
 }
 
 .ms-card--vote-preview {
-  background-color: #808080;
+  background-color: var(--tx-3);
 }
 .ms-card--vote-preview .ms-card__name {
-  color: #111;
-  text-shadow: 0 0px 2px #ffffff60;
+  color: var(--ink);
+  text-shadow: 0 0 2px color-mix(in srgb, var(--white) 40%, transparent);
 }
 
 .ms-card__thumb {
@@ -1398,7 +1398,7 @@ onMounted(async () => {
   --tone: var(--warn);
 }
 .verdict--predicted-bad {
-  --tone: #ef6c00;
+  --tone: var(--orange);
 }
 .verdict--bad,
 .community-banner--incompat {
@@ -1408,7 +1408,7 @@ onMounted(async () => {
   --tone: var(--info);
 }
 .verdict--community-incompat {
-  --tone: #ce93d8;
+  --tone: var(--purple);
 }
 
 .verdict-icon,
@@ -1442,7 +1442,7 @@ onMounted(async () => {
   --tone: var(--err);
 }
 .issue-item--predicted-incompat {
-  --tone: #ef6c00;
+  --tone: var(--orange);
 }
 .issue-item--warning {
   --tone: var(--warn);

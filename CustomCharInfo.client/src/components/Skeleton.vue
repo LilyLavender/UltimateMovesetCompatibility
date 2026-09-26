@@ -81,7 +81,7 @@ const style = computed(() => ({
 .skeleton--card {
   width: 340px;
   height: 82px;
-  background: #111;
+  background: var(--panel-2);
   border: 1px solid var(--line);
 }
 

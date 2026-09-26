@@ -314,7 +314,7 @@ onBeforeUnmount(() => {
   font-size: 11px;
   font-weight: 700;
   line-height: 1;
-  color: #141414;
+  color: var(--ink);
 }
 
 .badge--user {

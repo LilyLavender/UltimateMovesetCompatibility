@@ -207,7 +207,7 @@ onBeforeUnmount(() => {
   top: 100%;
   min-width: 240px;
   padding: 6px 0;
-  background: #050505;
+  background: var(--menu);
   border: 1px solid var(--line-2);
   z-index: 30;
 }

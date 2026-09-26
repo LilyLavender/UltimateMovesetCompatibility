@@ -40,7 +40,7 @@ body {
   color: #000;
 }
 
-/* Headings. DFHeiGB is reserved for the one main title per page (.page-title). */
+/* Headings. DFHeiGB is reserved for the one main title per page, drawn by PageShell. */
 h1,
 h2,
 h3,
@@ -195,37 +195,6 @@ a.question {
 
 .faint {
   color: var(--tx-3);
-}
-
-/* Legacy helpers still used by views that phase 3 converts to PageShell; removed in phase 5 */
-.title-font,
-.page-title {
-  font-family: var(--font-display);
-  font-weight: 400;
-  text-transform: uppercase;
-  line-height: 1;
-}
-
-.page-title {
-  font-size: 64px;
-}
-
-.display-above-hero {
-  position: relative;
-  z-index: 3;
-  margin-top: -180px;
-}
-
-.router-link {
-  margin-top: -0.5em;
-  margin-bottom: 0.5em;
-  margin-left: 1em;
-  display: block;
-}
-
-.router-link.mini {
-  margin-top: -1em;
-  margin-bottom: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

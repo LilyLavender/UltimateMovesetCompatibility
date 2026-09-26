@@ -21,9 +21,9 @@
       <!-- Column 1 (left) -->
       <div class="column-left">
         <div class="title-container">
-          <h1 class="title-font page-title no-select">
+          <h1 class="detail-title no-select">
             {{ moveset.moddedCharName
-            }}<span v-if="moveset.subtitle" class="page-title-subtitle">
+            }}<span v-if="moveset.subtitle" class="detail-title__subtitle">
               ({{ moveset.subtitle }})</span
             >
           </h1>
@@ -646,18 +646,22 @@ const StatusIcon = defineComponent({
   left: 99%;
   right: -20px;
   bottom: 0;
-  background-color: #dedede;
+  background-color: var(--logo);
   display: block;
   -webkit-transform: skewX(-29deg);
   transform: skewX(-29deg);
 }
 
-.page-title {
+.detail-title {
+  font-family: var(--font-display);
+  font-weight: 400;
   font-size: 5em;
+  line-height: 1;
+  text-transform: uppercase;
   position: relative;
   z-index: 10;
   margin: -20px 0.25em -16px 1.5em;
-  filter: drop-shadow(5px 4px 3px #000000c0);
+  filter: drop-shadow(5px 4px 3px color-mix(in srgb, var(--bg) 75%, transparent));
 }
 
 .character-image {
@@ -699,7 +703,7 @@ const StatusIcon = defineComponent({
 }
 
 .info-card {
-  background-color: #12121280;
+  background-color: color-mix(in srgb, var(--panel-2) 50%, transparent);
   border: 1px solid var(--line);
   padding: 0.6em 1em 0.7em;
   margin: 1em 0.5em;
@@ -732,12 +736,12 @@ strong {
 }
 
 :deep(.v-overlay__content) {
-  background-color: #000000e0 !important;
-  border: 1px solid #666 !important;
+  background-color: color-mix(in srgb, var(--bg) 88%, transparent) !important;
+  border: 1px solid var(--tx-3) !important;
 }
 
 .hastooltip {
-  border-bottom: 1px dotted #dedede;
+  border-bottom: 1px dotted var(--tx-2);
   cursor: help;
   margin-right: 5px;
 }
@@ -790,14 +794,14 @@ strong {
   font-size: 0.8em;
   color: var(--tx-2);
   max-width: 24em;
-  background-color: #12121299;
+  background-color: color-mix(in srgb, var(--panel-2) 60%, transparent);
   border: 1px solid var(--line);
   padding: 0.4em 0.7em;
   backdrop-filter: blur(3px);
   line-height: 1.6;
 }
 
-.page-title-subtitle {
+.detail-title__subtitle {
   font-size: 0.45em;
   opacity: 0.55;
   font-weight: normal;
@@ -884,7 +888,7 @@ li {
     max-width: 100%;
   }
 
-  .page-title {
+  .detail-title {
     font-size: 2.8em;
     margin: 0 0.25em 0 0.6em;
     white-space: normal;

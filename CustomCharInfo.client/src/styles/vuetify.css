@@ -78,7 +78,7 @@
 .v-menu > .v-overlay__content,
 .v-autocomplete__content,
 .v-select__content {
-  background: #050505;
+  background: var(--menu);
   border: 1px solid var(--line-2);
   box-shadow: none;
 }
@@ -176,15 +176,6 @@
   font-size: 13px;
 }
 
-/* Cell cap that App.vue used to apply through .dark-table; the class goes away in phase 5 */
-.dark-table .v-data-table__td {
-  max-width: 150px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: pointer;
-}
-
 /* Alerts, chips, snackbar, progress */
 .v-alert {
   border: 1px solid currentColor;
@@ -255,16 +246,6 @@
 
 .v-selection-control--dirty .v-selection-control__input .v-icon {
   color: var(--white);
-}
-
-/* Tabs: used by the header until phase 2 replaces it */
-.v-tab {
-  text-transform: none;
-  letter-spacing: 0;
-}
-
-.v-tab .v-btn__overlay {
-  display: none;
 }
 
 /* Date picker, used by the moveset form's release date */
