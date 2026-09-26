@@ -203,9 +203,9 @@ onMounted(async () => {
     const adminRes = await api.get(`/modders/is-admin?modderId=${modderId}`)
     modderIsAdmin.value = adminRes.data.isAdmin
 
-    // Fetch movesets via the general endpoint (which already excludes hardheld movesets)
-    // and filter client-side by modder name.
-    const movesetRes = await api.get('movesets')
+    // Ask for this modder's movesets only (the endpoint already excludes hardheld ones),
+    // and filter so a modder hidden from the credits list stays hidden here.
+    const movesetRes = await api.get('movesets', { params: { modderId } })
     movesets.value = movesetRes.data
       .filter((m) => m.modders.includes(modder.value.name))
       .sort((a, b) => compareDateOnlyStrings(a.releaseDate, b.releaseDate))

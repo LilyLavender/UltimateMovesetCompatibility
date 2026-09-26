@@ -104,7 +104,7 @@ import StatusTag from '@/components/StatusTag.vue'
 import MovesetCard from '@/components/MovesetCard.vue'
 import SeriesCard from '@/components/SeriesCard.vue'
 import { displayVersion } from '@/services/pluginVersion'
-import { statusPillFor } from '@/services/acceptanceStateDisplay'
+import { statusPillFor, latestStatesByItem } from '@/services/acceptanceStateDisplay'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
@@ -153,7 +153,7 @@ onMounted(async () => {
     const user = (await api.get('/auth/me')).data
 
     const [logsRes, movesetsRes, editedRes, pluginsRes] = await Promise.all([
-      api.get('/logs', {
+      api.get('/logs/latest', {
         params: {
           acceptanceStates: ALL_ACCEPTANCE_STATES,
           itemTypes: [ItemType.Moveset, ItemType.Series],
@@ -174,39 +174,20 @@ onMounted(async () => {
     editedMovesets.value = editedRes.data
     plugins.value = pluginsRes.data
 
-    const logs = logsRes.data
-    const movesetLogMap = new Map()
-    const seriesLogMap = new Map()
-
-    for (const log of logs) {
-      const typeId = log.itemType?.itemTypeId
-      if (typeId === ItemType.Moveset && log.item?.movesetId != null) {
-        const id = log.item.movesetId
-        const cur = movesetLogMap.get(id)
-        if (!cur || new Date(log.createdAt) > new Date(cur.createdAt)) {
-          movesetLogMap.set(id, log)
-        }
-      } else if (typeId === ItemType.Series && log.item?.seriesId != null) {
-        const id = log.item.seriesId
-        const cur = seriesLogMap.get(id)
-        if (!cur || new Date(log.createdAt) > new Date(cur.createdAt)) {
-          seriesLogMap.set(id, log)
-        }
-      }
+    const rows = logsRes.data
+    for (const [id, stateId] of latestStatesByItem(rows, ItemType.Moveset)) {
+      movesetStates.value[id] = stateId
     }
 
-    for (const [id, log] of movesetLogMap) {
-      movesetStates.value[id] = log.acceptanceState?.acceptanceStateId
-    }
-
-    const seriesIds = [...seriesLogMap.keys()]
+    const seriesStateMap = latestStatesByItem(rows, ItemType.Series)
+    const seriesIds = [...seriesStateMap.keys()]
     if (seriesIds.length > 0) {
       const results = await Promise.all(
         seriesIds.map((id) => api.get(`/series/${id}`).catch(() => null))
       )
       userSeries.value = results.filter((r) => r?.data).map((r) => r.data)
-      for (const [id, log] of seriesLogMap) {
-        seriesStates.value[id] = log.acceptanceState?.acceptanceStateId
+      for (const [id, stateId] of seriesStateMap) {
+        seriesStates.value[id] = stateId
       }
     }
   } catch (err) {

@@ -101,6 +101,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import api from '@/services/api'
 import seriesIconUnknown from '@/assets/series_icon_unknown.png'
 import { ItemType, AcceptanceState, PENDING_ADMIN_STATES, PENDING_USER_STATES } from '@/globals'
+import { latestStatesByItem } from '@/services/acceptanceStateDisplay'
 import PageShell from '@/components/PageShell.vue'
 import SubNav from '@/components/SubNav.vue'
 import Skeleton from '@/components/Skeleton.vue'
@@ -116,7 +117,8 @@ const resolveIconUrl = (path) =>
 
 const loading = ref(true)
 const mySeries = ref([])
-const latestLogBySeries = reactive({})
+// Series id to its newest acceptance state id, from /logs/latest.
+const latestStateBySeries = reactive({})
 const selected = ref(null)
 const notes = reactive({})
 const notesErrors = reactive({})
@@ -124,9 +126,7 @@ const submitting = reactive({})
 const submitted = reactive({})
 
 const currentState = computed(() =>
-  selected.value
-    ? (latestLogBySeries[selected.value.seriesId]?.acceptanceState?.acceptanceStateId ?? null)
-    : null
+  selected.value ? (latestStateBySeries[selected.value.seriesId] ?? null) : null
 )
 
 const select = (s) => {
@@ -138,21 +138,15 @@ onMounted(async () => {
   try {
     const [seriesRes, logsRes] = await Promise.all([
       api.get('/series'),
-      api.get('/logs', { params: { itemTypes: [ItemType.Series] } }),
+      api.get('/logs/latest', { params: { itemTypes: [ItemType.Series] } }),
     ])
 
     mySeries.value = seriesRes.data
       .filter((s) => s.isUserModder)
       .sort((a, b) => a.seriesName.localeCompare(b.seriesName))
 
-    const seriesLogs = logsRes.data.filter((l) => l.itemType?.itemTypeId === ItemType.Series)
-    for (const log of seriesLogs) {
-      const sid = log.item?.seriesId
-      if (!sid) continue
-      const existing = latestLogBySeries[sid]
-      if (!existing || new Date(log.createdAt) > new Date(existing.createdAt)) {
-        latestLogBySeries[sid] = log
-      }
+    for (const [sid, stateId] of latestStatesByItem(logsRes.data, ItemType.Series)) {
+      latestStateBySeries[sid] = stateId
     }
   } catch (err) {
     console.error('Failed to load series data:', err)
@@ -174,9 +168,7 @@ const requestEdit = async (seriesId) => {
   try {
     await api.post(`/series/${seriesId}/request-edit`, { notes: note })
     submitted[seriesId] = true
-    latestLogBySeries[seriesId] = {
-      acceptanceState: { acceptanceStateId: AcceptanceState.PendingAdminSoft },
-    }
+    latestStateBySeries[seriesId] = AcceptanceState.PendingAdminSoft
   } catch (err) {
     notesErrors[seriesId] = err.response?.data ?? 'Failed to submit request. Please try again.'
     console.error(err)

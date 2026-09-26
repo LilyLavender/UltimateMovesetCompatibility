@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authorization;
 using Npgsql;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -36,6 +37,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<IActionResult> GetSeries(
             [FromQuery] bool? inSeriesList = false,
             [FromQuery] bool includeHidden = false
@@ -131,6 +133,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public-heavy")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<ActionResult<IEnumerable<object>>> SearchSeries([FromQuery] string q)
         {
             if (string.IsNullOrWhiteSpace(q))
@@ -152,6 +155,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<ActionResult<ReturnSeriesDto>> GetOneSeries(int id)
         {
             var userId = _userManager.GetUserId(User);

@@ -165,7 +165,7 @@ import MovesetCard from './MovesetCard.vue'
 import LabeledField from '@/components/LabeledField.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import api from '@/services/api'
-import { UserType, ItemType, ALL_ACCEPTANCE_STATES } from '@/globals'
+import { UserType, ItemType, HARD_STATES } from '@/globals'
 import { compareDateOnlyStrings } from '@/services/dateOnly'
 
 const props = defineProps({
@@ -363,43 +363,13 @@ const fetchUser = async () => {
   }
 }
 
+// Hardheld movesets should be dropped from the list for their owner too
 const fetchBlockedIds = async () => {
   try {
-    const res = await api.get('/logs', {
-      params: {
-        acceptanceStates: ALL_ACCEPTANCE_STATES,
-        itemTypes: [ItemType.Moveset, ItemType.Series],
-      },
+    const res = await api.get('/logs/latest', {
+      params: { acceptanceStates: HARD_STATES, itemTypes: [ItemType.Moveset] },
     })
-    const latestPerMoveset = new Map()
-    const latestPerSeries = new Map()
-    for (const log of res.data) {
-      const typeId = log.itemType?.itemTypeId
-      if (typeId === 1) {
-        const id = log.item?.movesetId
-        if (id == null) continue
-        const cur = latestPerMoveset.get(id)
-        if (!cur || new Date(log.createdAt) > new Date(cur.createdAt)) latestPerMoveset.set(id, log)
-      } else if (typeId === 3) {
-        const id = log.item?.seriesId
-        if (id == null) continue
-        const cur = latestPerSeries.get(id)
-        if (!cur || new Date(log.createdAt) > new Date(cur.createdAt)) latestPerSeries.set(id, log)
-      }
-    }
-    const hardMovesets = new Set()
-    for (const [id, log] of latestPerMoveset) {
-      if ([2, 4].includes(log.acceptanceState?.acceptanceStateId)) hardMovesets.add(id)
-    }
-    hardHeldMovesetIds.value = hardMovesets
-
-    const blockedUrls = new Set()
-    for (const [, log] of latestPerSeries) {
-      if ([2, 4].includes(log.acceptanceState?.acceptanceStateId) && log.item?.seriesIconUrl) {
-        blockedUrls.add(log.item.seriesIconUrl)
-      }
-    }
-    blockedSeriesIconUrls.value = blockedUrls
+    hardHeldMovesetIds.value = new Set(res.data.map((row) => row.itemId))
   } catch {
     // fail open
   }

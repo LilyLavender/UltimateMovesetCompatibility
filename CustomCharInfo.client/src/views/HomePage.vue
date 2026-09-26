@@ -79,12 +79,11 @@ useHead({
   ],
 })
 
-const allMovesets = ref([])
+// Every home section is drawn from the admin picks, so only those are requested.
+const adminPicks = ref([])
 const latestBlogPost = ref(null)
 const siteDisabled = ref(false)
 const loading = ref(true)
-
-const adminPicks = computed(() => allMovesets.value.filter((m) => m.adminPick))
 
 const recentReleases = computed(() => {
   const todayStr = localDateToDateOnlyString(new Date())
@@ -148,8 +147,8 @@ function loadTwitterScript() {
 
 onMounted(async () => {
   try {
-    const res = await api.get('/movesets')
-    allMovesets.value = res.data
+    const res = await api.get('/movesets', { params: { adminPickOnly: true } })
+    adminPicks.value = res.data
     loading.value = false
     await fetchLatestBlogPost()
   } catch {

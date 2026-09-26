@@ -32,3 +32,6 @@ CustomCharInfo.client/coverage/
 *.sql
 backups/
 docs/
+
+# Postgres exports
+*.dump

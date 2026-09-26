@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.RateLimiting;
 using Npgsql;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -172,6 +173,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<ActionResult<List<PluginDto>>> GetPlugins([FromQuery] string moveset)
         {
             if (string.IsNullOrWhiteSpace(moveset)) return BadRequest("moveset is required.");
@@ -197,6 +199,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<ActionResult<PluginDto>> GetPlugin(int id)
         {
             var plugin = await _context.Plugins
@@ -672,6 +675,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public-heavy")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<ActionResult<IdentifyPluginResultDto>> Identify([FromQuery] string hash)
         {
             var normalized = hash?.Trim().ToLowerInvariant();

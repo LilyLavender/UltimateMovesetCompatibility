@@ -14,6 +14,7 @@ using Amazon.S3;
 using Amazon.Runtime;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace CustomCharInfo.server
 {
@@ -122,6 +123,18 @@ namespace CustomCharInfo.server
 
             builder.Services.AddScoped<IpActivityService>();
             builder.Services.AddScoped<ActivityTrackingFilter>();
+            builder.Services.AddScoped<PublicCacheEvictionFilter>();
+
+            // Anonymous public reads are served from memory for a minute so repeat visits do not reach Postgres (ADR 011).
+            // The base policy already limits caching to unauthenticated GET and HEAD responses with status 200 and varies by every query key.
+            // Varying by Origin keeps the CORS headers of one caller from being replayed to another.
+            builder.Services.AddOutputCache(options =>
+            {
+                options.AddPolicy("Public", policy => policy
+                    .Expire(TimeSpan.FromSeconds(60))
+                    .SetVaryByHeader("Origin")
+                    .Tag(PublicCacheEvictionFilter.Tag));
+            });
 
             // The only writer of per-version hook offsets; keeps Hook.Offset pointed at the newest game version.
             builder.Services.AddScoped<HookOffsetService>();
@@ -173,6 +186,7 @@ namespace CustomCharInfo.server
             builder.Services.AddControllers(options =>
             {
                 options.Filters.Add<ActivityTrackingFilter>();
+                options.Filters.Add<PublicCacheEvictionFilter>();
             }).AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
@@ -235,6 +249,7 @@ namespace CustomCharInfo.server
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseRateLimiter();
+            app.UseOutputCache();
             app.MapControllers();
 
             app.Run();

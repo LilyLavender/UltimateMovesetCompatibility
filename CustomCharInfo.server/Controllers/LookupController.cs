@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.RateLimiting;
 
 using SixLabors.ImageSharp;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -15,6 +16,7 @@ namespace CustomCharInfo.server.Controllers
     [EnableCors("PublicApi")]
     [EnableRateLimiting("public")]
     [ApiExplorerSettings(GroupName = "public")]
+    [OutputCache(PolicyName = "Public")]
     public class LookupController : ControllerBase
     {
         private readonly AppDbContext _context;

@@ -7,6 +7,7 @@ using CustomCharInfo.server.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -27,6 +28,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<IActionResult> GetReports([FromQuery] string moveset1, [FromQuery] string moveset2)
         {
             var movesetId1 = await MovesetLookup.ResolveMovesetIdAsync(_context, moveset1);
@@ -60,6 +62,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<IActionResult> GetSummaryForMoveset([FromQuery] string moveset)
         {
             var movesetId = await MovesetLookup.ResolveMovesetIdAsync(_context, moveset);
@@ -91,6 +94,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public-heavy")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<IActionResult> PredictCompatibility([FromQuery] string movesets)
         {
             if (string.IsNullOrWhiteSpace(movesets))

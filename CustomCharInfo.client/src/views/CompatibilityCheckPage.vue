@@ -437,13 +437,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import api from '@/services/api'
 import { useNotify } from '@/composables/useNotify'
-import {
-  ItemType,
-  ReleaseState,
-  RELEASE_STATE_NAMES,
-  ALL_ACCEPTANCE_STATES,
-  HookableStatus,
-} from '@/globals'
+import { ItemType, ReleaseState, RELEASE_STATE_NAMES, HARD_STATES, HookableStatus } from '@/globals'
 import { formatOffset } from '@/services/offsets'
 import { formatSlotRange } from '@/services/slots'
 import { useDialogProps } from '@/composables/useDialogProps'
@@ -944,25 +938,14 @@ onMounted(async () => {
     const [msRes, userRes, logsRes] = await Promise.allSettled([
       api.get('/movesets'),
       api.get('/auth/me'),
-      api.get('/logs', {
-        params: { acceptanceStates: ALL_ACCEPTANCE_STATES, itemTypes: [ItemType.Moveset] },
+      api.get('/logs/latest', {
+        params: { acceptanceStates: HARD_STATES, itemTypes: [ItemType.Moveset] },
       }),
     ])
     if (msRes.status === 'fulfilled') movesets.value = msRes.value.data
     if (userRes.status === 'fulfilled') user.value = userRes.value.data
     if (logsRes.status === 'fulfilled') {
-      const latest = new Map()
-      for (const log of logsRes.value.data) {
-        const id = log.item?.movesetId
-        if (id == null) continue
-        const cur = latest.get(id)
-        if (!cur || new Date(log.createdAt) > new Date(cur.createdAt)) latest.set(id, log)
-      }
-      const held = new Set()
-      for (const [id, log] of latest) {
-        if ([2, 4].includes(log.acceptanceState?.acceptanceStateId)) held.add(id)
-      }
-      hardHeldIds.value = held
+      hardHeldIds.value = new Set(logsRes.value.data.map((row) => row.itemId))
     }
   } finally {
     loading.value = false

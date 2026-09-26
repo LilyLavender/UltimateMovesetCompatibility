@@ -78,7 +78,7 @@ import SkeletonPanel from '@/components/SkeletonPanel.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import MovesetCard from '@/components/MovesetCard.vue'
 import SeriesCard from '@/components/SeriesCard.vue'
-import { statusPillFor, latestLogsByItem } from '@/services/acceptanceStateDisplay'
+import { statusPillFor, latestStatesByItem } from '@/services/acceptanceStateDisplay'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
@@ -141,7 +141,7 @@ onMounted(async () => {
       api.get('/movesets', { params: { includeHidden: true } }),
       api.get('/series', { params: { includeHidden: true } }),
       api.get('/modders', { params: { includeHidden: true } }),
-      api.get('/logs', {
+      api.get('/logs/latest', {
         params: {
           viewAll: true,
           acceptanceStates: ALL_ACCEPTANCE_STATES,
@@ -150,12 +150,11 @@ onMounted(async () => {
       }),
     ])
 
-    const logs = logsRes.data
-    const toStates = (map) =>
-      Object.fromEntries([...map].map(([id, log]) => [id, log.acceptanceState?.acceptanceStateId]))
-    movesetStates.value = toStates(latestLogsByItem(logs, ItemType.Moveset, (i) => i?.movesetId))
-    seriesStates.value = toStates(latestLogsByItem(logs, ItemType.Series, (i) => i?.seriesId))
-    modderStates.value = toStates(latestLogsByItem(logs, ItemType.Modder, (i) => i?.modderId))
+    const rows = logsRes.data
+    const toStates = (map) => Object.fromEntries(map)
+    movesetStates.value = toStates(latestStatesByItem(rows, ItemType.Moveset))
+    seriesStates.value = toStates(latestStatesByItem(rows, ItemType.Series))
+    modderStates.value = toStates(latestStatesByItem(rows, ItemType.Modder))
 
     // Only movesets that are hidden for some reason belong here.
     movesets.value = movesetsRes.data.filter(

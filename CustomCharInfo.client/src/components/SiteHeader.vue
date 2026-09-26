@@ -102,21 +102,13 @@ const fetchNotifications = async () => {
     return
   }
   try {
-    const res = await api.get('/logs', { params: { acceptanceStates: ALL_ACCEPTANCE_STATES } })
-    const logs = res.data
-
-    const groupMap = new Map()
-    for (const log of logs) {
-      const key = `${log.itemType.itemTypeId}-${log.item?.movesetId ?? log.item?.modderId ?? log.item?.seriesId ?? log.itemId}`
-      if (!groupMap.has(key)) groupMap.set(key, [])
-      groupMap.get(key).push(log)
-    }
+    const res = await api.get('/logs/latest', {
+      params: { acceptanceStates: ALL_ACCEPTANCE_STATES },
+    })
 
     let userPending = 0
     let adminPending = 0
-    for (const [, groupLogs] of groupMap) {
-      groupLogs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      const stateId = groupLogs[0].acceptanceState.acceptanceStateId
+    for (const { acceptanceStateId: stateId } of res.data) {
       if (
         stateId === AcceptanceState.PendingUserSoft ||
         stateId === AcceptanceState.PendingUserHard

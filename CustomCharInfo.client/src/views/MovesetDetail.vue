@@ -335,14 +335,7 @@ import { useHead } from '@unhead/vue'
 import api from '@/services/api'
 import movesetHeroUnknown from '@/assets/moveset_hero_unknown.png'
 import seriesIconUnknown from '@/assets/series_icon_unknown.png'
-import {
-  GB_WIP_URL,
-  MODS_WIKI_URL,
-  UserType,
-  ItemType,
-  AcceptanceState,
-  ReleaseState,
-} from '@/globals'
+import { GB_WIP_URL, MODS_WIKI_URL, ItemType, AcceptanceState, ReleaseState } from '@/globals'
 import { dateOnlyStringToLocalDate } from '@/services/dateOnly'
 import { formatOffset } from '@/services/offsets'
 import { formatSlotRange } from '@/services/slots'
@@ -528,16 +521,9 @@ onMounted(async () => {
     //
   }
   try {
-    const isAdmin = user.value?.userTypeId === UserType.Admin
-    const logsRes = await api.get(isAdmin ? '/logs?viewAll=true' : '/logs')
-    const movesetId = parseInt(route.params.movesetId)
-    latestLog.value =
-      logsRes.data
-        .filter(
-          (log) =>
-            log.itemType?.itemTypeId === ItemType.Moveset && log.item?.movesetId === movesetId
-        )
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] ?? null
+    // Newest first. Only owners/editors and admins read it, anyone else lands in the catch.
+    const logsRes = await api.get(`/logs/${ItemType.Moveset}-${moveset.value.movesetId}`)
+    latestLog.value = logsRes.data[0] ?? null
   } catch {
     //
   }

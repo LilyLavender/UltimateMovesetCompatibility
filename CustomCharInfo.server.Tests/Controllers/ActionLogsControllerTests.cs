@@ -373,5 +373,104 @@ namespace CustomCharInfo.server.Tests.Controllers
             var dto = (GetActionLogDto)ok.Value!;
             Assert.Null(dto.User.Email);
         }
+
+        [Fact]
+        public async Task GetActionLogs_ListStillCarriesDiff()
+        {
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
+            var owner = SeedData.AddUser(_db.Context, "modder-user", userTypeId: UserTypes.Modder, modderId: 20);
+            SeedData.AddModder(_db.Context, 20, owner.Id, "MyModder");
+            var log = SeedData.AddActionLog(_db.Context, itemId: 20, acceptanceStateId: AcceptanceStates.PendingAdminSoft, DateTime.UtcNow, userId: owner.Id, itemTypeId: ItemTypes.Modder);
+            log.Diff = "[{\"field\":\"Bio\",\"old\":\"a\",\"new\":\"b\"}]";
+            _db.Context.SaveChanges();
+
+            var result = await CreateController("admin-1").GetActionLogs(viewAll: true);
+
+            var logs = ((IEnumerable<GetActionLogDto>)Assert.IsType<OkObjectResult>(result.Result).Value!).ToList();
+            Assert.Equal(log.Diff, Assert.Single(logs).Diff);
+            Assert.Equal(owner.UserName, (string)logs[0].Item!.GetType().GetProperty("Name")!.GetValue(logs[0].Item)!);
+        }
+
+        [Fact]
+        public async Task GetLatestStates_NonAdminRequestingViewAll_ReturnsForbid()
+        {
+            SeedData.AddUser(_db.Context, "regular-1", userTypeId: UserTypes.User);
+
+            var result = await CreateController("regular-1").GetLatestStates(viewAll: true);
+
+            Assert.IsType<ForbidResult>(result.Result);
+        }
+
+        [Fact]
+        public async Task GetLatestStates_AdminViewAll_ReturnsNewestLogPerItem()
+        {
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
+            var owner = SeedData.AddUser(_db.Context, "modder-user", userTypeId: UserTypes.Modder, modderId: 20);
+            var t0 = new DateTime(2026, 9, 1, 0, 0, 0, DateTimeKind.Utc);
+            SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: AcceptanceStates.PendingAdminSoft, t0, userId: owner.Id);
+            SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: AcceptanceStates.Accepted, t0.AddDays(1), userId: owner.Id);
+            SeedData.AddActionLog(_db.Context, itemId: 2, acceptanceStateId: AcceptanceStates.PendingAdminHard, t0, userId: owner.Id);
+            SeedData.AddActionLog(_db.Context, itemId: 20, acceptanceStateId: AcceptanceStates.Accepted, t0, userId: owner.Id, itemTypeId: ItemTypes.Modder);
+
+            var result = await CreateController("admin-1").GetLatestStates(viewAll: true, itemTypes: new[] { ItemTypes.Moveset });
+
+            var rows = ((IEnumerable<LatestStateDto>)Assert.IsType<OkObjectResult>(result.Result).Value!).OrderBy(r => r.ItemId).ToList();
+            Assert.Equal(2, rows.Count);
+            Assert.Equal(AcceptanceStates.Accepted, rows[0].AcceptanceStateId);
+            Assert.Equal(t0.AddDays(1), rows[0].CreatedAt);
+            Assert.Equal(AcceptanceStates.PendingAdminHard, rows[1].AcceptanceStateId);
+        }
+
+        [Fact]
+        public async Task GetLatestStates_SameTimestamp_HigherIdWins()
+        {
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
+            var owner = SeedData.AddUser(_db.Context, "modder-user", userTypeId: UserTypes.Modder, modderId: 20);
+            var t0 = new DateTime(2026, 9, 1, 0, 0, 0, DateTimeKind.Utc);
+            SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: AcceptanceStates.PendingAdminSoft, t0, userId: owner.Id);
+            SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: AcceptanceStates.Rejected, t0, userId: owner.Id);
+
+            var result = await CreateController("admin-1").GetLatestStates(viewAll: true);
+
+            var row = Assert.Single((IEnumerable<LatestStateDto>)Assert.IsType<OkObjectResult>(result.Result).Value!);
+            Assert.Equal(AcceptanceStates.Rejected, row.AcceptanceStateId);
+        }
+
+        [Fact]
+        public async Task GetLatestStates_StateFilterAppliesToNewestLogOnly()
+        {
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
+            var owner = SeedData.AddUser(_db.Context, "modder-user", userTypeId: UserTypes.Modder, modderId: 20);
+            var t0 = new DateTime(2026, 9, 1, 0, 0, 0, DateTimeKind.Utc);
+            SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: AcceptanceStates.PendingAdminSoft, t0, userId: owner.Id);
+            SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: AcceptanceStates.Accepted, t0.AddDays(1), userId: owner.Id);
+            SeedData.AddActionLog(_db.Context, itemId: 2, acceptanceStateId: AcceptanceStates.PendingAdminSoft, t0, userId: owner.Id);
+
+            var result = await CreateController("admin-1").GetLatestStates(viewAll: true, acceptanceStates: AcceptanceStates.PendingAdmin);
+
+            var row = Assert.Single((IEnumerable<LatestStateDto>)Assert.IsType<OkObjectResult>(result.Result).Value!);
+            Assert.Equal(2, row.ItemId);
+        }
+
+        [Fact]
+        public async Task GetLatestStates_ModderScopedToOwnItems()
+        {
+            var owner = SeedData.AddUser(_db.Context, "modder-user", userTypeId: UserTypes.Modder, modderId: 20);
+            SeedData.AddModder(_db.Context, 20, owner.Id, "MyModder");
+            _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 1, ModdedCharName = "Owned", VanillaCharInternalName = "mario", SlottedId = "slotone", ReleaseStateId = ReleaseStates.Released });
+            _db.Context.Movesets.Add(new Models.Moveset { MovesetId = 2, ModdedCharName = "NotOwned", VanillaCharInternalName = "mario", SlottedId = "slottwo", ReleaseStateId = ReleaseStates.Released });
+            _db.Context.MovesetModders.Add(new Models.MovesetModder { MovesetId = 1, ModderId = 20, SortOrder = 0 });
+            _db.Context.SaveChanges();
+            SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: AcceptanceStates.PendingAdminSoft, DateTime.UtcNow, userId: owner.Id);
+            SeedData.AddActionLog(_db.Context, itemId: 2, acceptanceStateId: AcceptanceStates.PendingAdminSoft, DateTime.UtcNow, userId: owner.Id);
+            SeedData.AddActionLog(_db.Context, itemId: 20, acceptanceStateId: AcceptanceStates.Accepted, DateTime.UtcNow, userId: owner.Id, itemTypeId: ItemTypes.Modder);
+
+            var result = await CreateController(owner.Id).GetLatestStates();
+
+            var rows = ((IEnumerable<LatestStateDto>)Assert.IsType<OkObjectResult>(result.Result).Value!).ToList();
+            Assert.Equal(2, rows.Count);
+            Assert.Contains(rows, r => r.ItemTypeId == ItemTypes.Moveset && r.ItemId == 1);
+            Assert.Contains(rows, r => r.ItemTypeId == ItemTypes.Modder && r.ItemId == 20);
+        }
     }
 }

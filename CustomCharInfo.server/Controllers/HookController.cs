@@ -11,6 +11,7 @@ using CustomCharInfo.server.Helpers;
 using Npgsql;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -34,24 +35,14 @@ namespace CustomCharInfo.server.Controllers
         // Which movesets the requester may count or list as users of a hook.
         // Admins see every moveset; a modder sees public ones plus their own; anyone else sees public ones.
         // Blocked review states hide a moveset from everyone but its owner and admins, as on every public listing.
-        private sealed record HookVisibility(int? ModderId, bool SeeAll, List<int> BlockedMovesetIds);
+        // BlockedMovesetIds is a subquery, so the blocked check runs inside the hook query and no log rows leave the database.
+        private sealed record HookVisibility(int? ModderId, bool SeeAll, IQueryable<int> BlockedMovesetIds);
 
         private async Task<HookVisibility> GetHookVisibilityAsync()
         {
             var user = await _userManager.GetRequesterSummaryAsync(_context, User);
             var seeAll = user?.IsAdmin == true;
-            var logs = await _context.ActionLogs
-                .AsNoTracking()
-                .Where(a => a.ItemTypeId == ItemTypes.Moveset)
-                .Select(a => new { a.ItemId, a.AcceptanceStateId, a.CreatedAt })
-                .ToListAsync();
-            var blocked = logs
-                .GroupBy(l => l.ItemId)
-                .Select(g => g.OrderByDescending(l => l.CreatedAt).First())
-                .Where(l => AcceptanceStates.Blocked.Contains(l.AcceptanceStateId))
-                .Select(l => l.ItemId)
-                .ToList();
-            return new HookVisibility(user?.ModderId, seeAll, blocked);
+            return new HookVisibility(user?.ModderId, seeAll, ActionLogQueries.BlockedMovesetIds(_context));
         }
 
         private IQueryable<HookDto> ProjectHooks(IQueryable<Hook> hooks, GameVersion? latest, HookVisibility visibility)
@@ -97,6 +88,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<ActionResult<IEnumerable<HookDto>>> GetHooks()
         {
             var latest = await _offsets.GetLatestVersionAsync();
@@ -111,6 +103,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public-heavy")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<ActionResult<IEnumerable<object>>> SearchHooks([FromQuery] string q)
         {
             if (string.IsNullOrWhiteSpace(q))
@@ -134,6 +127,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<ActionResult<HookDto>> GetHook(int id)
         {
             var latest = await _offsets.GetLatestVersionAsync();

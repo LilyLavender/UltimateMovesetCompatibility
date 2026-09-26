@@ -35,6 +35,16 @@ export function pillsFor(stateId) {
   return pill ? [pill] : []
 }
 
+// Map of item id to its newest acceptance state id for one item type, from a /logs/latest response.
+export function latestStatesByItem(rows, itemTypeId) {
+  const states = new Map()
+  for (const row of rows) {
+    if (row.itemTypeId !== itemTypeId) continue
+    states.set(row.itemId, row.acceptanceStateId)
+  }
+  return states
+}
+
 // Newest log per item id for one item type, from a /logs response.
 export function latestLogsByItem(logs, itemTypeId, idOf) {
   const latest = new Map()

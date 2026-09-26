@@ -30,7 +30,6 @@
 import { ref, onMounted } from 'vue'
 import api from '@/services/api'
 import { ItemType, PENDING_ADMIN_STATES } from '@/globals'
-import { latestLogsByItem } from '@/services/acceptanceStateDisplay'
 import { adminTiles } from '@/navigation'
 import PageShell from '@/components/PageShell.vue'
 import SectionHeading from '@/components/SectionHeading.vue'
@@ -42,29 +41,14 @@ const pendingAdminCount = ref(0)
 // The badge on the action log manager tile: items whose newest log is waiting on an admin.
 onMounted(async () => {
   try {
-    const res = await api.get('/logs', {
+    const res = await api.get('/logs/latest', {
       params: {
         acceptanceStates: PENDING_ADMIN_STATES,
         itemTypes: Object.values(ItemType),
         viewAll: true,
       },
     })
-    let count = 0
-    for (const typeId of Object.values(ItemType)) {
-      for (const log of latestLogsByItem(
-        res.data,
-        typeId,
-        (item) =>
-          item?.movesetId ??
-          item?.modderId ??
-          item?.seriesId ??
-          item?.hookId ??
-          item?.pluginVersionId
-      ).values()) {
-        if (PENDING_ADMIN_STATES.includes(log.acceptanceState?.acceptanceStateId)) count++
-      }
-    }
-    pendingAdminCount.value = count
+    pendingAdminCount.value = res.data.length
   } catch {
     pendingAdminCount.value = 0
   }

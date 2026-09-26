@@ -486,6 +486,23 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
+        public async Task GetHooks_Anonymous_CountsMovesetWhoseBlockWasSuperseded()
+        {
+            SeedData.AddHookWithOffset(_db.Context, 1, "1234", 1);
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: UserTypes.Modder, modderId: 7);
+            AddMovesetUsingHook(1, 1);
+            AddMovesetUsingHook(3, 1);
+            var t0 = new DateTime(2026, 9, 1, 0, 0, 0, DateTimeKind.Utc);
+            SeedData.AddActionLog(_db.Context, 3, AcceptanceStates.PendingAdminHard, t0, "modder-1");
+            SeedData.AddActionLog(_db.Context, 3, AcceptanceStates.Accepted, t0.AddDays(1), "modder-1");
+
+            var result = await CreateController().GetHooks();
+
+            var hooks = Assert.IsAssignableFrom<IEnumerable<HookDto>>(Assert.IsType<OkObjectResult>(result.Result).Value);
+            Assert.Equal(2, Assert.Single(hooks).UsedByCount);
+        }
+
+        [Fact]
         public async Task GetHooks_Owner_CountsTheirOwnPrivateAndBlockedMovesets()
         {
             SeedData.AddHookWithOffset(_db.Context, 1, "1234", 1);

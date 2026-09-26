@@ -8,6 +8,7 @@ using CustomCharInfo.server.Helpers;
 
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -29,6 +30,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<ActionResult<IEnumerable<object>>> GetMovesets(
             [FromQuery] int? seriesId,
             [FromQuery] int? releaseStateId,
@@ -231,6 +233,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public-heavy")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<ActionResult<IEnumerable<object>>> SearchMovesets([FromQuery] string q, [FromQuery] bool includeHidden = false)
         {
             if (string.IsNullOrWhiteSpace(q))
@@ -281,6 +284,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<ActionResult<MovesetDetailDto>> GetMoveset(string idOrSlottedId)
         {
             var user = await _userManager.GetRequesterSummaryAsync(_context, User);

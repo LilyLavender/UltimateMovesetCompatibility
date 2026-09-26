@@ -303,9 +303,9 @@ const fetchUser = async () => {
 
 const fetchPendingAdminLogs = async () => {
   try {
+    // Every state is needed. Newest log per item decides whether it is still pending, so the filter runs below.
     const res = await api.get('/logs', {
       params: {
-        acceptanceStates: [AcceptanceState.PendingAdminSoft, AcceptanceState.PendingAdminHard],
         itemTypes: [
           ItemType.Moveset,
           ItemType.Modder,
