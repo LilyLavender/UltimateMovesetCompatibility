@@ -56,7 +56,11 @@ const user = computed(() => authStore.user)
 
 const config = computed(() => subnavs[props.section] ?? { items: [], actions: [] })
 const items = computed(() => visibleItems(config.value.items, user.value))
-const actions = computed(() => visibleItems(config.value.actions, user.value))
+const actions = computed(() =>
+  visibleItems(config.value.actions, user.value).filter(
+    (action) => !action.on || action.on.includes(route.name)
+  )
+)
 
 const isActive = (item) => resolveTo(item, user.value)?.name === route.name
 

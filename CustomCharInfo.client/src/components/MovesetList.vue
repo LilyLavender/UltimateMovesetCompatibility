@@ -165,7 +165,7 @@ import MovesetCard from './MovesetCard.vue'
 import LabeledField from '@/components/LabeledField.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import api from '@/services/api'
-import { UserType, ItemType, HARD_STATES } from '@/globals'
+import { UserType, ItemType, BLOCKED_ACCEPTANCE_STATES } from '@/globals'
 import { compareDateOnlyStrings } from '@/services/dateOnly'
 
 const props = defineProps({
@@ -363,11 +363,11 @@ const fetchUser = async () => {
   }
 }
 
-// Hardheld movesets should be dropped from the list for their owner too
+// Hardheld and rejected movesets are dropped from the list for their owner too, "my content" shows them instead
 const fetchBlockedIds = async () => {
   try {
     const res = await api.get('/logs/latest', {
-      params: { acceptanceStates: HARD_STATES, itemTypes: [ItemType.Moveset] },
+      params: { acceptanceStates: BLOCKED_ACCEPTANCE_STATES, itemTypes: [ItemType.Moveset] },
     })
     hardHeldMovesetIds.value = new Set(res.data.map((row) => row.itemId))
   } catch {

@@ -9,15 +9,14 @@
         compatibility between their projects.
       </p>
 
-      <p class="kofi-line">
+      <p>
         I would greatly appreciate if you could
-        <a href="https://ko-fi.com/E1E510YMY1" target="_blank" rel="noopener" class="kofi">
-          <img
+        <a href="https://ko-fi.com/E1E510YMY1" target="_blank" rel="noopener" class="kofi"
+          ><img
             src="https://storage.ko-fi.com/cdn/kofi1.png?v=6"
             alt="buy me a coffee at ko-fi.com"
-            height="36"
-          />
-        </a>
+            height="30"
+        /></a>
         to keep this site alive. UMC took months to create, and hosting it is not free.
       </p>
 
@@ -43,21 +42,16 @@ import PageShell from '@/components/PageShell.vue'
 </script>
 
 <style scoped>
-.kofi-line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 10px;
-}
-
 .kofi {
   display: inline-block;
+  margin: 0 2px;
+  vertical-align: middle;
   line-height: 0;
   text-decoration: none;
 }
 
 .kofi img {
-  height: 36px;
+  height: 30px;
   display: block;
 }
 </style>

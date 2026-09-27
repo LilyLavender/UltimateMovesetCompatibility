@@ -5,12 +5,6 @@
         {{ link.label }}
       </router-link>
     </nav>
-    <nav class="site-footer__links site-footer__links--guides" aria-label="Guides">
-      <span class="faint">Guides</span>
-      <router-link v-for="link in footerGuides" :key="link.label" :to="link.to">
-        {{ link.label }}
-      </router-link>
-    </nav>
     <p class="site-footer__copy no-select">
       &copy; {{ new Date().getFullYear() }}
       <a
@@ -25,7 +19,7 @@
 </template>
 
 <script setup>
-import { footerLinks, footerGuides } from '@/navigation'
+import { footerLinks } from '@/navigation'
 </script>
 
 <style scoped>
@@ -33,8 +27,7 @@ import { footerLinks, footerGuides } from '@/navigation'
   position: relative;
   z-index: 1;
   margin-top: 56px;
-  padding: 22px var(--gutter) 26px;
-  border-top: 1px solid var(--line);
+  padding: 18px var(--gutter) 22px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -60,13 +53,8 @@ import { footerLinks, footerGuides } from '@/navigation'
   color: var(--white);
 }
 
-.site-footer__links--guides {
-  gap: 8px 18px;
-  font-size: 12px;
-}
-
 .site-footer__copy {
-  margin: 6px 0 0;
+  margin: 0;
   color: var(--tx-3);
 }
 

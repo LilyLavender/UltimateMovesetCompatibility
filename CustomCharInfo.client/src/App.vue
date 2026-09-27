@@ -1,8 +1,14 @@
 <template>
   <v-app>
-    <div class="page-texture" aria-hidden="true"></div>
+    <div
+      class="page-texture"
+      :class="{ 'page-texture--hero': route.name === 'Home' }"
+      aria-hidden="true"
+    ></div>
     <Header :variant="route.name === 'Home' ? 'hero' : 'solid'" />
-    <router-view />
+    <main class="site-main">
+      <router-view />
+    </main>
     <Footer />
 
     <AppSnackbar />
@@ -26,3 +32,10 @@ useHead({
   title: computed(() => (route.meta.title ? `UMC | ${route.meta.title}` : 'UMC')),
 })
 </script>
+
+<style scoped>
+/* v-app's wrap is a flex column at viewport height. The page fills it so the footer stays at the bottom. */
+.site-main {
+  flex: 1 0 auto;
+}
+</style>

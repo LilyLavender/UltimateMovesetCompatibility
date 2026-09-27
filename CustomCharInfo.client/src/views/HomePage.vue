@@ -29,9 +29,7 @@
 
     <template v-if="latestBlogPost">
       <SectionHeading title="Latest from the blog" :to="{ name: 'Blog' }" link-label="View blog" />
-      <div class="panel">
-        <BlogPost :post="latestBlogPost" />
-      </div>
+      <BlogPost :post="latestBlogPost" />
     </template>
 
     <template v-if="showBetaSection">

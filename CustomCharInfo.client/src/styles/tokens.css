@@ -10,7 +10,7 @@
   --line: #242424;
   --line-2: #3d3d3d;
 
-  /* Text. --menu is the dropdown and drawer surface; --ink and --ink-2 are text on a colored badge or an inverted surface; --logo is the mark's grey. */
+  /* Text. --menu is the dropdown and drawer surface; --ink and --ink-2 are text on a colored badge or an inverted surface; --logo is the mark's grey; --band is the header's nav band. */
   --tx: #f2f2f2;
   --tx-2: #b4b4b4;
   --tx-3: #7a7a7a;
@@ -19,20 +19,21 @@
   --ink: #141414;
   --ink-2: #444;
   --logo: #dedede;
+  --band: #0e0e0e;
 
   /* Functional colors. --orange and --purple are only for the compatibility verdicts and the carried-forward offset state. */
   --ok: #43a047;
   --info: #2f9ee0;
-  --warn: #f1f134;
+  --warn: #f5b800;
   --err: #f13434;
   --orange: #ef6c00;
   --purple: #ce93d8;
 
-  /* Acceptance states; the values match the review pills the site has always used */
+  /* Acceptance states. The pending-user pair follows --warn; the rest match the review pills the site has always used. */
   --state-pending-admin-soft: rgb(187, 224, 236);
   --state-pending-admin-hard: rgb(52, 194, 241);
-  --state-pending-user-soft: rgb(241, 241, 142);
-  --state-pending-user-hard: rgb(241, 241, 52);
+  --state-pending-user-soft: color-mix(in srgb, var(--warn) 60%, #fff);
+  --state-pending-user-hard: var(--warn);
   --state-accepted: var(--ok);
   --state-rejected: rgb(241, 52, 52);
 

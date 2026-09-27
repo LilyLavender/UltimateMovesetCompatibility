@@ -1,6 +1,6 @@
 <template>
   <span class="hud" :style="{ '--hud-color': color }">
-    <span class="hud__label">{{ label }}</span>
+    <span v-if="label" class="hud__label">{{ label }}</span>
     <span class="hud__value"
       ><slot>{{ value }}</slot></span
     >
@@ -10,9 +10,9 @@
 <script setup>
 import { computed } from 'vue'
 
-/* A key and value readout with a colored left rail, for things like the game version or a like count. */
+/* A key and value readout with a colored left rail, for things like the game version or a like count. Without a label it is a plain rail chip. */
 const props = defineProps({
-  label: { type: String, required: true },
+  label: { type: String, default: '' },
   value: { type: [String, Number], default: '' },
   tone: { type: String, default: 'info' },
 })

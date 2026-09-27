@@ -3,10 +3,6 @@
     title="Request to edit a series"
     lede="Series edits require admin approval. Pick a series, then explain what you would like to change. An admin will review the request and grant or deny edit access."
   >
-    <template #subnav>
-      <SubNav section="series" label="Series" />
-    </template>
-
     <div v-if="loading" class="request-layout" aria-busy="true">
       <div class="series-grid">
         <Skeleton v-for="n in 12" :key="n" variant="line" height="110px" />
@@ -103,7 +99,6 @@ import seriesIconUnknown from '@/assets/series_icon_unknown.png'
 import { ItemType, AcceptanceState, PENDING_ADMIN_STATES, PENDING_USER_STATES } from '@/globals'
 import { latestStatesByItem } from '@/services/acceptanceStateDisplay'
 import PageShell from '@/components/PageShell.vue'
-import SubNav from '@/components/SubNav.vue'
 import Skeleton from '@/components/Skeleton.vue'
 import SkeletonPanel from '@/components/SkeletonPanel.vue'
 import EmptyState from '@/components/EmptyState.vue'

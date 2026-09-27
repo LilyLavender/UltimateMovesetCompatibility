@@ -48,6 +48,7 @@ export default createVuetify({
     VCombobox: field,
     VTextarea: field,
     VMenu: { transition: 'slide-y-transition' },
+    VTooltip: { transition: 'umc-tooltip' },
     VDataTable: { density: 'comfortable' },
     VCheckbox: { color: 'white' },
     VRadioGroup: { color: 'white' },

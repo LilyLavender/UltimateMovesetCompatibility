@@ -1,13 +1,13 @@
 <template>
   <PageShell title="Account" :head="false">
-    <template #subnav>
-      <SubNav v-if="isLoggedIn" section="account" label="Account" />
-    </template>
-
-    <!-- Dashboard: where a modder's own things live -->
-    <div v-if="isLoggedIn && user" class="dashboard">
+    <!-- Row 1: the signed-in panel (or the login form) on the left, my content and the reminder stacked on the right -->
+    <div
+      class="account-top"
+      :class="{ 'account-top--single': !isLoggedIn, 'account-top--no-tile': !user?.modderId }"
+    >
+      <AuthPanel class="account-top__panel" />
       <DashboardTile
-        v-if="user.modderId"
+        v-if="isLoggedIn && user?.modderId"
         :to="{ name: 'MyContent' }"
         icon="mdi-view-list"
         label="My content"
@@ -15,41 +15,50 @@
         :badge="pendingCount || ''"
         large
       />
-      <DashboardTile
-        :to="{ name: 'MyLikes' }"
-        icon="mdi-heart"
-        label="My likes"
-        description="Movesets you have liked"
-      />
-      <DashboardTile
-        v-if="user.modderId"
-        :to="{ name: 'ModderDetail', params: { id: user.modderId } }"
-        icon="mdi-account-eye"
-        label="My profile"
-        description="View or edit your modder page"
-      />
-      <DashboardTile
-        v-if="isAdmin"
-        :to="{ name: 'AdminPortal' }"
-        icon="mdi-shield-account"
-        label="Admin portal"
-        description="Review queue and site tools"
-      />
+      <blockquote class="community-note">
+        <strong>A reminder:</strong> someone's contributions to this community, no matter how
+        celebrated, don't reflect their value as a person. Please treat people accordingly.
+      </blockquote>
     </div>
 
-    <div class="account-grid" :class="{ 'account-grid--single': !isLoggedIn }">
-      <div class="account-grid__side">
-        <AuthPanel />
-        <blockquote class="community-note">
-          <strong>A reminder:</strong> someone's contributions to this community, no matter how
-          celebrated, don't reflect their value as a person. Please treat people accordingly.
-        </blockquote>
+    <template v-if="isLoggedIn && user">
+      <!-- Row 2: the rest of the tiles -->
+      <div class="dashboard">
+        <DashboardTile
+          v-if="user.modderId"
+          :to="{ name: 'ModderDetail', params: { id: user.modderId } }"
+          icon="mdi-account-eye"
+          label="My profile"
+          description="Your modder page as visitors see it"
+        />
+        <DashboardTile
+          v-if="user.modderId"
+          :to="{ name: 'EditModder', params: { id: user.modderId } }"
+          icon="mdi-account-edit"
+          label="Edit profile"
+          description="Bio, picture, and links"
+        />
+        <DashboardTile
+          :to="{ name: 'MyLikes' }"
+          icon="mdi-heart"
+          label="My likes"
+          description="Movesets you have liked"
+        />
+        <DashboardTile
+          v-if="isAdmin"
+          :to="{ name: 'AdminPortal' }"
+          icon="mdi-shield-account"
+          label="Admin portal"
+          description="Review queue and site tools"
+        />
       </div>
 
-      <section v-if="isLoggedIn" class="panel account-grid__log">
+      <!-- Row 3: notifications -->
+      <SectionHeading title="Notifications" />
+      <section class="panel">
         <ActionLogList />
       </section>
-    </div>
+    </template>
   </PageShell>
 </template>
 
@@ -61,7 +70,7 @@ import { useAuthStore } from '@/stores/auth'
 import { UserType, ItemType, ALL_ACCEPTANCE_STATES, PENDING_USER_STATES } from '@/globals'
 import { latestLogsByItem } from '@/services/acceptanceStateDisplay'
 import PageShell from '@/components/PageShell.vue'
-import SubNav from '@/components/SubNav.vue'
+import SectionHeading from '@/components/SectionHeading.vue'
 import DashboardTile from '@/components/DashboardTile.vue'
 import AuthPanel from '@/components/AuthPanel.vue'
 import ActionLogList from '@/components/ActionLogList.vue'
@@ -78,7 +87,7 @@ const seriesCount = ref(null)
 const pendingCount = ref(0)
 
 const contentSummary = computed(() => {
-  if (movesetCount.value == null) return 'Your movesets, series, and plugins'
+  if (movesetCount.value == null) return 'Your movesets and series'
   const parts = [`${movesetCount.value} moveset${movesetCount.value === 1 ? '' : 's'}`]
   if (seriesCount.value) parts.push(`${seriesCount.value} series`)
   const summary = parts.join(', ')
@@ -130,33 +139,53 @@ watch(
 </script>
 
 <style scoped>
+.account-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  gap: 12px;
+  align-items: stretch;
+  margin-bottom: 12px;
+}
+
+/* The panel takes the left column for both rows, tile and reminder stack on the right */
+.account-top__panel {
+  grid-row: 1 / 3;
+}
+
+.account-top > .dashboard-tile {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.account-top > .community-note {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: start;
+}
+
+/* Without a My content tile the reminder moves up beside the panel */
+.account-top--no-tile > .community-note {
+  grid-row: 1;
+}
+
+.account-top--single {
+  grid-template-columns: minmax(0, 480px);
+  grid-template-rows: auto;
+  justify-content: center;
+}
+
+.account-top--single .account-top__panel,
+.account-top--single .community-note {
+  grid-column: 1;
+  grid-row: auto;
+}
+
 .dashboard {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
-  margin-bottom: 28px;
-}
-
-.account-grid {
-  display: grid;
-  grid-template-columns: 460px minmax(0, 1fr);
-  gap: 28px;
-  align-items: start;
-}
-
-.account-grid--single {
-  grid-template-columns: minmax(0, 480px);
-  justify-content: center;
-}
-
-.account-grid__side {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.account-grid__log {
-  min-width: 0;
+  margin-bottom: 20px;
 }
 
 .community-note {
@@ -179,8 +208,16 @@ watch(
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .account-grid {
+  .account-top {
     grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  .account-top__panel,
+  .account-top > .dashboard-tile,
+  .account-top > .community-note {
+    grid-column: 1;
+    grid-row: auto;
   }
 }
 

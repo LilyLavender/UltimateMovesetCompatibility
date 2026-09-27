@@ -1,13 +1,16 @@
 <template>
   <PageShell title="Blog">
     <template #subnav>
-      <SubNav section="blog" label="Blog" />
+      <SubNav section="blog" label="Blog">
+        <template v-if="!isAdmin" #actions>
+          <span class="blog-hint">Want to add to the blog? Contact an admin.</span>
+        </template>
+      </SubNav>
     </template>
 
     <p v-if="error" class="note note--err">{{ error }}</p>
 
     <template v-else>
-      <p class="blog-hint">Want to add to the blog? Contact an admin.</p>
       <div v-if="loading" class="blog-list" aria-busy="true">
         <SkeletonPanel :lines="4" />
         <SkeletonPanel :lines="3" />
@@ -21,7 +24,9 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { isAdmin as isAdminUser } from '@/navigation'
 import PageShell from '@/components/PageShell.vue'
 import SubNav from '@/components/SubNav.vue'
 import SkeletonPanel from '@/components/SkeletonPanel.vue'
@@ -32,6 +37,9 @@ import api from '@/services/api'
 const blogPosts = ref([])
 const loading = ref(true)
 const error = ref('')
+
+const authStore = useAuthStore()
+const isAdmin = computed(() => isAdminUser(authStore.user))
 
 onMounted(async () => {
   try {
@@ -47,7 +55,7 @@ onMounted(async () => {
 
 <style scoped>
 .blog-hint {
-  margin: 0 0 18px;
+  align-self: center;
   color: var(--tx-3);
   font-size: 13px;
 }

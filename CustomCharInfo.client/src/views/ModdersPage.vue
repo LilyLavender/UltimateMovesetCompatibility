@@ -1,8 +1,16 @@
 <template>
   <PageShell title="Modders" :head="false">
-    <template #subnav>
-      <SubNav section="modders" label="Modders" />
-    </template>
+    <div v-if="actions.length" class="modders-actions">
+      <AppButton
+        v-for="action in actions"
+        :key="action.label"
+        :to="resolveTo(action, user)"
+        :icon="action.icon"
+        size="sm"
+      >
+        {{ action.label }}
+      </AppButton>
+    </div>
 
     <div v-if="loading" class="modders-grid" aria-busy="true">
       <Skeleton v-for="n in 10" :key="n" variant="line" height="58px" />
@@ -35,12 +43,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useHead } from '@unhead/vue'
 import axios from 'axios'
 import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
+import { subnavs, visibleItems, resolveTo } from '@/navigation'
 import PageShell from '@/components/PageShell.vue'
-import SubNav from '@/components/SubNav.vue'
+import AppButton from '@/components/AppButton.vue'
 import Skeleton from '@/components/Skeleton.vue'
 
 useHead({
@@ -57,6 +67,11 @@ useHead({
 const modders = ref([])
 const avatars = ref({})
 const loading = ref(true)
+
+// The hub has one page, so its actions sit above the grid instead of in a sub-nav.
+const authStore = useAuthStore()
+const user = computed(() => authStore.user)
+const actions = computed(() => visibleItems(subnavs.modders.actions, user.value))
 
 onMounted(async () => {
   const res = await api.get('/modders/public')
@@ -81,6 +96,12 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.modders-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
 .modders-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

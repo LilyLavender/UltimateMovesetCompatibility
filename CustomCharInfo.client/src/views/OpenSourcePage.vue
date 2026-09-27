@@ -1,5 +1,5 @@
 <template>
-  <PageShell title="Why open-source your movesets?" tier="narrow">
+  <PageShell title="Why open-source?" tier="narrow">
     <div class="prose">
       <h2>More examples means everyone gets better</h2>
       <p>Moveset modding has a steep learning curve.</p>

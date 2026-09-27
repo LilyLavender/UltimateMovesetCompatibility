@@ -201,11 +201,6 @@ onBeforeUnmount(() => {
   height: 0;
 }
 
-.site-header--solid {
-  background: var(--bg);
-  border-bottom: 1px solid var(--line);
-}
-
 .site-logo {
   position: absolute;
   left: 0;
@@ -219,6 +214,10 @@ onBeforeUnmount(() => {
   width: 50px;
   height: 50px;
   display: block;
+}
+
+.site-header--hero .site-logo img {
+  filter: brightness(0);
 }
 
 /* Skewed band on the nav. Its right offset compensates for the skew at the band's center. */
@@ -245,8 +244,7 @@ onBeforeUnmount(() => {
 }
 
 .site-header--solid .nav-band::before {
-  background: var(--panel-2);
-  border-bottom: 1px solid var(--line-2);
+  background: var(--band);
 }
 
 .nav {

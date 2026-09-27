@@ -9,6 +9,7 @@ import {
   visibleItems,
   resolveTo,
   sectionOf,
+  canApplyForModder,
 } from '@/navigation'
 import { UserType } from '@/globals'
 
@@ -62,36 +63,46 @@ describe('role predicates', () => {
     expect(labels(visibleItems(menus.movesets, anonymous))).not.toContain('Submit a moveset')
   })
 
-  it('plain user: can apply for modder, sees no submit links or admin portal', () => {
+  it('plain user: account, likes, and sign out only', () => {
     const items = labels(visibleItems(menus.account, plainUser))
-    expect(items).toContain('Apply for modder')
-    expect(items).toContain('My likes')
-    expect(items).not.toContain('My content')
-    expect(items).not.toContain('Submit a moveset')
-    expect(items).not.toContain('Admin portal')
+    expect(items).toEqual(['Account', 'My likes', 'Sign out'])
   })
 
-  it('applicant: sees the pending note instead of the apply link', () => {
+  it('applicant: the menu carries no apply link or pending note; the account page does', () => {
     const items = visibleItems(menus.account, applicant)
     expect(labels(items)).not.toContain('Apply for modder')
-    expect(items.some((i) => i.note)).toBe(true)
+    expect(items.some((i) => i.note)).toBe(false)
+    expect(canApplyForModder(plainUser)).toBe(true)
   })
 
-  it('modder: sees content, profile, and submit links, no admin portal', () => {
+  it('modder: account, content, likes, profile links, sign out, no admin portal', () => {
     const items = labels(visibleItems(menus.account, modder))
-    expect(items[0]).toBe('My content')
-    expect(items).toContain('View my profile')
-    expect(items).toContain('Submit a hook')
-    expect(items).not.toContain('Admin portal')
+    expect(items).toEqual([
+      'Account',
+      'My content',
+      'My likes',
+      'View my profile',
+      'Edit my profile',
+      'Sign out',
+    ])
     expect(labels(visibleItems(subnavs.movesets.actions, modder))).toContain('Submit a moveset')
+    expect(labels(visibleItems(subnavs.movesets.actions, modder))).toContain('Submit a plugin')
   })
 
-  it('admin: sees everything including the admin portal', () => {
+  it('admin: the same menu plus the admin portal before sign out', () => {
     const items = labels(visibleItems(menus.account, admin))
-    expect(items).toContain('Admin portal')
-    expect(items).toContain('Submit a moveset')
+    expect(items.slice(-2)).toEqual(['Admin portal', 'Sign out'])
+    expect(items).not.toContain('Submit a moveset')
     expect(labels(visibleItems(subnavs.blog.actions, admin))).toContain('Add post')
     expect(adminTiles.flatMap((g) => g.items).length).toBe(13)
+  })
+
+  it('hub actions can be limited to certain pages', () => {
+    const onlyOn = (name) =>
+      subnavs.movesets.actions.filter((a) => !a.on || a.on.includes(name)).map((a) => a.label)
+    expect(onlyOn('Movesets')).toEqual(['Submit a moveset'])
+    expect(onlyOn('PluginLookup')).toEqual(['Submit a plugin'])
+    expect(onlyOn('Hooks')).toEqual(['Submit a hook'])
   })
 
   it('resolves profile links against the user', () => {

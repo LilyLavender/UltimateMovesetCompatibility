@@ -1,5 +1,5 @@
 <template>
-  <PageShell :title="modder?.name ?? 'Modder'" :head="false">
+  <PageShell :title="modder?.name ?? 'Modder'" :head="false" keep-case>
     <div v-if="modder" class="modder">
       <div class="modder__side">
         <img v-if="modderPfpUrl" :src="modderPfpUrl" class="modder__pfp" alt="Profile picture" />
@@ -241,7 +241,7 @@ onMounted(async () => {
 <style scoped>
 .modder {
   display: grid;
-  grid-template-columns: 128px 1fr;
+  grid-template-columns: 150px 1fr;
   gap: 28px;
   align-items: start;
   margin-bottom: 8px;
@@ -269,18 +269,19 @@ onMounted(async () => {
   color: var(--tx-3);
 }
 
+/* Five 22px icons at 28px each fit the 150px column on one line */
 .modder__social {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
-  gap: 2px;
+  gap: 0;
 }
 
 .social-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
+  padding: 3px;
   border: 0;
   background: none;
   cursor: pointer;

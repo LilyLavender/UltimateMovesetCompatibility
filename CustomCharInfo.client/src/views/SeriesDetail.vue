@@ -1,5 +1,5 @@
 <template>
-  <PageShell :title="series?.seriesName ?? 'Series'" :head="false">
+  <PageShell :title="series?.seriesName ?? 'Series'" :head="false" keep-case>
     <div v-if="series" class="series-meta">
       <img
         v-if="series.seriesIconUrl"

@@ -6,7 +6,12 @@
         {{ backLabel }}
       </router-link>
       <div class="page-head">
-        <h1 class="page-title no-select" :class="`page-title--${size}`">{{ title }}</h1>
+        <h1
+          class="page-title no-select"
+          :class="[`page-title--${size}`, { 'page-title--keep-case': keepCase }]"
+        >
+          {{ title }}
+        </h1>
         <span class="page-tail" aria-hidden="true"></span>
       </div>
       <p v-if="lede" class="page-lede">{{ lede }}</p>
@@ -39,6 +44,7 @@ const props = defineProps({
   backLabel: { type: String, default: 'Back' },
   overHero: { type: Boolean, default: false },
   head: { type: Boolean, default: true },
+  keepCase: { type: Boolean, default: false },
 })
 
 if (props.head) {
@@ -93,6 +99,11 @@ if (props.head) {
 
 .page-title--lg {
   font-size: 88px;
+}
+
+/* Proper names (a series, a modder) keep their own casing */
+.page-title--keep-case {
+  text-transform: none;
 }
 
 .page-tail {

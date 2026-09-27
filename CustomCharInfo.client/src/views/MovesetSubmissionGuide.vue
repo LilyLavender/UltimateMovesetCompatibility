@@ -1,5 +1,5 @@
 <template>
-  <PageShell title="When to submit a moveset" tier="narrow">
+  <PageShell title="Submitting a moveset" tier="narrow">
     <div class="prose">
       <h2>Completed movesets</h2>
       <p>

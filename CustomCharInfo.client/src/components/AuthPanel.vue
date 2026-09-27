@@ -48,8 +48,6 @@
         <dd>
           <strong>{{ user.userName }}</strong>
         </dd>
-        <dt>Role</dt>
-        <dd>{{ roleName }}</dd>
       </dl>
 
       <div class="auth-panel__actions">
@@ -65,14 +63,16 @@
       </div>
 
       <v-expand-transition>
-        <form v-show="editProfileForm" class="auth-panel__rename" @submit.prevent="updateUsername">
-          <LabeledField label="New username" for-id="auth-new-username">
-            <v-text-field id="auth-new-username" v-model="editedUsername" density="compact" />
-          </LabeledField>
-          <AppButton type="submit" size="sm" icon="mdi-check" :busy="busy === 'rename'">
-            Save
-          </AppButton>
-        </form>
+        <div v-show="editProfileForm" class="auth-panel__reveal">
+          <form class="auth-panel__rename" @submit.prevent="updateUsername">
+            <LabeledField label="New username" for-id="auth-new-username">
+              <v-text-field id="auth-new-username" v-model="editedUsername" density="compact" />
+            </LabeledField>
+            <AppButton type="submit" size="sm" icon="mdi-check" :busy="busy === 'rename'">
+              Save
+            </AppButton>
+          </form>
+        </div>
       </v-expand-transition>
 
       <!-- Modder application -->
@@ -94,7 +94,7 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
-import { UserType, ItemType, AcceptanceState } from '@/globals'
+import { ItemType, AcceptanceState } from '@/globals'
 import { useNotify } from '@/composables/useNotify'
 import LabeledField from '@/components/LabeledField.vue'
 import AppButton from '@/components/AppButton.vue'
@@ -110,12 +110,6 @@ const editProfileForm = ref(false)
 const errorMsgs = ref([])
 const editedUsername = ref('')
 const busy = ref('')
-
-const roleName = computed(() => {
-  if (user.value?.userTypeId === UserType.Admin) return 'Admin'
-  if (user.value?.userTypeId === UserType.Modder) return 'Modder'
-  return 'User'
-})
 
 const register = async () => {
   busy.value = 'register'
@@ -287,11 +281,12 @@ onMounted(async () => {
   margin: 0;
 }
 
+/* The expand transition tweens wrapper's height. Margin on the form inside keeps the tween smooth */
 .auth-panel__rename {
   display: flex;
   align-items: flex-end;
   gap: 10px;
-  margin-top: 14px;
+  padding-top: 14px;
 }
 
 .auth-panel__rename > :first-child {

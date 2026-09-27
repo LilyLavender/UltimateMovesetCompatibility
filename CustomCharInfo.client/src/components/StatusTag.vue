@@ -8,7 +8,7 @@
 <script setup>
 import { computed } from 'vue'
 import { PILL_COLORS, PILL_LABELS } from '@/services/acceptanceStateDisplay'
-import { OFFSET_STATE_NAMES, OffsetState } from '@/globals'
+import { OFFSET_STATE_NAMES, OffsetState, AcceptanceState } from '@/globals'
 
 /*
   A square status tag. Three ways to use it:
@@ -38,7 +38,11 @@ const text = computed(() => {
 })
 
 const classes = computed(() => {
-  if (props.state != null) return 'status-tag--state'
+  if (props.state != null) {
+    return props.state === AcceptanceState.Rejected
+      ? ['status-tag--state', 'status-tag--state-rejected']
+      : 'status-tag--state'
+  }
   if (props.offsetState != null) return OFFSET_CLASS[props.offsetState] ?? 'status-tag--neutral'
   return `status-tag--${props.variant}`
 })
@@ -65,6 +69,10 @@ const style = computed(() =>
 
 .status-tag--state {
   background: var(--panel-2);
+}
+
+.status-tag--state-rejected {
+  color: #fff;
 }
 
 .status-tag--ok {

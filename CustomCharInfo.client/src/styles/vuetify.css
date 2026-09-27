@@ -128,11 +128,27 @@
   opacity: 0.6;
 }
 
-.v-tooltip > .v-overlay__content {
-  background: var(--white);
-  color: #000;
+/* Tooltip. Vuetify's own stylesheet loads after this file, so these selectors carry one extra class to win. */
+.v-tooltip.v-overlay > .v-overlay__content {
+  background: var(--menu);
+  color: var(--white);
+  border: 1px solid var(--line-2);
+  border-radius: 0;
   font-size: 12px;
   font-weight: 500;
+  box-shadow: none;
+  transition-property: opacity;
+}
+
+.v-tooltip.v-overlay > .v-overlay__content[class*='enter-active'],
+.v-tooltip.v-overlay > .v-overlay__content[class*='leave-active'] {
+  transition-duration: var(--dur-fast);
+  transition-timing-function: var(--ease);
+}
+
+.v-tooltip.v-overlay > .v-overlay__content.umc-tooltip-enter-from,
+.v-tooltip.v-overlay > .v-overlay__content.umc-tooltip-leave-to {
+  opacity: 0;
 }
 
 /* Data tables and plain tables */

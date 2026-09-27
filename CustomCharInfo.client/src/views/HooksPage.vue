@@ -1,13 +1,7 @@
 <template>
   <PageShell title="Hooks" tier="wide">
     <template #subnav>
-      <SubNav section="movesets" label="Movesets">
-        <template #actions>
-          <AppButton v-if="canConfirm" :to="{ name: 'AddHook' }" icon="mdi-plus" size="sm">
-            Submit a hook
-          </AppButton>
-        </template>
-      </SubNav>
+      <SubNav section="movesets" label="Movesets" />
     </template>
 
     <div class="hooks-toolbar">

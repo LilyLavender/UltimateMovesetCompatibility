@@ -46,7 +46,9 @@ export const menus = {
     { divider: true, show: isModder },
     { label: 'Submit a moveset', to: { name: 'AddMoveset' }, icon: 'mdi-plus', show: isModder },
   ],
+  // Submit links live in the Movesets menu and the sub-navs. Applying for modder lives on the account page.
   account: [
+    { label: 'Account', to: { name: 'UserActions' }, icon: 'mdi-cog' },
     {
       label: 'My content',
       to: { name: 'MyContent' },
@@ -68,19 +70,6 @@ export const menus = {
       icon: 'mdi-account-edit',
       show: hasModderPage,
     },
-    { divider: true, show: canApplyForModder },
-    {
-      label: 'Apply for modder',
-      to: { name: 'ApplyModder' },
-      icon: 'mdi-account-plus',
-      show: canApplyForModder,
-    },
-    { note: 'Modder application pending', icon: 'mdi-account-clock', show: hasPendingApplication },
-    { divider: true, show: isModder },
-    { label: 'Submit a moveset', to: { name: 'AddMoveset' }, icon: 'mdi-plus', show: isModder },
-    { label: 'Submit a series', to: { name: 'AddSeries' }, icon: 'mdi-plus', show: isModder },
-    { label: 'Submit a hook', to: { name: 'AddHook' }, icon: 'mdi-plus', show: isModder },
-    { label: 'Submit a plugin', to: { name: 'AddPlugin' }, icon: 'mdi-plus', show: isModder },
     { divider: true, show: isAdmin },
     {
       label: 'Admin portal',
@@ -89,8 +78,7 @@ export const menus = {
       show: isAdmin,
     },
     { divider: true },
-    { label: 'Settings', to: { name: 'UserActions' }, icon: 'mdi-cog' },
-    { label: 'Log out', action: 'logout', icon: 'mdi-logout' },
+    { label: 'Sign out', action: 'logout', icon: 'mdi-logout' },
   ],
 }
 
@@ -108,8 +96,29 @@ export const subnavs = {
       { label: 'Plugin lookup', to: { name: 'PluginLookup' }, icon: 'mdi-file-search' },
       { label: 'Hooks', to: { name: 'Hooks' }, icon: 'mdi-hook' },
     ],
+    // `on` limits an action to those pages of the hub. Without it the action shows on every page.
     actions: [
-      { label: 'Submit a moveset', to: { name: 'AddMoveset' }, icon: 'mdi-plus', show: isModder },
+      {
+        label: 'Submit a moveset',
+        to: { name: 'AddMoveset' },
+        icon: 'mdi-plus',
+        show: isModder,
+        on: ['Movesets'],
+      },
+      {
+        label: 'Submit a plugin',
+        to: { name: 'AddPlugin' },
+        icon: 'mdi-plus',
+        show: isModder,
+        on: ['PluginLookup'],
+      },
+      {
+        label: 'Submit a hook',
+        to: { name: 'AddHook' },
+        icon: 'mdi-plus',
+        show: isModder,
+        on: ['Hooks'],
+      },
     ],
   },
   series: {
@@ -251,17 +260,14 @@ export const footerLinks = [
   { label: 'Photo submissions', to: { name: 'PhotoSubmissions' } },
   { label: 'Privacy policy', to: { name: 'PrivacyPolicyPage' } },
   { label: 'API', to: { name: 'ApiPage' } },
-  { label: 'Open source', to: { name: 'OpenSource' } },
-]
-
-export const footerGuides = [
-  { label: 'Moveset submission guide', to: { name: 'MovesetSubmissionGuide' } },
-  { label: 'Who should I credit?', to: { name: 'ModderCreditGuide' } },
-  { label: 'Image hosting', to: { name: 'ImageHostingPage' } },
 ]
 
 /* Routes reached from inside a page (a card, a form, a login panel), never from navigation. */
 export const contextualRoutes = [
+  'OpenSource',
+  'MovesetSubmissionGuide',
+  'ModderCreditGuide',
+  'ImageHostingPage',
   'MovesetDetail',
   'EditMoveset',
   'SeriesDetail',
@@ -345,7 +351,6 @@ export function reachableRouteNames() {
   })
   adminTiles.forEach((g) => g.items.forEach(add))
   footerLinks.forEach(add)
-  footerGuides.forEach(add)
   contextualRoutes.forEach((n) => names.add(n))
   return names
 }

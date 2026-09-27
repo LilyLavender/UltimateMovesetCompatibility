@@ -2,7 +2,8 @@
   <article class="panel blog-post">
     <h2 class="blog-post__title">{{ props.post.blogTitle }}</h2>
     <p class="blog-post__meta">
-      {{ props.post.authorUserName }}, {{ formatDate(props.post.postedDate) }} UTC
+      <HudReadout :value="props.post.authorUserName" tone="info" />
+      <span>{{ formatDate(props.post.postedDate) }}</span>
     </p>
     <!-- Content is DOMPurify-sanitized -->
     <!-- eslint-disable-next-line vue/no-v-html -->
@@ -21,6 +22,7 @@ import { computed } from 'vue'
 import { format } from 'date-fns'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
+import HudReadout from '@/components/HudReadout.vue'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
@@ -31,9 +33,7 @@ const props = defineProps({
   },
 })
 
-const formatDate = (date) => {
-  return format(new Date(date), 'PPpp')
-}
+const formatDate = (date) => format(new Date(date), 'PPp')
 
 const getFullImageUrl = (path) => {
   if (!path) return null
@@ -49,11 +49,16 @@ const renderedText = computed(() => DOMPurify.sanitize(marked.parse(props.post.b
 }
 
 .blog-post__title {
-  margin: 0 0 4px;
+  margin: 0 0 8px;
   font-size: 28px;
+  text-transform: none;
 }
 
 .blog-post__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
   margin: 0 0 16px;
   color: var(--tx-3);
   font-size: 13px;
