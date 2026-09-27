@@ -27,6 +27,16 @@
             </LabeledField>
           </template>
 
+          <!-- Edit mode: description at two thirds, status at one third; add mode: status on the first row, description full width -->
+          <LabeledField
+            label="Description"
+            required
+            hint="What the hook normally handles."
+            :class="isEditMode ? 'span-2' : 'span-3 order-last'"
+          >
+            <v-textarea v-model="form.description" auto-grow rows="1" />
+          </LabeledField>
+
           <LabeledField label="Hookable status" required>
             <v-select
               v-model="form.hookableStatusId"
@@ -34,15 +44,6 @@
               item-title="name"
               item-value="hookableStatusId"
             />
-          </LabeledField>
-
-          <LabeledField
-            label="Description"
-            required
-            hint="What the hook normally handles."
-            class="span-3"
-          >
-            <v-textarea v-model="form.description" auto-grow rows="1" />
           </LabeledField>
         </div>
       </FormSection>
@@ -285,8 +286,16 @@ const submit = async () => {
   align-items: start;
 }
 
+.span-2 {
+  grid-column: span 2;
+}
+
 .span-3 {
   grid-column: span 3;
+}
+
+.order-last {
+  order: 1;
 }
 
 .mono-input :deep(input),
@@ -335,6 +344,7 @@ const submit = async () => {
     grid-template-columns: 1fr;
   }
 
+  .span-2,
   .span-3 {
     grid-column: span 1;
   }

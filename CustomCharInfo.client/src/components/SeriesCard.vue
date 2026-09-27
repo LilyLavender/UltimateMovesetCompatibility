@@ -8,6 +8,7 @@
         :src="getFullImageUrl(series.seriesIconUrl)"
         :alt="`${series.seriesName} series icon`"
         class="series-card__icon"
+        :class="{ 'series-card__icon--raw': rawIcon }"
       />
       <span class="series-card__text">
         <span class="series-card__name">{{ series.seriesName }}</span>
@@ -39,6 +40,11 @@ const props = defineProps({
   apiUrl: {
     type: String,
     required: true,
+  },
+  // Show the uploaded file as is, for checking a submission's color
+  rawIcon: {
+    type: Boolean,
+    default: false,
   },
 })
 
@@ -79,6 +85,10 @@ const getFullImageUrl = (path) => (path?.startsWith('/') ? `${props.apiUrl}${pat
   flex: none;
   object-fit: contain;
   filter: brightness(4.35);
+}
+
+.series-card__icon--raw {
+  filter: none;
 }
 
 .series-card__text {

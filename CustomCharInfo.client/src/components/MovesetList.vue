@@ -52,6 +52,15 @@
         />
       </LabeledField>
 
+      <div class="filters__check">
+        <v-checkbox
+          v-model="showJokeMovesets"
+          hide-details
+          density="compact"
+          label="Joke movesets"
+        />
+      </div>
+
       <LabeledField label="Vanilla character" class="filters__wide">
         <v-autocomplete
           v-model="filterVanillaChar"
@@ -127,15 +136,6 @@
           ]"
         />
       </LabeledField>
-
-      <div class="filters__check">
-        <v-checkbox
-          v-model="showJokeMovesets"
-          hide-details
-          density="compact"
-          label="Joke movesets"
-        />
-      </div>
     </div>
 
     <p v-if="showControls" class="filters__count">
@@ -409,7 +409,6 @@ onMounted(async () => {
 .filters__check {
   display: flex;
   align-items: flex-end;
-  grid-column: span 2;
 }
 
 .filters__count {
@@ -427,10 +426,6 @@ onMounted(async () => {
 @media (max-width: 599px) {
   .filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .filters__check {
-    grid-column: span 1;
   }
 }
 

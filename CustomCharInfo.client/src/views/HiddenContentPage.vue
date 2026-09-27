@@ -35,7 +35,13 @@
       <SectionHeading title="Series" :count="blockedSeries.length" />
       <p v-if="blockedSeries.length === 0" class="empty">None.</p>
       <div v-else class="series-grid">
-        <SeriesCard v-for="s in blockedSeries" :key="s.seriesId" :series="s" :api-url="apiUrl">
+        <SeriesCard
+          v-for="s in blockedSeries"
+          :key="s.seriesId"
+          :series="s"
+          :api-url="apiUrl"
+          raw-icon
+        >
           <template #subtitle>
             <span class="series-tags">
               <StatusTag v-for="stateId in seriesTagStates(s)" :key="stateId" :state="stateId" />
@@ -171,17 +177,17 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.empty {
-  margin: 0;
-  color: var(--tx-3);
-  font-size: 13px;
-}
-
 .moveset-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, 340px);
   justify-content: center;
   gap: 0;
+}
+
+.empty {
+  margin: 0;
+  color: var(--tx-3);
+  font-size: 13px;
 }
 
 .moveset-wrapper {

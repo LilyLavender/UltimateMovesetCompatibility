@@ -835,9 +835,14 @@ const submit = async () => {
   color: var(--tx-3);
 }
 
-/* Series picker with icons */
+/* Series picker with icons. Icon turns black when its item is hovered or selected */
 .series-icon {
   filter: brightness(4.35);
+}
+
+.v-list-item:hover .series-icon,
+.v-list-item--active .series-icon {
+  filter: brightness(0);
 }
 
 .series-icon-small {

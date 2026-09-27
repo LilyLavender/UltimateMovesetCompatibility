@@ -21,6 +21,50 @@
       for the full width; the character column stays put.
     </p>
 
+    <!-- Each column group has its toggle and, while shown, its filter. Both pairs sit on the right -->
+    <div class="table-toolbar">
+      <div class="table-toolbar__group">
+        <AppButton
+          size="sm"
+          :variant="showArticles ? 'default' : 'ghost'"
+          :icon="showArticles ? 'mdi-eye' : 'mdi-eye-off'"
+          :aria-pressed="showArticles"
+          @click="toggleGroup('articles')"
+        >
+          Articles ({{ articleKeys.length }})
+        </AppButton>
+        <v-text-field
+          v-if="showArticles"
+          v-model="articleFilter"
+          placeholder="Filter articles"
+          density="compact"
+          hide-details
+          clearable
+          class="table-toolbar__filter"
+        />
+      </div>
+      <div class="table-toolbar__group">
+        <AppButton
+          size="sm"
+          :variant="showHooks ? 'default' : 'ghost'"
+          :icon="showHooks ? 'mdi-eye' : 'mdi-eye-off'"
+          :aria-pressed="showHooks"
+          @click="toggleGroup('hooks')"
+        >
+          Hooks ({{ hookKeys.length }})
+        </AppButton>
+        <v-text-field
+          v-if="showHooks"
+          v-model="hookFilter"
+          placeholder="Filter hooks"
+          density="compact"
+          hide-details
+          clearable
+          class="table-toolbar__filter mono-input"
+        />
+      </div>
+    </div>
+
     <SkeletonTable
       v-if="loading"
       :headers="['Creators', 'Modded char', 'Vanilla char', 'Slotted', 'Slots', 'Release']"
@@ -38,18 +82,22 @@
         :items-per-page="-1"
         hide-default-footer
       >
+        <!-- Creators, clamped -->
+        <template #item.modders="{ value }">
+          <span class="clamp" :title="value">{{ value }}</span>
+        </template>
+
         <!-- Modded char name with subtitle -->
         <template #item.moddedCharName="{ item }">
           {{ item.moddedCharName
           }}<span v-if="item.subtitle" class="table-subtitle"> ({{ item.subtitle }})</span>
         </template>
 
-        <!-- Slotted/Replacement ID -->
+        <!-- Slotted/Replacement ID, clamped -->
         <template #item.slotReplacementId="{ item }">
-          <span v-if="item.slottedId === item.replacementId" class="mono">
-            {{ item.slottedId }}
+          <span class="clamp mono" :title="slotReplacementText(item)">
+            {{ slotReplacementText(item) }}
           </span>
-          <span v-else class="mono"> {{ item.slottedId }} / {{ item.replacementId }} </span>
         </template>
 
         <template #item.slotsRange="{ value }">
@@ -68,7 +116,7 @@
 
         <!-- Articles -->
         <template
-          v-for="key in articleKeys"
+          v-for="key in visibleArticleKeys"
           :key="`article-${key}`"
           #[`item.article:${key}`]="{ value }"
         >
@@ -76,7 +124,11 @@
         </template>
 
         <!-- Hooks -->
-        <template v-for="key in hookKeys" :key="`hook-${key}`" #[`item.hook:${key}`]="{ value }">
+        <template
+          v-for="key in visibleHookKeys"
+          :key="`hook-${key}`"
+          #[`item.hook:${key}`]="{ value }"
+        >
           <StatusTag v-if="value" variant="neutral">{{ value }}</StatusTag>
         </template>
       </v-data-table>
@@ -98,6 +150,35 @@ import SkeletonTable from '@/components/SkeletonTable.vue'
 
 const movesets = ref([])
 const loading = ref(true)
+
+// The article and hook column groups can be hidden, and narrowed by text. Toggles are remembered per browser.
+const GROUPS_KEY = 'umc.movesetTable.groups'
+const readGroups = () => {
+  try {
+    return { articles: true, hooks: true, ...JSON.parse(localStorage.getItem(GROUPS_KEY) || '{}') }
+  } catch {
+    return { articles: true, hooks: true }
+  }
+}
+const groups = ref(readGroups())
+const showArticles = computed(() => groups.value.articles)
+const showHooks = computed(() => groups.value.hooks)
+const articleFilter = ref('')
+const hookFilter = ref('')
+
+const toggleGroup = (name) => {
+  groups.value = { ...groups.value, [name]: !groups.value[name] }
+  try {
+    localStorage.setItem(GROUPS_KEY, JSON.stringify(groups.value))
+  } catch {
+    // Storage may be unavailable. Toggle still works for this visit
+  }
+}
+
+const slotReplacementText = (item) =>
+  item.slottedId === item.replacementId
+    ? String(item.slottedId)
+    : `${item.slottedId} / ${item.replacementId}`
 
 const boolKeys = [
   'hasGlobalOpff',
@@ -169,6 +250,19 @@ const hookKeys = computed(() => {
   return [...set].sort()
 })
 
+const visibleArticleKeys = computed(() => {
+  if (!showArticles.value) return []
+  const term = (articleFilter.value ?? '').trim().toLowerCase()
+  return term ? articleKeys.value.filter((a) => a.toLowerCase().includes(term)) : articleKeys.value
+})
+
+// Offsets match w/ or w/o prefix
+const visibleHookKeys = computed(() => {
+  if (!showHooks.value) return []
+  const term = (hookFilter.value ?? '').trim().toLowerCase().replace(/^0x/, '')
+  return term ? hookKeys.value.filter((h) => h.toLowerCase().includes(term)) : hookKeys.value
+})
+
 // Final headers
 // section-divider is a calculated class to set sections in the table
 const headers = computed(() => [
@@ -192,18 +286,18 @@ const headers = computed(() => [
     return h
   }),
 
-  ...articleKeys.value.map((a, i, arr) => ({
+  ...visibleArticleKeys.value.map((a, i, arr) => ({
     title: a,
     key: `article:${a}`,
     headerProps: {
-      class: i === arr.length - 1 ? 'section-divider' : '',
+      class: i === arr.length - 1 && visibleHookKeys.value.length ? 'section-divider' : '',
     },
     cellProps: {
-      class: i === arr.length - 1 ? 'section-divider' : '',
+      class: i === arr.length - 1 && visibleHookKeys.value.length ? 'section-divider' : '',
     },
   })),
 
-  ...hookKeys.value.map((h) => ({
+  ...visibleHookKeys.value.map((h) => ({
     title: formatOffset(h),
     key: `hook:${h}`,
   })),
@@ -292,6 +386,37 @@ function downloadCSV() {
   margin: 0 0 14px;
   color: var(--tx-3);
   font-size: 13px;
+}
+
+.table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px 24px;
+  margin-bottom: 14px;
+}
+
+.table-toolbar__group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.table-toolbar__filter {
+  width: 200px;
+}
+
+.mono-input :deep(input) {
+  font-family: var(--font-mono);
+}
+
+.clamp {
+  display: inline-block;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
 }
 
 :deep(.umc-table .v-data-table__th) {

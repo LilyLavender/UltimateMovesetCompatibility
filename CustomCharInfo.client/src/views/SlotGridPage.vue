@@ -271,52 +271,51 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/*
+  One grid for every row, so the character column sizes to the longest name and never clamps.
+  Rows are display: contents; their two cells are the grid items.
+*/
 .grid-table {
-  display: block;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
   width: 100%;
   border: 1px solid var(--line);
   background: var(--panel);
   font-size: 12px;
 }
 
-/* Row */
 .g-row {
-  display: flex;
-  align-items: stretch;
+  display: contents;
+}
+
+.g-row > * {
   border-bottom: 1px solid var(--line);
 }
 
-.g-row:last-child {
+.g-row:last-child > * {
   border-bottom: 0;
 }
 
-.g-row:not(.header-row):hover {
+.g-row:not(.header-row):hover > * {
   background: var(--panel-2);
 }
 
 /* Sticky character column */
 .char-col {
-  flex: 0 0 168px;
-  width: 168px;
   position: sticky;
   left: 0;
   z-index: 1;
   background: var(--panel);
-  padding: 0 8px;
+  padding: 0 12px 0 8px;
   display: flex;
   align-items: center;
   gap: 6px;
   border-right: 2px solid var(--line-2);
   font-size: 14px;
   white-space: nowrap;
-  overflow: hidden;
 }
 
-.g-row:not(.header-row):hover .char-col {
-  background: var(--panel-2);
-}
-
-.header-row {
+.header-row > * {
   position: sticky;
   top: 0;
   z-index: 3;
@@ -340,15 +339,9 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
-.char-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 /* Slots area */
 .slots-col {
   position: relative;
-  flex: 1;
   min-width: 0;
 }
 

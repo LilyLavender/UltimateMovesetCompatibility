@@ -226,7 +226,10 @@ const acceptanceStates = ref([])
 const fetchItemTypes = async () => {
   try {
     const res = await api.get('/itemtypes')
-    itemTypes.value = res.data.map((t) => ({ label: t.itemTypeName, value: t.itemTypeId }))
+    itemTypes.value = res.data.map((t) => ({
+      label: itemTypeLabel(t.itemTypeId),
+      value: t.itemTypeId,
+    }))
   } catch (err) {
     console.error('Failed to fetch item types:', err)
   }

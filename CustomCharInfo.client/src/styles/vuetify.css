@@ -106,7 +106,9 @@
 }
 
 .v-list-item--link:hover .v-icon,
-.v-list-item--active .v-icon {
+.v-list-item--active .v-icon,
+.v-list-item--link:hover .v-selection-control__input .v-icon,
+.v-list-item--active .v-selection-control__input .v-icon {
   color: #000;
 }
 
