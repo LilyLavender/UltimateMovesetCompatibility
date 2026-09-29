@@ -1,9 +1,9 @@
 <template>
   <PageShell title="Account" :head="false">
-    <!-- Row 1: the signed-in panel (or the login form) on the left, my content and the reminder stacked on the right -->
+    <!-- Row 1: the signed-in panel (or the login form) on the left, my content (or my likes) and the reminder stacked on the right -->
     <div
       class="account-top"
-      :class="{ 'account-top--single': !isLoggedIn, 'account-top--no-tile': !user?.modderId }"
+      :class="{ 'account-top--single': !isLoggedIn, 'account-top--no-tile': !user }"
     >
       <AuthPanel class="account-top__panel" />
       <DashboardTile
@@ -15,6 +15,14 @@
         :badge="pendingCount || ''"
         large
       />
+      <DashboardTile
+        v-else-if="isLoggedIn && user"
+        :to="{ name: 'MyLikes' }"
+        icon="mdi-heart"
+        label="My likes"
+        description="Movesets you have liked"
+        large
+      />
       <blockquote class="community-note">
         <strong>A reminder:</strong> someone's contributions to this community, no matter how
         celebrated, don't reflect their value as a person. Please treat people accordingly.
@@ -23,13 +31,13 @@
 
     <template v-if="isLoggedIn && user">
       <!-- Row 2: the rest of the tiles -->
-      <div class="dashboard">
+      <div v-if="dashboardTileCount" class="dashboard" :style="{ '--tiles': dashboardTileCount }">
         <DashboardTile
           v-if="user.modderId"
           :to="{ name: 'ModderDetail', params: { id: user.modderId } }"
           icon="mdi-account-eye"
           label="My profile"
-          description="Your modder page as visitors see it"
+          description="Your modder page"
         />
         <DashboardTile
           v-if="user.modderId"
@@ -39,6 +47,7 @@
           description="Bio, picture, and links"
         />
         <DashboardTile
+          v-if="user.modderId"
           :to="{ name: 'MyLikes' }"
           icon="mdi-heart"
           label="My likes"
@@ -81,6 +90,9 @@ const authStore = useAuthStore()
 const isLoggedIn = computed(() => authStore.isLoggedIn)
 const user = computed(() => authStore.user)
 const isAdmin = computed(() => user.value?.userTypeId === UserType.Admin)
+
+// Modders get profile, edit profile, and likes here; without a modder profile My likes sits in row 1 instead.
+const dashboardTileCount = computed(() => (user.value?.modderId ? 3 : 0) + (isAdmin.value ? 1 : 0))
 
 const movesetCount = ref(null)
 const seriesCount = ref(null)
@@ -164,7 +176,7 @@ watch(
   align-self: start;
 }
 
-/* Without a My content tile the reminder moves up beside the panel */
+/* Until the user loads there is no tile, so the reminder moves up beside the panel */
 .account-top--no-tile > .community-note {
   grid-row: 1;
 }
@@ -183,7 +195,7 @@ watch(
 
 .dashboard {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--tiles), minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 20px;
 }
@@ -206,6 +218,11 @@ watch(
 @media (max-width: 959px) {
   .dashboard {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* An odd tile out fills the last row */
+  .dashboard > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
 
   .account-top {
