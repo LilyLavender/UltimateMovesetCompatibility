@@ -215,8 +215,15 @@ namespace CustomCharInfo.server.Controllers
                     SeriesName = x.Moveset.PrivateMoveset == true && !(seeAll || x.IsOwner)
                         ? null
                         : (x.Moveset.Series != null ? x.Moveset.Series.SeriesName : null),
-                    ArticleNames = x.Moveset.MovesetArticles
-                        .Select(ma => $"{ma.Article.VanillaCharInternalName}_{ma.Article.ArticleName}"),
+                    // Null instead of empty when hidden, so a private moveset never matches a "has none" filter.
+                    ArticleNames = x.Moveset.PrivateMoveset == true && !(seeAll || x.IsOwner)
+                        ? null
+                        : x.Moveset.MovesetArticles
+                            .Select(ma => ma.Article.VanillaCharInternalName + "_" + ma.Article.ArticleName)
+                            .ToList(),
+                    HookIds = x.Moveset.PrivateMoveset == true && !(seeAll || x.IsOwner)
+                        ? null
+                        : x.Moveset.MovesetHooks.Select(mh => mh.HookId).ToList(),
                     HasSourceCode = x.Moveset.SourceCode != null && x.Moveset.SourceCode != "",
                     HasModsWikiLink = x.Moveset.ModsWikiLink != null && x.Moveset.ModsWikiLink != "",
                 })

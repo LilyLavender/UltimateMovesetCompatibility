@@ -61,21 +61,33 @@
         />
       </div>
 
-      <LabeledField label="Vanilla character" class="filters__wide">
-        <v-autocomplete
-          v-model="filterVanillaChar"
-          placeholder="Any character"
-          clearable
-          density="compact"
-          hide-details
-          :items="vanillaChars"
-          item-title="displayName"
-          item-value="internalName"
-          :custom-filter="vanillaCharFilter"
-          auto-select-first
-        >
-          <template #item="{ props: itemProps, item }">
-            <v-list-item v-bind="itemProps" class="vc-remove-title">
+      <div class="filters__trio">
+        <LabeledField label="Vanilla character">
+          <v-autocomplete
+            v-model="filterVanillaChar"
+            placeholder="Any character"
+            clearable
+            density="compact"
+            hide-details
+            :items="vanillaChars"
+            item-title="displayName"
+            item-value="internalName"
+            :custom-filter="vanillaCharFilter"
+            auto-select-first
+          >
+            <template #item="{ props: itemProps, item }">
+              <v-list-item v-bind="itemProps" class="vc-remove-title">
+                <div class="vc-filter-option">
+                  <img
+                    :src="`/UltimateMovesetCompatibility/vanilla-stock-icons/chara_2_${item.raw.internalName}.png`"
+                    class="vc-stock-icon"
+                    alt=""
+                  />
+                  <span>{{ item.raw.displayName }}</span>
+                </div>
+              </v-list-item>
+            </template>
+            <template #selection="{ item }">
               <div class="vc-filter-option">
                 <img
                   :src="`/UltimateMovesetCompatibility/vanilla-stock-icons/chara_2_${item.raw.internalName}.png`"
@@ -84,32 +96,44 @@
                 />
                 <span>{{ item.raw.displayName }}</span>
               </div>
-            </v-list-item>
-          </template>
-          <template #selection="{ item }">
-            <div class="vc-filter-option">
-              <img
-                :src="`/UltimateMovesetCompatibility/vanilla-stock-icons/chara_2_${item.raw.internalName}.png`"
-                class="vc-stock-icon"
-                alt=""
-              />
-              <span>{{ item.raw.displayName }}</span>
-            </div>
-          </template>
-        </v-autocomplete>
-      </LabeledField>
+            </template>
+          </v-autocomplete>
+        </LabeledField>
 
-      <LabeledField label="Vanilla article" class="filters__wide">
-        <v-autocomplete
-          v-model="filterArticle"
-          placeholder="Any article"
-          clearable
-          density="compact"
-          hide-details
-          :items="articleNames"
-          auto-select-first
-        />
-      </LabeledField>
+        <LabeledField label="Vanilla article">
+          <v-autocomplete
+            v-model="filterArticle"
+            placeholder="Any article"
+            clearable
+            density="compact"
+            hide-details
+            :items="articleItems"
+            auto-select-first
+          />
+        </LabeledField>
+
+        <LabeledField label="Hook">
+          <v-autocomplete
+            v-model="filterHook"
+            placeholder="Any hook"
+            clearable
+            density="compact"
+            hide-details
+            :items="hookItems"
+            :menu-props="{ contentClass: 'hook-filter-menu' }"
+            auto-select-first
+          >
+            <template #item="{ props: itemProps, item }">
+              <v-list-item v-bind="itemProps">
+                <template v-if="item.raw.offset" #title>
+                  <span class="mono">{{ formatOffset(item.raw.offset) }}</span>
+                  {{ item.raw.description }}
+                </template>
+              </v-list-item>
+            </template>
+          </v-autocomplete>
+        </LabeledField>
+      </div>
 
       <LabeledField label="Source">
         <v-select
@@ -167,6 +191,7 @@ import EmptyState from '@/components/EmptyState.vue'
 import api from '@/services/api'
 import { UserType, ItemType, BLOCKED_ACCEPTANCE_STATES } from '@/globals'
 import { compareDateOnlyStrings } from '@/services/dateOnly'
+import { formatOffset } from '@/services/offsets'
 
 const props = defineProps({
   movesets: {
@@ -191,6 +216,8 @@ const filterReleaseState = ref(null)
 const filterPrivacy = ref('all')
 const filterVanillaChar = ref(null)
 const filterArticle = ref(null)
+const filterHook = ref(null)
+const hooks = ref([])
 const searchQuery = ref('')
 const showJokeMovesets = ref(false)
 const filterOpenSource = ref('all')
@@ -216,14 +243,51 @@ const vanillaChars = computed(() => {
     .map(([internalName, displayName]) => ({ internalName, displayName }))
 })
 
-const articleNames = computed(() => {
+// The article and hook filters take "has any", "has none", or one specific item.
+// A moveset whose list is hidden (null) matches none of them.
+const HAS_ANY = 'has-any'
+const HAS_NONE = 'has-none'
+
+const matchesListFilter = (list, filter) => {
+  if (filter == null) return true
+  if (list == null) return false
+  if (filter === HAS_ANY) return list.length > 0
+  if (filter === HAS_NONE) return list.length === 0
+  return list.includes(filter)
+}
+
+const articleItems = computed(() => {
   const set = new Set()
   displayedMovesets.value.forEach((m) => {
     m.articleNames?.forEach((a) => {
       if (a) set.add(a)
     })
   })
-  return [...set].sort()
+  return [
+    { title: 'Has cloned articles', value: HAS_ANY },
+    { title: 'No cloned articles', value: HAS_NONE },
+    { type: 'divider' },
+    ...[...set].sort().map((a) => ({ title: a, value: a })),
+  ]
+})
+
+const hookItems = computed(() => {
+  const used = new Set(displayedMovesets.value.flatMap((m) => m.hookIds ?? []))
+  const specific = hooks.value
+    .filter((h) => used.has(h.hookId))
+    .sort((a, b) => parseInt(a.offset, 16) - parseInt(b.offset, 16))
+    .map((h) => ({
+      title: `${formatOffset(h.offset)} ${h.description}`,
+      value: h.hookId,
+      offset: h.offset,
+      description: h.description,
+    }))
+  return [
+    { title: 'Has hooks', value: HAS_ANY },
+    { title: 'No hooks', value: HAS_NONE },
+    { type: 'divider' },
+    ...specific,
+  ]
 })
 
 const canViewMoveset = (moveset) => {
@@ -272,10 +336,12 @@ const processedMovesets = computed(() => {
     list = list.filter((m) => m.vanillaCharName === filterVanillaChar.value)
   }
 
-  // Article filter
-  if (filterArticle.value != null) {
-    list = list.filter((m) => m.articleNames?.includes(filterArticle.value))
-  }
+  // Article and hook filters
+  list = list.filter(
+    (m) =>
+      matchesListFilter(m.articleNames, filterArticle.value) &&
+      matchesListFilter(m.hookIds, filterHook.value)
+  )
 
   // Open source filter
   if (filterOpenSource.value === 'yes') {
@@ -354,6 +420,16 @@ const fetchReleaseStates = async () => {
   }
 }
 
+// Labels for the hook filter. List carries just hook ids.
+const fetchHooks = async () => {
+  try {
+    const res = await api.get('/hooks')
+    hooks.value = res.data
+  } catch (err) {
+    console.error('Failed to fetch hooks:', err)
+  }
+}
+
 const fetchUser = async () => {
   try {
     const res = await api.get('/auth/me')
@@ -377,7 +453,12 @@ const fetchBlockedIds = async () => {
 
 onMounted(async () => {
   if (!props.movesets) await fetchMovesets()
-  await Promise.all([fetchUser(), fetchReleaseStates(), fetchBlockedIds()])
+  await Promise.all([
+    fetchUser(),
+    fetchReleaseStates(),
+    fetchBlockedIds(),
+    props.showControls ? fetchHooks() : null,
+  ])
 })
 </script>
 
@@ -401,9 +482,16 @@ onMounted(async () => {
   margin-bottom: 14px;
 }
 
-.filters__search,
-.filters__wide {
+.filters__search {
   grid-column: span 2;
+}
+
+/* Character, article, and hook share four columns in equal thirds */
+.filters__trio {
+  grid-column: span 4;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 16px;
 }
 
 .filters__check {
@@ -421,11 +509,19 @@ onMounted(async () => {
   .filters {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .filters__trio {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 599px) {
   .filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filters__trio {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -443,12 +539,22 @@ onMounted(async () => {
   object-fit: contain;
 }
 
-/* The selection slot sits inside v-field__input alongside the native <input>.
-   That input has flex-grow so it consumes left space, pushing our content right.
-   Expanding the selection wrapper to fill available space corrects this. */
+/* 
+  The selection slot sits inside v-field__input alongside the native <input>.
+  That input has flex-grow so it consumes left space, pushing our content right.
+  Expanding the selection wrapper to fill available space corrects this.
+  */
 :deep(.v-select__selection) {
   flex: 1;
   min-width: 0;
+}
+
+/* 
+  The hook menu stays the field's width. Long descriptions ellipsis instead of widening.
+  Vuetify sets the menu's min-width to the field's width inline, so a zero width resolves to exactly that.
+*/
+:global(.hook-filter-menu) {
+  width: 0;
 }
 
 .vc-remove-title :deep(.v-list-item-title:not(.vc-filter-option .v-list-item-title)) {
