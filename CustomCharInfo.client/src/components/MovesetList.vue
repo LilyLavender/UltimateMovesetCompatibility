@@ -167,15 +167,18 @@
     </p>
 
     <!-- Moveset List -->
-    <div class="moveset-grid">
-      <MovesetCard
-        v-for="m in processedMovesets"
-        :key="m.movesetId"
-        :moveset="m"
-        :can-view="canViewMoveset(m)"
-        :blocked-series-icon-urls="blockedSeriesIconUrls"
-      />
-    </div>
+    <template v-for="section in sections" :key="section.title">
+      <SectionHeading v-if="section.title" :title="section.title" />
+      <div class="moveset-grid">
+        <MovesetCard
+          v-for="m in section.movesets"
+          :key="m.movesetId"
+          :moveset="m"
+          :can-view="canViewMoveset(m)"
+          :blocked-series-icon-urls="blockedSeriesIconUrls"
+        />
+      </div>
+    </template>
     <EmptyState
       v-if="showControls && !processedMovesets.length"
       message="No movesets match these filters."
@@ -188,9 +191,16 @@ import { ref, onMounted, computed } from 'vue'
 import MovesetCard from './MovesetCard.vue'
 import LabeledField from '@/components/LabeledField.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import SectionHeading from '@/components/SectionHeading.vue'
 import api from '@/services/api'
-import { UserType, ItemType, BLOCKED_ACCEPTANCE_STATES } from '@/globals'
-import { compareDateOnlyStrings } from '@/services/dateOnly'
+import {
+  UserType,
+  ItemType,
+  BLOCKED_ACCEPTANCE_STATES,
+  ReleaseState,
+  RELEASE_STATE_NAMES,
+} from '@/globals'
+import { releaseDateSections, compareByName } from '@/services/releaseSections'
 import { formatOffset } from '@/services/offsets'
 
 const props = defineProps({
@@ -322,6 +332,8 @@ const processedMovesets = computed(() => {
   // Release state filter
   if (filterReleaseState.value != null) {
     list = list.filter((m) => m.releaseState === filterReleaseState.value)
+  } else if (props.showControls) {
+    list = list.filter((m) => m.releaseState !== RELEASE_STATE_NAMES[ReleaseState.Deprecated])
   }
 
   // Privacy filter
@@ -359,34 +371,7 @@ const processedMovesets = computed(() => {
 
   // Sort
   if (sortMode.value === 'releaseDate') {
-    list.sort((a, b) => {
-      const aHasDate = !!a.releaseDate
-      const bHasDate = !!b.releaseDate
-
-      // Newest first
-      if (aHasDate && bHasDate) {
-        return compareDateOnlyStrings(b.releaseDate, a.releaseDate)
-      }
-
-      // With date first
-      if (aHasDate) return -1
-      if (bHasDate) return 1
-
-      // Public first
-      if (a.privateMoveset !== b.privateMoveset) {
-        return a.privateMoveset ? 1 : -1
-      }
-
-      // Alphabetical fallback if public
-      if (!a.privateMoveset) {
-        return a.moddedCharName.localeCompare(b.moddedCharName)
-      }
-
-      // Modder name if private
-      const modderA = (a.modders[0] || '').toLowerCase()
-      const modderB = (b.modders[0] || '').toLowerCase()
-      return modderA.localeCompare(modderB)
-    })
+    return list
   } else if (sortMode.value === 'popularity') {
     list = list.filter((m) => !m.privateMoveset)
     list.sort(
@@ -394,16 +379,22 @@ const processedMovesets = computed(() => {
         (b.likeCount ?? 0) - (a.likeCount ?? 0) || a.moddedCharName.localeCompare(b.moddedCharName)
     )
   } else if (!props.movesets) {
-    list.sort((a, b) => {
-      if (a.privateMoveset !== b.privateMoveset) return a.privateMoveset ? 1 : -1
-      if (!a.privateMoveset) return a.moddedCharName.localeCompare(b.moddedCharName)
-      const modderA = (a.modders[0] || '').toLowerCase()
-      const modderB = (b.modders[0] || '').toLowerCase()
-      return modderA.localeCompare(modderB)
-    })
+    list.sort(compareByName)
   }
 
   return list
+})
+
+// Release-date sort splits the list into Released and Unreleased. Every other sort is one group.
+const sections = computed(() => {
+  if (sortMode.value !== 'releaseDate') {
+    return [{ title: '', movesets: processedMovesets.value }]
+  }
+  const { released, unreleased } = releaseDateSections(processedMovesets.value)
+  return [
+    { title: 'Released', movesets: released },
+    { title: 'Unreleased', movesets: unreleased },
+  ].filter((section) => section.movesets.length)
 })
 
 const fetchMovesets = async () => {
