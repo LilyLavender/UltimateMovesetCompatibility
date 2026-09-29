@@ -296,6 +296,14 @@ namespace CustomCharInfo.server.Controllers
             if (!result.Succeeded)
                 return BadRequest(result.Errors);
 
+            // A reset ends every session, so whoever held the old password is logged out once their access token expires.
+            var activeTokens = await _context.RefreshTokens
+                .Where(r => r.UserId == user.Id && !r.Revoked)
+                .ToListAsync();
+            foreach (var token in activeTokens)
+                token.Revoked = true;
+            await _context.SaveChangesAsync();
+
             return Ok();
         }
 

@@ -47,6 +47,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '@/services/api'
 import { UserType } from '@/globals'
 import { useDialogProps } from '@/composables/useDialogProps'
@@ -57,6 +58,7 @@ import AppButton from '@/components/AppButton.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import TableScroll from '@/components/TableScroll.vue'
 import SkeletonTable from '@/components/SkeletonTable.vue'
+const router = useRouter()
 const dialogProps = useDialogProps()
 const notify = useNotify()
 
@@ -99,7 +101,11 @@ const generate = async (user) => {
       userId: user.id,
     })
 
-    resetLink.value = `${window.location.origin}/UltimateMovesetCompatibility/#/reset-password?userId=${res.data.userId}&token=${encodeURIComponent(res.data.token)}`
+    const { href } = router.resolve({
+      name: 'ResetPasswordPage',
+      query: { userId: res.data.userId, token: res.data.token },
+    })
+    resetLink.value = `${window.location.origin}${href}`
 
     dialog.value = true
   } catch {

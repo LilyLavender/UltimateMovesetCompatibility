@@ -5,6 +5,7 @@ using CustomCharInfo.server.Services;
 using CustomCharInfo.server.Filters;
 using CustomCharInfo.server.Middleware;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
@@ -87,6 +88,10 @@ namespace CustomCharInfo.server
             })
                 .AddEntityFrameworkStores<AppDbContext>()
                 .AddDefaultTokenProviders();
+            // Reset tokens are signed with these keys. The container filesystem is wiped on every spin-down, so they live in Postgres.
+            builder.Services.AddDataProtection()
+                .SetApplicationName("UltimateMovesetCompatibility")
+                .PersistKeysToDbContext<AppDbContext>();
             builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

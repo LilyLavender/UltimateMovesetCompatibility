@@ -1,13 +1,20 @@
 <template>
   <PageShell title="Reset password" tier="narrow">
-    <p v-if="error" class="note note--err">{{ error }}</p>
+    <div v-if="!linkComplete" class="note note--err" role="alert">
+      This reset link is incomplete. Copy the whole link again, or see
+      <router-link :to="{ name: 'ForgotPasswordPage' }">Forgot password</router-link>.
+    </div>
 
-    <div v-if="success" class="note note--ok">
+    <div v-else-if="success" class="note note--ok">
       Password reset. You can now
       <router-link :to="{ name: 'UserActions' }">log in</router-link>.
     </div>
 
-    <form v-else class="panel reset-form" @submit.prevent="submit">
+    <div v-if="errors.length" class="note note--err" role="alert">
+      <p v-for="(msg, index) in errors" :key="index">{{ msg }}</p>
+    </div>
+
+    <form v-if="linkComplete && !success" class="panel reset-form" @submit.prevent="submit">
       <LabeledField label="New password" required for-id="reset-password">
         <v-text-field
           id="reset-password"
@@ -32,9 +39,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/services/api'
+import { extractErrorMessages } from '@/services/apiErrors'
 import PageShell from '@/components/PageShell.vue'
 import LabeledField from '@/components/LabeledField.vue'
 import AppButton from '@/components/AppButton.vue'
@@ -43,15 +51,17 @@ const route = useRoute()
 
 const password = ref('')
 const confirm = ref('')
-const error = ref('')
+const errors = ref([])
 const success = ref(false)
 const loading = ref(false)
 
+const linkComplete = computed(() => Boolean(route.query.userId && route.query.token))
+
 const submit = async () => {
-  error.value = ''
+  errors.value = []
 
   if (password.value !== confirm.value) {
-    error.value = 'Passwords do not match'
+    errors.value = ['Passwords do not match']
     return
   }
 
@@ -66,7 +76,7 @@ const submit = async () => {
 
     success.value = true
   } catch (err) {
-    error.value = err.response?.data ?? 'Invalid or expired reset link'
+    errors.value = extractErrorMessages(err)
   } finally {
     loading.value = false
   }
@@ -102,6 +112,14 @@ const submit = async () => {
 
 .note--ok {
   border-left-color: var(--ok);
+}
+
+.note p {
+  margin: 0;
+}
+
+.note p + p {
+  margin-top: 4px;
 }
 
 .note a {

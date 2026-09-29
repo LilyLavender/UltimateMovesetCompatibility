@@ -93,6 +93,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
+import { extractErrorMessages } from '@/services/apiErrors'
 import { useAuthStore } from '@/stores/auth'
 import { ItemType, AcceptanceState } from '@/globals'
 import { useNotify } from '@/composables/useNotify'
@@ -160,32 +161,6 @@ const logout = async () => {
   await authStore.logout()
   email.value = ''
   password.value = ''
-}
-
-function extractErrorMessages(err) {
-  // ASP.NET Identity validation errors (array)
-  if (Array.isArray(err.response?.data)) {
-    return err.response.data.map((e) => e.description || e.message || String(e))
-  }
-
-  // ASP.NET ProblemDetails / custom object
-  if (typeof err.response?.data === 'object' && err.response?.data !== null) {
-    if (err.response.data.message) {
-      return [err.response.data.message]
-    }
-
-    if (err.response.data.title) {
-      return [err.response.data.title]
-    }
-  }
-
-  // Axios error
-  if (err.message) {
-    return [err.message]
-  }
-
-  // Fallback
-  return ['An error occurred.']
 }
 
 const pendingApproval = ref(false)

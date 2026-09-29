@@ -1,9 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using CustomCharInfo.server.Models;
 
 namespace CustomCharInfo.server.Data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : DbContext, IDataProtectionKeyContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -38,6 +39,9 @@ namespace CustomCharInfo.server.Data
         public DbSet<ApplicationUser> Users { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<UserIpAddress> UserIpAddresses { get; set; }
+
+        // Data Protection key ring. Signs Identity password reset tokens
+        public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
 
         // Likes
         public DbSet<MovesetLike> MovesetLikes { get; set; }
