@@ -54,6 +54,76 @@ namespace CustomCharInfo.server.Tests.Controllers
             Assert.IsType<ConflictObjectResult>(result);
         }
 
+        private ApplicationUser SeedPost()
+        {
+            var admin = SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
+            _db.Context.BlogPosts.Add(new BlogPost { BlogPostId = 1, BlogTitle = "Title", BlogText = "Text", UserId = admin.Id, PostedDate = DateTime.UtcNow });
+            _db.Context.SaveChanges();
+            return admin;
+        }
+
+        [Fact]
+        public async Task ToggleLike_FirstCall_Likes()
+        {
+            SeedPost();
+            var user = SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
+            var controller = CreateController(user.Id);
+
+            var result = await controller.ToggleLike(1);
+
+            var ok = Assert.IsType<OkObjectResult>(result);
+            Assert.Equal(1, ok.Value!.GetType().GetProperty("likeCount")!.GetValue(ok.Value));
+            Assert.Equal(true, ok.Value.GetType().GetProperty("userLiked")!.GetValue(ok.Value));
+            Assert.Single(_db.Context.BlogLikes);
+        }
+
+        [Fact]
+        public async Task ToggleLike_SecondCall_Unlikes()
+        {
+            SeedPost();
+            var user = SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
+            var controller = CreateController(user.Id);
+
+            await controller.ToggleLike(1);
+            var result = await controller.ToggleLike(1);
+
+            var ok = Assert.IsType<OkObjectResult>(result);
+            Assert.Equal(0, ok.Value!.GetType().GetProperty("likeCount")!.GetValue(ok.Value));
+            Assert.Equal(false, ok.Value.GetType().GetProperty("userLiked")!.GetValue(ok.Value));
+            Assert.Empty(_db.Context.BlogLikes);
+        }
+
+        [Fact]
+        public async Task ToggleLike_UnknownPost_ReturnsNotFound()
+        {
+            var user = SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
+            var controller = CreateController(user.Id);
+
+            var result = await controller.ToggleLike(99);
+
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        [Fact]
+        public async Task GetBlogPosts_ReportsLikeCountAndUserLiked()
+        {
+            var admin = SeedPost();
+            var user = SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
+            _db.Context.BlogLikes.Add(new BlogLike { BlogPostId = 1, UserId = admin.Id, CreatedAt = DateTime.UtcNow });
+            _db.Context.BlogLikes.Add(new BlogLike { BlogPostId = 1, UserId = user.Id, CreatedAt = DateTime.UtcNow });
+            _db.Context.SaveChanges();
+
+            var signedIn = await CreateController(user.Id).GetBlogPosts();
+            var anonymous = await CreateController().GetBlogPosts();
+
+            var post = Assert.Single(Assert.IsAssignableFrom<IEnumerable<BlogPostDto>>(Assert.IsType<OkObjectResult>(signedIn.Result).Value));
+            Assert.Equal(2, post.LikeCount);
+            Assert.True(post.UserLiked);
+            var anonPost = Assert.Single(Assert.IsAssignableFrom<IEnumerable<BlogPostDto>>(Assert.IsType<OkObjectResult>(anonymous.Result).Value));
+            Assert.Equal(2, anonPost.LikeCount);
+            Assert.False(anonPost.UserLiked);
+        }
+
         [Fact]
         public async Task PatchBlogPostImage_NonAdmin_ReturnsForbid()
         {

@@ -45,6 +45,7 @@ namespace CustomCharInfo.server.Data
 
         // Likes
         public DbSet<MovesetLike> MovesetLikes { get; set; }
+        public DbSet<BlogLike> BlogLikes { get; set; }
 
         // Compatibility
         public DbSet<CompatibilityReport> CompatibilityReports { get; set; }
@@ -78,6 +79,9 @@ namespace CustomCharInfo.server.Data
 
             modelBuilder.Entity<MovesetLike>()
                 .HasKey(ml => new { ml.MovesetId, ml.UserId });
+
+            modelBuilder.Entity<BlogLike>()
+                .HasKey(bl => new { bl.BlogPostId, bl.UserId });
 
             modelBuilder.Entity<Moveset>()
                 .HasOne(m => m.VanillaChar)

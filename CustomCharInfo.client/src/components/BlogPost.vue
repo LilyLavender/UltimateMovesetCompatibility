@@ -4,6 +4,13 @@
     <p class="blog-post__meta">
       <HudReadout :value="props.post.authorUserName" tone="info" />
       <span>{{ formatDate(props.post.postedDate) }}</span>
+      <LikeButton
+        plain
+        :liked="userLiked"
+        :count="likeCount"
+        :can-like="!!authStore.user"
+        @toggle="toggleLike"
+      />
     </p>
     <!-- Content is DOMPurify-sanitized -->
     <!-- eslint-disable-next-line vue/no-v-html -->
@@ -18,11 +25,14 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { format } from 'date-fns'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import HudReadout from '@/components/HudReadout.vue'
+import LikeButton from '@/components/LikeButton.vue'
+import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
@@ -32,6 +42,20 @@ const props = defineProps({
     required: true,
   },
 })
+
+const authStore = useAuthStore()
+const likeCount = ref(props.post.likeCount ?? 0)
+const userLiked = ref(props.post.userLiked ?? false)
+
+const toggleLike = async () => {
+  try {
+    const res = await api.post(`/blog/${props.post.blogPostId}/like`)
+    likeCount.value = res.data.likeCount
+    userLiked.value = res.data.userLiked
+  } catch {
+    //
+  }
+}
 
 const formatDate = (date) => format(new Date(date), 'PPp')
 

@@ -60,19 +60,13 @@
                 icon="mdi-pencil"
                 aria-label="Edit moveset"
               />
-              <div class="like-group">
-                <button
-                  type="button"
-                  class="like-btn"
-                  :class="{ 'like-btn--liked': userLiked }"
-                  :title="user ? (userLiked ? 'Unlike' : 'Like') : 'Sign in to like'"
-                  :aria-label="userLiked ? 'Unlike' : 'Like'"
-                  @click="toggleLike"
-                >
-                  <v-icon size="18">{{ userLiked ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
-                </button>
-                <span class="like-count" :title="`${likeCount} likes`">{{ likeCount }}</span>
-              </div>
+              <LikeButton
+                class="detail-like"
+                :liked="userLiked"
+                :count="likeCount"
+                :can-like="!!user"
+                @toggle="toggleLike"
+              />
             </div>
             <dl class="kv">
               <dt>Series</dt>
@@ -319,6 +313,7 @@ import { formatOffset } from '@/services/offsets'
 import { formatSlotRange } from '@/services/slots'
 import StatusTag from '@/components/StatusTag.vue'
 import AppButton from '@/components/AppButton.vue'
+import LikeButton from '@/components/LikeButton.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -823,46 +818,8 @@ onMounted(async () => {
   margin: 0;
 }
 
-.like-group {
+.detail-like {
   margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-}
-
-.like-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 12px;
-  background: #000;
-  border: 1px solid var(--white);
-  color: var(--white);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  line-height: 1;
-  transition:
-    background-color var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease);
-}
-
-.like-btn--liked {
-  background: var(--white);
-  color: #000;
-}
-
-.like-count {
-  display: inline-flex;
-  align-items: center;
-  height: 30px;
-  padding: 0 10px;
-  border: 1px solid var(--white);
-  border-left: 0;
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 600;
 }
 
 /* Panels */
