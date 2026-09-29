@@ -198,6 +198,41 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
+        public async Task GetActionLogs_AdminDecisionOnHook_DoesNotCountAsEdit()
+        {
+            var admin = SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin, modderId: 30);
+            SeedData.AddModder(_db.Context, 30, admin.Id, "AdminModder");
+            var otherUser = SeedData.AddUser(_db.Context, "someone-else-1", userTypeId: UserTypes.Modder);
+
+            // Someone else edited hook 1; the admin accepted it through the Admin viewer.
+            SeedData.AddActionLog(_db.Context, itemId: 1, AcceptanceStates.PendingAdminSoft, DateTime.UtcNow.AddMinutes(-1), otherUser.Id, ItemTypes.Hook);
+            SeedData.AddActionLog(_db.Context, itemId: 1, AcceptanceStates.Accepted, DateTime.UtcNow, admin.Id, ItemTypes.Hook);
+
+            var controller = CreateController(admin.Id);
+
+            var result = await controller.GetActionLogs();
+
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            Assert.Empty((IEnumerable<GetActionLogDto>)ok.Value!);
+        }
+
+        [Fact]
+        public async Task GetActionLogs_AdminDecisionOnModderApplication_OnlyApplicantSeesIt()
+        {
+            var admin = SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
+            var applicant = SeedData.AddUser(_db.Context, "applicant-1", userTypeId: UserTypes.User);
+
+            SeedData.AddActionLog(_db.Context, itemId: 40, AcceptanceStates.PendingAdminHard, DateTime.UtcNow.AddMinutes(-1), applicant.Id, ItemTypes.Modder);
+            SeedData.AddActionLog(_db.Context, itemId: 40, AcceptanceStates.Rejected, DateTime.UtcNow, admin.Id, ItemTypes.Modder);
+
+            var adminResult = await CreateController(admin.Id).GetActionLogs();
+            var applicantResult = await CreateController(applicant.Id).GetActionLogs();
+
+            Assert.Empty((IEnumerable<GetActionLogDto>)Assert.IsType<OkObjectResult>(adminResult.Result).Value!);
+            Assert.Equal(2, ((IEnumerable<GetActionLogDto>)Assert.IsType<OkObjectResult>(applicantResult.Result).Value!).Count());
+        }
+
+        [Fact]
         public async Task GetActionLogsByItem_NoAuthenticatedUser_ReturnsForbid()
         {
             var controller = CreateController(null);

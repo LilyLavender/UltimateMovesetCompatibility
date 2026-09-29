@@ -247,6 +247,15 @@ namespace CustomCharInfo.server.Controllers
             return (new LogScope(isAdmin, effectiveUserId, user.ModderId), null);
         }
 
+        // States a user's own create, edit, or application logs carry.
+        // Decisions an admin posts through the Admin viewer use other states, so they never make an item "theirs".
+        private static readonly int[] SubmissionStates =
+        {
+            AcceptanceStates.PendingAdminSoft,
+            AcceptanceStates.PendingAdminHard,
+            AcceptanceStates.AutoAccepted
+        };
+
         // Narrows logs to the items the effective user may see: their modder row, movesets they are credited on or edit,
         // those movesets' series, hooks they logged on or their movesets use, and plugin versions they own.
         private async Task<IQueryable<ActionLog>> ScopeToUserAsync(IQueryable<ActionLog> query, LogScope scope)
@@ -258,7 +267,8 @@ namespace CustomCharInfo.server.Controllers
             if (modderId == null)
             {
                 extraModderItemIds = await _context.ActionLogs
-                    .Where(log => log.UserId == effectiveUserId && log.ItemTypeId == ItemTypes.Modder)
+                    .Where(log => log.UserId == effectiveUserId && log.ItemTypeId == ItemTypes.Modder
+                        && SubmissionStates.Contains(log.AcceptanceStateId))
                     .Select(log => log.ItemId)
                     .Distinct()
                     .ToListAsync();
@@ -267,7 +277,8 @@ namespace CustomCharInfo.server.Controllers
             // Hooks are shared/unowned - a user can see a hook's logs if they've submitted a
             // log entry for it before (i.e. they've created or edited it at some point).
             var editedHookIds = await _context.ActionLogs
-                .Where(log => log.UserId == effectiveUserId && log.ItemTypeId == ItemTypes.Hook)
+                .Where(log => log.UserId == effectiveUserId && log.ItemTypeId == ItemTypes.Hook
+                    && SubmissionStates.Contains(log.AcceptanceStateId))
                 .Select(log => log.ItemId)
                 .Distinct()
                 .ToListAsync();
