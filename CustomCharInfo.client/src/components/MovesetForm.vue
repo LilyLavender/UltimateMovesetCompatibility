@@ -248,7 +248,11 @@
       </FormSection>
 
       <FormSection id="articles" title="Cloned articles">
-        <MovesetArticlesEditor v-model="form.articles" :article-options="articles" />
+        <MovesetArticlesEditor
+          v-model="form.articles"
+          :article-options="articles"
+          :vanilla-char-internal-name="form.vanillaCharInternalName"
+        />
       </FormSection>
 
       <FormSection id="hooks" title="Hooks">
@@ -619,6 +623,17 @@ const submit = async () => {
 
   if (/\d/.test(form.value.slottedId)) {
     notify.warning('Slotted ID cannot contain digits.')
+    return
+  }
+
+  const sameCharacterArticles = form.value.articles
+    .map((entry) => articles.value.find((a) => a.articleId === entry.articleId))
+    .filter((a) => a?.vanillaCharInternalName === form.value.vanillaCharInternalName)
+  if (sameCharacterArticles.length) {
+    const names = sameCharacterArticles
+      .map((a) => `${a.vanillaCharInternalName}_${a.articleName}`)
+      .join(', ')
+    notify.warning(`Remove cloned articles of this moveset's own character: ${names}.`)
     return
   }
 

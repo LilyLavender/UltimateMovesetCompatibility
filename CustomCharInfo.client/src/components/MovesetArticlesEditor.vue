@@ -25,7 +25,7 @@
         <LabeledField label="Article" required class="list-editor__wide">
           <v-autocomplete
             v-model="draft.articleId"
-            :items="articleOptions"
+            :items="pickerOptions"
             :item-title="(item) => `${item.vanillaCharInternalName}_${item.articleName}`"
             item-value="articleId"
             density="compact"
@@ -61,6 +61,11 @@
           <strong>{{ entry.description }}</strong>
           <span class="mono muted">{{ articleName(entry.articleId) }}</span>
           <span class="faint">({{ entry.moddedName }})</span>
+          <StatusTag
+            v-if="isSameCharacter(entry.articleId)"
+            variant="err"
+            label="Same character as this moveset"
+          />
         </span>
         <span class="list-editor__actions">
           <button
@@ -100,15 +105,18 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { moveItem } from '@/services/listUtils'
 import LabeledField from '@/components/LabeledField.vue'
 import AppButton from '@/components/AppButton.vue'
+import StatusTag from '@/components/StatusTag.vue'
 
 // Editable list of a moveset's cloned articles: { articleId, moddedName, description }.
 // The list is edited in place through v-model; the parent submits it as-is.
+// Articles of the moveset's own character cannot be picked, and existing ones are flagged.
 const props = defineProps({
   articleOptions: { type: Array, default: () => [] },
+  vanillaCharInternalName: { type: String, default: '' },
 })
 const articles = defineModel({ type: Array, default: () => [] })
 
@@ -116,6 +124,15 @@ const emptyDraft = () => ({ articleId: null, moddedName: '', description: '' })
 const draft = ref(emptyDraft())
 const showForm = ref(false)
 const editingIndex = ref(null)
+
+const isSameCharacter = (id) =>
+  !!props.vanillaCharInternalName &&
+  props.articleOptions.find((a) => a.articleId === id)?.vanillaCharInternalName ===
+    props.vanillaCharInternalName
+
+const pickerOptions = computed(() =>
+  props.articleOptions.filter((a) => a.vanillaCharInternalName !== props.vanillaCharInternalName)
+)
 
 const articleName = (id) => {
   const article = props.articleOptions.find((a) => a.articleId === id)
@@ -143,9 +160,11 @@ const commitDraft = () => {
   showForm.value = false
 }
 
+// A flagged entry opens with its article cleared so a valid one is picked in its place.
 const editEntry = (i) => {
   editingIndex.value = i
-  draft.value = { ...articles.value[i] }
+  const entry = articles.value[i]
+  draft.value = { ...entry, articleId: isSameCharacter(entry.articleId) ? null : entry.articleId }
   showForm.value = true
 }
 </script>
