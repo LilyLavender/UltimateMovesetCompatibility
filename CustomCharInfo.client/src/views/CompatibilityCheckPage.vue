@@ -435,6 +435,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import api from '@/services/api'
 import { useNotify } from '@/composables/useNotify'
 import { ItemType, ReleaseState, RELEASE_STATE_NAMES, HARD_STATES, HookableStatus } from '@/globals'
@@ -491,6 +492,16 @@ const user = ref(null)
 
 const selection = ref([])
 const result = ref(null)
+
+const route = useRoute()
+const preselectFromRoute = () => {
+  const wanted = Number(route.query.moveset)
+  if (!wanted) return
+  const found = movesets.value.find((m) => m.movesetId === wanted)
+  if (!found || hardHeldIds.value.has(found.movesetId)) return
+  mode.value = 'check'
+  selection.value = [found]
+}
 const reports = ref({ compatibleCount: 0, incompatibleCount: 0, userVote: null })
 
 // Map<partnerMovesetId, {compatibleCount, incompatibleCount}>
@@ -947,6 +958,7 @@ onMounted(async () => {
     if (logsRes.status === 'fulfilled') {
       hardHeldIds.value = new Set(logsRes.value.data.map((row) => row.itemId))
     }
+    preselectFromRoute()
   } finally {
     loading.value = false
   }

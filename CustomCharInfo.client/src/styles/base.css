@@ -181,6 +181,11 @@ a.question {
   );
 }
 
+/* The moveset detail page draws its own grid inside the color and down its right edge */
+.page-texture--off {
+  display: none;
+}
+
 /* On Home the grid rises over the hero images, fading out upward through the same band in which they fade to black */
 .page-texture--hero {
   z-index: 2;

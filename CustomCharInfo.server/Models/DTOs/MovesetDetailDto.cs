@@ -112,6 +112,7 @@ namespace CustomCharInfo.server.Models.DTOs
         public int? GamebananaId { get; set; }
         public string? DiscordUsername { get; set; }
         public string? UserId { get; set; }
+        public string? PfpUrl { get; set; }
     }
 
     public class MovesetArticleDetailDto

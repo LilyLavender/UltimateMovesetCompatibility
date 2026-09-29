@@ -85,7 +85,8 @@ namespace CustomCharInfo.server.Helpers
                             Bio = mm.Modder.Bio,
                             GamebananaId = mm.Modder.GamebananaId,
                             DiscordUsername = mm.Modder.DiscordUsername,
-                            UserId = mm.Modder.UserId
+                            UserId = mm.Modder.UserId,
+                            PfpUrl = mm.Modder.PfpUrl
                         }
                     }).ToList(),
 

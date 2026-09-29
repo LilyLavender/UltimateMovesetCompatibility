@@ -82,7 +82,8 @@ import umcLogo from '@/assets/umc-logo.svg'
 
 /*
   The header. `hero` keeps the transparent look over the home page collage;
-  `solid` is the black bar with a hairline used on every other page.
+  `overlay` floats over the moveset detail page with the solid band and the grey logo;
+  `solid` is the black bar used on every other page.
 */
 defineProps({
   variant: { type: String, default: 'solid' },
@@ -197,7 +198,8 @@ onBeforeUnmount(() => {
   height: 56px;
 }
 
-.site-header--hero {
+.site-header--hero,
+.site-header--overlay {
   height: 0;
 }
 
@@ -243,7 +245,8 @@ onBeforeUnmount(() => {
   transform-origin: top left;
 }
 
-.site-header--solid .nav-band::before {
+.site-header--solid .nav-band::before,
+.site-header--overlay .nav-band::before {
   background: var(--band);
 }
 
@@ -342,7 +345,8 @@ onBeforeUnmount(() => {
     height: 52px;
   }
 
-  .site-header--hero {
+  .site-header--hero,
+  .site-header--overlay {
     height: 0;
   }
 

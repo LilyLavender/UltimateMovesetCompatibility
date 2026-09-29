@@ -1,24 +1,21 @@
 <template>
-  <div v-if="moveset" class="moveset-detail">
-    <!-- Background -->
-    <div
-      class="background-column center-column gradient-column"
-      :style="{
-        backgroundImage: `linear-gradient(to bottom, ${backgroundColor} 0%, white 80%)`,
-      }"
-    ></div>
-    <div
-      class="background-column center-column icon-column"
-      :style="{
-        backgroundImage: `url('${getFullImageUrl(moveset.series.seriesIconUrl, '')}')`,
-      }"
-    ></div>
-    <div class="background-column side-column left-black"></div>
-    <div class="background-column side-column right-black"></div>
+  <div v-if="moveset" class="moveset-detail" :style="{ '--accent': backgroundColor }">
+    <!-- Background: color column fading to black, grid, and series icon pattern -->
+    <div class="color-column">
+      <div class="color-column__grid"></div>
+      <div
+        class="color-column__icons"
+        :style="{
+          backgroundImage: `url('${getFullImageUrl(moveset.series.seriesIconUrl, '')}')`,
+        }"
+      ></div>
+    </div>
 
-    <!-- Main content -->
-    <div class="moveset-columns">
-      <!-- Column 1 (left) -->
+    <!-- Site grid is disabled on this page since it creates its own: it runs down only the right edge of the content -->
+    <div class="edge-grid"></div>
+
+    <div class="detail-grid">
+      <!-- Left: the name over the render -->
       <div class="column-left">
         <div class="title-container">
           <h1 class="detail-title no-select">
@@ -28,10 +25,14 @@
             >
           </h1>
         </div>
+        <img
+          :src="getFullImageUrl(moveset.movesetHeroImageUrl, movesetHeroUnknown)"
+          alt="Character render"
+          class="character-image"
+          :class="{ 'slide-in': imageLoaded }"
+          @load="imageLoaded = true"
+        />
         <div class="left-overlay">
-          <div v-if="moveset.isJokeMoveset">
-            <StatusTag variant="warn" icon="mdi-egg-easter">Joke moveset</StatusTag>
-          </div>
           <div v-if="warningInfo" class="moveset-warning">
             This moveset is
             <StatusTag v-if="warningInfo.isPrivate" variant="err">Private</StatusTag>
@@ -39,299 +40,276 @@
             <StatusTag v-if="warningInfo.pendingType" :state="warningInfo.stateId" />. It can only
             be seen by {{ singleModder ? 'you' : 'its creators' }} and site admins.
           </div>
-          <div class="like-row">
-            <button
-              class="like-btn"
-              :class="{ 'like-btn--liked': userLiked }"
-              :title="user ? (userLiked ? 'Unlike' : 'Like') : 'Sign in to like'"
-              @click="toggleLike"
-            >
-              <v-icon>{{ userLiked ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
-            </button>
-            <HudReadout label="Likes" :value="likeCount" tone="info" />
-            <AppButton
-              v-if="canEdit"
-              :to="{ name: 'EditMoveset', params: { movesetId: route.params.movesetId } }"
-              variant="ghost"
-              size="sm"
-              icon="mdi-pencil"
-              aria-label="Edit moveset"
-            />
-          </div>
         </div>
-        <img
-          :src="getFullImageUrl(moveset.movesetHeroImageUrl, movesetHeroUnknown)"
-          alt="Character UI"
-          class="character-image"
-          :class="{ 'slide-in': imageLoaded }"
-          @load="imageLoaded = true"
-        />
       </div>
 
-      <!-- Column 2 (right) -->
+      <!-- Right: two independent stacks: Basic info and Dependencies, then Creators and Functions -->
       <div class="column-right">
-        <!-- Row 1 -->
-        <v-row dense class="row-1">
-          <!-- Basic Info -->
-          <v-col cols="12" md="5">
-            <div class="info-card basic-info-card">
-              <!-- Header -->
-              <h3 class="info-card__title">Basic info</h3>
-
-              <!-- Creator(s) -->
-              <div v-if="moveset.movesetModders?.length" class="align-center">
-                <p class="d-inline mr-2">
-                  Creator<span v-if="moveset.movesetModders.length > 1">s</span>:
-                </p>
-                <strong>
-                  <template v-for="(mm, index) in moveset.movesetModders" :key="mm.modder.modderId">
-                    <router-link
-                      :to="{ name: 'ModderDetail', params: { id: mm.modder.modderId } }"
-                      class="unvisitable"
-                    >
-                      {{ mm.modder.name }} </router-link
-                    ><span v-if="index < moveset.movesetModders.length - 1">, </span>
-                  </template>
-                </strong>
-              </div>
-
-              <!-- Series -->
-              <div>
-                <p>
-                  Series:
-                  <strong
-                    >{{ moveset.series?.seriesName }}
-                    <img
-                      :src="getFullImageUrl(moveset.series.seriesIconUrl, seriesIconUnknown)"
-                      alt="series icon"
-                      class="inline-series"
-                  /></strong>
-                </p>
-              </div>
-
-              <!-- IDs -->
-              <div>
-                <p v-if="moveset.slottedId === moveset.replacementId">
-                  Internal ID: <strong>{{ moveset.slottedId }}</strong>
-                </p>
-                <template v-else>
-                  <p>
-                    Slotted ID: <strong>{{ moveset.slottedId }}</strong>
-                  </p>
-                  <p>
-                    Replacement ID: <strong>{{ moveset.replacementId }}</strong>
-                  </p>
-                </template>
-              </div>
-
-              <!-- Slots -->
-              <div>
-                <p v-if="moveset.slotsStart && moveset.slotsEnd">
-                  {{
-                    new Date().getMonth() == 3 && new Date().getDate() == 1
-                      ? 'Schmeebulates:'
-                      : 'Slots:'
-                  }}
-                  <strong
-                    >{{ moveset.vanillaChar?.displayName }}
-                    {{ formatSlotRange(moveset.slotsStart, moveset.slotsEnd) }}</strong
-                  >
-                </p>
-                <p v-else>
-                  {{
-                    new Date().getMonth() == 3 && new Date().getDate() == 1
-                      ? 'Schmeebulates:'
-                      : 'Slots:'
-                  }}
-                  <strong>{{ moveset.vanillaChar?.displayName }} c???</strong>
-                </p>
-              </div>
-
-              <!-- Availability -->
-              <p>
-                Availability:
-                <strong>
-                  <span v-if="releaseDisplay">
-                    <template v-if="releaseDisplay.url">
-                      <a :href="releaseDisplay.url" target="_blank" class="offsite unvisitable">
-                        {{ releaseDisplay.text }}
-                      </a>
-                    </template>
-                    <template v-else>
-                      {{ releaseDisplay.text }}
-                    </template>
-                  </span>
-                  <span v-else>
-                    {{ moveset.releaseState?.releaseStateName }}
-                  </span>
-                </strong>
-              </p>
-
-              <!-- External Links -->
-              <p v-if="moveset.modsWikiLink">
-                <a
-                  :href="`${MODS_WIKI_URL}${moveset.modsWikiLink}`"
-                  target="_blank"
-                  class="offsite unvisitable"
+        <div class="stack">
+          <section class="panel panel--basic">
+            <div class="panel__head">
+              <h3 class="panel__title">Basic info</h3>
+              <StatusTag v-if="moveset.isJokeMoveset" variant="warn" icon="mdi-egg-easter">
+                Joke moveset
+              </StatusTag>
+              <AppButton
+                v-if="canEdit"
+                :to="{ name: 'EditMoveset', params: { movesetId: route.params.movesetId } }"
+                variant="ghost"
+                size="sm"
+                icon="mdi-pencil"
+                aria-label="Edit moveset"
+              />
+              <div class="like-group">
+                <button
+                  type="button"
+                  class="like-btn"
+                  :class="{ 'like-btn--liked': userLiked }"
+                  :title="user ? (userLiked ? 'Unlike' : 'Like') : 'Sign in to like'"
+                  :aria-label="userLiked ? 'Unlike' : 'Like'"
+                  @click="toggleLike"
                 >
-                  View {{ moveset.moddedCharName }} on SSBU Mods Wiki
-                </a>
-              </p>
-              <p v-if="moveset.sourceCode && !moveset.modpackName">
-                <a :href="moveset.sourceCode" target="_blank" class="offsite unvisitable"
-                  >Source Code</a
-                >
-              </p>
-            </div>
-          </v-col>
-
-          <!-- Function usage -->
-          <v-col cols="12" md="3">
-            <div class="mb-4 info-card">
-              <h3 class="info-card__title">Functions</h3>
-              <div class="functions-list">
-                <v-tooltip
-                  text="Runs once every frame for all characters"
-                  location="left"
-                  open-delay="500"
-                >
-                  <template #activator="{ props }">
-                    <div class="function-row" v-bind="props">
-                      <span>Global OPFF</span><StatusIcon :value="moveset.hasGlobalOpff" />
-                    </div>
-                  </template>
-                </v-tooltip>
-                <v-tooltip
-                  :text="`Runs once every frame for ${moveset.vanillaChar?.displayName ?? 'the character'}`"
-                  location="left"
-                  open-delay="500"
-                >
-                  <template #activator="{ props }">
-                    <div class="function-row" v-bind="props">
-                      <span>Character OPFF</span><StatusIcon :value="moveset.hasCharacterOpff" />
-                    </div>
-                  </template>
-                </v-tooltip>
-                <v-tooltip
-                  text="Runs once when a fighter is spawned in"
-                  location="left"
-                  open-delay="500"
-                >
-                  <template #activator="{ props }">
-                    <div class="function-row" v-bind="props">
-                      <span>agent_init</span><StatusIcon :value="moveset.hasAgentInit" />
-                    </div>
-                  </template>
-                </v-tooltip>
-                <v-tooltip
-                  text="Runs once every time a pre status script runs"
-                  location="left"
-                  open-delay="500"
-                >
-                  <template #activator="{ props }">
-                    <div class="function-row" v-bind="props">
-                      <span>on_line pre</span><StatusIcon :value="moveset.hasGlobalOnLinePre" />
-                    </div>
-                  </template>
-                </v-tooltip>
-                <v-tooltip
-                  text="Runs once every time an end status script runs"
-                  location="left"
-                  open-delay="500"
-                >
-                  <template #activator="{ props }">
-                    <div class="function-row" v-bind="props">
-                      <span>on_line end</span><StatusIcon :value="moveset.hasGlobalOnLineEnd" />
-                    </div>
-                  </template>
-                </v-tooltip>
+                  <v-icon size="18">{{ userLiked ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
+                </button>
+                <span class="like-count" :title="`${likeCount} likes`">{{ likeCount }}</span>
               </div>
             </div>
-          </v-col>
+            <dl class="kv">
+              <dt>Series</dt>
+              <dd class="kv__series">
+                <img
+                  :src="getFullImageUrl(moveset.series.seriesIconUrl, seriesIconUnknown)"
+                  alt=""
+                  class="inline-series"
+                />
+                {{ moveset.series?.seriesName }}
+              </dd>
 
-          <!-- Dependencies -->
-          <v-col cols="12" md="4">
-            <div class="mb-4 info-card">
-              <h3 class="info-card__title">Dependencies</h3>
-              <ul v-if="moveset.movesetDependencies.length > 0">
-                <li v-for="md in moveset.movesetDependencies" :key="md.dependencyId">
-                  •
+              <template v-if="moveset.slottedId === moveset.replacementId">
+                <dt>Internal id</dt>
+                <dd class="mono">{{ moveset.slottedId }}</dd>
+              </template>
+              <template v-else>
+                <dt>Slotted id</dt>
+                <dd class="mono">{{ moveset.slottedId }}</dd>
+                <dt>Replacement id</dt>
+                <dd class="mono">{{ moveset.replacementId }}</dd>
+              </template>
+
+              <dt>{{ slotsLabel }}</dt>
+              <dd>
+                {{ moveset.vanillaChar?.displayName }}
+                <span class="mono">{{
+                  moveset.slotsStart && moveset.slotsEnd
+                    ? formatSlotRange(moveset.slotsStart, moveset.slotsEnd)
+                    : 'c???'
+                }}</span>
+              </dd>
+
+              <dt>Availability</dt>
+              <dd>
+                <template v-if="releaseDisplay">
                   <a
-                    :href="md.dependency.downloadLink"
+                    v-if="releaseDisplay.url"
+                    :href="releaseDisplay.url"
                     target="_blank"
-                    class="offsite unvisitable dependency-link"
+                    class="offsite unvisitable"
                   >
-                    {{ md.dependency.name }}
+                    {{ releaseDisplay.text }}
                   </a>
-                </li>
-              </ul>
-              <p v-else>No dependencies set!</p>
-            </div>
-          </v-col>
-        </v-row>
+                  <template v-else>{{ releaseDisplay.text }}</template>
+                </template>
+                <template v-else>{{ moveset.releaseState?.releaseStateName }}</template>
+              </dd>
 
-        <!-- Row 2 -->
-        <v-row dense class="row-2">
-          <!-- Articles -->
-          <v-col cols="12" md="6">
-            <div class="mb-4 info-card">
-              <h3 class="info-card__title">Articles</h3>
-              <ul v-if="moveset.movesetArticles.length > 0">
-                <li
-                  v-for="ma in moveset.movesetArticles"
-                  :key="ma.articleId"
-                  class="d-flex justify-space-between"
+              <template v-if="moveset.modsWikiLink">
+                <dt>Wiki</dt>
+                <dd>
+                  <a
+                    :href="`${MODS_WIKI_URL}${moveset.modsWikiLink}`"
+                    target="_blank"
+                    class="offsite unvisitable"
+                  >
+                    {{ moveset.moddedCharName }} on SSBU Mods Wiki
+                  </a>
+                </dd>
+              </template>
+
+              <template v-if="moveset.sourceCode && !moveset.modpackName">
+                <dt>Source</dt>
+                <dd>
+                  <a :href="moveset.sourceCode" target="_blank" class="offsite unvisitable">
+                    Source code
+                  </a>
+                </dd>
+              </template>
+            </dl>
+            <AppButton
+              :to="{ name: 'CompatibilityCheck', query: { moveset: moveset.movesetId } }"
+              variant="ghost"
+              size="sm"
+              icon="mdi-swap-horizontal"
+              class="panel__corner"
+            >
+              Compatibility check
+            </AppButton>
+          </section>
+
+          <section class="panel panel--dependencies">
+            <h3 class="panel__title">Dependencies</h3>
+            <div v-if="moveset.movesetDependencies.length > 0" class="dependencies">
+              <a
+                v-for="md in moveset.movesetDependencies"
+                :key="md.dependencyId"
+                :href="md.dependency.downloadLink"
+                target="_blank"
+                rel="noopener"
+                class="dependency"
+              >
+                {{ md.dependency.name }}
+                <v-icon size="13">mdi-open-in-new</v-icon>
+              </a>
+            </div>
+            <p v-else class="panel__empty">No dependencies set!</p>
+            <AppButton
+              :to="{ name: 'PluginLookup' }"
+              variant="ghost"
+              size="sm"
+              icon="mdi-file-search"
+              class="panel__corner"
+            >
+              Plugin lookup
+            </AppButton>
+          </section>
+        </div>
+
+        <div class="stack">
+          <section v-if="moveset.movesetModders?.length" class="panel panel--creators">
+            <h3 class="panel__title">
+              Creator<span v-if="moveset.movesetModders.length > 1">s</span>
+            </h3>
+            <ul class="creators">
+              <li v-for="mm in moveset.movesetModders" :key="mm.modder.modderId">
+                <router-link
+                  :to="{ name: 'ModderDetail', params: { id: mm.modder.modderId } }"
+                  class="creator"
                 >
-                  <div>
-                    <strong>{{ ma.description }}</strong
-                    >&nbsp;
-                    <span>({{ ma.moddedName }})</span>
-                  </div>
-                  <div>
-                    <span
-                      >{{ ma.article.vanillaCharInternalName }}_{{ ma.article.articleName }}</span
+                  <span class="creator__pfp">
+                    <img
+                      v-if="creatorPicture(mm.modder)"
+                      :src="creatorPicture(mm.modder)"
+                      alt=""
+                      loading="lazy"
+                    />
+                    <v-icon v-else size="20">mdi-account</v-icon>
+                  </span>
+                  <span class="creator__name">{{ mm.modder.name }}</span>
+                </router-link>
+              </li>
+            </ul>
+          </section>
+
+          <section class="panel panel--functions">
+            <h3 class="panel__title">Functions</h3>
+            <div class="functions">
+              <v-tooltip
+                v-for="fn in functionRows"
+                :key="fn.key"
+                :text="fn.tip"
+                location="top"
+                open-delay="500"
+              >
+                <template #activator="{ props }">
+                  <span v-bind="props">
+                    <StatusTag
+                      :variant="moveset[fn.key] ? 'ok' : 'neutral'"
+                      :icon="moveset[fn.key] ? 'mdi-check-bold' : 'mdi-close-thick'"
                     >
-                  </div>
-                </li>
-              </ul>
-              <p v-else>This moveset does not clone any articles!</p>
+                      {{ fn.label }}
+                    </StatusTag>
+                  </span>
+                </template>
+              </v-tooltip>
             </div>
-          </v-col>
+          </section>
+        </div>
+      </div>
 
-          <!-- Hooks -->
-          <v-col cols="12" md="6">
-            <div class="info-card">
-              <h3 class="info-card__title">Hooks</h3>
-              <ul v-if="moveset.movesetHooks.length > 0">
-                <li
-                  v-for="mh in moveset.movesetHooks"
-                  :key="mh.hookId"
-                  class="d-flex justify-space-between"
-                >
-                  <div>
-                    <strong :title="mh.hook.description" class="hastooltip">
-                      {{ formatOffset(mh.hook.offset) }}
-                    </strong>
-                  </div>
-                  <div class="hook-usage">
-                    <em v-if="mh.description">{{ mh.description }}</em>
-                    <em v-else>(unknown usage)</em>
-                  </div>
-                </li>
-              </ul>
-              <p v-else>This moveset does not use any hooks!</p>
-            </div>
-          </v-col>
-        </v-row>
+      <!-- Tables full width under both columns -->
+      <div
+        v-if="moveset.movesetArticles.length || moveset.movesetHooks.length"
+        class="tables"
+        :class="{ 'tables--stacked': stackTables }"
+      >
+        <section
+          v-if="moveset.movesetArticles.length"
+          class="panel panel--table"
+          :class="{ 'panel--table-right': stackTables || !moveset.movesetHooks.length }"
+        >
+          <h3 class="panel__title panel__title--inset">
+            Articles
+            <span v-if="moveset.movesetArticles.length" class="panel__count">{{
+              moveset.movesetArticles.length
+            }}</span>
+          </h3>
+          <v-table density="compact">
+            <thead>
+              <tr>
+                <th>Article</th>
+                <th>Cloned from</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="ma in moveset.movesetArticles" :key="ma.articleId ?? ma.moddedName">
+                <td>
+                  <span class="cell-strong">{{ ma.description }}</span>
+                  <span class="cell-sub mono">{{ ma.moddedName }}</span>
+                </td>
+                <td class="mono">
+                  {{ ma.article.vanillaCharInternalName }}_{{ ma.article.articleName }}
+                </td>
+              </tr>
+            </tbody>
+          </v-table>
+        </section>
+
+        <section v-if="moveset.movesetHooks.length" class="panel panel--table panel--table-right">
+          <h3 class="panel__title panel__title--inset">
+            Hooks
+            <span v-if="moveset.movesetHooks.length" class="panel__count">{{
+              moveset.movesetHooks.length
+            }}</span>
+          </h3>
+          <v-table density="compact">
+            <thead>
+              <tr>
+                <th>Offset</th>
+                <th>Hook</th>
+                <th>Why it is used</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="mh in moveset.movesetHooks" :key="mh.hookId ?? mh.hook.offset">
+                <td class="mono cell-nowrap">{{ formatOffset(mh.hook.offset) }}</td>
+                <td>{{ mh.hook.description }}</td>
+                <td class="muted">
+                  <template v-if="mh.description">{{ mh.description }}</template>
+                  <em v-else>(unknown usage)</em>
+                </td>
+              </tr>
+            </tbody>
+          </v-table>
+        </section>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useHead } from '@unhead/vue'
+import axios from 'axios'
 import api from '@/services/api'
 import movesetHeroUnknown from '@/assets/moveset_hero_unknown.png'
 import seriesIconUnknown from '@/assets/series_icon_unknown.png'
@@ -340,7 +318,6 @@ import { dateOnlyStringToLocalDate } from '@/services/dateOnly'
 import { formatOffset } from '@/services/offsets'
 import { formatSlotRange } from '@/services/slots'
 import StatusTag from '@/components/StatusTag.vue'
-import HudReadout from '@/components/HudReadout.vue'
 import AppButton from '@/components/AppButton.vue'
 
 const route = useRoute()
@@ -404,6 +381,65 @@ const backgroundColor = computed(() => {
 const canEdit = computed(() => !!moveset.value?.canEdit)
 
 const singleModder = computed(() => moveset.value?.movesetModders?.length === 1)
+
+// Short article and hook lists stack in the right column, long ones get a column each
+const stackTables = computed(() => {
+  const m = moveset.value
+  if (!m) return false
+  return m.movesetArticles.length + m.movesetHooks.length < 10
+})
+
+const slotsLabel = computed(() => {
+  const now = new Date()
+  return now.getMonth() === 3 && now.getDate() === 1 ? 'Schmeebulates' : 'Slots'
+})
+
+const functionRows = computed(() => [
+  { key: 'hasGlobalOpff', label: 'Global OPFF', tip: 'Runs once every frame for all characters' },
+  {
+    key: 'hasCharacterOpff',
+    label: 'Character OPFF',
+    tip: `Runs once every frame for ${moveset.value?.vanillaChar?.displayName ?? 'the character'}`,
+  },
+  { key: 'hasAgentInit', label: 'agent_init', tip: 'Runs once when a fighter is spawned in' },
+  {
+    key: 'hasGlobalOnLinePre',
+    label: 'on_line pre',
+    tip: 'Runs once every time a pre status script runs',
+  },
+  {
+    key: 'hasGlobalOnLineEnd',
+    label: 'on_line end',
+    tip: 'Runs once every time an end status script runs',
+  },
+])
+
+// Creator pictures: uploaded one, else the GameBanana avatar
+const avatars = ref({})
+const creatorPicture = (modder) => modder.pfpUrl || avatars.value[modder.modderId] || null
+
+const fetchAvatars = async () => {
+  const pending = (moveset.value?.movesetModders ?? [])
+    .map((mm) => mm.modder)
+    .filter((m) => !m.pfpUrl && m.gamebananaId)
+  await Promise.all(
+    pending.map(async (m) => {
+      try {
+        const r = await axios.get(
+          `https://api.gamebanana.com/Core/Item/Data?itemtype=Member&itemid=${m.gamebananaId}&fields=Url().sHdAvatarUrl(),Url().sAvatarUrl()`
+        )
+        const url = r.data[0] || r.data[1] || null
+        if (url) avatars.value[m.modderId] = url
+      } catch {
+        // A missing avatar falls back to the account icon
+      }
+    })
+  )
+}
+
+watch(moveset, (m) => {
+  if (m) fetchAvatars()
+})
 
 const warningInfo = computed(() => {
   if (!moveset.value) return null
@@ -530,149 +566,101 @@ onMounted(async () => {
 })
 </script>
 
-<!-- Checkmark/x component -->
-<script>
-import { defineComponent, h } from 'vue'
-
-const StatusIcon = defineComponent({
-  props: {
-    value: Boolean,
-  },
-  setup(props) {
-    return () =>
-      h('i', {
-        class: ['mdi', props.value ? 'mdi-check-bold' : 'mdi-close-thick'],
-      })
-  },
-})
-</script>
-
 <style scoped>
+/*
+  The page: a skewed column in the moveset's color fading to black, the render fixed in front of it,
+  the name on the striped slab, the panels on the right, and the tables across the bottom.
+*/
+/* At least as tall as the window and as the 70vw render, so the footer stays below both */
 .moveset-detail {
   position: relative;
+  min-height: max(100vh, 70vw);
   padding: 2rem;
-  overflow: hidden;
-  background-color: black;
-  perspective: 1000px;
+  background-color: var(--bg);
 }
 
-.background-column {
+/* Color column */
+/* Flush with the top of the window; the header floats over it */
+.color-column {
   position: absolute;
   top: 0;
-  min-height: 100vh;
+  left: 8%;
+  width: 40%;
   height: 100%;
-  width: 100%;
+  min-height: 100vh;
+  overflow: hidden;
   pointer-events: none;
-}
-
-.center-column {
+  transform: skewX(-12deg);
+  transform-origin: top left;
+  background: linear-gradient(
+    180deg,
+    var(--accent) 0,
+    color-mix(in srgb, var(--accent) 55%, #000) 700px,
+    #000 1150px
+  );
   z-index: 0;
 }
 
-.gradient-column {
-  background-repeat: no-repeat;
-  background-size: cover;
+/* A white grid inside the color only, gone before the color is */
+.color-column__grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.14) 1px, transparent 1px);
+  background-size: 28px 28px;
+  background-repeat: repeat;
+  -webkit-mask-image: linear-gradient(180deg, #000 0, transparent 900px);
+  mask-image: linear-gradient(180deg, #000 0, transparent 900px);
 }
 
-.icon-column {
+.color-column__icons {
+  position: absolute;
+  inset: -10% 0 0;
+  -webkit-mask-image: linear-gradient(180deg, #000 0, transparent 1250px);
+  mask-image: linear-gradient(180deg, #000 0, transparent 1250px);
   background-repeat: repeat;
   background-size: 100px auto;
   opacity: 0.06;
   filter: brightness(10);
   mix-blend-mode: plus-lighter;
-  z-index: 1;
-  transform: skewX(-9deg) rotate3d(1, 0, 0, 30deg) translate(3%, -4%);
+  transform: skewX(3deg) rotate3d(1, 0, 0, 30deg) translate(3%, -4%);
   transform-origin: top center;
 }
 
-.side-column {
-  transform: skewX(-12deg);
-  background-color: black;
-  z-index: 2;
-}
-
-.left-black {
-  left: -11%;
-  width: 20%;
-}
-
-.right-black {
-  right: -8%;
-  width: 70%;
-}
-
-.moveset-columns {
-  display: flex;
-  position: relative;
-  z-index: 10;
-  min-height: 100vh;
-}
-
-.column-left {
-  flex: 7;
-  position: relative;
-}
-
-.column-right {
-  flex: 9;
-  margin-top: 5em;
-}
-
-.title-container {
+/* The right-edge grid, this page's only one outside the color */
+.edge-grid {
   position: absolute;
-  width: max-content;
-  padding-right: 1em;
-}
-
-.title-container::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -50%;
-  right: 0;
-  bottom: 0;
-  background-color: black;
-  background-image: url(/src/assets/ptn_diagonal_12.png);
+  inset: 0 0 -160px;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 28px 28px;
   background-repeat: repeat;
-  display: block;
-  -webkit-transform: skewX(-29deg);
-  transform: skewX(-29deg);
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 48%,
+    rgba(0, 0, 0, 0.4) 74%,
+    #000 92%,
+    #000 100%
+  );
+  mask-image: linear-gradient(90deg, transparent 48%, rgba(0, 0, 0, 0.4) 74%, #000 92%, #000 100%);
 }
 
-.title-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 99%;
-  right: -20px;
-  bottom: 0;
-  background-color: var(--logo);
-  display: block;
-  -webkit-transform: skewX(-29deg);
-  transform: skewX(-29deg);
-}
-
-.detail-title {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 5em;
-  line-height: 1;
-  text-transform: uppercase;
-  position: relative;
-  z-index: 10;
-  margin: -20px 0.25em -16px 1.5em;
-  filter: drop-shadow(5px 4px 3px color-mix(in srgb, var(--bg) 75%, transparent));
-}
-
+/* The render: behind the title text (z 10), in front of the banner (z auto), scrolling with the page */
 .character-image {
   width: 70vw;
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 0;
+  position: absolute;
+  left: -2rem;
+  top: -2rem;
+  z-index: 1;
   pointer-events: none;
   opacity: 0;
   transform: translateX(-300px);
+  -webkit-mask-image: linear-gradient(180deg, #000 85%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 85%, transparent 100%);
 }
 
 .character-image.slide-in {
@@ -694,111 +682,102 @@ const StatusIcon = defineComponent({
   }
 }
 
-.basic-info-card p {
-  color: var(--tx-2);
-}
-.basic-info-card p strong,
-.basic-info-card p a {
-  color: var(--tx);
-}
-
-.info-card {
-  background-color: color-mix(in srgb, var(--panel-2) 50%, transparent);
-  border: 1px solid var(--line);
-  padding: 0.6em 1em 0.7em;
-  margin: 1em 0.5em;
+/* Layout */
+.detail-grid {
   position: relative;
-  z-index: 20;
-  backdrop-filter: blur(2px) saturate(0.8) brightness(0.9);
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 7fr 9fr;
+  gap: 0 24px;
+  align-items: start;
 }
 
-.info-card__title {
-  margin: 0 0 0.35em;
-  font-size: 1.25rem;
-  text-transform: uppercase;
-  letter-spacing: 0.01em;
+/* The left column is only as tall as the title; the tables follow the panels, and the render runs on behind them */
+.column-left {
+  position: relative;
 }
 
-.inline-series {
-  width: 30px;
-  height: 30px;
-  filter: brightness(4.35);
-  margin-bottom: -9px;
-  margin-left: -4px;
+/* Two independent stacks of panels, so nothing waits for its neighbor's height. Panels sit above the render */
+.column-right {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 16px;
+  align-items: start;
+  margin-top: 8em;
 }
 
-strong {
-  font-size: larger;
-}
-
-.dependency-link {
-  margin-left: 5px;
-}
-
-:deep(.v-overlay__content) {
-  background-color: color-mix(in srgb, var(--bg) 88%, transparent) !important;
-  border: 1px solid var(--tx-3) !important;
-}
-
-.hastooltip {
-  border-bottom: 1px dotted var(--tx-2);
-  cursor: help;
-  margin-right: 5px;
-}
-
-.functions-list {
+.stack {
   display: flex;
   flex-direction: column;
-  gap: 0;
-}
-.function-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: default;
-}
-.function-row > i {
-  line-height: 24px;
+  gap: 16px;
+  min-width: 0;
 }
 
-.row-1 > *:nth-child(2) li,
-.row-1 > *:nth-child(3) li {
-  font-size: 15px;
+/* The same 7:9 split as the columns above, so the right table lines up with the panels */
+.tables {
+  grid-column: 1 / -1;
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: 7fr 9fr;
+  gap: 0 24px;
+  align-items: start;
+  margin-top: 16px;
 }
 
-.row-2 li {
-  font-size: 14px;
+.panel--table-right {
+  grid-column: 2;
 }
 
-.hook-usage {
-  text-align: end;
-  width: 100%;
+.tables--stacked {
+  row-gap: 16px;
 }
 
-.hook-usage > em {
-  width: 90%;
-  display: inline-block;
-}
-
-.left-overlay {
+/* Name slab */
+.title-container {
   position: absolute;
-  top: 5.5em;
-  left: 1.1em;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5em;
+  width: max-content;
+  padding-right: 1em;
 }
 
-.moveset-warning {
-  font-size: 0.8em;
-  color: var(--tx-2);
-  max-width: 24em;
-  background-color: color-mix(in srgb, var(--panel-2) 60%, transparent);
-  border: 1px solid var(--line);
-  padding: 0.4em 0.7em;
-  backdrop-filter: blur(3px);
-  line-height: 1.6;
+.title-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -50%;
+  right: 0;
+  bottom: 0;
+  background-color: #000;
+  background-image: url(/src/assets/ptn_diagonal_12.png);
+  background-repeat: repeat;
+  display: block;
+  transform: skewX(-29deg);
+}
+
+.title-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 99%;
+  right: -20px;
+  bottom: 0;
+  background-color: var(--white);
+  display: block;
+  transform: skewX(-29deg);
+}
+
+.detail-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 5em;
+  line-height: normal;
+  text-transform: uppercase;
+  position: relative;
+  z-index: 10;
+  margin: -2px 0.25em 2px 1.5em;
+  filter: drop-shadow(5px 4px 3px color-mix(in srgb, var(--bg) 75%, transparent));
 }
 
 .detail-title__subtitle {
@@ -809,77 +788,316 @@ strong {
   vertical-align: middle;
 }
 
-.like-row {
+/* Far left: joke tag and visibility warning */
+.left-overlay {
+  position: absolute;
+  top: 7em;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.moveset-warning {
+  font-size: 0.8em;
+  color: var(--tx-2);
+  max-width: 24em;
+  background-color: color-mix(in srgb, var(--panel-2) 60%, transparent);
+  border: 1px solid var(--line);
+  padding: 0.4em 0.7em;
+  backdrop-filter: blur(3px);
+  line-height: 1.9;
+}
+
+/* Panel header row: title, edit, and the like group on the right */
+.panel__head {
   display: flex;
   align-items: center;
-  gap: 0.6em;
-  color: var(--tx-2);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.panel__head .panel__title {
+  margin: 0;
+}
+
+.like-group {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
 }
 
 .like-btn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: none;
-  border: 1px solid var(--line-2);
-  color: var(--tx);
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  background: #000;
+  border: 1px solid var(--white);
+  color: var(--white);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  padding: 0;
   line-height: 1;
   transition:
     background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.like-btn--liked {
+  background: var(--white);
+  color: #000;
+}
+
+.like-count {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--white);
+  border-left: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Panels */
+/* Translucent, without a backdrop filter: Chromium hides the masked render behind a backdrop-filtered sibling stacked above it */
+.panel {
+  background-color: color-mix(in srgb, var(--panel) 85%, transparent);
+}
+
+.panel--table {
+  padding: 0;
+}
+
+.panel__title {
+  margin: 0 0 12px;
+  font-size: 1.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+
+.panel__title--inset {
+  padding: 16px 20px 0;
+}
+
+.panel__count {
+  margin-left: 6px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 400;
+  text-transform: none;
+  color: var(--tx-3);
+}
+
+/* A button pinned to the panel's bottom right corner. Content keeps clear of it on the right */
+.panel--basic,
+.panel--dependencies {
+  position: relative;
+}
+
+.panel__corner {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+}
+
+/* Only the rows level with the button keep clear of it */
+.panel--basic .kv > dd:nth-last-child(-n + 3) {
+  padding-right: 180px;
+}
+
+.panel--dependencies .dependencies,
+.panel--dependencies .panel__empty {
+  padding-right: 150px;
+}
+
+.panel__empty {
+  margin: 0;
+  color: var(--tx-2);
+}
+
+.panel__empty--inset {
+  padding: 0 20px 18px;
+}
+
+.panel-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.kv dt {
+  color: var(--tx-3);
+}
+
+.kv dd {
+  margin: 0;
+  color: var(--tx);
+}
+
+.kv__series {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inline-series {
+  width: 22px;
+  height: 22px;
+  filter: brightness(4.35);
+}
+
+.creators {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.creator {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--tx);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.creator:hover .creator__name {
+  text-decoration: underline;
+}
+
+.creator__pfp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  overflow: hidden;
+  background: var(--panel-2);
+  color: var(--tx-3);
+}
+
+.creator__pfp img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.functions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.functions .status-tag {
+  cursor: default;
+}
+
+.dependencies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dependency {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--line-2);
+  color: var(--tx-2);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
     color var(--dur-fast) var(--ease),
     border-color var(--dur-fast) var(--ease);
 }
 
-.like-btn:hover,
-.like-btn--liked {
-  background: var(--white);
+.dependency:hover {
+  color: var(--white);
   border-color: var(--white);
-  color: #000;
 }
 
-/* Display of checkmark/x */
-li {
-  display: flex;
-  align-items: center;
+/* Tables */
+.cell-strong {
+  display: block;
+  font-weight: 600;
 }
 
-.mdi-check-bold,
-.mdi-close-thick {
-  font-size: 1.6em;
-  margin-left: 2px;
+.cell-sub {
+  display: block;
+  color: var(--tx-3);
+  font-size: 12px;
 }
 
-.mdi-check-bold {
-  color: var(--ok);
+.cell-nowrap {
+  white-space: nowrap;
 }
 
-.mdi-close-thick {
-  color: var(--err);
+:deep(.v-table) {
+  background: transparent;
+  border: 0;
 }
 
-/* Mobile: the two columns stack, the character art sits above the cards, and the title keeps its slab. */
+:deep(.v-table th) {
+  background: transparent;
+  border-bottom: 1px solid var(--line) !important;
+}
+
+:deep(.v-table tbody tr:hover > td) {
+  background: color-mix(in srgb, var(--panel-2) 60%, transparent);
+}
+
+:deep(.v-overlay__content) {
+  background-color: color-mix(in srgb, var(--bg) 88%, transparent) !important;
+  border: 1px solid var(--tx-3) !important;
+}
+
+/* Tablet and phone: the render becomes a normal block above everything, the columns stack. */
 @media (max-width: 959px) {
   .moveset-detail {
     padding: 1rem;
   }
 
-  .moveset-columns {
-    flex-direction: column;
-    min-height: 0;
-  }
-
-  .column-left {
+  .color-column {
+    left: -10%;
+    width: 80%;
+    height: 520px;
     min-height: 0;
   }
 
   .character-image {
     position: relative;
+    left: 0;
+    top: 0;
     width: 100%;
     margin-top: 1em;
+    -webkit-mask-image: linear-gradient(180deg, #000 88%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 88%, transparent 100%);
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
   }
 
   .title-container {
@@ -899,12 +1117,44 @@ li {
     margin: 1em 0 0;
   }
 
+  .moveset-warning {
+    max-width: none;
+  }
+
   .column-right {
     margin-top: 1.5em;
   }
 
-  .info-card {
-    margin: 0.5em 0;
+  .column-right {
+    grid-template-columns: 1fr;
+  }
+
+  .panel__corner {
+    position: static;
+    margin-top: 12px;
+  }
+
+  .panel--basic .kv > dd:nth-last-child(-n + 3),
+  .panel--dependencies .dependencies,
+  .panel--dependencies .panel__empty {
+    padding-right: 0;
+  }
+
+  .tables {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .panel--table-right {
+    grid-column: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .character-image {
+    opacity: 1;
+    transform: none;
+    animation: none;
   }
 }
 </style>

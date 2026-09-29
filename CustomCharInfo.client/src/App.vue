@@ -2,10 +2,13 @@
   <v-app>
     <div
       class="page-texture"
-      :class="{ 'page-texture--hero': route.name === 'Home' }"
+      :class="{
+        'page-texture--hero': route.name === 'Home',
+        'page-texture--off': route.name === 'MovesetDetail',
+      }"
       aria-hidden="true"
     ></div>
-    <Header :variant="route.name === 'Home' ? 'hero' : 'solid'" />
+    <Header :variant="headerVariant" />
     <main class="site-main">
       <router-view />
     </main>
@@ -25,6 +28,13 @@ import { useRoute } from 'vue-router'
 import { useHead } from '@unhead/vue'
 
 const route = useRoute()
+
+// Home and the moveset detail page draw their own top: header floats over them without taking height.
+const headerVariant = computed(() => {
+  if (route.name === 'Home') return 'hero'
+  if (route.name === 'MovesetDetail') return 'overlay'
+  return 'solid'
+})
 
 // Route-level fallback title.
 // Pages that know their subject register their own useHead title that wins while mounted.
