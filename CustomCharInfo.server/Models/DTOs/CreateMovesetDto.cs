@@ -37,8 +37,8 @@ namespace CustomCharInfo.server.Models.DTOs
         public bool? IsJokeMoveset { get; set; }
         public string? Subtitle { get; set; }
 
-        [Required]
         public List<int>? ModderIds { get; set; }
+        public List<MovesetModderDto>? Modders { get; set; }
         public List<int>? DependencyIds { get; set; }
         public List<MovesetEditorDto>? Editors { get; set; }
         public List<MovesetHookDto>? Hooks { get; set; }

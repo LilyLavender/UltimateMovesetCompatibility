@@ -11,13 +11,14 @@
 import { computed } from 'vue'
 
 /* A key and value readout with a colored left rail, for things like the game version or a like count. Without a label it is a plain rail chip. */
+/* Tones are the functional colors (ok, info, warn, err) plus neutral, a grey rail for secondary counts. */
 const props = defineProps({
   label: { type: String, default: '' },
   value: { type: [String, Number], default: '' },
   tone: { type: String, default: 'info' },
 })
 
-const color = computed(() => `var(--${props.tone})`)
+const color = computed(() => (props.tone === 'neutral' ? 'var(--tx-2)' : `var(--${props.tone})`))
 </script>
 
 <style scoped>

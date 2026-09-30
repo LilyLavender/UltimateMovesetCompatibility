@@ -1,5 +1,26 @@
 import { describe, it, expect } from 'vitest'
-import { IMAGE_UPLOAD_SPECS } from '@/globals'
+import {
+  IMAGE_UPLOAD_SPECS,
+  ContributionRole,
+  CONTRIBUTION_ROLE_NAMES,
+  CONTRIBUTION_ROLE_ORDER,
+  PROFILE_CONTRIBUTION_ROLES,
+} from '@/globals'
+
+describe('ContributionRole', () => {
+  it('names every role and orders every role exactly once', () => {
+    const ids = Object.values(ContributionRole)
+    expect(ids).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
+    expect(Object.keys(CONTRIBUTION_ROLE_NAMES).map(Number).sort()).toEqual([...ids].sort())
+    expect([...CONTRIBUTION_ROLE_ORDER].sort()).toEqual([...ids].sort())
+  })
+
+  it('keeps Other off profiles and nothing else', () => {
+    expect(PROFILE_CONTRIBUTION_ROLES).toEqual(
+      CONTRIBUTION_ROLE_ORDER.filter((id) => id !== ContributionRole.Other)
+    )
+  })
+})
 
 describe('IMAGE_UPLOAD_SPECS', () => {
   it('defines positive width/height for every upload type', () => {

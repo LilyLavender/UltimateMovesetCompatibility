@@ -53,23 +53,61 @@
               clearable
               :disabled="!canManageMembers"
             />
-            <div v-if="form.editorIds.length" class="editor-access-list">
-              <div v-for="id in form.editorIds" :key="id" class="editor-access-row">
-                <span class="editor-access-name">{{ modderName(id) }}</span>
-                <v-switch
-                  v-model="editorFullAccess[id]"
-                  density="compact"
-                  hide-details
-                  label="Full access"
-                  :disabled="!canManageMembers"
-                />
+            <div v-if="form.editorIds.length" class="member-list">
+              <div v-for="id in form.editorIds" :key="id" class="member-row">
+                <div class="member-row__head">
+                  <span class="member-row__name">{{ modderName(id) }}</span>
+                  <v-switch
+                    v-model="editorFullAccess[id]"
+                    density="compact"
+                    hide-details
+                    label="Full access"
+                    :disabled="!canManageMembers"
+                  />
+                </div>
               </div>
-              <p class="editor-access-hint">
+              <p class="member-hint">
                 Full access can also change the Modders and Editors lists. Partial access can edit
                 everything else.
               </p>
             </div>
           </LabeledField>
+
+          <div v-if="form.modderIds.length" class="member-list span-3">
+            <div v-for="id in form.modderIds" :key="id" class="credit-row">
+              <span class="member-row__name">{{ modderName(id) }}</span>
+              <button
+                type="button"
+                class="icon-btn"
+                :class="form.modderOnCard[id] === false ? 'icon-btn--off' : 'icon-btn--on'"
+                :title="form.modderOnCard[id] === false ? 'Hidden from card' : 'Shown on card'"
+                :aria-label="form.modderOnCard[id] === false ? 'Hidden from card' : 'Shown on card'"
+                :aria-pressed="form.modderOnCard[id] !== false"
+                :disabled="!canManageMembers"
+                @click="toggleOnCard(id)"
+              >
+                <v-icon size="18">{{
+                  form.modderOnCard[id] === false ? 'mdi-eye-off-outline' : 'mdi-eye-outline'
+                }}</v-icon>
+              </button>
+              <v-select
+                v-model="form.modderRoles[id]"
+                :items="roleItems"
+                item-title="name"
+                item-value="id"
+                multiple
+                chips
+                clearable
+                density="compact"
+                hide-details
+                placeholder="Roles"
+                :disabled="!canManageMembers"
+              />
+            </div>
+            <p class="member-hint">
+              Roles are optional. At least one modder must be shown on the moveset.
+            </p>
+          </div>
 
           <LabeledField label="Series" required>
             <v-select
@@ -338,7 +376,7 @@ import { useImageUpload, isStagedFile } from '@/composables/useImageUpload'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import thumbhUnknown from '@/assets/thumb_h_unknown.png'
 import movesetHeroUnknown from '@/assets/moveset_hero_unknown.png'
-import { IMAGE_UPLOAD_SPECS } from '@/globals'
+import { IMAGE_UPLOAD_SPECS, CONTRIBUTION_ROLE_ORDER, CONTRIBUTION_ROLE_NAMES } from '@/globals'
 import { dateOnlyStringToLocalDate, localDateToDateOnlyString } from '@/services/dateOnly'
 import { useNotify } from '@/composables/useNotify'
 
@@ -393,6 +431,8 @@ const form = ref({
   // Basic Info
   moddedCharName: '',
   modderIds: [],
+  modderRoles: {},
+  modderOnCard: {},
   editorIds: [],
   seriesId: null,
   slottedId: null,
@@ -470,16 +510,41 @@ const editorCandidates = computed(() =>
 
 const modderName = (id) => modders.value.find((m) => m.modderId === id)?.name ?? `#${id}`
 
+const roleItems = CONTRIBUTION_ROLE_ORDER.map((id) => ({ id, name: CONTRIBUTION_ROLE_NAMES[id] }))
+
 // Someone credited as a modder cannot also be an editor.
 watch(
   () => form.value.modderIds,
   (ids) => {
     form.value.editorIds = form.value.editorIds.filter((id) => !ids.includes(id))
+    for (const id of ids) {
+      if (!(id in form.value.modderRoles)) form.value.modderRoles[id] = []
+      if (!(id in form.value.modderOnCard)) form.value.modderOnCard[id] = true
+    }
+    for (const key of Object.keys(form.value.modderRoles)) {
+      if (!ids.includes(Number(key))) {
+        delete form.value.modderRoles[key]
+        delete form.value.modderOnCard[key]
+      }
+    }
   }
 )
 
 const editorsPayload = () =>
   form.value.editorIds.map((id) => ({ modderId: id, fullAccess: !!editorFullAccess.value[id] }))
+
+const moddersPayload = () =>
+  form.value.modderIds.map((id) => ({
+    modderId: id,
+    roleIds: form.value.modderRoles[id] ?? [],
+    showOnCard: form.value.modderOnCard[id] !== false,
+  }))
+
+const someoneOnCard = () => form.value.modderIds.some((id) => form.value.modderOnCard[id] !== false)
+
+const toggleOnCard = (id) => {
+  form.value.modderOnCard[id] = form.value.modderOnCard[id] === false
+}
 const dependencies = ref([])
 const articles = ref([])
 const hooks = ref([])
@@ -523,6 +588,12 @@ onMounted(async () => {
         showAdvanced.value = true
       }
       form.value.modderIds = res.data.movesetModders?.map((m) => m.modder.modderId) || []
+      form.value.modderRoles = Object.fromEntries(
+        (res.data.movesetModders ?? []).map((m) => [m.modder.modderId, m.roleIds ?? []])
+      )
+      form.value.modderOnCard = Object.fromEntries(
+        (res.data.movesetModders ?? []).map((m) => [m.modder.modderId, m.showOnCard !== false])
+      )
       form.value.editorIds = res.data.movesetEditors?.map((e) => e.modder.modderId) || []
       editorFullAccess.value = Object.fromEntries(
         (res.data.movesetEditors ?? []).map((e) => [e.modder.modderId, !!e.fullAccess])
@@ -586,6 +657,11 @@ const submit = async () => {
   }
   if (slotsStart > slotsEnd) {
     notify.warning('Please ensure End Slot is greater than Start Slot.')
+    return
+  }
+
+  if (!someoneOnCard()) {
+    notify.warning('At least one modder must be shown on the card.')
     return
   }
 
@@ -668,7 +744,11 @@ const submit = async () => {
 
     uploadStatus.value = 'Saving moveset'
     try {
-      await api.put(`/movesets/${props.movesetId}`, { ...form.value, editors: editorsPayload() })
+      await api.put(`/movesets/${props.movesetId}`, {
+        ...form.value,
+        editors: editorsPayload(),
+        modders: moddersPayload(),
+      })
       markSaved()
       router.push(`/moveset/${props.movesetId}`)
     } catch (err) {
@@ -690,7 +770,7 @@ const submit = async () => {
     ? form.value.movesetHeroImageUrl
     : null
 
-  const payload = { ...form.value, editors: editorsPayload() }
+  const payload = { ...form.value, editors: editorsPayload(), modders: moddersPayload() }
   if (stagedThumb) payload.thumbhImageUrl = null
   if (stagedHero) payload.movesetHeroImageUrl = null
 
@@ -822,32 +902,85 @@ const submit = async () => {
   border: 1px solid var(--line-2);
 }
 
-/* Per-editor access switches under the Editors picker */
-.editor-access-list {
+/* Per-person rows under the Modders and Editors pickers: roles and card eye for a credit, access for an editor */
+.member-list {
   margin-top: 8px;
-  padding: 8px 10px;
+  padding: 8px 12px;
   border: 1px solid var(--line);
-  background: var(--panel-2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.editor-access-row {
+.member-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Name on the left, the eye or access switch on the right */
+.member-row__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  min-width: 0;
 }
 
-.editor-access-name {
+.member-row__name {
   font-size: 14px;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.editor-access-hint {
-  margin: 4px 0 0;
+/* A credit on one line: name, the card eye, then the roles select across the rest of the form */
+.credit-row {
+  display: grid;
+  grid-template-columns: minmax(0, 200px) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px 12px;
+}
+
+@media (max-width: 599px) {
+  .credit-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .credit-row > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+.member-hint {
+  margin: 0;
   font-size: 12px;
   color: var(--tx-3);
+}
+
+/* The card eye: green outline when the name is on the card, red slashed outline when hidden */
+.icon-btn {
+  display: flex;
+  flex: none;
+  padding: 4px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.icon-btn--on {
+  color: var(--ok);
+}
+
+.icon-btn--off {
+  color: var(--err);
+}
+
+.icon-btn:disabled {
+  cursor: default;
+  opacity: 0.5;
 }
 
 /* Series picker with icons. Icon turns black when its item is hovered or selected */

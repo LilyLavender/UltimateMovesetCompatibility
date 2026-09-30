@@ -196,6 +196,24 @@ namespace CustomCharInfo.server.Controllers
                                 .Select(mm => mm.Modder.User.UserName ?? mm.Modder.Name)
                                 .ToList(),
 
+                    // The card's creator line: only credits flagged ShowOnCard. Search and sort keep using Modders.
+                    CardModders =
+                        x.Moveset.PrivateModder == true && !(seeAll || x.IsOwner)
+                            ? new List<string> { "???" }
+                            : x.Moveset.MovesetModders
+                                .Where(mm => mm.ShowOnCard && (mm.Modder.User == null || mm.Modder.User.Problematic != true))
+                                .OrderBy(mm => mm.SortOrder)
+                                .Select(mm => mm.Modder.User.UserName ?? mm.Modder.Name)
+                                .ToList(),
+
+                    // The filtered modder's roles on this moveset, so a profile can tally them from the same visible list.
+                    ModderRoleIds = modderId.HasValue
+                        ? x.Moveset.MovesetModders
+                            .Where(mm => mm.ModderId == modderId)
+                            .SelectMany(mm => mm.Roles.Select(r => r.ContributionRoleId))
+                            .ToList()
+                        : null,
+
                     x.Moveset.ReleaseDate,
                     x.Moveset.AdminPick,
                     x.Moveset.PrivateMoveset,

@@ -19,8 +19,10 @@ namespace CustomCharInfo.server.Controllers
             if (!userFromId.IsModder())
                 return Forbid();
 
-            if (dto.ModderIds == null || !dto.ModderIds.Any())
-                return BadRequest("At least one ModderId is required.");
+            var credits = MovesetCredits.FromDto(dto);
+            var creditError = MovesetCredits.Validate(credits);
+            if (creditError != null)
+                return BadRequest(creditError);
 
             if (string.IsNullOrWhiteSpace(dto.SlottedId) || dto.SlottedId.Any(char.IsDigit))
                 return BadRequest("SlottedId is required and cannot contain digits.");
@@ -33,8 +35,8 @@ namespace CustomCharInfo.server.Controllers
 
             var moveset = new Moveset
             {
-                MovesetModders = dto.ModderIds.Select(id => new MovesetModder { ModderId = id }).ToList(),
-                MovesetEditors = BuildEditors(dto),
+                MovesetModders = MovesetCredits.ToEntities(credits),
+                MovesetEditors = BuildEditors(dto, credits),
                 MovesetDependencies = dto.DependencyIds?.Select(id => new MovesetDependency { DependencyId = id }).ToList() ?? new List<MovesetDependency>(),
                 MovesetHooks = dto.Hooks?.Select((h, i) => new MovesetHook
                 {
@@ -161,6 +163,7 @@ namespace CustomCharInfo.server.Controllers
 
             var moveset = await _context.Movesets
                 .Include(m => m.MovesetModders)
+                    .ThenInclude(mm => mm.Roles)
                 .Include(m => m.MovesetEditors)
                 .Include(m => m.MovesetDependencies)
                 .Include(m => m.MovesetHooks)
@@ -174,11 +177,12 @@ namespace CustomCharInfo.server.Controllers
             if (!user.IsAdmin && !MovesetAccess.CanEdit(moveset, user.ModderId))
                 return Forbid();
 
-            var newEditors = BuildEditors(dto);
+            var credits = MovesetCredits.FromDto(dto);
+            var newEditors = BuildEditors(dto, credits);
             if (!user.IsAdmin && !MovesetAccess.CanManageMembers(moveset, user.ModderId))
             {
-                bool moddersChanged = !moveset.MovesetModders.Select(mm => mm.ModderId).ToHashSet()
-                    .SetEquals(dto.ModderIds ?? new List<int>());
+                // Roles and the card flag belong to the member list, so a partial editor may not touch them either.
+                bool moddersChanged = !MovesetCredits.SameMembers(moveset.MovesetModders, credits);
                 bool editorsChanged = !moveset.MovesetEditors.Select(me => (me.ModderId, me.FullAccess)).ToHashSet()
                     .SetEquals(newEditors.Select(me => (me.ModderId, me.FullAccess)));
                 if (moddersChanged || editorsChanged)
@@ -190,10 +194,9 @@ namespace CustomCharInfo.server.Controllers
                 .OrderByDescending(a => a.CreatedAt)
                 .FirstOrDefaultAsync();
 
-            if (dto.ModderIds == null || !dto.ModderIds.Any())
-            {
-                return BadRequest("At least one ModderId is required.");
-            }
+            var creditError = MovesetCredits.Validate(credits);
+            if (creditError != null)
+                return BadRequest(creditError);
 
             if (dto.DependencyIds == null || dto.Hooks == null || dto.Articles == null)
             {
@@ -214,20 +217,13 @@ namespace CustomCharInfo.server.Controllers
                 moveset.SlottedId != dto.SlottedId ||
                 moveset.ReplacementId != dto.ReplacementId;
 
-            var diff = await MovesetDiffBuilder.BuildAsync(_context, moveset, dto);
+            var diff = await MovesetDiffBuilder.BuildAsync(_context, moveset, dto, credits);
 
             MovesetMapper.ApplyScalars(moveset, dto);
 
             // Sync (i know that guy!!) Modders
             _context.MovesetModders.RemoveRange(moveset.MovesetModders);
-            moveset.MovesetModders = dto.ModderIds
-            .Select((mid, index) => new MovesetModder 
-            { 
-                MovesetId = id, 
-                ModderId = mid, 
-                SortOrder = index 
-            })
-            .ToList();
+            moveset.MovesetModders = MovesetCredits.ToEntities(credits, id);
 
             // Sync Editors
             _context.MovesetEditors.RemoveRange(moveset.MovesetEditors);
@@ -305,9 +301,9 @@ namespace CustomCharInfo.server.Controllers
         }
 
         // Editors from the request, minus anyone who is also a credited modder, deduplicated by modder.
-        private static List<MovesetEditor> BuildEditors(CreateMovesetDto dto)
+        private static List<MovesetEditor> BuildEditors(CreateMovesetDto dto, List<CreditSpec> credits)
         {
-            var credited = (dto.ModderIds ?? new List<int>()).ToHashSet();
+            var credited = credits.Select(c => c.ModderId).ToHashSet();
             return (dto.Editors ?? new List<MovesetEditorDto>())
                 .Where(e => !credited.Contains(e.ModderId))
                 .GroupBy(e => e.ModderId)

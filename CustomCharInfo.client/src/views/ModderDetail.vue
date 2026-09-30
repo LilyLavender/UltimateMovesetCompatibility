@@ -116,6 +116,13 @@
             >Admin</StatusTag
           >
           <HudReadout label="Movesets" :value="movesets.length" tone="info" />
+          <HudReadout
+            v-for="role in roleCountRows"
+            :key="role.roleId"
+            :label="role.name"
+            :value="role.count"
+            tone="neutral"
+          />
         </div>
         <p v-if="modder.problematic" class="note note--err">
           <v-icon size="18">mdi-alert</v-icon>
@@ -150,6 +157,7 @@ import EmptyState from '@/components/EmptyState.vue'
 import MovesetList from '@/components/MovesetList.vue'
 import { GB_MEMBER_URL } from '@/globals'
 import { compareDateOnlyStrings } from '@/services/dateOnly'
+import { roleCounts } from '@/services/contributionRoles'
 
 const route = useRoute()
 const router = useRouter()
@@ -176,6 +184,8 @@ useHead(
   })
 )
 const movesets = ref([])
+// Tallied from the same visible list as the Movesets count so the two always agree.
+const roleCountRows = computed(() => roleCounts(movesets.value))
 const modderPfpUrl = ref(null)
 const modderIsAdmin = ref(false)
 const discordCopied = ref(false)

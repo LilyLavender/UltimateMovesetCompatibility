@@ -197,7 +197,12 @@
                     />
                     <v-icon v-else size="20">mdi-account</v-icon>
                   </span>
-                  <span class="creator__name">{{ mm.modder.name }}</span>
+                  <span class="creator__text">
+                    <span class="creator__name">{{ mm.modder.name }}</span>
+                    <span v-if="formatRoles(mm.roleIds)" class="creator__roles">{{
+                      formatRoles(mm.roleIds)
+                    }}</span>
+                  </span>
                 </router-link>
               </li>
             </ul>
@@ -311,6 +316,7 @@ import { GB_WIP_URL, MODS_WIKI_URL, ItemType, AcceptanceState, ReleaseState } fr
 import { dateOnlyStringToLocalDate } from '@/services/dateOnly'
 import { formatOffset } from '@/services/offsets'
 import { formatSlotRange } from '@/services/slots'
+import { formatRoles } from '@/services/contributionRoles'
 import StatusTag from '@/components/StatusTag.vue'
 import AppButton from '@/components/AppButton.vue'
 import LikeButton from '@/components/LikeButton.vue'
@@ -956,6 +962,23 @@ onMounted(async () => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.creator__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.creator__name {
+  line-height: 1.2;
+}
+
+.creator__roles {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--tx-2);
 }
 
 .functions {

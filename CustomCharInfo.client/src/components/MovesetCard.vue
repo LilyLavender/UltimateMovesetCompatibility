@@ -30,9 +30,9 @@
         >
       </p>
 
-      <!-- Creator(s) -->
+      <!-- Creator(s): only credits flagged for the card, older payloads have no cardModders -->
       <p class="moveset-card__creator">
-        {{ moveset.modders.join(', ') }}
+        {{ (moveset.cardModders ?? moveset.modders).join(', ') }}
       </p>
     </component>
   </div>

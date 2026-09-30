@@ -133,6 +133,51 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
+        public async Task PutMoveset_PartialEditor_ChangingRoles_ReturnsForbid()
+        {
+            AddMovesetWithMembers();
+            var dto = BaseDto();
+            dto.Modders = new List<MovesetModderDto> { new() { ModderId = CreditedModderId, RoleIds = new List<int> { ContributionRoles.Coding } } };
+
+            var result = await CreateController("partial-1").PutMoveset(1, dto);
+
+            Assert.IsType<ForbidResult>(result);
+        }
+
+        [Fact]
+        public async Task PutMoveset_PartialEditor_UnchangedRolesViaModdersList_Succeeds()
+        {
+            AddMovesetWithMembers();
+            var dto = BaseDto();
+            dto.Modders = new List<MovesetModderDto> { new() { ModderId = CreditedModderId } };
+
+            var result = await CreateController("partial-1").PutMoveset(1, dto);
+
+            Assert.IsType<NoContentResult>(result);
+        }
+
+        [Fact]
+        public async Task PutMoveset_FullEditor_CanChangeRolesAndCardFlag()
+        {
+            AddMovesetWithMembers();
+            _db.Context.MovesetModders.Add(new MovesetModder { MovesetId = 1, ModderId = StrangerModderId, SortOrder = 1 });
+            _db.Context.SaveChanges();
+            var dto = BaseDto();
+            dto.Modders = new List<MovesetModderDto>
+            {
+                new() { ModderId = CreditedModderId, RoleIds = new List<int> { ContributionRoles.Coding }, ShowOnCard = false },
+                new() { ModderId = StrangerModderId }
+            };
+
+            var result = await CreateController("full-1").PutMoveset(1, dto);
+
+            Assert.IsType<NoContentResult>(result);
+            var credit = await _db.Context.MovesetModders.Include(mm => mm.Roles).SingleAsync(mm => mm.ModderId == CreditedModderId);
+            Assert.False(credit.ShowOnCard);
+            Assert.Equal(ContributionRoles.Coding, Assert.Single(credit.Roles).ContributionRoleId);
+        }
+
+        [Fact]
         public async Task PutMoveset_PartialEditor_ChangingEditors_ReturnsForbid()
         {
             AddMovesetWithMembers();

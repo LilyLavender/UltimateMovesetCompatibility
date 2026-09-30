@@ -78,6 +78,8 @@ namespace CustomCharInfo.server.Helpers
                     .Select(mm => new MovesetModderDetailDto
                     {
                         SortOrder = mm.SortOrder,
+                        ShowOnCard = mm.ShowOnCard,
+                        RoleIds = mm.Roles.OrderBy(r => r.ContributionRoleId).Select(r => r.ContributionRoleId).ToList(),
                         Modder = new ModderSummaryDto
                         {
                             ModderId = mm.Modder.ModderId,
