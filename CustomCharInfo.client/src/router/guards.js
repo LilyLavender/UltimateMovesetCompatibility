@@ -1,11 +1,11 @@
 import api from '@/services/api'
 import {
-  UserType,
   ItemType,
   BLOCKED_ACCEPTANCE_STATES,
   PENDING_ADMIN_STATES,
   PENDING_USER_STATES,
 } from '@/globals'
+import { isAdmin as isAdminUser } from '@/navigation'
 
 // Redirects to ErrorPage with the given status/reason/extra.
 export function redirectError(next, httpCode, reason, extra) {
@@ -84,7 +84,7 @@ export function createMovesetViewGuard() {
         latestLog && BLOCKED_ACCEPTANCE_STATES.includes(latestLog.acceptanceState.acceptanceStateId)
 
       if (isBlocked) {
-        const isAdmin = user?.userTypeId === UserType.Admin
+        const isAdmin = isAdminUser(user)
         const isOwner = user && modderIds.includes(user.modderId)
         if (!isAdmin && !isOwner) {
           return redirectError(
@@ -108,8 +108,7 @@ export function createMovesetViewGuard() {
   }
 }
 
-// Moveset edit page: a credited modder or an editor of the moveset. The API sets canEdit;
-// admins are not let in on role alone.
+// Moveset edit page: a credited modder, an editor of the moveset, or an admin. The API sets canEdit.
 export function createMovesetOwnerGuard() {
   return async (to, from, next) => {
     let moveset
@@ -157,8 +156,7 @@ export function createSeriesEditGuard() {
       const stateId = latestLog?.acceptanceState?.acceptanceStateId
 
       if (PENDING_USER_STATES.includes(stateId)) return next()
-      if (PENDING_ADMIN_STATES.includes(stateId) && user.userTypeId === UserType.Admin)
-        return next()
+      if (PENDING_ADMIN_STATES.includes(stateId) && isAdminUser(user)) return next()
 
       // The series detail endpoint reports whether the requester is credited on or edits a
       // moveset in it. It answers 403 or 404 to strangers of a series with no public movesets.

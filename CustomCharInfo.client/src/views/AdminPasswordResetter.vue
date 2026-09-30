@@ -46,10 +46,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/services/api'
-import { UserType } from '@/globals'
+import { useAuthStore } from '@/stores/auth'
+import { UserType, USER_TYPE_NAMES } from '@/globals'
+import { isSuperAdmin } from '@/navigation'
 import { useDialogProps } from '@/composables/useDialogProps'
 import { useNotify } from '@/composables/useNotify'
 import PageShell from '@/components/PageShell.vue'
@@ -68,17 +70,18 @@ const dialog = ref(false)
 const resetLink = ref('')
 const loading = ref(true)
 
-const headers = [
+const authStore = useAuthStore()
+const canSeePii = computed(() => isSuperAdmin(authStore.user))
+
+const headers = computed(() => [
   { title: 'Username', key: 'userName' },
-  { title: 'Email', key: 'email' },
+  ...(canSeePii.value ? [{ title: 'Email', key: 'email' }] : []),
   { title: 'Role', key: 'userTypeId' },
   { title: '', key: 'actions', sortable: false, align: 'end' },
-]
+])
 
-const roleName = (id) =>
-  ({ [UserType.User]: 'User', [UserType.Modder]: 'Modder', [UserType.Admin]: 'Admin' })[id] ?? id
-const roleTone = (id) =>
-  id === UserType.Admin ? 'info' : id === UserType.Modder ? 'ok' : 'neutral'
+const roleName = (id) => USER_TYPE_NAMES[id] ?? id
+const roleTone = (id) => (id >= UserType.Admin ? 'info' : id === UserType.Modder ? 'ok' : 'neutral')
 
 onMounted(async () => {
   try {

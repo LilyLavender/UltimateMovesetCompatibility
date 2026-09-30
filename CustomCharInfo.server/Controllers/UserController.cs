@@ -32,6 +32,9 @@ namespace CustomCharInfo.server.Controllers
             if (!currentUser.IsAdmin())
                 return Forbid();
 
+            // Only super admins see personal data; admins still get the IP count.
+            bool canSeePii = currentUser.IsSuperAdmin();
+
             // Most recent IP per user, looked up separately since it doesn't fit the SQL joins below cleanly.
             var lastIps = await _context.UserIpAddresses
                 .GroupBy(uip => uip.UserId)
@@ -73,10 +76,10 @@ namespace CustomCharInfo.server.Controllers
                 u.Id,
                 u.ModderId,
                 u.UserName,
-                u.Email,
+                Email = canSeePii ? u.Email : null,
                 u.UserTypeId,
                 u.LastActiveAt,
-                LastIp = lastIps.TryGetValue(u.Id, out var lu) ? lu.LastIp : null,
+                LastIp = canSeePii && lastIps.TryGetValue(u.Id, out var lu) ? lu.LastIp : null,
                 IpCount = lastIps.TryGetValue(u.Id, out var lu2) ? lu2.IpCount : 0
             });
 
@@ -87,10 +90,10 @@ namespace CustomCharInfo.server.Controllers
                     x.User.Id,
                     x.User.ModderId,
                     x.User.UserName,
-                    x.User.Email,
+                    Email = canSeePii ? x.User.Email : null,
                     x.User.UserTypeId,
                     x.User.LastActiveAt,
-                    LastIp = lastIps.TryGetValue(x.User.Id, out var lb) ? lb.LastIp : null,
+                    LastIp = canSeePii && lastIps.TryGetValue(x.User.Id, out var lb) ? lb.LastIp : null,
                     IpCount = lastIps.TryGetValue(x.User.Id, out var lb2) ? lb2.IpCount : 0
                 },
                 x.Modder

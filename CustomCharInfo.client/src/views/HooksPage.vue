@@ -173,7 +173,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { format } from 'date-fns'
 import api from '@/services/api'
-import { UserType, HookableStatus } from '@/globals'
+import { HookableStatus } from '@/globals'
+import { isModder } from '@/navigation'
 import { formatOffset } from '@/services/offsets'
 import PageShell from '@/components/PageShell.vue'
 import SubNav from '@/components/SubNav.vue'
@@ -224,7 +225,7 @@ const headers = [
 ]
 const defaultSort = [{ key: 'offset', order: 'asc' }]
 
-const canConfirm = computed(() => !!user.value && user.value.userTypeId >= UserType.Modder)
+const canConfirm = computed(() => isModder(user.value))
 
 const selectedVersionName = computed(
   () => gameVersions.value.find((v) => v.gameVersionId === selectedVersionId.value)?.name ?? ''

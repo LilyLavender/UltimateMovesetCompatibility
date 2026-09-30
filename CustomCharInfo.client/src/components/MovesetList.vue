@@ -193,13 +193,8 @@ import LabeledField from '@/components/LabeledField.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import SectionHeading from '@/components/SectionHeading.vue'
 import api from '@/services/api'
-import {
-  UserType,
-  ItemType,
-  BLOCKED_ACCEPTANCE_STATES,
-  ReleaseState,
-  RELEASE_STATE_NAMES,
-} from '@/globals'
+import { isAdmin as isAdminUser } from '@/navigation'
+import { ItemType, BLOCKED_ACCEPTANCE_STATES, ReleaseState, RELEASE_STATE_NAMES } from '@/globals'
 import { releaseDateSections, compareByName } from '@/services/releaseSections'
 import { formatOffset } from '@/services/offsets'
 
@@ -304,7 +299,7 @@ const canViewMoveset = (moveset) => {
   if (!moveset.privateMoveset) return true
   if (!user.value) return false
 
-  const isAdmin = user.value.userTypeId === UserType.Admin
+  const isAdmin = isAdminUser(user.value)
   const isModder = user.value.userName && moveset.modders.includes(user.value.userName) // This should absolutely not be done by username but there's security on the moveset itself so it's whatever lol
 
   return isAdmin || isModder

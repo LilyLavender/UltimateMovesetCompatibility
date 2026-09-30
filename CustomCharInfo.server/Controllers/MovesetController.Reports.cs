@@ -74,7 +74,7 @@ namespace CustomCharInfo.server.Controllers
         {
             var user = await _userManager.GetRequesterSummaryAsync(_context, User);
 
-            var seeAll = user?.UserTypeId == UserTypes.Admin && includeHidden;
+            var seeAll = user?.IsAdmin == true && includeHidden;
             var userModderId = user?.ModderId;
 
             var query = _context.Movesets

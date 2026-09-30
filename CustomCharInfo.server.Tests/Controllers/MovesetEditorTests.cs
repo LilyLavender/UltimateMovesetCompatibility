@@ -155,13 +155,66 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
-        public async Task PutMoveset_AdminNotOnMoveset_ReturnsForbid()
+        public async Task PutMoveset_AdminNotOnMoveset_SucceedsAndAutoAccepts()
         {
             AddMovesetWithMembers();
 
             var result = await CreateController("admin-1").PutMoveset(1, BaseDto());
 
-            Assert.IsType<ForbidResult>(result);
+            Assert.IsType<NoContentResult>(result);
+            Assert.Equal("edited", (await _db.Context.Movesets.FindAsync(1))!.Subtitle);
+            Assert.Equal(AcceptanceStates.AutoAccepted, (await _db.Context.ActionLogs.SingleAsync()).AcceptanceStateId);
+        }
+
+        [Fact]
+        public async Task PutMoveset_AdminWithoutModderProfile_Succeeds()
+        {
+            AddMovesetWithMembers();
+            SeedData.AddUser(_db.Context, "admin-nomodder", UserTypes.Admin);
+
+            var result = await CreateController("admin-nomodder").PutMoveset(1, BaseDto());
+
+            Assert.IsType<NoContentResult>(result);
+        }
+
+        [Fact]
+        public async Task PutMoveset_SuperAdminNotOnMoveset_Succeeds()
+        {
+            AddMovesetWithMembers();
+            SeedData.AddUser(_db.Context, "super-1", UserTypes.SuperAdmin);
+
+            var result = await CreateController("super-1").PutMoveset(1, BaseDto());
+
+            Assert.IsType<NoContentResult>(result);
+        }
+
+        [Fact]
+        public async Task PutMoveset_Admin_CanChangeMembers()
+        {
+            AddMovesetWithMembers();
+            var dto = BaseDto();
+            dto.ModderIds!.Add(StrangerModderId);
+            dto.Editors = new List<MovesetEditorDto> { new() { ModderId = FullEditorId, FullAccess = false } };
+
+            var result = await CreateController("admin-1").PutMoveset(1, dto);
+
+            Assert.IsType<NoContentResult>(result);
+            Assert.Equal(2, await _db.Context.MovesetModders.CountAsync());
+            var editor = await _db.Context.MovesetEditors.SingleAsync();
+            Assert.Equal((FullEditorId, false), (editor.ModderId, editor.FullAccess));
+        }
+
+        [Fact]
+        public async Task GetMoveset_Admin_SeesEditorsAndHasOwnerPowers()
+        {
+            AddMovesetWithMembers(isPrivate: true);
+
+            var result = Assert.IsType<OkObjectResult>((await CreateController("admin-1").GetMoveset("1")).Result);
+            var dto = Assert.IsType<MovesetDetailDto>(result.Value);
+
+            Assert.True(dto.CanEdit);
+            Assert.True(dto.CanManageMembers);
+            Assert.Equal(2, dto.MovesetEditors!.Count);
         }
 
         [Fact]
@@ -256,13 +309,14 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
-        public async Task PatchMovesetImages_AdminNotOnMoveset_ReturnsForbid()
+        public async Task PatchMovesetImages_AdminNotOnMoveset_Succeeds()
         {
             AddMovesetWithMembers();
 
             var result = await CreateController("admin-1").PatchMovesetImages(1, new MovesetImagesDto { ThumbhImageUrl = "/uploads/thumb.png" });
 
-            Assert.IsType<ForbidResult>(result);
+            Assert.IsType<NoContentResult>(result);
+            Assert.Equal("/uploads/thumb.png", (await _db.Context.Movesets.FindAsync(1))!.ThumbhImageUrl);
         }
     }
 }

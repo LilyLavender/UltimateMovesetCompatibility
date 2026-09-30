@@ -9,7 +9,8 @@ import { UserType } from '@/globals'
 
 export const isSignedIn = (user) => !!user
 export const isModder = (user) => !!user && user.userTypeId >= UserType.Modder
-export const isAdmin = (user) => !!user && user.userTypeId === UserType.Admin
+export const isAdmin = (user) => !!user && user.userTypeId >= UserType.Admin
+export const isSuperAdmin = (user) => !!user && user.userTypeId === UserType.SuperAdmin
 export const hasModderPage = (user) => !!user?.modderId
 export const hasPendingApplication = (user) => !!user && !user.modderId && !!user.modderIdFuture
 export const canApplyForModder = (user) =>

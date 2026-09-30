@@ -15,6 +15,14 @@ export const UserType = Object.freeze({
   User: 1,
   Modder: 2,
   Admin: 3,
+  SuperAdmin: 4,
+})
+
+export const USER_TYPE_NAMES = Object.freeze({
+  [UserType.User]: 'User',
+  [UserType.Modder]: 'Modder',
+  [UserType.Admin]: 'Admin',
+  [UserType.SuperAdmin]: 'Admin',
 })
 
 // Mirrors AcceptanceState.AcceptanceStateId server-side (seeded in AcceptanceState lookup table).

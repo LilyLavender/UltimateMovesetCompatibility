@@ -61,13 +61,13 @@ import AppButton from '@/components/AppButton.vue'
 import LabeledField from '@/components/LabeledField.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import {
-  UserType,
   ItemType,
   AcceptanceState,
   PENDING_ADMIN_STATES,
   PENDING_USER_STATES,
   ALL_ACCEPTANCE_STATES,
 } from '@/globals'
+import { isAdmin as isAdminUser } from '@/navigation'
 
 const props = defineProps({
   viewAll: {
@@ -111,7 +111,7 @@ const fetchUser = async () => {
   try {
     const res = await api.get('/auth/me')
     user.value = res.data
-    isAdmin.value = user.value.userTypeId === UserType.Admin
+    isAdmin.value = isAdminUser(user.value)
   } catch (err) {
     console.error('Failed to fetch user info:', err)
   }

@@ -38,7 +38,7 @@ namespace CustomCharInfo.server.Controllers
             if (requester == null)
                 return false;
 
-            if (requester.UserTypeId == UserTypes.Admin)
+            if (requester.UserTypeId >= UserTypes.Admin)
                 return true;
 
             if (itemTypeId == ItemTypes.Hook)
@@ -224,7 +224,7 @@ namespace CustomCharInfo.server.Controllers
             if (requester == null)
                 return (null, Forbid());
 
-            bool isAdmin = requester.UserTypeId == UserTypes.Admin;
+            bool isAdmin = requester.UserTypeId >= UserTypes.Admin;
 
             // Only admins may view all logs
             if (viewAll && !isAdmin)
@@ -432,7 +432,7 @@ namespace CustomCharInfo.server.Controllers
 
             var isAdmin = await _context.Users
                 .Where(u => u.Id == requesterId)
-                .Select(u => u.UserTypeId == UserTypes.Admin)
+                .Select(u => u.UserTypeId >= UserTypes.Admin)
                 .FirstOrDefaultAsync();
 
             var rows = await _context.ActionLogs
@@ -541,7 +541,7 @@ namespace CustomCharInfo.server.Controllers
 
             var isAdmin = await _context.Users
                 .Where(u => u.Id == requesterId)
-                .Select(u => u.UserTypeId == UserTypes.Admin)
+                .Select(u => u.UserTypeId >= UserTypes.Admin)
                 .FirstOrDefaultAsync();
 
             var lookups = await BuildItemLookupsAsync(new[] { row });

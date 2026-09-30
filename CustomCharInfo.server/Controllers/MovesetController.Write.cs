@@ -101,7 +101,7 @@ namespace CustomCharInfo.server.Controllers
             if (moveset == null)
                 return NotFound();
 
-            if (!MovesetAccess.CanEdit(moveset, user.ModderId))
+            if (!user.IsAdmin() && !MovesetAccess.CanEdit(moveset, user.ModderId))
                 return Forbid();
 
             if (dto.ThumbhImageUrl != null)
@@ -153,12 +153,10 @@ namespace CustomCharInfo.server.Controllers
         public async Task<IActionResult> PutMoveset(int id, CreateMovesetDto dto)
         {
             var userId = _userManager.GetUserId(User);
-            var user = await _userManager.Users
-                .Where(u => u.Id == userId)
-                .Select(u => new { u.ModderId, u.UserTypeId })
-                .SingleOrDefaultAsync();
+            var user = await _userManager.GetRequesterSummaryAsync(_context, User);
 
-            if (user == null || user.ModderId == null)
+            // Admins may edit without a modder profile. Everyone else needs one to be credited or an editor.
+            if (user == null || (user.ModderId == null && !user.IsAdmin))
                 return Forbid();
 
             var moveset = await _context.Movesets
@@ -172,12 +170,12 @@ namespace CustomCharInfo.server.Controllers
             if (moveset == null)
                 return NotFound();
 
-            // Credited modders and editors may edit; only credited modders and full-access editors may change who is on it.
-            if (!MovesetAccess.CanEdit(moveset, user.ModderId))
+            // Credited modders, editors, and admins may edit. Only credited modders, full-access editors, and admins may change who is on it.
+            if (!user.IsAdmin && !MovesetAccess.CanEdit(moveset, user.ModderId))
                 return Forbid();
 
             var newEditors = BuildEditors(dto);
-            if (!MovesetAccess.CanManageMembers(moveset, user.ModderId))
+            if (!user.IsAdmin && !MovesetAccess.CanManageMembers(moveset, user.ModderId))
             {
                 bool moddersChanged = !moveset.MovesetModders.Select(mm => mm.ModderId).ToHashSet()
                     .SetEquals(dto.ModderIds ?? new List<int>());
@@ -272,7 +270,7 @@ namespace CustomCharInfo.server.Controllers
             int newState =
                 latestLog?.AcceptanceStateId == AcceptanceStates.Rejected
                     ? AcceptanceStates.Rejected
-                    : user?.UserTypeId == UserTypes.Admin
+                    : user.IsAdmin
                         ? AcceptanceStates.AutoAccepted
                         : keyDetailsChanged
                             ? AcceptanceStates.PendingAdminHard

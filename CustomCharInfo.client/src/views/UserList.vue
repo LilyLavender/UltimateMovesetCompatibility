@@ -62,9 +62,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
-import { UserType } from '@/globals'
+import { useAuthStore } from '@/stores/auth'
+import { UserType, USER_TYPE_NAMES } from '@/globals'
+import { isSuperAdmin } from '@/navigation'
 import PageShell from '@/components/PageShell.vue'
 import SectionHeading from '@/components/SectionHeading.vue'
 import StatusTag from '@/components/StatusTag.vue'
@@ -76,22 +78,23 @@ const onlyModders = ref([])
 const inBoth = ref([])
 const loading = ref(true)
 
-const roleName = (id) =>
-  ({ [UserType.User]: 'User', [UserType.Modder]: 'Modder', [UserType.Admin]: 'Admin' })[id] ?? id
-const roleTone = (id) =>
-  id === UserType.Admin ? 'info' : id === UserType.Modder ? 'ok' : 'neutral'
+const authStore = useAuthStore()
+const canSeePii = computed(() => isSuperAdmin(authStore.user))
+
+const roleName = (id) => USER_TYPE_NAMES[id] ?? id
+const roleTone = (id) => (id >= UserType.Admin ? 'info' : id === UserType.Modder ? 'ok' : 'neutral')
 
 // Table headers
-const userHeaders = [
+const userHeaders = computed(() => [
   { title: 'ID', key: 'id' },
   { title: 'Username', key: 'userName' },
-  { title: 'Email', key: 'email' },
+  ...(canSeePii.value ? [{ title: 'Email', key: 'email' }] : []),
   { title: 'Role', key: 'userTypeId' },
   { title: 'Modder ID', key: 'modderId' },
   { title: 'Last active', key: 'lastActiveAt' },
-  { title: 'Last IP', key: 'lastIp' },
+  ...(canSeePii.value ? [{ title: 'Last IP', key: 'lastIp' }] : []),
   { title: 'IPs', key: 'ipCount', align: 'end' },
-]
+])
 
 const modderHeaders = [
   { title: 'Modder ID', key: 'modderId' },
@@ -102,10 +105,10 @@ const modderHeaders = [
   { title: 'Discord', key: 'discordUsername' },
 ]
 
-const bothHeaders = [
+const bothHeaders = computed(() => [
   { title: 'User ID', key: 'user.id' },
   { title: 'Username', key: 'user.userName' },
-  { title: 'Email', key: 'user.email' },
+  ...(canSeePii.value ? [{ title: 'Email', key: 'user.email' }] : []),
   { title: 'Role', key: 'user.userTypeId' },
   { title: 'Modder ID', key: 'user.modderId' },
   { title: 'Modder name', key: 'modder.name' },
@@ -113,9 +116,9 @@ const bothHeaders = [
   { title: 'GameBanana ID', key: 'modder.gamebananaId' },
   { title: 'Discord', key: 'modder.discordUsername' },
   { title: 'Last active', key: 'user.lastActiveAt' },
-  { title: 'Last IP', key: 'user.lastIp' },
+  ...(canSeePii.value ? [{ title: 'Last IP', key: 'user.lastIp' }] : []),
   { title: 'IPs', key: 'user.ipCount', align: 'end' },
-]
+])
 
 // Fetch all users on mount
 onMounted(async () => {

@@ -8,6 +8,8 @@ namespace CustomCharInfo.server.Models
         public const int User = 1;
         public const int Modder = 2;
         public const int Admin = 3;
+        // Differs from Admin only in seeing personal data (emails and IP addresses); displays as Admin to end users.
+        public const int SuperAdmin = 4;
     }
 
     // Soft edits stay visible while pending; hard edits are hidden until an admin acts.

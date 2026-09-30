@@ -51,7 +51,7 @@ namespace CustomCharInfo.server.Controllers
             var user = await _userManager.GetRequesterSummaryAsync(_context, User);
 
             // Admins get the same view as a modder unless they ask for hidden content explicitly.
-            bool seeAll = user?.UserTypeId == UserTypes.Admin && includeHidden;
+            bool seeAll = user?.IsAdmin == true && includeHidden;
             int? currentModderId = user?.ModderId;
 
             var query = _context.Movesets
@@ -248,7 +248,7 @@ namespace CustomCharInfo.server.Controllers
 
             var user = await _userManager.GetRequesterSummaryAsync(_context, User);
 
-            bool seeAll = user?.UserTypeId == UserTypes.Admin && includeHidden;
+            bool seeAll = user?.IsAdmin == true && includeHidden;
             int? currentModderId = user?.ModderId;
             var lowered = q.Trim().ToLower();
 
@@ -325,14 +325,16 @@ namespace CustomCharInfo.server.Controllers
                 ? null
                 : moveset.MovesetEditors?.FirstOrDefault(me => me.Modder.ModderId == user.ModderId);
             bool isOwner = isCredited || editorEntry != null;
+            bool isAdmin = user?.IsAdmin == true;
 
-            moveset.CanEdit = isOwner;
-            moveset.CanManageMembers = isCredited || (editorEntry != null && editorEntry.FullAccess);
-            if (!isOwner)
+            // Admins have full owner powers on every moveset.
+            moveset.CanEdit = isOwner || isAdmin;
+            moveset.CanManageMembers = isCredited || isAdmin || (editorEntry != null && editorEntry.FullAccess);
+            if (!isOwner && !isAdmin)
                 moveset.MovesetEditors = null;
 
             // Hide if private
-            if ((bool)moveset.PrivateMoveset && user?.UserTypeId != UserTypes.Admin && !isOwner)
+            if ((bool)moveset.PrivateMoveset && !isAdmin && !isOwner)
                 return NotFound();
 
             // Find latest log
@@ -343,7 +345,7 @@ namespace CustomCharInfo.server.Controllers
 
             
             // Enforce rules
-            if (user?.UserTypeId != UserTypes.Admin)
+            if (!isAdmin)
             {
                 if (
                     latestLog != null

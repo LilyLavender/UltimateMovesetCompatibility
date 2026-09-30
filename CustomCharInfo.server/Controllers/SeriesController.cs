@@ -52,7 +52,7 @@ namespace CustomCharInfo.server.Controllers
 
             var modderId = userInfo?.ModderId;
             // Admins count blocked movesets only when asked for hidden content explicitly.
-            var seeAll = userInfo?.UserTypeId == UserTypes.Admin && includeHidden;
+            var seeAll = userInfo?.UserTypeId >= UserTypes.Admin && includeHidden;
             
             // All series the user has a moveset in, as a credited modder or an editor
             var ownedMovesetIds = await MovesetAccess.EditableMovesetIdsAsync(_context, modderId);
@@ -249,7 +249,7 @@ namespace CustomCharInfo.server.Controllers
                 .Where(u => u.Id == userFromId.Id)
                 .Select(u => new { u.ModderId, u.UserTypeId })
                 .SingleOrDefaultAsync();
-            int newState = user?.UserTypeId == UserTypes.Admin ? AcceptanceStates.AutoAccepted : AcceptanceStates.PendingAdminHard;
+            int newState = user?.UserTypeId >= UserTypes.Admin ? AcceptanceStates.AutoAccepted : AcceptanceStates.PendingAdminHard;
             _context.ActionLogs.Add(new ActionLog
             {
                 UserId = userFromId.Id,
@@ -385,7 +385,7 @@ namespace CustomCharInfo.server.Controllers
                 .SingleOrDefaultAsync();
 
             int newState;
-            if (user?.UserTypeId == UserTypes.Admin) { newState = AcceptanceStates.AutoAccepted; }
+            if (user?.UserTypeId >= UserTypes.Admin) { newState = AcceptanceStates.AutoAccepted; }
             else if (latestLog.AcceptanceStateId == AcceptanceStates.PendingUserSoft) { newState = AcceptanceStates.PendingAdminSoft; }
             else if (latestLog.AcceptanceStateId == AcceptanceStates.PendingUserHard) { newState = AcceptanceStates.PendingAdminHard; }
             else { return Forbid(); }

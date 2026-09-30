@@ -103,7 +103,7 @@
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { UserType } from '@/globals'
+import { USER_TYPE_NAMES } from '@/globals'
 import { headerItems, menus, visibleItems, resolveTo, sectionOf } from '@/navigation'
 
 /*
@@ -126,9 +126,7 @@ const accountItems = computed(() => visibleItems(menus.account, user.value))
 
 const roleName = computed(() => {
   if (!user.value) return ''
-  if (user.value.userTypeId === UserType.Admin) return 'Admin'
-  if (user.value.userTypeId === UserType.Modder) return 'Modder'
-  return 'User'
+  return USER_TYPE_NAMES[user.value.userTypeId] ?? 'User'
 })
 
 const panel = ref(null)

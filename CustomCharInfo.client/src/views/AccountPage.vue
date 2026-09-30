@@ -76,7 +76,8 @@ import { ref, computed, watch } from 'vue'
 import { useHead } from '@unhead/vue'
 import api from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
-import { UserType, ItemType, ALL_ACCEPTANCE_STATES, PENDING_USER_STATES } from '@/globals'
+import { ItemType, ALL_ACCEPTANCE_STATES, PENDING_USER_STATES } from '@/globals'
+import { isAdmin as isAdminUser } from '@/navigation'
 import { latestLogsByItem } from '@/services/acceptanceStateDisplay'
 import PageShell from '@/components/PageShell.vue'
 import SectionHeading from '@/components/SectionHeading.vue'
@@ -89,7 +90,7 @@ useHead({ title: 'UMC | Account' })
 const authStore = useAuthStore()
 const isLoggedIn = computed(() => authStore.isLoggedIn)
 const user = computed(() => authStore.user)
-const isAdmin = computed(() => user.value?.userTypeId === UserType.Admin)
+const isAdmin = computed(() => isAdminUser(user.value))
 
 // Modders get profile, edit profile, and likes here; without a modder profile My likes sits in row 1 instead.
 const dashboardTileCount = computed(() => (user.value?.modderId ? 3 : 0) + (isAdmin.value ? 1 : 0))

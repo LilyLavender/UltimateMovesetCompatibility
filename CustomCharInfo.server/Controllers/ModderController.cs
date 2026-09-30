@@ -64,7 +64,7 @@ namespace CustomCharInfo.server.Controllers
                     m.Bio,
                     m.GamebananaId,
                     m.PfpUrl,
-                    IsAdmin = m.User != null && m.User.UserTypeId == UserTypes.Admin,
+                    IsAdmin = m.User != null && m.User.UserTypeId >= UserTypes.Admin,
                     MovesetCount = m.MovesetModders.Count(mm =>
                         mm.Moveset.PrivateMoveset != true &&
                         !AcceptanceStates.Blocked.Contains(
@@ -150,7 +150,7 @@ namespace CustomCharInfo.server.Controllers
                 });
 
             // Filter out blocked modders
-            if (userFromId?.UserTypeId != UserTypes.Admin)
+            if (!userFromId.IsAdmin())
             {
                 modderQuery = modderQuery.Where(x =>
                     x.LatestLog == null ||
@@ -195,7 +195,7 @@ namespace CustomCharInfo.server.Controllers
                 return Ok(new { isAdmin = false });
             }
 
-            bool isAdmin = user.UserTypeId == UserTypes.Admin;
+            bool isAdmin = user.UserTypeId >= UserTypes.Admin;
             return Ok(new { isAdmin });
         }
 
@@ -278,7 +278,7 @@ namespace CustomCharInfo.server.Controllers
                 .Select(a => a.UserId)
                 .FirstOrDefaultAsync() == userId;
 
-            if (!(isOwner || isOriginalSubmitter || user.UserTypeId == UserTypes.Admin))
+            if (!(isOwner || isOriginalSubmitter || user.UserTypeId >= UserTypes.Admin))
                 return Forbid("You are not authorized to edit this modder profile.");
 
             var latestLog = await _context.ActionLogs
@@ -326,7 +326,7 @@ namespace CustomCharInfo.server.Controllers
                 ("GithubUsername",  snapGithub,   dto.GithubUsername),
             });
 
-            int newState = user.UserTypeId == UserTypes.Admin
+            int newState = user.UserTypeId >= UserTypes.Admin
                 ? AcceptanceStates.AutoAccepted
                 : latestLog != null && AcceptanceStates.Hard.Contains(latestLog.AcceptanceStateId)
                     ? AcceptanceStates.PendingAdminHard

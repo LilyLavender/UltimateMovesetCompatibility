@@ -10,6 +10,8 @@ import {
   resolveTo,
   sectionOf,
   canApplyForModder,
+  isAdmin,
+  isSuperAdmin,
 } from '@/navigation'
 import { UserType } from '@/globals'
 
@@ -18,6 +20,7 @@ const plainUser = { userTypeId: UserType.User, modderId: null, modderIdFuture: n
 const applicant = { userTypeId: UserType.User, modderId: null, modderIdFuture: 9 }
 const modder = { userTypeId: UserType.Modder, modderId: 7, modderIdFuture: null }
 const admin = { userTypeId: UserType.Admin, modderId: 3, modderIdFuture: null }
+const superAdmin = { userTypeId: UserType.SuperAdmin, modderId: 4, modderIdFuture: null }
 
 const labels = (items) => items.filter((i) => i.label).map((i) => i.label)
 
@@ -95,6 +98,16 @@ describe('role predicates', () => {
     expect(items).not.toContain('Submit a moveset')
     expect(labels(visibleItems(subnavs.blog.actions, admin))).toContain('Add post')
     expect(adminTiles.flatMap((g) => g.items).length).toBe(13)
+  })
+
+  it('super admin: sees everything an admin sees, and only they pass isSuperAdmin', () => {
+    expect(labels(visibleItems(menus.account, superAdmin))).toEqual(
+      labels(visibleItems(menus.account, admin))
+    )
+    expect(isAdmin(superAdmin)).toBe(true)
+    expect(isSuperAdmin(superAdmin)).toBe(true)
+    expect(isSuperAdmin(admin)).toBe(false)
+    expect(isSuperAdmin(anonymous)).toBe(false)
   })
 
   it('hub actions can be limited to certain pages', () => {

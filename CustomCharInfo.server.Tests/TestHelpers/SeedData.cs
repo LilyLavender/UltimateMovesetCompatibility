@@ -26,7 +26,8 @@ namespace CustomCharInfo.server.Tests.TestHelpers
             context.Set<UserType>().AddRange(
                 new UserType { UserTypeId = UserTypes.User, UserTypeName = "User" },
                 new UserType { UserTypeId = UserTypes.Modder, UserTypeName = "Modder" },
-                new UserType { UserTypeId = UserTypes.Admin, UserTypeName = "Admin" }
+                new UserType { UserTypeId = UserTypes.Admin, UserTypeName = "Admin" },
+                new UserType { UserTypeId = UserTypes.SuperAdmin, UserTypeName = "SuperAdmin" }
             );
 
             context.VanillaChars.Add(new VanillaChar { VanillaCharInternalName = "mario", DisplayName = "Mario" });

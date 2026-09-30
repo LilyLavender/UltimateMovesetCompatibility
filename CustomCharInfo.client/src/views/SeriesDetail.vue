@@ -39,7 +39,7 @@ import AppButton from '@/components/AppButton.vue'
 import SkeletonList from '@/components/SkeletonList.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import MovesetList from '@/components/MovesetList.vue'
-import { UserType } from '@/globals'
+import { isAdmin } from '@/navigation'
 
 const route = useRoute()
 const router = useRouter()
@@ -96,7 +96,7 @@ onMounted(async () => {
       const user = userRes.data
       canEdit.value =
         seriesRes.data.canEdit ||
-        user.userTypeId === UserType.Admin ||
+        isAdmin(user) ||
         movesetsRes.data.some((m) => m.modders.includes(user.userName))
     } catch {
       canEdit.value = false

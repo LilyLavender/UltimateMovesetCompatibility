@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace CustomCharInfo.server.Helpers
 {
     // Who may edit a moveset: its credited modders and its editors.
-    // Admins are NOT allowed to edit movesets they're not modders or editors on.
+    // Admins may edit any moveset; the write endpoints check IsAdmin before calling these, since ownership lists stay credit-based.
     // The list endpoints repeat the same rule inline as EF expressions, since a method call cannot be translated inside a projection.
     public static class MovesetAccess
     {
