@@ -1,142 +1,151 @@
 <template>
-  <div v-if="(isEditMode && moveset) || (!isEditMode && form)">
-    <v-container max-width="1020px">
-      <!-- Header -->
-      <h1 v-if="isEditMode">Edit {{ moveset.moddedCharName }}</h1>
-      <h1 v-else>Submit Moveset</h1>
-      <div v-if="!isEditMode" class="submission-guide-hint">
-        <router-link to="/moveset-submission-guide" class="unvisitable" target="_blank">
-          <i class="mdi mdi-arrow-right-bottom"></i>
-          When should a moveset be submitted?
-        </router-link>
-      </div>
+  <PageShell
+    v-if="(isEditMode && moveset) || (!isEditMode && form)"
+    :title="isEditMode ? `Edit ${moveset.moddedCharName}` : 'Submit a moveset'"
+    :head="false"
+  >
+    <p v-if="!isEditMode" class="form-intro">
+      Not sure whether it's time?
+      <router-link to="/moveset-submission-guide" target="_blank">
+        Read when a moveset should be submitted.
+      </router-link>
+    </p>
 
-      <!-- Basic Info -->
-      <section>
-        <h2>Basic Info</h2>
-        <v-row>
-          <!-- Moveset Name -->
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model="form.moddedCharName"
-              variant="outlined"
-              label="Modded Character Name"
-            >
-              <template #label
-                >Modded Character Name <span class="required-asterisk">*</span></template
-              >
-            </v-text-field>
-          </v-col>
-          <!-- Modders -->
-          <v-col cols="12" sm="4">
+    <FormLayout :sections="sections">
+      <!-- Basic info -->
+      <FormSection id="basic" title="Basic info">
+        <div class="form-grid">
+          <LabeledField label="Modded character name" required>
+            <v-text-field v-model="form.moddedCharName" />
+          </LabeledField>
+
+          <LabeledField label="Modders" required>
             <v-select
               v-model="form.modderIds"
-              variant="outlined"
               :items="modders"
               item-title="name"
               item-value="modderId"
-              label="Modders"
               multiple
               chips
               clearable
               :disabled="!canManageMembers"
-            >
-              <template #label>Modders <span class="required-asterisk">*</span></template>
-              <!-- Hint -->
-              <template #details>
-                <router-link
-                  to="/modder-credit-guide"
-                  class="offsite unvisitable text-decoration-none"
-                  target="_blank"
-                  >Who should I include?</router-link
-                >
-              </template>
-            </v-select>
-          </v-col>
-          <!-- Editors: may edit the moveset but are never credited -->
-          <v-col cols="12" sm="4">
+            />
+            <router-link to="/modder-credit-guide" target="_blank" class="field-link">
+              Who should I include?
+            </router-link>
+          </LabeledField>
+
+          <LabeledField
+            label="Editors"
+            :hint="
+              canManageMembers
+                ? 'Modders who can edit this moveset but are not credited on it.'
+                : 'Only credited modders and full-access editors can change who is on this moveset.'
+            "
+          >
             <v-select
               v-model="form.editorIds"
-              variant="outlined"
               :items="editorCandidates"
               item-title="name"
               item-value="modderId"
-              label="Editors"
               multiple
               chips
               clearable
               :disabled="!canManageMembers"
-              :messages="
-                canManageMembers
-                  ? 'Modders who can edit this moveset but are not credited on it.'
-                  : 'Only credited modders and full-access editors can change who is on this moveset.'
-              "
             />
-            <div v-if="form.editorIds.length" class="editor-access-list">
-              <div v-for="id in form.editorIds" :key="id" class="editor-access-row">
-                <span class="editor-access-name">{{ modderName(id) }}</span>
-                <v-switch
-                  v-model="editorFullAccess[id]"
-                  density="compact"
-                  hide-details
-                  color="primary"
-                  label="Full access"
-                  :disabled="!canManageMembers"
-                />
+            <div v-if="form.editorIds.length" class="member-list">
+              <div v-for="id in form.editorIds" :key="id" class="member-row">
+                <div class="member-row__head">
+                  <span class="member-row__name">{{ modderName(id) }}</span>
+                  <v-switch
+                    v-model="editorFullAccess[id]"
+                    density="compact"
+                    hide-details
+                    label="Full access"
+                    :disabled="!canManageMembers"
+                  />
+                </div>
               </div>
-              <p class="editor-access-hint">
+              <p class="member-hint">
                 Full access can also change the Modders and Editors lists. Partial access can edit
                 everything else.
               </p>
             </div>
-          </v-col>
-          <!-- Series -->
-          <v-col cols="12" sm="4">
+          </LabeledField>
+
+          <div v-if="form.modderIds.length" class="member-list span-3">
+            <div v-for="id in form.modderIds" :key="id" class="credit-row">
+              <span class="member-row__name">{{ modderName(id) }}</span>
+              <button
+                type="button"
+                class="icon-btn"
+                :class="form.modderOnCard[id] === false ? 'icon-btn--off' : 'icon-btn--on'"
+                :title="form.modderOnCard[id] === false ? 'Hidden from card' : 'Shown on card'"
+                :aria-label="form.modderOnCard[id] === false ? 'Hidden from card' : 'Shown on card'"
+                :aria-pressed="form.modderOnCard[id] !== false"
+                :disabled="!canManageMembers"
+                @click="toggleOnCard(id)"
+              >
+                <v-icon size="18">{{
+                  form.modderOnCard[id] === false ? 'mdi-eye-off-outline' : 'mdi-eye-outline'
+                }}</v-icon>
+              </button>
+              <v-select
+                v-model="form.modderRoles[id]"
+                :items="roleItems"
+                item-title="name"
+                item-value="id"
+                multiple
+                chips
+                clearable
+                density="compact"
+                hide-details
+                placeholder="Roles"
+                :disabled="!canManageMembers"
+              />
+            </div>
+            <p class="member-hint">
+              Roles are optional. At least one modder must be shown on the moveset.
+            </p>
+          </div>
+
+          <LabeledField label="Series" required>
             <v-select
               v-model="form.seriesId"
-              variant="outlined"
               :items="seriesList"
               item-title="seriesName"
               item-value="seriesId"
-              label="Series"
             >
-              <template #label>Series <span class="required-asterisk">*</span></template>
-              <!-- List item -->
               <template #item="{ props: itemProps, item }">
                 <v-list-item v-bind="itemProps" class="remove-bound-props">
                   <div class="filter-option">
-                    <div v-if="item.raw.seriesIconUrl">
-                      <v-img
-                        :src="getFullImageUrl(item.raw.seriesIconUrl)"
-                        class="series-icon series-icon-small"
-                      />
-                    </div>
+                    <img
+                      v-if="item.raw.seriesIconUrl"
+                      :src="getFullImageUrl(item.raw.seriesIconUrl)"
+                      class="series-icon series-icon-small"
+                      alt=""
+                    />
                     <v-list-item-title>{{ item.raw.seriesName }}</v-list-item-title>
                   </div>
                 </v-list-item>
               </template>
-
-              <!-- Selected item -->
               <template #selection="{ item }">
-                <div class="filter-option d-flex align-center">
-                  <v-avatar class="me-1" size="26">
-                    <v-img :src="getFullImageUrl(item.raw.seriesIconUrl)" class="series-icon" />
-                  </v-avatar>
+                <div class="filter-option">
+                  <img
+                    v-if="item.raw.seriesIconUrl"
+                    :src="getFullImageUrl(item.raw.seriesIconUrl)"
+                    class="series-icon series-icon-small"
+                    alt=""
+                  />
                   <span>{{ item.raw.seriesName }}</span>
                 </div>
               </template>
-
-              <!-- Hint -->
-              <template #details>
-                <router-link
-                  to="/series/add"
-                  class="offsite unvisitable text-decoration-none"
-                  target="_blank"
-                  >Don't see your series?</router-link
-                >
-              </template>
             </v-select>
-          </v-col>
+            <router-link to="/series/add" target="_blank" class="field-link">
+              Don't see your series?
+            </router-link>
+          </LabeledField>
+
           <MovesetIdentityFields
             v-model:slotted-id="form.slottedId"
             v-model:replacement-id="form.replacementId"
@@ -145,288 +154,206 @@
             v-model:slots-end="form.slotsEnd"
             :vanilla-chars="vanillaChars"
           />
-          <!-- Release Date -->
-          <v-col cols="12" sm="4">
+
+          <LabeledField label="Release date">
             <v-menu :close-on-content-click="false" transition="scale-transition">
               <template #activator="{ props: activatorProps }">
                 <v-text-field
                   v-model="formattedReleaseDate"
-                  variant="outlined"
-                  label="Release Date"
                   readonly
                   clearable
+                  placeholder="Pick a date"
                   v-bind="activatorProps"
                 />
               </template>
-              <!-- ??? can't get any props to work -->
               <v-date-picker
                 v-model="releaseDatePickerValue"
-                title="Release Date"
+                title="Release date"
                 header="Select date"
               />
             </v-menu>
-          </v-col>
-          <!-- Release State -->
-          <v-col cols="12" sm="4">
+          </LabeledField>
+
+          <LabeledField label="Availability" required>
             <v-select
               v-model="form.releaseStateId"
-              variant="outlined"
               :items="releaseStates"
               item-title="releaseStateName"
               item-value="releaseStateId"
-              label="Availability"
-            >
-              <template #label>Availability <span class="required-asterisk">*</span></template>
-            </v-select>
-          </v-col>
-          <!-- Modpack -->
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model="form.modpackName"
-              variant="outlined"
-              label="Modpack"
-              placeholder="(leave blank if not exclusive)"
             />
-          </v-col>
-          <!-- Dependencies -->
-          <v-col>
+          </LabeledField>
+
+          <LabeledField
+            label="Modpack"
+            hint="Leave blank unless the moveset is exclusive to a modpack."
+          >
+            <v-text-field v-model="form.modpackName" />
+          </LabeledField>
+
+          <LabeledField label="Dependencies" class="span-3">
             <v-select
               v-model="form.dependencyIds"
-              variant="outlined"
               :items="dependencies"
               item-title="name"
               item-value="dependencyId"
-              label="Dependencies"
               multiple
               chips
               clearable
             />
-          </v-col>
-        </v-row>
-      </section>
+          </LabeledField>
+        </div>
+      </FormSection>
 
       <!-- Display -->
-      <section>
-        <h2>Display</h2>
-        <p class="mb-3">
+      <FormSection id="display" title="Display">
+        <p class="section-note">
           For information on image hosting in UMC, see
-          <router-link to="/image-hosting" class="unvisitable" target="_blank">here</router-link>.
+          <router-link to="/image-hosting" target="_blank">image hosting</router-link>.
         </p>
-        <v-row>
-          <!-- ThumbH URL -->
-          <v-col cols="12" sm="6">
-            <p class="field-label">Thumbnail (340x82)</p>
+        <div class="form-grid form-grid--2">
+          <LabeledField label="Thumbnail" note="340 by 82" hint="Shown in every moveset list.">
             <ImageUploadField
               v-model="form.thumbhImageUrl"
               :required-width="IMAGE_UPLOAD_SPECS.thumb_h.width"
               :required-height="IMAGE_UPLOAD_SPECS.thumb_h.height"
-              hint="A thumbnail image displayed in moveset lists."
             />
-            <!-- Download -->
-            <a :href="thumbhUnknown" download class="unvisitable text-caption">
-              Download placeholder image
-            </a>
-          </v-col>
-          <!-- Hero URL -->
-          <v-col cols="12" sm="6">
-            <p class="field-label">Render (1200x1200)</p>
+            <a :href="thumbhUnknown" download class="field-link">Download placeholder image</a>
+          </LabeledField>
+          <LabeledField
+            label="Render"
+            note="1200 by 1200"
+            hint="The character render, cropped to fit."
+          >
             <ImageUploadField
               v-model="form.movesetHeroImageUrl"
               :required-width="IMAGE_UPLOAD_SPECS.moveset_hero.width"
               :required-height="IMAGE_UPLOAD_SPECS.moveset_hero.height"
-              hint="The render of the character cropped to fit."
             />
-            <!-- Download -->
-            <a :href="movesetHeroUnknown" download class="unvisitable text-caption">
-              Download placeholder image
-            </a>
-          </v-col>
-          <!-- Background Color -->
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model="form.backgroundColor"
-              variant="outlined"
-              label="Background Color (Hex)"
-              maxlength="6"
-              prefix="#"
-            >
+            <a :href="movesetHeroUnknown" download class="field-link">Download placeholder image</a>
+          </LabeledField>
+        </div>
+        <div class="form-grid">
+          <LabeledField label="Background color" note="hex">
+            <v-text-field v-model="form.backgroundColor" maxlength="6" prefix="#">
               <template #append-inner>
-                <div
-                  :style="{
-                    backgroundColor: '#' + form.backgroundColor,
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '8px',
-                  }"
-                ></div>
+                <span
+                  class="color-swatch"
+                  :style="{ backgroundColor: '#' + form.backgroundColor }"
+                ></span>
               </template>
             </v-text-field>
-          </v-col>
-          <!-- Private Moveset -->
-          <v-col cols="12" sm="4">
-            <v-checkbox
-              v-model="form.privateMoveset"
-              label="Private"
-              messages="Hides moveset name, series, and images, and disables the detail page. Does not hide modders."
-            />
-          </v-col>
-          <!-- Private Modder -->
-          <v-col cols="12" sm="4">
-            <v-checkbox
-              v-model="form.privateModder"
-              label="Hide Modder Info"
-              messages="Hides modder name from submissions. Only goes into affect if moveset is private."
-            />
-          </v-col>
-        </v-row>
-      </section>
+          </LabeledField>
+          <div class="check-item">
+            <v-checkbox v-model="form.privateMoveset" label="Private" hide-details />
+            <p class="check-hint">
+              Hides the name, series, and images, and disables the detail page. Does not hide
+              modders.
+            </p>
+          </div>
+          <div class="check-item">
+            <v-checkbox v-model="form.privateModder" label="Hide modder info" hide-details />
+            <p class="check-hint">
+              Hides the modder name from submissions. Only applies while the moveset is private.
+            </p>
+          </div>
+        </div>
+      </FormSection>
 
-      <!-- Links + Function Usage -->
-      <div class="links-functions-row">
+      <!-- Links -->
+      <FormSection id="links" title="Links">
         <MovesetLinksSection
           v-model:mod-page-url="form.modPageUrl"
           v-model:gamebanana-wip-id="form.gamebananaWipId"
           v-model:mods-wiki-link="form.modsWikiLink"
           v-model:source-code="form.sourceCode"
         />
+      </FormSection>
 
-        <!-- Function Usage -->
-        <section class="functions-section">
-          <h2>Function Usage</h2>
-          <v-row class="functions">
-            <v-col cols="12">
-              <v-checkbox
-                v-model="form.hasGlobalOpff"
-                label="Global OPFF"
-                messages="Runs once every frame for all characters"
-                true-icon="mdi-check-bold"
-                false-icon="mdi-close-thick"
-              />
-            </v-col>
-            <v-col cols="12">
-              <v-checkbox
-                v-model="form.hasCharacterOpff"
-                label="Character OPFF"
-                :messages="`Runs once every frame for ${getVanillaCharDisplayName(form.vanillaCharInternalName)}`"
-                true-icon="mdi-check-bold"
-                false-icon="mdi-close-thick"
-              />
-            </v-col>
-            <v-col cols="12">
-              <v-checkbox
-                v-model="form.hasAgentInit"
-                label="Agent init"
-                messages="Runs once when a fighter is spawned in"
-                true-icon="mdi-check-bold"
-                false-icon="mdi-close-thick"
-              />
-            </v-col>
-            <v-col cols="12">
-              <v-checkbox
-                v-model="form.hasGlobalOnLinePre"
-                label="Global on_line pre"
-                messages="Runs once every time a pre status script runs"
-                true-icon="mdi-check-bold"
-                false-icon="mdi-close-thick"
-              />
-            </v-col>
-            <v-col cols="12">
-              <v-checkbox
-                v-model="form.hasGlobalOnLineEnd"
-                label="Global on_line end"
-                messages="Runs once every time an end status script runs"
-                true-icon="mdi-check-bold"
-                false-icon="mdi-close-thick"
-              />
-            </v-col>
-          </v-row>
-        </section>
-      </div>
-      <!-- end links-functions-row -->
+      <!-- Function usage -->
+      <FormSection id="functions" title="Function usage">
+        <div class="form-grid">
+          <div v-for="fn in functionFlags" :key="fn.key" class="check-item check-item--fn">
+            <v-checkbox
+              v-model="form[fn.key]"
+              :label="fn.label"
+              true-icon="mdi-check-bold"
+              false-icon="mdi-close-thick"
+              hide-details
+            />
+            <p class="check-hint">{{ fn.hint }}</p>
+          </div>
+        </div>
+      </FormSection>
 
-      <MovesetArticlesEditor v-model="form.articles" :article-options="articles" />
+      <FormSection id="articles" title="Cloned articles">
+        <MovesetArticlesEditor
+          v-model="form.articles"
+          :article-options="articles"
+          :vanilla-char-internal-name="form.vanillaCharInternalName"
+        />
+      </FormSection>
 
-      <MovesetHooksEditor
-        v-model="form.hooks"
-        :hook-options="hooks"
-        :character-name="form.moddedCharName"
-      />
+      <FormSection id="hooks" title="Hooks">
+        <MovesetHooksEditor
+          v-model="form.hooks"
+          :hook-options="hooks"
+          :character-name="form.moddedCharName"
+        />
+      </FormSection>
 
       <!-- Plugins (only available once the moveset exists) -->
       <MovesetPluginsPanel
         v-if="isEditMode && props.movesetId"
+        id="plugins"
         :moveset-id="props.movesetId"
         :moveset-name="form.moddedCharName"
       />
-      <section v-else>
-        <h2>Plugins</h2>
-        <p class="subheader">
-          Save this moveset first, then attach its plugin(s) from the edit page.
+      <FormSection v-else id="plugins" title="Plugins">
+        <p class="section-note">
+          Save this moveset first, then attach its plugin from the edit page.
         </p>
-      </section>
+      </FormSection>
 
-      <!-- Advanced Settings -->
-      <section class="advanced-section">
-        <h3 class="advanced-toggle" @click="showAdvanced = !showAdvanced">
-          Advanced Settings
-          <v-icon class="advanced-chevron" :class="{ rotated: showAdvanced }"
-            >mdi-chevron-down</v-icon
-          >
-        </h3>
-        <v-expand-transition>
-          <div v-if="showAdvanced">
-            <v-row>
-              <!-- Joke Moveset -->
-              <v-col cols="12" sm="4">
-                <v-checkbox
-                  v-model="form.isJokeMoveset"
-                  true-icon="mdi-egg-easter"
-                  false-icon="mdi-egg-outline"
-                  label="Joke Moveset"
-                  messages="Marks this as a joke moveset. Required for April Fool's movesets."
-                  class="joke-checkbox"
-                />
-              </v-col>
-
-              <!-- Subtitle -->
-              <v-col cols="12" sm="4">
-                <v-text-field
-                  v-model="form.subtitle"
-                  variant="outlined"
-                  label="Subtitle"
-                  placeholder="e.g. V2, Ult-S, Standalone"
-                  messages="Shown in parentheses next to this moveset's name. For disambiguation purposes only."
-                />
-              </v-col>
-            </v-row>
+      <!-- Advanced -->
+      <FormSection id="advanced" v-model:open="showAdvanced" title="Advanced" collapsible>
+        <div class="form-grid">
+          <div class="check-item">
+            <v-checkbox
+              v-model="form.isJokeMoveset"
+              true-icon="mdi-egg-easter"
+              false-icon="mdi-egg-outline"
+              label="Joke moveset"
+              hide-details
+            />
+            <p class="check-hint">
+              Marks this as a joke moveset. Required for April Fools movesets.
+            </p>
           </div>
-        </v-expand-transition>
-      </section>
+          <LabeledField
+            label="Subtitle"
+            hint="Shown in parentheses after the name, for disambiguation only."
+            class="span-2"
+          >
+            <v-text-field v-model="form.subtitle" placeholder="e.g. V2, Ult-S, Standalone" />
+          </LabeledField>
+        </div>
+      </FormSection>
 
-      <!-- Notes + Submit -->
-      <div class="d-flex align-start ga-3 justify-end">
-        <v-textarea
-          v-model="form.notes"
-          variant="outlined"
-          density="compact"
+      <template #savebar>
+        <LabeledField
           :label="isEditMode ? 'Editing notes' : 'Submission notes'"
-          placeholder="Optional, shown to admins only."
-          rows="1"
-          auto-grow
-          hide-details
-          class="notes-field"
-        />
-        <v-btn
-          class="btn submit-button mt-1"
-          :loading="isSubmitting"
-          :disabled="isSubmitting"
-          @click="submit"
+          note="admins only"
+          class="savebar-notes"
         >
-          {{ uploadStatus || (isEditMode ? 'Save' : 'Submit Moveset') }}
-        </v-btn>
-      </div>
-    </v-container>
-  </div>
+          <v-textarea v-model="form.notes" density="compact" rows="1" auto-grow hide-details />
+        </LabeledField>
+        <span class="savebar-spacer"></span>
+        <AppButton variant="primary" icon="mdi-check" :busy="isSubmitting" @click="submit">
+          {{ uploadStatus || (isEditMode ? 'Save changes' : 'Submit moveset') }}
+        </AppButton>
+      </template>
+    </FormLayout>
+  </PageShell>
 </template>
 
 <script setup>
@@ -434,6 +361,11 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useHead } from '@unhead/vue'
 import api from '@/services/api'
+import PageShell from '@/components/PageShell.vue'
+import FormLayout from '@/components/FormLayout.vue'
+import FormSection from '@/components/FormSection.vue'
+import LabeledField from '@/components/LabeledField.vue'
+import AppButton from '@/components/AppButton.vue'
 import ImageUploadField from '@/components/ImageUploadField.vue'
 import MovesetPluginsPanel from '@/components/MovesetPluginsPanel.vue'
 import MovesetIdentityFields from '@/components/MovesetIdentityFields.vue'
@@ -444,7 +376,7 @@ import { useImageUpload, isStagedFile } from '@/composables/useImageUpload'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import thumbhUnknown from '@/assets/thumb_h_unknown.png'
 import movesetHeroUnknown from '@/assets/moveset_hero_unknown.png'
-import { IMAGE_UPLOAD_SPECS } from '@/globals'
+import { IMAGE_UPLOAD_SPECS, CONTRIBUTION_ROLE_ORDER, CONTRIBUTION_ROLE_NAMES } from '@/globals'
 import { dateOnlyStringToLocalDate, localDateToDateOnlyString } from '@/services/dateOnly'
 import { useNotify } from '@/composables/useNotify'
 
@@ -458,8 +390,18 @@ const props = defineProps({
 const isEditMode = computed(() => props.mode === 'edit')
 const router = useRouter()
 
-const showAdvanced = ref(false)
+const sections = [
+  { id: 'basic', label: 'Basic info' },
+  { id: 'display', label: 'Display' },
+  { id: 'links', label: 'Links' },
+  { id: 'functions', label: 'Function usage' },
+  { id: 'articles', label: 'Articles' },
+  { id: 'hooks', label: 'Hooks' },
+  { id: 'plugins', label: 'Plugins' },
+  { id: 'advanced', label: 'Advanced' },
+]
 
+const showAdvanced = ref(false)
 const isSubmitting = ref(false)
 const uploadStatus = ref('')
 
@@ -478,13 +420,19 @@ const getVanillaCharDisplayName = (internalName) => {
 const moveset = ref(null)
 
 useHead(
-  computed(() => (moveset.value ? { title: `UMC | Editing ${moveset.value.moddedCharName}` } : {}))
+  computed(() => ({
+    title: moveset.value
+      ? `UMC | Editing ${moveset.value.moddedCharName}`
+      : 'UMC | Submit a moveset',
+  }))
 )
 
 const form = ref({
   // Basic Info
   moddedCharName: '',
   modderIds: [],
+  modderRoles: {},
+  modderOnCard: {},
   editorIds: [],
   seriesId: null,
   slottedId: null,
@@ -523,6 +471,26 @@ const form = ref({
   notes: '',
 })
 
+const functionFlags = computed(() => [
+  { key: 'hasGlobalOpff', label: 'Global OPFF', hint: 'Runs once every frame for all characters.' },
+  {
+    key: 'hasCharacterOpff',
+    label: 'Character OPFF',
+    hint: `Runs once every frame for ${getVanillaCharDisplayName(form.value.vanillaCharInternalName) || 'the character'}.`,
+  },
+  { key: 'hasAgentInit', label: 'Agent init', hint: 'Runs once when a fighter is spawned in.' },
+  {
+    key: 'hasGlobalOnLinePre',
+    label: 'Global on_line pre',
+    hint: 'Runs once every time a pre status script runs.',
+  },
+  {
+    key: 'hasGlobalOnLineEnd',
+    label: 'Global on_line end',
+    hint: 'Runs once every time an end status script runs.',
+  },
+])
+
 const { uploadIfNeeded } = useImageUpload()
 const { takeSnapshot, markSaved } = useUnsavedChanges(form)
 
@@ -542,16 +510,41 @@ const editorCandidates = computed(() =>
 
 const modderName = (id) => modders.value.find((m) => m.modderId === id)?.name ?? `#${id}`
 
+const roleItems = CONTRIBUTION_ROLE_ORDER.map((id) => ({ id, name: CONTRIBUTION_ROLE_NAMES[id] }))
+
 // Someone credited as a modder cannot also be an editor.
 watch(
   () => form.value.modderIds,
   (ids) => {
     form.value.editorIds = form.value.editorIds.filter((id) => !ids.includes(id))
+    for (const id of ids) {
+      if (!(id in form.value.modderRoles)) form.value.modderRoles[id] = []
+      if (!(id in form.value.modderOnCard)) form.value.modderOnCard[id] = true
+    }
+    for (const key of Object.keys(form.value.modderRoles)) {
+      if (!ids.includes(Number(key))) {
+        delete form.value.modderRoles[key]
+        delete form.value.modderOnCard[key]
+      }
+    }
   }
 )
 
 const editorsPayload = () =>
   form.value.editorIds.map((id) => ({ modderId: id, fullAccess: !!editorFullAccess.value[id] }))
+
+const moddersPayload = () =>
+  form.value.modderIds.map((id) => ({
+    modderId: id,
+    roleIds: form.value.modderRoles[id] ?? [],
+    showOnCard: form.value.modderOnCard[id] !== false,
+  }))
+
+const someoneOnCard = () => form.value.modderIds.some((id) => form.value.modderOnCard[id] !== false)
+
+const toggleOnCard = (id) => {
+  form.value.modderOnCard[id] = form.value.modderOnCard[id] === false
+}
 const dependencies = ref([])
 const articles = ref([])
 const hooks = ref([])
@@ -595,6 +588,12 @@ onMounted(async () => {
         showAdvanced.value = true
       }
       form.value.modderIds = res.data.movesetModders?.map((m) => m.modder.modderId) || []
+      form.value.modderRoles = Object.fromEntries(
+        (res.data.movesetModders ?? []).map((m) => [m.modder.modderId, m.roleIds ?? []])
+      )
+      form.value.modderOnCard = Object.fromEntries(
+        (res.data.movesetModders ?? []).map((m) => [m.modder.modderId, m.showOnCard !== false])
+      )
       form.value.editorIds = res.data.movesetEditors?.map((e) => e.modder.modderId) || []
       editorFullAccess.value = Object.fromEntries(
         (res.data.movesetEditors ?? []).map((e) => [e.modder.modderId, !!e.fullAccess])
@@ -661,6 +660,11 @@ const submit = async () => {
     return
   }
 
+  if (!someoneOnCard()) {
+    notify.warning('At least one modder must be shown on the card.')
+    return
+  }
+
   // Validate modderId
   const user = await api.get('/auth/me')
   const stillOnMoveset =
@@ -698,6 +702,17 @@ const submit = async () => {
     return
   }
 
+  const sameCharacterArticles = form.value.articles
+    .map((entry) => articles.value.find((a) => a.articleId === entry.articleId))
+    .filter((a) => a?.vanillaCharInternalName === form.value.vanillaCharInternalName)
+  if (sameCharacterArticles.length) {
+    const names = sameCharacterArticles
+      .map((a) => `${a.vanillaCharInternalName}_${a.articleName}`)
+      .join(', ')
+    notify.warning(`Remove cloned articles of this moveset's own character: ${names}.`)
+    return
+  }
+
   // Ensure slottedId/replacementId fallback
   if (form.value.slottedId && !form.value.replacementId) {
     form.value.replacementId = form.value.slottedId
@@ -709,7 +724,7 @@ const submit = async () => {
 
   if (props.mode === 'edit' && props.movesetId) {
     // Edit mode: the moveset already exists, so upload first (as before) and save in one request.
-    uploadStatus.value = 'Uploading images...'
+    uploadStatus.value = 'Uploading images'
     try {
       form.value.thumbhImageUrl = await uploadIfNeeded(form.value.thumbhImageUrl, {
         type: 'thumb_h',
@@ -727,9 +742,13 @@ const submit = async () => {
       return
     }
 
-    uploadStatus.value = 'Saving moveset...'
+    uploadStatus.value = 'Saving moveset'
     try {
-      await api.put(`/movesets/${props.movesetId}`, { ...form.value, editors: editorsPayload() })
+      await api.put(`/movesets/${props.movesetId}`, {
+        ...form.value,
+        editors: editorsPayload(),
+        modders: moddersPayload(),
+      })
       markSaved()
       router.push(`/moveset/${props.movesetId}`)
     } catch (err) {
@@ -751,11 +770,11 @@ const submit = async () => {
     ? form.value.movesetHeroImageUrl
     : null
 
-  const payload = { ...form.value, editors: editorsPayload() }
+  const payload = { ...form.value, editors: editorsPayload(), modders: moddersPayload() }
   if (stagedThumb) payload.thumbhImageUrl = null
   if (stagedHero) payload.movesetHeroImageUrl = null
 
-  uploadStatus.value = 'Saving moveset...'
+  uploadStatus.value = 'Saving moveset'
 
   let newId
   try {
@@ -770,7 +789,7 @@ const submit = async () => {
   }
 
   if (stagedThumb || stagedHero) {
-    uploadStatus.value = 'Uploading images...'
+    uploadStatus.value = 'Uploading images'
     try {
       const images = {}
       if (stagedThumb)
@@ -804,252 +823,211 @@ const submit = async () => {
 </script>
 
 <style scoped>
-/* Per-editor access switches under the Editors picker */
-.editor-access-list {
-  margin-top: 0.25rem;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid #333;
-  border-radius: 6px;
-  background-color: #1a1a1a;
+.form-intro {
+  margin: 0 0 20px;
+  color: var(--tx-2);
+  font-size: 14px;
 }
-.editor-access-row {
+
+.form-intro a,
+.section-note a,
+.field-link {
+  color: var(--white);
+  text-decoration: underline;
+}
+
+.section-note {
+  margin: 0 0 4px;
+  color: var(--tx-2);
+  font-size: 14px;
+}
+
+.field-link {
+  align-self: flex-start;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--tx-2);
+}
+
+/* Three columns of fields on desktop, one on mobile */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.form-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-grid + .form-grid {
+  margin-top: 16px;
+}
+
+.span-2 {
+  grid-column: span 2;
+}
+
+.span-3 {
+  grid-column: span 3;
+}
+
+.check-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.check-hint {
+  margin: 0;
+  padding-left: 40px;
+  color: var(--tx-3);
+  font-size: 12px;
+}
+
+/* Function usage: a red X when off, a green check when on */
+.check-item--fn :deep(.v-selection-control__input .v-icon) {
+  color: var(--err);
+}
+
+.check-item--fn :deep(.v-selection-control--dirty .v-selection-control__input .v-icon) {
+  color: var(--ok);
+}
+
+.color-swatch {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--line-2);
+}
+
+/* Per-person rows under the Modders and Editors pickers: roles and card eye for a credit, access for an editor */
+.member-list {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.member-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Name on the left, the eye or access switch on the right */
+.member-row__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 8px;
+  min-width: 0;
 }
-.editor-access-name {
-  font-size: 0.9em;
+
+.member-row__name {
+  font-size: 14px;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.editor-access-hint {
-  margin: 0.25rem 0 0;
-  font-size: 0.75em;
-  color: #888;
+
+/* A credit on one line: name, the card eye, then the roles select across the rest of the form */
+.credit-row {
+  display: grid;
+  grid-template-columns: minmax(0, 200px) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px 12px;
 }
 
-/* General display of form */
-section {
-  margin-bottom: 2rem;
-  background-color: #1e1e1e;
-  padding: 1em;
-  border-radius: 10px;
+@media (max-width: 599px) {
+  .credit-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .credit-row > :last-child {
+    grid-column: 1 / -1;
+  }
 }
-/* .form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1em;
-} */
-h1 {
-  font-size: 3.25em;
+
+.member-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--tx-3);
 }
-section h2 {
-  font-size: 2.25em;
-  margin-bottom: 10px;
+
+/* The card eye: green outline when the name is on the card, red slashed outline when hidden */
+.icon-btn {
+  display: flex;
+  flex: none;
+  padding: 4px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease);
 }
-:deep(.v-text-field__prefix__text) {
-  color: #e4e4e4;
+
+.icon-btn--on {
+  color: var(--ok);
 }
-.preview-image {
-  border: 1px solid #686868;
-  border-radius: 3px;
+
+.icon-btn--off {
+  color: var(--err);
 }
-.field-label {
-  font-size: 0.85rem;
-  color: #b0b0b0;
-  margin-bottom: 4px;
+
+.icon-btn:disabled {
+  cursor: default;
+  opacity: 0.5;
 }
-.submit-button {
-  background-color: #2e2e2e;
-  color: #e2e2e2;
-}
-.btn {
-  text-transform: unset;
-  letter-spacing: 0.009375em;
-  font-size: medium;
-}
-/* Dropdown display */
+
+/* Series picker with icons. Icon turns black when its item is hovered or selected */
 .series-icon {
   filter: brightness(4.35);
 }
-.series-icon-small {
-  width: 36px;
-  height: 36px;
-  margin-top: -4px;
+
+.v-list-item:hover .series-icon,
+.v-list-item--active .series-icon {
+  filter: brightness(0);
 }
+
+.series-icon-small {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
 .filter-option {
   display: flex;
+  align-items: center;
+  gap: 8px;
 }
-:deep(.filter-option div) {
-  margin-right: 4px;
-}
+
 .remove-bound-props :deep(.v-list-item-title:not(.filter-option .v-list-item-title)) {
   display: none;
 }
-.v-avatar {
-  background: transparent;
+
+/* Save bar */
+.savebar-notes {
+  flex: 1 1 320px;
+  max-width: 480px;
 }
 
-/* subheader helper class */
-.subheader {
-  margin-top: -1.5em;
-  margin-bottom: 0.5em;
-  font-size: 12px;
+.savebar-spacer {
+  flex: 1;
 }
 
-/* Img download caption link helper */
-.text-caption {
-  font-family: unset;
-  margin-top: 0;
-  display: block;
-  width: fit-content;
-  color: #939393 !important;
-  transition: color 200ms ease-in-out;
-}
-.text-caption:hover {
-  color: #c8c8c8 !important;
-}
+@media (max-width: 959px) {
+  .form-grid,
+  .form-grid--2 {
+    grid-template-columns: 1fr;
+  }
 
-/* Links + Function Usage side by side */
-.links-functions-row {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  align-items: flex-start;
-}
-.links-functions-row > section {
-  margin-bottom: 0;
-}
-.links-section {
-  flex: 7;
-}
-.functions-section {
-  flex: 5;
-  min-width: 0;
-  padding-left: 1.75em;
-}
-
-/* Function usage section */
-.functions {
-  margin-bottom: 0.75em;
-}
-.functions > div {
-  padding: 0;
-}
-
-/* Checkbox hints sit directly below the checkbox */
-:deep(.functions-section .v-checkbox .v-input__details) {
-  padding-inline-start: 0;
-  min-height: unset;
-  overflow: revert;
-}
-:deep(.functions-section .v-checkbox .v-messages) {
-  padding-left: 0;
-  left: 48.5px;
-  top: -16px;
-  font-size: 1.1em;
-}
-
-/* Checkbox: red bg + X when unchecked, green bg + check when checked */
-:deep(.functions-section .v-selection-control__input) {
-  background-color: rgb(180, 40, 40);
-  border-radius: 5px;
-  color: white;
-  width: 30px;
-  height: 30px;
-  top: 4px;
-  left: -1px;
-}
-:deep(.functions-section .v-selection-control--dirty .v-selection-control__input) {
-  background-color: rgb(40, 160, 60);
-}
-:deep(.functions-section .v-selection-control__input > i) {
-  opacity: 1 !important;
-}
-:deep(.functions-section .v-label--clickable) {
-  font-size: 1.1em;
-}
-:deep(.functions-section .v-input__control) {
-  margin-left: 0.5em;
-}
-
-.required-asterisk {
-  color: #cf6679;
-}
-.notes-field {
-  max-width: 400px;
-}
-.notes-field :deep(.v-field__input) {
-  font-size: 0.85rem;
-  padding-top: 6px;
-  padding-bottom: 6px;
-}
-.notes-field :deep(.v-label) {
-  font-style: italic;
-  color: #6e6e6e !important;
-}
-
-.submission-guide-hint {
-  text-align: left;
-  margin-top: -1em;
-  margin-bottom: 1em;
-  opacity: 0.5;
-  margin-left: 1em;
-}
-
-.advanced-toggle {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.3em;
-  user-select: none;
-}
-.advanced-toggle:hover {
-  opacity: 0.8;
-}
-.advanced-chevron {
-  font-size: 1.2em;
-  transition: transform 250ms ease-in-out;
-}
-.advanced-chevron.rotated {
-  transform: rotate(180deg);
-}
-:deep(.joke-checkbox .v-selection-control__input > i) {
-  font-size: 1.4em;
-  color: #888;
-  transition: color 150ms ease-in-out;
-}
-:deep(.joke-checkbox .v-selection-control--dirty .v-selection-control__input > i) {
-  color: #ff733c;
-}
-</style>
-
-<!-- Extra styling that cannot be scoped because content is added to the DOM dynamically -->
-<style>
-/* Dropdowns */
-.v-list {
-  background-color: #2e2e2e !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-}
-.v-list-item {
-  background-color: #2e2e2e !important;
-  color: white !important;
-}
-.v-list-item:hover {
-  background-color: #3e3e3e /* !not so important */;
-}
-
-/* Date select */
-.v-date-picker {
-  background-color: #2e2e2e !important;
-  color: white !important;
-}
-
-/* Autocomplete highlight */
-.v-autocomplete__mask {
-  background-color: black !important;
+  .span-2,
+  .span-3 {
+    grid-column: span 1;
+  }
 }
 </style>

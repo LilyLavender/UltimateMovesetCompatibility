@@ -1,62 +1,87 @@
 <template>
-  <v-container max-width="1020px">
-    <!-- Header -->
-    <h1 class="mb-4 page-title no-select">Password Resets</h1>
+  <PageShell
+    title="Password resets"
+    :back-to="{ name: 'AdminPortal' }"
+    back-label="Admin portal"
+    lede="Generate a one-time reset link and send it to the user yourself."
+  >
+    <p v-if="error" class="note note--err">{{ error }}</p>
 
-    <!-- Error -->
-    <v-alert v-if="error" type="error" class="mb-5">{{ error }}</v-alert>
+    <SkeletonTable v-if="loading" :headers="['Username', 'Email', 'Role', '']" :rows="6" />
+    <TableScroll v-else min-width="640px" class="reveal">
+      <v-data-table :items="users" :headers="headers" item-key="id">
+        <template #item.userTypeId="{ value }">
+          <StatusTag :variant="roleTone(value)">{{ roleName(value) }}</StatusTag>
+        </template>
+        <template #item.actions="{ item }">
+          <AppButton size="sm" variant="ghost" icon="mdi-lock-reset" @click="generate(item)">
+            Generate reset link
+          </AppButton>
+        </template>
+      </v-data-table>
+    </TableScroll>
 
-    <!-- Table -->
-    <v-data-table :items="users" :headers="headers" item-key="id" class="dark-table">
-      <template #item.actions="{ item }">
-        <v-btn size="small" class="btn" @click="generate(item)">
-          <v-icon class="mr-1">mdi-lock-reset</v-icon>
-          Generate Reset
-        </v-btn>
-      </template>
-    </v-data-table>
-
-    <!-- Dialog -->
-    <v-dialog v-model="dialog" max-width="600px">
-      <v-card color="#2e2e2e">
-        <v-card-title>Password Reset Token</v-card-title>
-
+    <v-dialog v-bind="dialogProps" v-model="dialog" max-width="600px">
+      <v-card>
+        <v-card-title class="dialog-title">Password reset link</v-card-title>
         <v-card-text>
-          <p class="mb-2">Send this link to the user:</p>
-
-          <v-text-field
-            :model-value="resetLink"
-            variant="outlined"
-            append-inner-icon="mdi-content-copy"
-            hide-details
-            readonly
-            @click:append-inner="copy"
-          />
+          <LabeledField label="Send this link to the user">
+            <v-text-field
+              :model-value="resetLink"
+              append-inner-icon="mdi-content-copy"
+              hide-details
+              readonly
+              class="mono-input"
+              @click:append-inner="copy"
+            />
+          </LabeledField>
         </v-card-text>
-
         <v-card-actions>
-          <v-btn @click="dialog = false">Close</v-btn>
+          <v-spacer />
+          <AppButton variant="ghost" @click="dialog = false">Close</AppButton>
         </v-card-actions>
       </v-card>
     </v-dialog>
-  </v-container>
+  </PageShell>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
+import { UserType, USER_TYPE_NAMES } from '@/globals'
+import { isSuperAdmin } from '@/navigation'
+import { useDialogProps } from '@/composables/useDialogProps'
+import { useNotify } from '@/composables/useNotify'
+import PageShell from '@/components/PageShell.vue'
+import LabeledField from '@/components/LabeledField.vue'
+import AppButton from '@/components/AppButton.vue'
+import StatusTag from '@/components/StatusTag.vue'
+import TableScroll from '@/components/TableScroll.vue'
+import SkeletonTable from '@/components/SkeletonTable.vue'
+const router = useRouter()
+const dialogProps = useDialogProps()
+const notify = useNotify()
 
 const users = ref([])
 const error = ref('')
 const dialog = ref(false)
 const resetLink = ref('')
+const loading = ref(true)
 
-const headers = [
+const authStore = useAuthStore()
+const canSeePii = computed(() => isSuperAdmin(authStore.user))
+
+const headers = computed(() => [
   { title: 'Username', key: 'userName' },
-  { title: 'Email', key: 'email' },
-  { title: 'User Type', key: 'userTypeId' },
-  { title: 'Actions', key: 'actions' },
-]
+  ...(canSeePii.value ? [{ title: 'Email', key: 'email' }] : []),
+  { title: 'Role', key: 'userTypeId' },
+  { title: '', key: 'actions', sortable: false, align: 'end' },
+])
+
+const roleName = (id) => USER_TYPE_NAMES[id] ?? id
+const roleTone = (id) => (id >= UserType.Admin ? 'info' : id === UserType.Modder ? 'ok' : 'neutral')
 
 onMounted(async () => {
   try {
@@ -68,6 +93,8 @@ onMounted(async () => {
     )
   } catch {
     error.value = 'Failed to load users'
+  } finally {
+    loading.value = false
   }
 })
 
@@ -77,7 +104,11 @@ const generate = async (user) => {
       userId: user.id,
     })
 
-    resetLink.value = `${window.location.origin}/UltimateMovesetCompatibility/#/reset-password?userId=${res.data.userId}&token=${encodeURIComponent(res.data.token)}`
+    const { href } = router.resolve({
+      name: 'ResetPasswordPage',
+      query: { userId: res.data.userId, token: res.data.token },
+    })
+    resetLink.value = `${window.location.origin}${href}`
 
     dialog.value = true
   } catch {
@@ -86,26 +117,33 @@ const generate = async (user) => {
 }
 
 const copy = async () => {
-  await navigator.clipboard.writeText(resetLink.value)
+  try {
+    await navigator.clipboard.writeText(resetLink.value)
+    notify.info('Link copied.')
+  } catch {
+    notify.warning('Could not copy to the clipboard.')
+  }
 }
 </script>
 
 <style scoped>
-.page-title {
-  font-size: 4em;
-  margin-top: 0.5em;
+.note {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--line-2);
+  border-left: 4px solid var(--err);
+  background: var(--panel);
+  font-size: 14px;
 }
 
-.v-card-text {
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
+.dialog-title {
+  font-family: var(--font-condensed);
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
-.btn {
-  text-transform: unset;
-  font-size: small;
-  background-color: #2e2e2e;
-  color: #e2e2e2;
-  box-shadow: none;
+.mono-input :deep(input) {
+  font-family: var(--font-mono);
+  font-size: 13px;
 }
 </style>

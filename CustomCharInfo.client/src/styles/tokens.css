@@ -1,0 +1,77 @@
+/*
+  Design tokens. Every color, font, width, and duration in the app comes from here.
+  See docs/reference/design-system.md before adding a value anywhere else.
+*/
+:root {
+  /* Surfaces */
+  --bg: #000;
+  --panel: #0c0c0c;
+  --panel-2: #151515;
+  --line: #242424;
+  --line-2: #3d3d3d;
+
+  /* Text. --menu is the dropdown and drawer surface; --ink and --ink-2 are text on a colored badge or an inverted surface; --logo is the mark's grey; --band is the header's nav band. */
+  --tx: #f2f2f2;
+  --tx-2: #b4b4b4;
+  --tx-3: #7a7a7a;
+  --white: #fff;
+  --menu: #050505;
+  --ink: #141414;
+  --ink-2: #444;
+  --logo: #dedede;
+  --band: #0e0e0e;
+
+  /* Functional colors. --orange and --purple are only for the compatibility verdicts and the carried-forward offset state. */
+  --ok: #43a047;
+  --info: #2f9ee0;
+  --warn: #f5b800;
+  --err: #f13434;
+  --orange: #ef6c00;
+  --purple: #ce93d8;
+
+  /* Acceptance states. The pending-user pair follows --warn; the rest match the review pills the site has always used. */
+  --state-pending-admin-soft: rgb(187, 224, 236);
+  --state-pending-admin-hard: rgb(52, 194, 241);
+  --state-pending-user-soft: color-mix(in srgb, var(--warn) 60%, #fff);
+  --state-pending-user-hard: var(--warn);
+  --state-accepted: var(--ok);
+  --state-rejected: rgb(241, 52, 52);
+
+  /* Offset states; Confirmed shares Accepted's green */
+  --offset-confirmed: var(--ok);
+  --offset-generated: #fbc02d;
+  --offset-carried: var(--orange);
+
+  /* Type */
+  --font-display: 'DFHeiGB', 'Roboto Condensed', sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-condensed: 'Roboto Condensed', 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Page tiers */
+  --w-narrow: 720px;
+  --w-standard: 1080px;
+  --w-wide: 1360px;
+  --gutter: 16px;
+
+  /* Motion. --ease for color and fill changes; --ease-out for anything that moves into place. */
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 300ms;
+  --stagger: 60ms;
+  --shift: 8px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (min-width: 600px) {
+  :root {
+    --gutter: 24px;
+  }
+}
+
+@media (min-width: 960px) {
+  :root {
+    --gutter: 32px;
+  }
+}

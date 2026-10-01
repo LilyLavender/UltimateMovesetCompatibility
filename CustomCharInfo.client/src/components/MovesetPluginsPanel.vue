@@ -1,72 +1,66 @@
 <template>
-  <section>
-    <!-- Header -->
-    <h2>
-      Plugins
-      <v-btn
-        variant="text"
-        density="compact"
-        icon="mdi-plus"
-        class="rotate-toggle"
-        :class="{ rotated: addPluginForm }"
+  <section class="panel plugins-panel">
+    <div class="plugins-panel__head">
+      <h3 class="plugins-panel__title">Plugins</h3>
+      <AppButton
+        variant="ghost"
+        size="sm"
+        :icon="addPluginForm ? 'mdi-close' : 'mdi-plus'"
         @click="toggleAddForm"
-      />
-    </h2>
-    <!-- learn more -->
-    <p class="subheader">
-      <router-link to="/plugin-lookup" class="unvisitable" target="_blank">
-        Learn more about plugin lookup
-      </router-link>
+      >
+        {{ addPluginForm ? 'Cancel' : 'Add a plugin' }}
+      </AppButton>
+    </div>
+    <p class="plugins-panel__hint">
+      <router-link to="/plugin-lookup" target="_blank">Learn more about plugin lookup</router-link>
     </p>
 
     <!-- Add Plugin: upload first, the version field appears once we know it's not a duplicate. -->
     <v-expand-transition>
       <div v-if="addPluginForm" class="plugin-add-form">
-        <v-row>
-          <v-col cols="12">
-            <PluginDropZone
-              v-model="pluginForm.file"
-              v-model:hash="pluginForm.hash"
-              v-model:duplicate="pluginForm.duplicate"
-              label="plugin.nro"
+        <PluginDropZone
+          v-model="pluginForm.file"
+          v-model:hash="pluginForm.hash"
+          v-model:duplicate="pluginForm.duplicate"
+          label="plugin.nro"
+        />
+        <div v-if="pluginForm.hash && !pluginForm.duplicate" class="plugin-add-form__row">
+          <LabeledField label="Version" required class="plugin-add-form__version">
+            <v-text-field
+              v-model="pluginForm.versionLabel"
+              placeholder="e.g. 1.0.0"
+              density="compact"
+              hide-details
             />
-          </v-col>
-          <template v-if="pluginForm.hash && !pluginForm.duplicate">
-            <v-col cols="12" sm="6">
-              <v-text-field
-                v-model="pluginForm.versionLabel"
-                variant="outlined"
-                label="Version"
-                placeholder="e.g. 1.0.0"
-              />
-            </v-col>
-            <v-col cols="12" sm="2" class="justify-content-center">
-              <v-btn class="btn add-button" :loading="savingPlugin" @click="submitPluginForm"
-                >Add Plugin</v-btn
-              >
-            </v-col>
-            <v-col v-if="pluginFormError" cols="12" sm="10" class="d-flex align-center">
-              <span class="text-red">{{ pluginFormError }}</span>
-            </v-col>
-          </template>
-        </v-row>
+          </LabeledField>
+          <AppButton variant="primary" :busy="savingPlugin" @click="submitPluginForm">
+            Add plugin
+          </AppButton>
+          <span v-if="pluginFormError" class="plugin-add-form__error">{{ pluginFormError }}</span>
+        </div>
       </div>
     </v-expand-transition>
 
     <!-- Plugin List: flat, one row per version -->
-    <div v-if="loading" class="subheader">Loading plugins…</div>
-    <v-list v-else>
-      <v-list-item v-for="plugin in plugins" :key="plugin.pluginId">
-        <v-list-item-title>
-          {{ displayVersion(plugin.versions[0].versionLabel)
-          }}{{ plugin.versions[0].isCurrent ? ' (current)' : '' }}
-          <span class="hook-usage-dim">{{ plugin.versions[0].hash }}</span>
-        </v-list-item-title>
-        <template #append>
-          <v-icon class="delete-icon" @click="deletePlugin(plugin)">mdi-delete</v-icon>
-        </template>
-      </v-list-item>
-    </v-list>
+    <AppLoading v-if="loading" size="sm" label="Loading plugins" />
+    <ul v-else-if="plugins.length" class="plugin-list">
+      <li v-for="plugin in plugins" :key="plugin.pluginId" class="plugin-list__row">
+        <span class="plugin-list__version">
+          {{ displayVersion(plugin.versions[0].versionLabel) }}
+          <StatusTag v-if="plugin.versions[0].isCurrent" variant="ok">Current</StatusTag>
+        </span>
+        <span class="plugin-list__hash mono">{{ plugin.versions[0].hash }}</span>
+        <button
+          type="button"
+          class="plugin-list__delete"
+          aria-label="Delete plugin version"
+          @click="deletePlugin(plugin)"
+        >
+          <v-icon size="18">mdi-delete</v-icon>
+        </button>
+      </li>
+    </ul>
+    <p v-else class="plugins-panel__empty">No plugin registered for this moveset yet.</p>
   </section>
 </template>
 
@@ -74,6 +68,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/services/api'
 import PluginDropZone from '@/components/PluginDropZone.vue'
+import AppButton from '@/components/AppButton.vue'
+import AppLoading from '@/components/AppLoading.vue'
+import LabeledField from '@/components/LabeledField.vue'
+import StatusTag from '@/components/StatusTag.vue'
 import { normalizeVersionLabel, displayVersion } from '@/services/pluginVersion'
 
 const props = defineProps({
@@ -160,63 +158,110 @@ onMounted(loadPlugins)
 </script>
 
 <style scoped>
-/* Shared with the Hooks/Articles sections in MovesetForm.vue - duplicated here because Vue's
-   scoped styles don't cross component boundaries. This component renders the section as its
-   own root element (not wrapped in another <section> by the parent), so it needs the card/
-   heading rules too, not just the icon/button ones. */
-section {
-  margin-bottom: 2rem;
-  background-color: #1e1e1e;
-  padding: 1em;
-  border-radius: 10px;
+.plugins-panel {
+  margin-bottom: 28px;
 }
-h2 {
-  font-size: 2.25em;
-  margin-bottom: 10px;
+
+.plugins-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
-.add-button {
-  background-color: #2e2e2e;
-  color: #e2e2e2;
-  margin-top: 10px;
-  margin-left: 10px;
-  box-shadow: none;
-}
-.btn {
-  text-transform: unset;
-  letter-spacing: 0.009375em;
-  font-size: medium;
-}
-.edit-icon,
-.delete-icon {
-  background: none;
+
+.plugins-panel__title {
+  margin: 0;
   font-size: 20px;
-  margin-left: 8px;
-  color: #aaaaaa;
-  transition: color 150ms ease-in-out;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
 }
-.edit-icon:hover,
-.delete-icon:hover {
-  color: #dddddd;
-}
-.edit-icon::before,
-.delete-icon::before {
-  margin-top: -4px;
-}
-.hook-usage-dim {
-  opacity: 0.6;
-}
-.subheader {
-  margin-top: -1.5em;
-  margin-bottom: 0.5em;
+
+.plugins-panel__hint {
+  margin: 4px 0 14px;
   font-size: 12px;
 }
-:deep(.rotate-toggle > span > i::before) {
-  transition: transform 250ms ease-in-out;
+
+.plugins-panel__hint a {
+  color: var(--tx-2);
 }
-:deep(.rotate-toggle.rotated span > i::before) {
-  transform: rotate(-45deg);
-}
+
 .plugin-add-form {
-  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.plugin-add-form__row {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.plugin-add-form__version {
+  flex: 1 1 200px;
+  max-width: 280px;
+}
+
+.plugin-add-form__error {
+  color: var(--err);
+  font-size: 13px;
+  flex-basis: 100%;
+}
+
+.plugin-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plugin-list__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.plugin-list__row:last-child {
+  border-bottom: 0;
+}
+
+.plugin-list__version {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.plugin-list__hash {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--tx-3);
+  font-size: 12px;
+}
+
+.plugin-list__delete {
+  display: flex;
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: var(--tx-2);
+  cursor: pointer;
+}
+
+.plugin-list__delete:hover {
+  color: var(--err);
+}
+
+.plugins-panel__empty {
+  margin: 0;
+  color: var(--tx-3);
+  font-size: 13px;
 }
 </style>

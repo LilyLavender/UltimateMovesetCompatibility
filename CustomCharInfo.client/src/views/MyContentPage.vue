@@ -1,133 +1,84 @@
 <template>
-  <div class="my-content-page">
-    <h1 class="page-title no-select">My Content</h1>
+  <PageShell title="My content">
+    <template #subnav>
+      <SubNav section="account" label="Account" />
+    </template>
 
-    <div v-if="loading" class="text-center mt-8">
-      <v-progress-circular indeterminate />
-    </div>
+    <template v-if="loading">
+      <SectionHeading title="Movesets" />
+      <SkeletonList :count="3" />
+      <SectionHeading title="Series" />
+      <SkeletonPanel :title="false" :lines="2" />
+    </template>
 
-    <template v-else>
+    <div v-else class="reveal">
       <!-- Movesets -->
-      <section class="content-section">
-        <h2 class="section-title">Movesets</h2>
-        <p v-if="movesets.length === 0" class="empty-msg">No movesets yet.</p>
-        <div v-else class="moveset-grid">
-          <div v-for="moveset in movesets" :key="moveset.movesetId" class="moveset-wrapper">
-            <MovesetCard :moveset="moveset" />
-            <div
-              v-if="statusPillFor(movesetStates[moveset.movesetId]) || moveset.privateMoveset"
-              class="pill-overlay"
-            >
-              <span
-                v-if="statusPillFor(movesetStates[moveset.movesetId])"
-                class="state-pill"
-                :style="{ backgroundColor: statusPillFor(movesetStates[moveset.movesetId]).color }"
-                >{{ statusPillFor(movesetStates[moveset.movesetId]).label }}</span
-              >
-              <span
-                v-if="moveset.privateMoveset"
-                class="state-pill"
-                :style="{ backgroundColor: PRIVATE_COLOR }"
-                >Private</span
-              >
-            </div>
+      <SectionHeading title="Movesets" :count="movesets.length" />
+      <EmptyState v-if="movesets.length === 0" message="No movesets yet." icon="mdi-view-list">
+        <template #action>
+          <AppButton :to="{ name: 'AddMoveset' }" size="sm" icon="mdi-plus">
+            Submit a moveset
+          </AppButton>
+        </template>
+      </EmptyState>
+      <div v-else class="moveset-grid">
+        <div v-for="moveset in movesets" :key="moveset.movesetId" class="moveset-wrapper">
+          <MovesetCard :moveset="moveset" />
+          <div class="tag-overlay">
+            <StatusTag v-if="stateTagFor(moveset)" :state="stateTagFor(moveset)" />
+            <StatusTag v-if="moveset.privateMoveset" variant="err">Private</StatusTag>
           </div>
         </div>
-      </section>
+      </div>
 
       <!-- Movesets the user edits without being credited -->
-      <section v-if="editedMovesets.length > 0" class="content-section">
-        <h2 class="section-title">Movesets I can edit</h2>
+      <template v-if="editedMovesets.length > 0">
+        <SectionHeading title="Movesets I can edit" :count="editedMovesets.length" />
         <div class="moveset-grid">
           <div v-for="moveset in editedMovesets" :key="moveset.movesetId" class="moveset-wrapper">
             <MovesetCard :moveset="moveset" />
-            <div
-              v-if="statusPillFor(movesetStates[moveset.movesetId]) || moveset.privateMoveset"
-              class="pill-overlay"
-            >
-              <span
-                v-if="statusPillFor(movesetStates[moveset.movesetId])"
-                class="state-pill"
-                :style="{ backgroundColor: statusPillFor(movesetStates[moveset.movesetId]).color }"
-                >{{ statusPillFor(movesetStates[moveset.movesetId]).label }}</span
-              >
-              <span
-                v-if="moveset.privateMoveset"
-                class="state-pill"
-                :style="{ backgroundColor: PRIVATE_COLOR }"
-                >Private</span
-              >
+            <div class="tag-overlay">
+              <StatusTag v-if="stateTagFor(moveset)" :state="stateTagFor(moveset)" />
+              <StatusTag v-if="moveset.privateMoveset" variant="err">Private</StatusTag>
             </div>
           </div>
         </div>
-      </section>
+      </template>
 
       <!-- Series -->
-      <section class="content-section">
-        <h2 class="section-title">Series</h2>
-        <p v-if="userSeries.length === 0" class="empty-msg">No series yet.</p>
-        <v-row v-else>
-          <v-col v-for="s in userSeries" :key="s.seriesId" cols="6" sm="4">
-            <SeriesCard :series="s" :api-url="apiUrl">
-              <template #subtitle>
-                <div class="series-pills">
-                  <span
-                    v-for="pill in pillsFor(seriesStates[s.seriesId])"
-                    :key="pill.label"
-                    class="state-pill"
-                    :style="{ backgroundColor: pill.color }"
-                    >{{ pill.label }}</span
-                  >
-                  <span
-                    v-if="!pillsFor(seriesStates[s.seriesId]).length"
-                    class="series-pill-spacer"
-                  />
-                </div>
-              </template>
-            </SeriesCard>
-          </v-col>
-        </v-row>
-      </section>
-
-      <!-- Plugins -->
-      <section class="content-section">
-        <h2 class="section-title">Plugins</h2>
-        <p v-if="plugins.length === 0" class="empty-msg">No plugins yet.</p>
-        <v-list v-else class="plugin-list">
-          <v-list-item v-for="plugin in plugins" :key="plugin.pluginId" class="plugin-item">
-            <v-list-item-title>
-              {{ plugin.name }}
-              <span class="empty-msg">- {{ pluginAttachmentLabel(plugin) }}</span>
-            </v-list-item-title>
-            <div class="series-pills">
-              <span
-                v-for="pill in pluginVersionPills(plugin)"
-                :key="pill.label"
-                class="state-pill"
-                :style="{ backgroundColor: pill.color }"
-                >{{ pill.label }}</span
-              >
-            </div>
-          </v-list-item>
-        </v-list>
-      </section>
-    </template>
-  </div>
+      <SectionHeading title="Series" :count="userSeries.length" />
+      <EmptyState v-if="userSeries.length === 0" message="No series yet." icon="mdi-shape" />
+      <div v-else class="series-grid">
+        <SeriesCard v-for="s in userSeries" :key="s.seriesId" :series="s" :api-url="apiUrl">
+          <template #subtitle>
+            <span class="series-tags">
+              <StatusTag v-for="stateId in seriesTagStates(s)" :key="stateId" :state="stateId" />
+              <span v-if="!seriesTagStates(s).length" class="series-card__count">
+                {{ s.movesetCount }} {{ s.movesetCount === 1 ? 'moveset' : 'movesets' }}
+              </span>
+            </span>
+          </template>
+        </SeriesCard>
+      </div>
+    </div>
+  </PageShell>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/services/api'
 import { ItemType, ALL_ACCEPTANCE_STATES } from '@/globals'
+import PageShell from '@/components/PageShell.vue'
+import SubNav from '@/components/SubNav.vue'
+import SectionHeading from '@/components/SectionHeading.vue'
+import SkeletonList from '@/components/SkeletonList.vue'
+import SkeletonPanel from '@/components/SkeletonPanel.vue'
+import EmptyState from '@/components/EmptyState.vue'
+import AppButton from '@/components/AppButton.vue'
+import StatusTag from '@/components/StatusTag.vue'
 import MovesetCard from '@/components/MovesetCard.vue'
 import SeriesCard from '@/components/SeriesCard.vue'
-import { displayVersion } from '@/services/pluginVersion'
-import {
-  PRIVATE_COLOR,
-  CURRENT_COLOR,
-  statusPillFor,
-  pillsFor,
-} from '@/services/acceptanceStateDisplay'
+import { statusPillFor, latestStatesByItem } from '@/services/acceptanceStateDisplay'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
@@ -135,31 +86,26 @@ const loading = ref(true)
 const movesets = ref([])
 const editedMovesets = ref([])
 const userSeries = ref([])
-const plugins = ref([])
 const movesetStates = ref({})
 const seriesStates = ref({})
 
-function pluginAttachmentLabel(plugin) {
-  if (plugin.movesetId) return `Moveset: ${plugin.movesetName}`
-  if (plugin.dependencyId) return `Dependency: ${plugin.dependencyName}`
-  return 'Standalone'
+// The acceptance state drawn over a card, or null when the state has no tag
+function stateTagFor(moveset) {
+  const stateId = movesetStates.value[moveset.movesetId]
+  return statusPillFor(stateId) ? stateId : null
 }
 
-function pluginVersionPills(plugin) {
-  return (plugin.versions ?? []).map((v) => {
-    const label = displayVersion(v.versionLabel)
-    if (v.isCurrent) return { label: `${label} (current)`, color: CURRENT_COLOR }
-    const pill = statusPillFor(v.acceptanceStateId)
-    return { label: pill ? `${label} - ${pill.label}` : label, color: pill?.color ?? '#555' }
-  })
+function seriesTagStates(series) {
+  const stateId = seriesStates.value[series.seriesId]
+  return statusPillFor(stateId) ? [stateId] : []
 }
 
 onMounted(async () => {
   try {
     const user = (await api.get('/auth/me')).data
 
-    const [logsRes, movesetsRes, editedRes, pluginsRes] = await Promise.all([
-      api.get('/logs', {
+    const [logsRes, movesetsRes, editedRes] = await Promise.all([
+      api.get('/logs/latest', {
         params: {
           acceptanceStates: ALL_ACCEPTANCE_STATES,
           itemTypes: [ItemType.Moveset, ItemType.Series],
@@ -171,48 +117,25 @@ onMounted(async () => {
       user.modderId
         ? api.get('/movesets', { params: { editorId: user.modderId } }).catch(() => ({ data: [] }))
         : Promise.resolve({ data: [] }),
-      user.modderId
-        ? api.get('/plugins/mine').catch(() => ({ data: [] }))
-        : Promise.resolve({ data: [] }),
     ])
 
     movesets.value = movesetsRes.data
     editedMovesets.value = editedRes.data
-    plugins.value = pluginsRes.data
 
-    const logs = logsRes.data
-    const movesetLogMap = new Map()
-    const seriesLogMap = new Map()
-
-    for (const log of logs) {
-      const typeId = log.itemType?.itemTypeId
-      if (typeId === 1 && log.item?.movesetId != null) {
-        const id = log.item.movesetId
-        const cur = movesetLogMap.get(id)
-        if (!cur || new Date(log.createdAt) > new Date(cur.createdAt)) {
-          movesetLogMap.set(id, log)
-        }
-      } else if (typeId === 3 && log.item?.seriesId != null) {
-        const id = log.item.seriesId
-        const cur = seriesLogMap.get(id)
-        if (!cur || new Date(log.createdAt) > new Date(cur.createdAt)) {
-          seriesLogMap.set(id, log)
-        }
-      }
+    const rows = logsRes.data
+    for (const [id, stateId] of latestStatesByItem(rows, ItemType.Moveset)) {
+      movesetStates.value[id] = stateId
     }
 
-    for (const [id, log] of movesetLogMap) {
-      movesetStates.value[id] = log.acceptanceState?.acceptanceStateId
-    }
-
-    const seriesIds = [...seriesLogMap.keys()]
+    const seriesStateMap = latestStatesByItem(rows, ItemType.Series)
+    const seriesIds = [...seriesStateMap.keys()]
     if (seriesIds.length > 0) {
       const results = await Promise.all(
         seriesIds.map((id) => api.get(`/series/${id}`).catch(() => null))
       )
       userSeries.value = results.filter((r) => r?.data).map((r) => r.data)
-      for (const [id, log] of seriesLogMap) {
-        seriesStates.value[id] = log.acceptanceState?.acceptanceStateId
+      for (const [id, stateId] of seriesStateMap) {
+        seriesStates.value[id] = stateId
       }
     }
   } catch (err) {
@@ -224,47 +147,19 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.my-content-page {
-  max-width: 1060px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-}
-
-.page-title {
-  margin-bottom: 2rem;
-}
-
-.content-section {
-  margin-bottom: 2.5rem;
-}
-
-.section-title {
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
-  color: #b0b0b0;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.empty-msg {
-  color: #666;
-  font-style: italic;
-}
-
-/* Moveset grid */
 .moveset-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 340px);
   justify-content: center;
+  gap: 0;
 }
 
 .moveset-wrapper {
   position: relative;
-  flex: 0 1 33.333%;
+  width: 340px;
 }
 
-.pill-overlay {
+.tag-overlay {
   position: absolute;
   bottom: 4px;
   right: 6px;
@@ -274,46 +169,21 @@ onMounted(async () => {
   z-index: 60;
 }
 
-/* Pill styling matching ActionLogItem, but fully rounded */
-.state-pill {
-  padding: 2px 8px;
-  border-radius: 9999px;
-  color: rgb(20, 20, 20);
-  font-weight: bold;
-  font-size: 0.7rem;
-  white-space: nowrap;
+.series-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
 }
 
-/* Plugins */
-.plugin-list {
-  background: transparent;
-}
-.plugin-item {
-  margin-bottom: 0.5rem;
-}
-
-/* Series pills */
-.series-pills {
+.series-tags {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
-  padding: 2px 0;
-  min-height: 20px;
+  margin-top: 2px;
 }
 
-.series-pill-spacer {
-  display: inline-block;
-  height: 20px;
-}
-
-@media (max-width: 768px) {
-  .moveset-wrapper {
-    flex: 0 1 50%;
-  }
-}
-
-@media (max-width: 480px) {
-  .moveset-wrapper {
-    flex: 0 1 100%;
-  }
+.series-card__count {
+  color: var(--tx-3);
+  font-size: 12.5px;
 }
 </style>

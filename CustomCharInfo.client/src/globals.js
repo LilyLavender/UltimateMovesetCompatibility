@@ -15,6 +15,14 @@ export const UserType = Object.freeze({
   User: 1,
   Modder: 2,
   Admin: 3,
+  SuperAdmin: 4,
+})
+
+export const USER_TYPE_NAMES = Object.freeze({
+  [UserType.User]: 'User',
+  [UserType.Modder]: 'Modder',
+  [UserType.Admin]: 'Admin',
+  [UserType.SuperAdmin]: 'Admin',
 })
 
 // Mirrors AcceptanceState.AcceptanceStateId server-side (seeded in AcceptanceState lookup table).
@@ -105,3 +113,43 @@ export const OFFSET_STATE_NAMES = Object.freeze({
   [OffsetState.Generated]: 'Unconfirmed',
   [OffsetState.CarriedForward]: 'Carried forward',
 })
+
+// Mirrors ContributionRoles in LookupIds.cs: what a credited modder did on a moveset.
+export const ContributionRole = Object.freeze({
+  Coding: 1,
+  Animation: 2,
+  Modelling: 3,
+  Rendering: 4,
+  Sounds: 5,
+  Effects: 6,
+  ConceptDesign: 7,
+  Other: 8,
+})
+
+export const CONTRIBUTION_ROLE_NAMES = Object.freeze({
+  [ContributionRole.Coding]: 'Coding',
+  [ContributionRole.Animation]: 'Animation',
+  [ContributionRole.Modelling]: 'Modelling',
+  [ContributionRole.Rendering]: 'Rendering',
+  [ContributionRole.Sounds]: 'Sounds',
+  [ContributionRole.Effects]: 'Effects',
+  [ContributionRole.ConceptDesign]: 'Concept/Design',
+  [ContributionRole.Other]: 'Other',
+})
+
+// Display order for pickers and the creator subtitle.
+export const CONTRIBUTION_ROLE_ORDER = Object.freeze([
+  ContributionRole.Coding,
+  ContributionRole.Animation,
+  ContributionRole.Modelling,
+  ContributionRole.Rendering,
+  ContributionRole.Sounds,
+  ContributionRole.Effects,
+  ContributionRole.ConceptDesign,
+  ContributionRole.Other,
+])
+
+// Roles that count on a modder's profile. Other is shown on the moveset page only.
+export const PROFILE_CONTRIBUTION_ROLES = Object.freeze(
+  CONTRIBUTION_ROLE_ORDER.filter((id) => id !== ContributionRole.Other)
+)

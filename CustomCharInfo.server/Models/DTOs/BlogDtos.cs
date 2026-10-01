@@ -9,6 +9,8 @@ namespace CustomCharInfo.server.Models.DTOs
         public string? BlogImageUrl { get; set; }
         public DateTime PostedDate { get; set; }
         public string AuthorUserName { get; set; }
+        public int LikeCount { get; set; }
+        public bool UserLiked { get; set; }
     }
 
     public class CreateBlogPostDto

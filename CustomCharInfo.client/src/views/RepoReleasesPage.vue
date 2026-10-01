@@ -1,138 +1,138 @@
 <template>
-  <v-container max-width="1400px">
-    <h1 class="mb-2 page-title no-select">Repo Releases</h1>
-    <p class="helper-text mb-5">
-      Reads a GitHub repository's releases and checks them against the database. 
-      Limit of 60 requests an hour per IP.
-    </p>
-
+  <PageShell
+    title="Repo releases"
+    tier="wide"
+    :back-to="{ name: 'AdminPortal' }"
+    back-label="Admin portal"
+    lede="Reads a GitHub repository's releases and checks them against the database. GitHub allows 60 requests an hour per IP."
+  >
     <!-- Repo input -->
-    <div class="d-flex align-start ga-3 flex-wrap mb-2">
-      <v-text-field
-        v-model="repoInput"
-        variant="outlined"
-        density="comfortable"
-        label="GitHub repository"
-        placeholder="owner/repo or https://github.com/owner/repo"
-        hide-details
-        class="repo-input"
-        @keyup.enter="checkInput"
-      />
-      <v-btn class="btn action-button mt-1" :disabled="!parsedInput" @click="checkInput">
-        Check
-      </v-btn>
-      <v-btn
-        class="btn action-button mt-1"
-        :disabled="!parsedInput || adding"
-        :loading="adding"
+    <div class="repo-form">
+      <LabeledField label="GitHub repository" class="repo-form__input">
+        <v-text-field
+          v-model="repoInput"
+          placeholder="owner/repo or https://github.com/owner/repo"
+          density="comfortable"
+          hide-details
+          @keyup.enter="checkInput"
+        />
+      </LabeledField>
+      <AppButton icon="mdi-magnify" :disabled="!parsedInput" @click="checkInput">Check</AppButton>
+      <AppButton
+        variant="ghost"
+        icon="mdi-playlist-plus"
+        :disabled="!parsedInput"
+        :busy="adding"
         @click="addToList"
       >
         Add to list
-      </v-btn>
+      </AppButton>
     </div>
 
     <!-- Watched repos -->
-    <h2 class="mt-6 mb-2">Watched repositories</h2>
-    <div v-if="watchedRepos.length === 0" class="helper-text mb-4">None yet.</div>
-    <v-table v-else class="dark-table mb-3" density="comfortable">
-      <thead>
-        <tr>
-          <th>Repository</th>
-          <th>Added by</th>
-          <th class="text-right">
-            <v-btn
-              size="small"
-              class="btn action-button"
-              :disabled="checkingAll"
-              :loading="checkingAll"
-              @click="checkAll"
-            >
-              Check all
-            </v-btn>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="watched in watchedRepos" :key="watched.watchedRepoId">
-          <td>
-            <a :href="repoUrl(watched)" target="_blank" rel="noopener" class="unvisitable">
-              {{ watched.owner }}/{{ watched.repo }}
-            </a>
-          </td>
-          <td class="helper-text">{{ watched.addedByUsername ?? 'unknown' }}</td>
-          <td class="text-right">
-            <v-btn
-              size="small"
-              variant="text"
-              :loading="panelFor(watched)?.loading"
-              @click="checkRepo(watched)"
-            >
-              Check
-            </v-btn>
-            <v-btn
-              size="small"
-              variant="text"
-              icon="mdi-delete"
-              title="Remove from list"
-              @click="removeWatched(watched)"
-            />
-          </td>
-        </tr>
-      </tbody>
-    </v-table>
+    <SectionHeading title="Watched repositories" :count="watchedRepos.length">
+      <AppButton
+        v-if="watchedRepos.length"
+        size="sm"
+        icon="mdi-refresh"
+        :busy="checkingAll"
+        class="ml-auto"
+        @click="checkAll"
+      >
+        Check all
+      </AppButton>
+    </SectionHeading>
+    <EmptyState
+      v-if="watchedRepos.length === 0"
+      message="No watched repositories yet."
+      icon="mdi-github"
+    />
+    <TableScroll v-else min-width="560px">
+      <v-table density="comfortable">
+        <thead>
+          <tr>
+            <th>Repository</th>
+            <th>Added by</th>
+            <th class="text-right"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="watched in watchedRepos" :key="watched.watchedRepoId">
+            <td>
+              <a :href="repoUrl(watched)" target="_blank" rel="noopener" class="mono">
+                {{ watched.owner }}/{{ watched.repo }}
+              </a>
+            </td>
+            <td class="muted">{{ watched.addedByUsername ?? 'unknown' }}</td>
+            <td class="text-right">
+              <span class="row-actions">
+                <AppButton
+                  size="sm"
+                  variant="ghost"
+                  :busy="panelFor(watched)?.loading"
+                  @click="checkRepo(watched)"
+                >
+                  Check
+                </AppButton>
+                <AppButton
+                  size="sm"
+                  variant="ghost"
+                  icon="mdi-delete"
+                  aria-label="Remove from list"
+                  @click="removeWatched(watched)"
+                />
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </v-table>
+    </TableScroll>
 
     <!-- Results -->
     <template v-if="panels.length > 0">
-      <h2 class="mt-8 mb-2">Results</h2>
+      <SectionHeading title="Results" :count="panels.length" />
 
-      <v-card v-for="panel in panels" :key="panel.key" class="mb-6" color="#1e1e1e">
-        <v-card-title class="d-flex align-center flex-wrap ga-2">
-          <a :href="repoUrl(panel)" target="_blank" rel="noopener" class="panel-link">
+      <section v-for="panel in panels" :key="panel.key" class="panel result">
+        <div class="result__head">
+          <a :href="repoUrl(panel)" target="_blank" rel="noopener" class="result__repo mono">
             {{ panel.owner }}/{{ panel.repo }}
           </a>
-          <span v-if="panel.checkedAt" class="checked-at">
+          <span v-if="panel.checkedAt" class="result__checked">
             checked {{ panel.checkedAt.toLocaleTimeString() }}
           </span>
-          <v-spacer />
+          <span class="result__spacer"></span>
           <template v-if="panel.rows">
-            <span class="status-pill status-pill--registered">
-              {{ panel.summary.registered }} registered
-            </span>
-            <span class="status-pill status-pill--unregistered">
-              {{ panel.summary.unregistered }} looked up
-            </span>
-            <span class="status-pill status-pill--unseen">{{ panel.summary.unseen }} unseen</span>
-            <span v-if="panel.summary.noDigest" class="status-pill status-pill--muted">
+            <StatusTag variant="ok">{{ panel.summary.registered }} registered</StatusTag>
+            <StatusTag variant="warn">{{ panel.summary.unregistered }} looked up</StatusTag>
+            <StatusTag variant="info">{{ panel.summary.unseen }} unseen</StatusTag>
+            <StatusTag v-if="panel.summary.noDigest" variant="outline">
               {{ panel.summary.noDigest }} unhashed
-            </span>
-            <v-btn
-              size="small"
-              class="btn action-button ml-2"
+            </StatusTag>
+            <AppButton
+              size="sm"
+              icon="mdi-plus"
               :disabled="registrableFor(panel).length === 0"
               @click="openRegister(panel)"
             >
               Register unregistered ({{ registrableFor(panel).length }})
-            </v-btn>
+            </AppButton>
           </template>
-          <v-btn
-            size="small"
-            variant="text"
+          <AppButton
+            size="sm"
+            variant="ghost"
             icon="mdi-close"
-            title="Close"
-            color="#e2e2e2"
+            aria-label="Close"
             @click="closePanel(panel)"
           />
-        </v-card-title>
+        </div>
 
-        <v-card-text>
-          <div v-if="panel.loading" class="helper-text">{{ panel.progress }}</div>
-          <div v-else-if="panel.error" class="error-text">{{ panel.error }}</div>
-          <div v-else-if="visibleRows(panel).length === 0" class="helper-text">
-            No .nro assets in this repository's releases.
-          </div>
+        <AppLoading v-if="panel.loading" size="sm" :label="panel.progress" />
+        <p v-else-if="panel.error" class="note note--err">{{ panel.error }}</p>
+        <p v-else-if="visibleRows(panel).length === 0" class="faint">
+          No .nro assets in this repository's releases.
+        </p>
+        <TableScroll v-else min-width="900px">
           <v-data-table
-            v-else
-            class="dark-table"
             :items="visibleRows(panel)"
             :headers="headers"
             item-value="key"
@@ -144,16 +144,10 @@
             </template>
             <template #item.tag="{ item }">
               <span class="mono">{{ item.tag }}</span>
-              <span v-if="item.prerelease" class="pre-marker" title="Prerelease">pre</span>
+              <StatusTag v-if="item.prerelease" variant="outline" class="ml-2">pre</StatusTag>
             </template>
             <template #item.name="{ item }">
-              <a
-                v-if="item.releaseUrl"
-                :href="item.releaseUrl"
-                target="_blank"
-                rel="noopener"
-                class="unvisitable"
-              >
+              <a v-if="item.releaseUrl" :href="item.releaseUrl" target="_blank" rel="noopener">
                 {{ item.name }}
               </a>
               <span v-else>{{ item.name }}</span>
@@ -164,37 +158,38 @@
                 :href="item.downloadUrl"
                 target="_blank"
                 rel="noopener"
-                class="unvisitable mono"
+                class="mono"
               >
                 {{ item.asset }}
               </a>
-              <span v-else class="helper-text">none</span>
+              <span v-else class="faint">none</span>
             </template>
             <template #item.downloads="{ item }">
               {{ item.downloads == null ? '' : item.downloads.toLocaleString() }}
             </template>
             <template #item.hash="{ item }">
-              <span v-if="item.hash" class="mono hash-cell" :title="hashTitle(item)">
-                {{ item.hash.slice(0, 12) }}…
-                <span v-if="item.hashSource === 'server'" class="hash-source">server</span>
-                <v-btn
-                  size="x-small"
-                  variant="text"
-                  icon="mdi-content-copy"
-                  title="Copy hash"
+              <span v-if="item.hash" class="hash-cell mono" :title="hashTitle(item)">
+                {{ item.hash.slice(0, 12) }}&hellip;
+                <StatusTag v-if="item.hashSource === 'server'" variant="outline">server</StatusTag>
+                <button
+                  type="button"
+                  class="copy-btn"
+                  aria-label="Copy hash"
                   @click="copyHash(item.hash)"
-                />
+                >
+                  <v-icon size="14">mdi-content-copy</v-icon>
+                </button>
               </span>
             </template>
             <template #item.status="{ item }">
-              <span class="status-pill" :class="`status-pill--${item.status}`">
+              <StatusTag :variant="STATUS_TONES[item.status] ?? 'outline'">
                 {{ statusLabel(item) }}
-              </span>
+              </StatusTag>
               <span v-if="statusDetail(item)" class="status-detail">{{ statusDetail(item) }}</span>
             </template>
           </v-data-table>
-        </v-card-text>
-      </v-card>
+        </TableScroll>
+      </section>
     </template>
 
     <PluginBatchRegisterDialog
@@ -203,7 +198,7 @@
       :repo="registerRepo"
       @registered="onRegistered"
     />
-  </v-container>
+  </PageShell>
 </template>
 
 <script setup>
@@ -228,9 +223,23 @@ import {
 } from '@/services/githubReleases'
 import { hasExtension } from '@/services/fileEntries'
 import { chunk } from '@/services/pluginBatch'
+import PageShell from '@/components/PageShell.vue'
+import SectionHeading from '@/components/SectionHeading.vue'
+import LabeledField from '@/components/LabeledField.vue'
+import AppButton from '@/components/AppButton.vue'
+import AppLoading from '@/components/AppLoading.vue'
+import StatusTag from '@/components/StatusTag.vue'
+import TableScroll from '@/components/TableScroll.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import PluginBatchRegisterDialog from '@/components/PluginBatchRegisterDialog.vue'
 
 const MATCH_HASHES_MAX = 200
+
+const STATUS_TONES = {
+  [RowStatus.Registered]: 'ok',
+  [RowStatus.Unregistered]: 'warn',
+  [RowStatus.Unseen]: 'info',
+}
 
 const notify = useNotify()
 
@@ -246,7 +255,7 @@ const registerRepo = ref(null)
 let registerPanelKey = null
 
 const headers = [
-  { title: 'Release Date', key: 'releaseDate', width: 120 },
+  { title: 'Release date', key: 'releaseDate', width: 120 },
   { title: 'Tag', key: 'tag' },
   { title: 'Name', key: 'name' },
   { title: 'Asset', key: 'asset' },
@@ -283,7 +292,7 @@ function statusLabel(row) {
   return STATUS_LABELS[row.status]
 }
 
-// Second line under the status pill: what a registered hash is,
+// Second line under the status tag: what a registered hash is,
 // how often an unregistered one was looked up,
 // or why an asset could not be hashed.
 function statusDetail(row) {
@@ -365,7 +374,7 @@ async function fillMissingHashes(rows, panel) {
   const byKey = new Map(rows.map((r) => [r.key, r]))
   for (let i = 0; i < missing.length; i++) {
     const row = missing[i]
-    panel.progress = `Hashing asset ${i + 1} of ${missing.length} without a GitHub digest…`
+    panel.progress = `Hashing asset ${i + 1} of ${missing.length} without a GitHub digest`
     try {
       const res = await api.get('/plugins/hash-asset', { params: { url: row.downloadUrl } })
       byKey.set(row.key, withServerHash(row, res.data.hash))
@@ -396,13 +405,13 @@ async function checkRepo(target) {
     panels.value.unshift(panel)
   }
   panel.loading = true
-  panel.progress = 'Reading releases…'
+  panel.progress = 'Reading releases'
   panel.error = null
   try {
     const releases = await fetchAllReleases(target.owner, target.repo)
     let rows = flattenReleaseAssets(releases).filter(isNroRow)
     rows = await fillMissingHashes(rows, panel)
-    panel.progress = 'Matching against registered plugins…'
+    panel.progress = 'Matching against registered plugins'
     const matches = await matchHashes(rows)
     panel.rows = applyMatches(rows, matches)
     panel.summary = summarizeStatuses(panel.rows)
@@ -474,97 +483,92 @@ onMounted(loadWatched)
 </script>
 
 <style scoped>
-.page-title {
-  font-size: 2.5rem;
+.repo-form {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
 }
-.helper-text {
-  color: #b0b0b0;
-}
-.error-text {
-  color: #ef9a9a;
-}
-.repo-input {
-  max-width: 520px;
+
+.repo-form__input {
   flex: 1 1 320px;
+  max-width: 520px;
 }
-.panel-link {
-  color: #e2e2e2;
+
+.ml-auto {
+  margin-left: auto;
+}
+
+.row-actions {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.result {
+  margin-bottom: 20px;
+}
+
+.result__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.result__repo {
+  font-size: 15px;
+  font-weight: 600;
   text-decoration: none;
 }
-.panel-link:hover {
+
+.result__repo:hover {
   text-decoration: underline;
 }
-.checked-at {
-  font-size: 0.75em;
-  color: #9e9e9e;
-  font-weight: normal;
+
+.result__checked {
+  font-size: 12px;
+  color: var(--tx-3);
 }
-.mono {
-  font-family: monospace;
-  font-size: 0.9em;
+
+.result__spacer {
+  flex: 1;
 }
+
 .hash-cell {
-  color: #9e9e9e;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--tx-2);
   white-space: nowrap;
 }
-.hash-source {
-  margin-left: 0.3em;
-  padding: 0 0.4em;
-  border-radius: 4px;
-  background-color: #2e2e2e;
-  color: #9e9e9e;
-  font-size: 0.75em;
-  font-family: sans-serif;
+
+.copy-btn {
+  display: inline-flex;
+  padding: 2px;
+  border: 0;
+  background: none;
+  color: var(--tx-2);
+  cursor: pointer;
 }
-.pre-marker {
-  margin-left: 0.4em;
-  padding: 0 0.4em;
-  border-radius: 4px;
-  background-color: #4a3f1f;
-  color: #ffd54f;
-  font-size: 0.7em;
-  text-transform: uppercase;
+
+.copy-btn:hover {
+  color: var(--white);
 }
+
 .status-detail {
   display: block;
-  font-size: 0.8em;
-  color: #9e9e9e;
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--tx-3);
 }
-.status-pill {
-  display: inline-block;
-  padding: 0.1em 0.6em;
-  border-radius: 999px;
-  font-size: 0.8em;
-  white-space: nowrap;
-  background-color: #2e2e2e;
-  color: #e2e2e2;
-}
-.status-pill--registered {
-  background-color: #1f3d2a;
-  color: #81c784;
-}
-.status-pill--unregistered {
-  background-color: #4a3f1f;
-  color: #ffd54f;
-}
-.status-pill--unseen {
-  background-color: #263544;
-  color: #90caf9;
-}
-.status-pill--no-digest,
-.status-pill--archive,
-.status-pill--no-asset,
-.status-pill--muted {
-  background-color: #2e2e2e;
-  color: #9e9e9e;
-}
-.action-button {
-  background-color: #2e2e2e;
-  color: #e2e2e2;
-}
-.btn {
-  text-transform: unset;
-  letter-spacing: 0.009375em;
-  font-size: medium;
+
+.note {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--line-2);
+  border-left: 4px solid var(--err);
+  background: var(--panel-2);
+  font-size: 14px;
 }
 </style>

@@ -1,62 +1,55 @@
 <template>
-  <div>
-    <v-container>
-      <!-- Header -->
-      <v-row class="mb--1">
-        <!-- Title -->
-        <v-col cols="12" sm="4">
-          <div class="d-flex align-center flex-column">
-            <h1>Notification Dashboard</h1>
+  <div class="action-log">
+    <!-- Header -->
+    <div class="action-log__head">
+      <div class="action-log__title-row">
+        <h3 class="action-log__title">Notifications</h3>
+        <div class="action-log__presets">
+          <AppButton variant="ghost" size="sm" @click="selectAllFilters">Enable All</AppButton>
+          <AppButton variant="ghost" size="sm" @click="selectOnlyRelevant">Only Relevant</AppButton>
+        </div>
+      </div>
 
-            <div class="d-flex ga-2">
-              <v-btn size="small" variant="tonal" @click="selectAllFilters"> Enable All </v-btn>
-
-              <v-btn size="small" variant="tonal" @click="selectOnlyRelevant">
-                Only Relevant
-              </v-btn>
-            </div>
-          </div>
-        </v-col>
-
-        <!-- Acceptance States -->
-        <v-col cols="12" sm="5">
+      <div class="action-log__filters">
+        <LabeledField label="Acceptance states">
           <v-select
             v-model="selectedAcceptanceStates"
-            variant="outlined"
             :items="acceptanceStateOptions"
             item-title="name"
             item-value="id"
-            label="Acceptance States"
+            density="compact"
             multiple
             chips
             clearable
+            hide-details
           />
-        </v-col>
-
-        <!-- Item Types -->
-        <v-col cols="12" sm="3">
+        </LabeledField>
+        <LabeledField label="Item types">
           <v-select
             v-model="selectedItemTypes"
-            variant="outlined"
             :items="itemTypeOptions"
             item-title="name"
             item-value="id"
-            label="Item Types"
+            density="compact"
             multiple
             chips
             clearable
+            hide-details
           />
-        </v-col>
-      </v-row>
+        </LabeledField>
+      </div>
+    </div>
 
-      <!-- Logs -->
-      <v-row v-if="filteredGroups.length">
-        <v-col v-for="group in filteredGroups" :key="group.key" cols="12">
-          <ActionLogGroup :logs="group.logs" :is-admin="isAdmin && !userId" />
-        </v-col>
-      </v-row>
-      <p v-else>No logs found.</p>
-    </v-container>
+    <!-- Logs -->
+    <div v-if="filteredGroups.length" class="action-log__groups">
+      <ActionLogGroup
+        v-for="group in filteredGroups"
+        :key="group.key"
+        :logs="group.logs"
+        :is-admin="isAdmin && !userId"
+      />
+    </div>
+    <EmptyState v-else message="No logs found." icon="mdi-bell-outline" />
   </div>
 </template>
 
@@ -64,14 +57,17 @@
 import { ref, onMounted, watch } from 'vue'
 import api from '@/services/api'
 import ActionLogGroup from '@/components/ActionLogGroup.vue'
+import AppButton from '@/components/AppButton.vue'
+import LabeledField from '@/components/LabeledField.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import {
-  UserType,
   ItemType,
   AcceptanceState,
   PENDING_ADMIN_STATES,
   PENDING_USER_STATES,
   ALL_ACCEPTANCE_STATES,
 } from '@/globals'
+import { isAdmin as isAdminUser } from '@/navigation'
 
 const props = defineProps({
   viewAll: {
@@ -115,7 +111,7 @@ const fetchUser = async () => {
   try {
     const res = await api.get('/auth/me')
     user.value = res.data
-    isAdmin.value = user.value.userTypeId === UserType.Admin
+    isAdmin.value = isAdminUser(user.value)
   } catch (err) {
     console.error('Failed to fetch user info:', err)
   }
@@ -175,7 +171,7 @@ const selectAllFilters = () => {
   selectedItemTypes.value = itemTypeOptions.map((t) => t.id)
 }
 const selectOnlyRelevant = () => {
-  selectedAcceptanceStates.value = [1, 2, 3, 4]
+  selectedAcceptanceStates.value = [...PENDING_ADMIN_STATES, ...PENDING_USER_STATES]
   selectedItemTypes.value = isAdmin.value
     ? [ItemType.Moveset, ItemType.Modder, ItemType.Series, ItemType.Hook, ItemType.Plugin]
     : [ItemType.Moveset, ItemType.Modder, ItemType.Series, ItemType.Plugin]
@@ -197,15 +193,53 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.admin-link {
-  background-color: rgba(255, 255, 255, 0.2);
-  padding: 3px;
-  height: 32px;
-  margin-top: 3px;
-  border-radius: 4px;
+.action-log {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.mb--1 {
-  margin-bottom: -2em;
+.action-log__head {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.action-log__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.action-log__title {
+  margin: 0;
+  font-size: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+
+.action-log__presets {
+  display: flex;
+  gap: 6px;
+}
+
+.action-log__filters {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 12px 16px;
+}
+
+.action-log__groups {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (max-width: 599px) {
+  .action-log__filters {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

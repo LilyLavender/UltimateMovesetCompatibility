@@ -9,6 +9,7 @@ using CustomCharInfo.server.Helpers;
 using CustomCharInfo.server.Models;
 using CustomCharInfo.server.Models.DTOs;
 using CustomCharInfo.server.Services;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -33,6 +34,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<ActionResult<List<GameVersionDto>>> GetGameVersions()
         {
             var versions = await _context.GameVersions

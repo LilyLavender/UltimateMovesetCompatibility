@@ -1,10 +1,19 @@
 <template>
   <v-app>
-    <Header />
-    <router-view />
+    <div
+      class="page-texture"
+      :class="{
+        'page-texture--hero': route.name === 'Home',
+        'page-texture--off': route.name === 'MovesetDetail',
+      }"
+      aria-hidden="true"
+    ></div>
+    <Header :variant="headerVariant" />
+    <main class="site-main">
+      <router-view />
+    </main>
     <Footer />
 
-    <MobileWarning />
     <AppSnackbar />
   </v-app>
 </template>
@@ -12,7 +21,6 @@
 <script setup>
 import Header from '@/components/SiteHeader.vue'
 import Footer from '@/components/SiteFooter.vue'
-import MobileWarning from '@/components/MobileWarning.vue'
 import AppSnackbar from '@/components/AppSnackbar.vue'
 
 import { computed } from 'vue'
@@ -20,6 +28,13 @@ import { useRoute } from 'vue-router'
 import { useHead } from '@unhead/vue'
 
 const route = useRoute()
+
+// Home and the moveset detail page draw their own top: header floats over them without taking height.
+const headerVariant = computed(() => {
+  if (route.name === 'Home') return 'hero'
+  if (route.name === 'MovesetDetail') return 'overlay'
+  return 'solid'
+})
 
 // Route-level fallback title.
 // Pages that know their subject register their own useHead title that wins while mounted.
@@ -29,53 +44,8 @@ useHead({
 </script>
 
 <style scoped>
-/* Also see style.css for more common styling */
-
-/* Fonts */
-@font-face {
-  font-family: AsiaKGDU;
-  src: url('@/assets/fonts/asia_kgdu.woff') format('woff');
-}
-
-@font-face {
-  font-family: DFHeiGB;
-  src: url('@/assets/fonts/df_hei_gb-w12.otf') format('opentype');
-}
-
-@font-face {
-  font-family: 'Roboto Condensed';
-  src: url('@/assets/fonts/Roboto_Condensed-normal-700.woff') format('woff');
-}
-
-/* Table */
-:deep(.dark-table .v-data-table) {
-  background-color: #121212;
-  color: #eee;
-}
-
-:deep(.dark-table .v-data-table__th) {
-  background-color: #1e1e1e;
-  color: #ddd;
-}
-
-:deep(.dark-table .v-data-table__td) {
-  background-color: #1e1e1e;
-  color: #ccc;
-  max-width: 150px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: pointer;
-}
-
-:deep(.dark-table),
-:deep(.dark-table .v-data-table-footer),
-:deep(.dark-table .v-table__wrapper),
-:deep(.dark-table table),
-:deep(.dark-table thead),
-:deep(.dark-table tr),
-:deep(.dark-table tbody) {
-  background-color: #1e1e1e;
-  color: #ccc;
+/* v-app's wrap is a flex column at viewport height. The page fills it so the footer stays at the bottom. */
+.site-main {
+  flex: 1 0 auto;
 }
 </style>

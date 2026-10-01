@@ -8,6 +8,8 @@ namespace CustomCharInfo.server.Models
         public const int User = 1;
         public const int Modder = 2;
         public const int Admin = 3;
+        // Differs from Admin only in seeing personal data (emails and IP addresses); displays as Admin to end users.
+        public const int SuperAdmin = 4;
     }
 
     // Soft edits stay visible while pending; hard edits are hidden until an admin acts.
@@ -69,5 +71,23 @@ namespace CustomCharInfo.server.Models
         public const int CarriedForward = 3;
 
         public static readonly int[] Unverified = { Generated, CarriedForward };
+    }
+
+    // What a credited modder did on a moveset. A credit may hold several or none.
+    public static class ContributionRoles
+    {
+        public const int Coding = 1;
+        public const int Animation = 2;
+        public const int Modelling = 3;
+        public const int Rendering = 4;
+        public const int Sounds = 5;
+        public const int Effects = 6;
+        public const int ConceptDesign = 7;
+        public const int Other = 8;
+
+        public static readonly int[] All = { Coding, Animation, Modelling, Rendering, Sounds, Effects, ConceptDesign, Other };
+
+        // Roles that count on a modder's profile. Other is stored and shown on the moveset page only.
+        public static readonly int[] ProfileVisible = { Coding, Animation, Modelling, Rendering, Sounds, Effects, ConceptDesign };
     }
 }

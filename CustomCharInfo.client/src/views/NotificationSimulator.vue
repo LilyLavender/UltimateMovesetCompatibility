@@ -1,32 +1,38 @@
 <template>
-  <v-container max-width="1200px">
-    <h1 class="mb-4 page-title no-select">Notification Simulator</h1>
+  <PageShell
+    title="Notification simulator"
+    :back-to="{ name: 'AdminPortal' }"
+    back-label="Admin portal"
+    lede="See the notifications exactly as one user sees them."
+  >
+    <LabeledField label="User" class="user-picker">
+      <v-select
+        v-model="selectedUserId"
+        :items="users"
+        item-title="user.userName"
+        item-value="user.id"
+        placeholder="Pick a user"
+        :loading="loadingUsers"
+      />
+    </LabeledField>
 
-    <!-- User selector -->
-    <v-row>
-      <v-col cols="12" sm="3">
-        <v-select
-          v-model="selectedUserId"
-          variant="outlined"
-          :items="users"
-          item-title="user.userName"
-          item-value="user.id"
-          label="Select User"
-          :loading="loadingUsers"
-        />
-      </v-col>
-    </v-row>
-
-    <!-- Logs -->
-    <ActionLogList v-if="selectedUserId" :user-id="selectedUserId" />
-
-    <p v-else class="text-medium-emphasis">Select a user to view their action logs.</p>
-  </v-container>
+    <section v-if="selectedUserId" class="panel">
+      <ActionLogList :user-id="selectedUserId" />
+    </section>
+    <EmptyState
+      v-else
+      message="Select a user to view their notifications."
+      icon="mdi-account-search"
+    />
+  </PageShell>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/services/api'
+import PageShell from '@/components/PageShell.vue'
+import LabeledField from '@/components/LabeledField.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import ActionLogList from '@/components/ActionLogList.vue'
 
 const users = ref([])
@@ -51,8 +57,8 @@ onMounted(fetchUsers)
 </script>
 
 <style scoped>
-.page-title {
-  font-size: 5em;
-  margin-top: 0.5em;
+.user-picker {
+  max-width: 360px;
+  margin-bottom: 20px;
 }
 </style>

@@ -1,97 +1,57 @@
 <template>
-  <v-container max-width="700px">
-    <!-- Page title -->
-    <h1 class="mb-1 page-title no-select">About UMC</h1>
-
-    <!-- Main content -->
-    <div class="space-between-ps">
-      <!-- Intro -->
+  <PageShell title="About UMC" tier="narrow">
+    <div class="prose">
       <p>
         Hello all! I'm
-        <a href="https://github.com/LilyLavender" target="_blank" class="unvisitable">Lily</a>, the
+        <a href="https://github.com/LilyLavender" target="_blank" rel="noopener">Lily</a>, the
         creator of Ultimate Moveset Compatibility. This site is a passion project of mine to bring a
         space both for end-users to see which movesets are available and for developers to ensure
         compatibility between their projects.
       </p>
 
-      <!-- Ko-Fi -->
-      <p class="has-inline-image">
-        <span>I would greatly appreciate if you could</span>
-        <a class="d-inline" href="https://ko-fi.com/E1E510YMY1" target="_blank"
+      <p>
+        I would greatly appreciate if you could
+        <a href="https://ko-fi.com/E1E510YMY1" target="_blank" rel="noopener" class="kofi"
           ><img
-            height="36"
-            style="border: 0px; height: 36px"
             src="https://storage.ko-fi.com/cdn/kofi1.png?v=6"
-            border="0"
             alt="buy me a coffee at ko-fi.com"
+            height="30"
         /></a>
-        <span>to keep this site alive. UMC took months to create, and hosting it is not free.</span>
+        to keep this site alive. UMC took months to create, and hosting it is not free.
       </p>
 
-      <!-- Suggestions -->
       <p>
         If you have suggestions as to how I can improve UMC, feel free to
         <a
           href="https://github.com/LilyLavender/UltimateMovesetCompatibility/issues"
           target="_blank"
-          class="unvisitable"
+          rel="noopener"
           >create an issue on GitHub</a
         >
         UNLESS it's a security issue, in which case you should contact me directly. Any help is
         appreciated.
       </p>
 
-      <!-- Outro -->
-      <p>Thank you all for the continued support 💚</p>
+      <p class="prose-closing">Thank you all for the continued support 💚</p>
     </div>
-  </v-container>
+  </PageShell>
 </template>
 
+<script setup>
+import PageShell from '@/components/PageShell.vue'
+</script>
+
 <style scoped>
-.space-between-ps > p:not(:last-child) {
-  margin-bottom: 2em;
-}
-
-.has-inline-image > * {
-  display: inline;
-}
-
-.has-inline-image > a {
-  margin-left: 0.5em;
-  margin-right: 0.5em;
-}
-
-.has-inline-image > a {
-  position: relative;
+.kofi {
   display: inline-block;
+  margin: 0 2px;
+  vertical-align: middle;
+  line-height: 0;
+  text-decoration: none;
 }
 
-.has-inline-image > a > img {
-  transform: translateY(12px);
-  border-radius: 12px;
-}
-
-.has-inline-image > a::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  height: 36px;
-  border-radius: 12px;
-  transform: translateY(-9px);
-
-  box-shadow: 0px 0px 6px -2px #e3d6c6;
-
-  opacity: 0.4;
-  animation: pulse 3s ease-in-out infinite alternate;
-}
-
-@keyframes pulse {
-  from {
-    opacity: 0.4;
-  }
-  to {
-    opacity: 1;
-  }
+.kofi img {
+  height: 30px;
+  display: block;
 }
 </style>

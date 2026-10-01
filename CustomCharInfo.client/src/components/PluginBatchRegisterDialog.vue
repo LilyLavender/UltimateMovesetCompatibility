@@ -1,164 +1,154 @@
 <template>
-  <v-dialog v-model="open" max-width="1100px" scrollable>
-    <v-card color="#2e2e2e">
-      <v-card-title class="d-flex align-center">
-        <span>Register {{ selectedCount }} of {{ lines.length }} releases</span>
-        <span v-if="repo" class="repo-label ml-2">{{ repo.owner }}/{{ repo.repo }}</span>
-        <v-spacer />
-        <v-btn icon="mdi-close" variant="text" @click="close" />
-      </v-card-title>
+  <v-dialog v-bind="dialogProps" v-model="open" max-width="1100px" scrollable>
+    <v-card>
+      <div class="dialog-head">
+        <div>
+          <h3 class="dialog-title">Register {{ selectedCount }} of {{ lines.length }} releases</h3>
+          <span v-if="repo" class="repo-label mono">{{ repo.owner }}/{{ repo.repo }}</span>
+        </div>
+        <button type="button" class="dialog-close" aria-label="Close" @click="close">
+          <v-icon>mdi-close</v-icon>
+        </button>
+      </div>
 
-      <v-card-text>
-        <p class="helper-text mb-3">
+      <v-card-text class="dialog-body">
+        <p class="helper-text">
           Every line below is added as a version of one plugin. Pick the plugin first, then adjust
           any line before submitting.
         </p>
 
-        <v-radio-group v-model="attachment" inline hide-details class="mb-2">
+        <v-radio-group v-model="attachment" inline hide-details class="attachment-choice">
           <v-radio label="Belongs to an existing dependency" value="dependency" />
-          <v-radio label="Unrelated / other" value="other" />
+          <v-radio label="Unrelated or other" value="other" />
         </v-radio-group>
 
-        <v-row dense>
-          <template v-if="attachment === 'other'">
-            <v-col cols="12" sm="6">
-              <v-combobox
-                v-model="pluginSelection"
-                variant="outlined"
-                density="comfortable"
-                :items="otherPlugins"
-                :custom-filter="filterByName"
-                item-title="name"
-                item-value="pluginId"
-                return-object
-                label="Plugin Name"
-                hint="Pick an existing plugin to add versions to it, or type a new name"
-                persistent-hint
-              />
-            </v-col>
-          </template>
+        <div class="fields">
+          <LabeledField
+            v-if="attachment === 'other'"
+            label="Plugin name"
+            hint="Pick an existing plugin to add versions to it, or type a new name."
+          >
+            <v-combobox
+              v-model="pluginSelection"
+              density="comfortable"
+              :items="otherPlugins"
+              :custom-filter="filterByName"
+              item-title="name"
+              item-value="pluginId"
+              return-object
+              hide-details
+            />
+          </LabeledField>
+          <LabeledField v-else label="Dependency" required>
+            <v-autocomplete
+              v-model="dependencyId"
+              density="comfortable"
+              :items="dependencies"
+              item-title="name"
+              item-value="dependencyId"
+              hide-details
+            />
+          </LabeledField>
+
+          <div v-if="isExistingSelected" class="existing-preview">
+            Adding versions to <strong>{{ matchedPlugin.name }}</strong>
+            <span v-if="matchedPlugin.description" class="existing-desc">
+              {{ matchedPlugin.description }}
+            </span>
+          </div>
           <template v-else>
-            <v-col cols="12" sm="6">
-              <v-autocomplete
-                v-model="dependencyId"
-                variant="outlined"
-                density="comfortable"
-                :items="dependencies"
-                item-title="name"
-                item-value="dependencyId"
-                label="Dependency"
-                hide-details
-              />
-            </v-col>
+            <LabeledField label="Mod link" note="optional">
+              <v-text-field v-model="defaultLearnMoreUrl" density="comfortable" hide-details />
+            </LabeledField>
+            <LabeledField
+              v-if="attachment === 'other'"
+              label="Description"
+              note="optional"
+              class="fields__wide"
+            >
+              <v-textarea v-model="description" density="comfortable" rows="2" hide-details />
+            </LabeledField>
           </template>
+        </div>
 
-          <v-col v-if="isExistingSelected" cols="12" sm="6">
-            <div class="existing-preview">
-              Adding versions to <strong>{{ matchedPlugin.name }}</strong>
-              <span v-if="matchedPlugin.description" class="existing-desc">
-                {{ matchedPlugin.description }}
-              </span>
-            </div>
-          </v-col>
-          <template v-else>
-            <v-col cols="12" sm="6">
-              <v-text-field
-                v-model="defaultLearnMoreUrl"
-                variant="outlined"
-                density="comfortable"
-                label="Mod Link (optional)"
-                hide-details
-              />
-            </v-col>
-            <v-col v-if="attachment === 'other'" cols="12">
-              <v-textarea
-                v-model="description"
-                variant="outlined"
-                density="comfortable"
-                label="Description (optional)"
-                rows="2"
-                hide-details
-              />
-            </v-col>
-          </template>
-        </v-row>
+        <TableScroll min-width="820px">
+          <v-table class="lines-table" density="compact">
+            <thead>
+              <tr>
+                <th class="include-col">
+                  <v-checkbox-btn
+                    :model-value="allSelected"
+                    :indeterminate="someSelected && !allSelected"
+                    @update:model-value="toggleAll"
+                  />
+                </th>
+                <th>Release</th>
+                <th>Asset</th>
+                <th>Version</th>
+                <th>Mod link</th>
+                <th>Hash</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="line in lines" :key="line.key" :class="{ 'line--skipped': !line.include }">
+                <td class="include-col">
+                  <v-checkbox-btn v-model="line.include" />
+                </td>
+                <td class="release-col">
+                  <span class="release-name">{{ line.name }}</span>
+                  <span class="release-tag mono">{{ line.tag }}</span>
+                </td>
+                <td class="asset-col mono">{{ line.asset }}</td>
+                <td class="version-col">
+                  <v-text-field
+                    v-model="line.versionLabel"
+                    density="compact"
+                    hide-details
+                    :disabled="!line.include"
+                  />
+                </td>
+                <td class="link-col">
+                  <v-text-field
+                    v-model="line.learnMoreUrl"
+                    density="compact"
+                    hide-details
+                    :disabled="!line.include"
+                  />
+                </td>
+                <td class="hash-col mono" :title="line.hash">
+                  {{ line.hash.slice(0, 12) }}&hellip;
+                </td>
+              </tr>
+            </tbody>
+          </v-table>
+        </TableScroll>
 
-        <v-table class="lines-table mt-4" density="compact">
-          <thead>
-            <tr>
-              <th class="include-col">
-                <v-checkbox-btn
-                  :model-value="allSelected"
-                  :indeterminate="someSelected && !allSelected"
-                  @update:model-value="toggleAll"
-                />
-              </th>
-              <th>Release</th>
-              <th>Asset</th>
-              <th>Version</th>
-              <th>Mod Link</th>
-              <th>Hash</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="line in lines" :key="line.key" :class="{ 'line--skipped': !line.include }">
-              <td class="include-col">
-                <v-checkbox-btn v-model="line.include" />
-              </td>
-              <td class="release-col">
-                <span class="release-name">{{ line.name }}</span>
-                <span class="release-tag">{{ line.tag }}</span>
-              </td>
-              <td class="asset-col">{{ line.asset }}</td>
-              <td class="version-col">
-                <v-text-field
-                  v-model="line.versionLabel"
-                  variant="outlined"
-                  density="compact"
-                  hide-details
-                  :disabled="!line.include"
-                />
-              </td>
-              <td class="link-col">
-                <v-text-field
-                  v-model="line.learnMoreUrl"
-                  variant="outlined"
-                  density="compact"
-                  hide-details
-                  :disabled="!line.include"
-                />
-              </td>
-              <td class="hash-col" :title="line.hash">{{ line.hash.slice(0, 12) }}…</td>
-            </tr>
-          </tbody>
-        </v-table>
-
-        <v-textarea
-          v-model="notes"
-          variant="outlined"
-          density="compact"
-          label="Notes for the action log"
-          placeholder="Optional, stored with every version's log entry."
-          rows="1"
-          auto-grow
-          hide-details
-          class="mt-4 notes-field"
-        />
+        <LabeledField label="Notes for the action log" note="optional" class="notes-field">
+          <v-textarea
+            v-model="notes"
+            placeholder="Stored with every version's log entry."
+            density="compact"
+            rows="1"
+            auto-grow
+            hide-details
+          />
+        </LabeledField>
       </v-card-text>
 
-      <v-card-actions>
+      <div class="dialog-actions">
         <span v-if="error" class="error-text">{{ error }}</span>
-        <v-spacer />
-        <v-btn variant="text" @click="close">Cancel</v-btn>
-        <v-btn
-          class="btn submit-button"
-          :loading="submitting"
-          :disabled="submitting || selectedCount === 0"
+        <span class="dialog-actions__spacer"></span>
+        <AppButton variant="ghost" @click="close">Cancel</AppButton>
+        <AppButton
+          variant="primary"
+          icon="mdi-check"
+          :busy="submitting"
+          :disabled="selectedCount === 0"
           @click="submit"
         >
           Register {{ selectedCount }} version{{ selectedCount === 1 ? '' : 's' }}
-        </v-btn>
-      </v-card-actions>
+        </AppButton>
+      </div>
     </v-card>
   </v-dialog>
 </template>
@@ -169,6 +159,11 @@ import api from '@/services/api'
 import { normalizeVersionLabel } from '@/services/pluginVersion'
 import { repoUrl } from '@/services/githubReleases'
 import { useNotify } from '@/composables/useNotify'
+import { useDialogProps } from '@/composables/useDialogProps'
+import LabeledField from '@/components/LabeledField.vue'
+import AppButton from '@/components/AppButton.vue'
+import TableScroll from '@/components/TableScroll.vue'
+const dialogProps = useDialogProps()
 
 const open = defineModel({ type: Boolean, default: false })
 const props = defineProps({
@@ -343,98 +338,152 @@ async function submit() {
 </script>
 
 <style scoped>
+.dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.dialog-title {
+  margin: 0;
+  font-size: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+
 .repo-label {
-  font-size: 0.8em;
-  color: #9e9e9e;
-  font-weight: normal;
+  font-size: 12px;
+  color: var(--tx-3);
 }
+
+.dialog-close {
+  display: flex;
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: var(--tx-2);
+  cursor: pointer;
+}
+
+.dialog-close:hover {
+  color: var(--white);
+}
+
+.dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px 20px !important;
+}
+
 .helper-text {
-  color: #b0b0b0;
+  margin: 0;
+  color: var(--tx-2);
+  font-size: 14px;
 }
+
+.attachment-choice {
+  margin: -4px 0;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+  align-items: start;
+}
+
+.fields__wide {
+  grid-column: span 2;
+}
+
 .existing-preview {
-  background-color: #1a1a1a;
-  border-radius: 6px;
-  padding: 0.75rem 1rem;
-  height: 100%;
+  align-self: stretch;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  font-size: 14px;
 }
+
 .existing-desc {
   display: block;
-  font-size: 0.9em;
-  color: #b0b0b0;
-  margin-top: 0.25rem;
+  margin-top: 4px;
+  color: var(--tx-2);
+  font-size: 13px;
 }
-/* The dialog is teleported outside App.vue, so its dark-table rules never reach this table. */
-.lines-table,
-.lines-table :deep(.v-table__wrapper),
-.lines-table :deep(table),
-.lines-table :deep(thead),
-.lines-table :deep(tbody),
-.lines-table :deep(tr) {
-  background-color: #1e1e1e;
-  color: #ccc;
-}
-.lines-table :deep(th) {
-  background-color: #1e1e1e;
-  color: #ddd;
-}
-.lines-table :deep(td),
-.lines-table :deep(th) {
-  vertical-align: middle;
-  border-bottom-color: #333;
-}
+
 .include-col {
   width: 48px;
 }
+
 .release-col {
   min-width: 160px;
 }
+
 .release-name {
   display: block;
 }
+
 .release-tag {
   display: block;
-  font-size: 0.8em;
-  color: #9e9e9e;
+  font-size: 12px;
+  color: var(--tx-3);
 }
+
 .asset-col {
   min-width: 140px;
-  font-family: monospace;
-  font-size: 0.85em;
+  font-size: 12px;
 }
+
 .version-col {
   width: 150px;
 }
+
 .link-col {
   min-width: 240px;
 }
+
 .hash-col {
-  font-family: monospace;
-  font-size: 0.85em;
-  color: #9e9e9e;
+  font-size: 12px;
+  color: var(--tx-3);
   white-space: nowrap;
 }
+
 .line--skipped {
   opacity: 0.5;
 }
+
 .notes-field {
-  max-width: 500px;
+  max-width: 520px;
 }
-.notes-field :deep(.v-label) {
-  font-style: italic;
-  color: #6e6e6e !important;
+
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px 18px;
+  border-top: 1px solid var(--line);
 }
+
+.dialog-actions__spacer {
+  flex: 1;
+}
+
 .error-text {
-  color: #ef9a9a;
-  font-size: 0.9em;
-  margin-left: 0.75rem;
+  color: var(--err);
+  font-size: 13px;
 }
-.submit-button {
-  background-color: #2e2e2e;
-  color: #e2e2e2;
-}
-.btn {
-  text-transform: unset;
-  letter-spacing: 0.009375em;
-  font-size: medium;
+
+@media (max-width: 599px) {
+  .fields {
+    grid-template-columns: 1fr;
+  }
+
+  .fields__wide {
+    grid-column: span 1;
+  }
 }
 </style>

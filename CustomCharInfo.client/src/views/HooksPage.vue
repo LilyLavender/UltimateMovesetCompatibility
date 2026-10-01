@@ -1,116 +1,191 @@
 <template>
-  <v-container max-width="1080px">
-    <!-- Page title -->
-    <h1 class="mb-4 page-title">Hooks</h1>
+  <PageShell title="Hooks" tier="wide">
+    <template #subnav>
+      <SubNav section="movesets" label="Movesets" />
+    </template>
 
-    <!-- Add hook button -->
-    <div v-if="canConfirm" class="mb-5 pb-5">
-      <router-link :to="{ name: 'AddHook' }" class="unvisitable text-decoration-none">
-        <v-icon>mdi-plus</v-icon>
-        Add Hook
-      </router-link>
+    <div class="hooks-toolbar">
+      <LabeledField label="Search" class="hooks-toolbar__search">
+        <v-text-field
+          v-model="search"
+          placeholder="Offset or description"
+          density="compact"
+          hide-details
+          clearable
+          prepend-inner-icon="mdi-magnify"
+        />
+      </LabeledField>
+      <LabeledField label="Game version">
+        <v-select
+          v-model="selectedVersionId"
+          :items="gameVersions"
+          item-title="name"
+          item-value="gameVersionId"
+          density="compact"
+          hide-details
+        />
+      </LabeledField>
+      <LabeledField label="Hookable">
+        <v-select
+          v-model="hookableFilter"
+          :items="hookableStatuses"
+          item-title="name"
+          item-value="hookableStatusId"
+          placeholder="Any"
+          clearable
+          density="compact"
+          hide-details
+        />
+      </LabeledField>
+      <p class="hooks-toolbar__count">{{ filteredHooks.length }} hooks</p>
     </div>
 
-    <!-- Hooks Table -->
-    <v-data-table
-      v-if="hooks.length"
-      v-model:expanded="expanded"
-      :headers="headers"
-      :items="visibleHooks"
-      :sort-by="defaultSort"
-      item-value="hookId"
-      show-expand
-      class="dark-table"
-      dense
-    >
-      <!-- Offset header doubles as the game version picker -->
-      <template #header.offset>
-        <span class="offset-header">
-          <span>Offset</span>
-          <v-select
-            v-model="selectedVersionId"
-            :items="gameVersions"
-            item-title="name"
-            item-value="gameVersionId"
-            density="compact"
-            variant="plain"
-            hide-details
-            class="version-select"
-            @click.stop
-          />
-        </span>
-      </template>
+    <SkeletonTable
+      v-if="loading"
+      :headers="['Offset', 'State', 'Description', 'Hookable', 'Used by', '']"
+      :columns="[1.2, 1, 3, 1.2, 0.8, 0.4]"
+      :rows="8"
+    />
 
-      <!-- Offset with 0x and a pill when nobody has confirmed it for the selected version -->
-      <template #item.offset="{ item }">
-        <template v-if="item.entry">
-          <span class="mono">0x{{ item.entry.offset }}</span>
-          <OffsetStatePill
-            v-if="isUnverified(item.entry.offsetStateId)"
-            class="ml-2"
-            :entry="item.entry"
-            :hook-id="item.hookId"
-            :can-confirm="canConfirm"
-            @confirmed="(updated) => replaceEntry(item.hookId, updated)"
-          />
-        </template>
-        <span v-else class="no-offset" :title="`No offset recorded for ${selectedVersionName}`">
-          none
-        </span>
-      </template>
-
-      <!-- Hookable? column -->
-      <template #item.hookableStatusId="{ item }">
-        <span class="hookable-pill" :class="`status-${item.hookableStatusId}`">
-          {{ hookableStatusMap[item.hookableStatusId] || 'Unknown' }}
-        </span>
-      </template>
-
-      <!-- Actions -->
-      <template #item.actions="{ item }">
-        <router-link
-          :to="{ name: 'EditHook', params: { hookId: item.hookId } }"
-          class="text-decoration-none unvisitable"
+    <template v-else>
+      <TableScroll v-if="hooks.length" min-width="820px" class="reveal">
+        <v-data-table
+          v-model:expanded="expanded"
+          :headers="headers"
+          :items="filteredHooks"
+          :search="search"
+          :sort-by="defaultSort"
+          :items-per-page="25"
+          item-value="hookId"
+          show-expand
+          class="hooks-table"
+          @update:expanded="loadUsedBy"
         >
-          <v-icon small>mdi-pencil</v-icon>
-        </router-link>
-      </template>
+          <template #header.offset>
+            <span class="offset-header">
+              Offset
+              <HudReadout label="v" :value="selectedVersionName" tone="info" />
+            </span>
+          </template>
 
-      <!-- Every version's offset for the hook -->
-      <template #expanded-row="{ columns, item }">
-        <tr class="expanded-row">
-          <td :colspan="columns.length" class="expanded-cell">
-            <table class="version-table">
-              <tbody>
-                <tr v-for="entry in item.offsets" :key="entry.gameVersionId">
-                  <td class="version-name">{{ entry.gameVersion }}</td>
-                  <td class="mono">0x{{ entry.offset }}</td>
-                  <td>
-                    <OffsetStatePill
-                      :entry="entry"
-                      :hook-id="item.hookId"
-                      :can-confirm="canConfirm"
-                      @confirmed="(updated) => replaceEntry(item.hookId, updated)"
+          <template #item.offset="{ item }">
+            <span v-if="item.entry" class="mono">{{ formatOffset(item.entry.offset) }}</span>
+            <span v-else class="faint" :title="`No offset recorded for ${selectedVersionName}`">
+              none
+            </span>
+          </template>
+
+          <template #item.offsetStateId="{ item }">
+            <OffsetStatePill
+              v-if="item.entry"
+              :entry="item.entry"
+              :hook-id="item.hookId"
+              :can-confirm="canConfirm"
+              @confirmed="(updated) => replaceEntry(item.hookId, updated)"
+            />
+          </template>
+
+          <template #item.hookableStatusId="{ item }">
+            <StatusTag :variant="hookableTone[item.hookableStatusId] ?? 'neutral'">
+              {{ hookableStatusMap[item.hookableStatusId] || 'Unknown' }}
+            </StatusTag>
+          </template>
+
+          <template #item.usedByCount="{ item }">
+            <button
+              type="button"
+              class="usedby"
+              :title="`Show the movesets using ${formatOffset(item.offset)}`"
+              @click="toggleExpanded(item.hookId)"
+            >
+              {{ item.usedByCount }}
+            </button>
+          </template>
+
+          <template #item.actions="{ item }">
+            <AppButton
+              v-if="canConfirm"
+              :to="{ name: 'EditHook', params: { hookId: item.hookId } }"
+              variant="ghost"
+              size="sm"
+              icon="mdi-pencil"
+              aria-label="Edit hook"
+            />
+          </template>
+
+          <template #expanded-row="{ columns, item }">
+            <tr class="expanded-row">
+              <td :colspan="columns.length" class="expanded-cell">
+                <div class="expanded">
+                  <div class="expanded__block">
+                    <h3 class="expanded__title">Every version</h3>
+                    <table class="version-table">
+                      <tbody>
+                        <tr v-for="entry in item.offsets" :key="entry.gameVersionId">
+                          <td class="version-name">{{ entry.gameVersion }}</td>
+                          <td class="mono">{{ formatOffset(entry.offset) }}</td>
+                          <td>
+                            <OffsetStatePill
+                              :entry="entry"
+                              :hook-id="item.hookId"
+                              :can-confirm="canConfirm"
+                              @confirmed="(updated) => replaceEntry(item.hookId, updated)"
+                            />
+                          </td>
+                          <td class="faint">{{ formatDate(entry.updatedAt) }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="expanded__block">
+                    <h3 class="expanded__title">Used by</h3>
+                    <AppLoading
+                      v-if="usedBy[item.hookId] === undefined"
+                      size="sm"
+                      label="Loading"
                     />
-                  </td>
-                  <td class="version-date">{{ formatDate(entry.updatedAt) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </td>
-        </tr>
-      </template>
-    </v-data-table>
-
-    <p v-else>No hooks found.</p>
-  </v-container>
+                    <p v-else-if="!usedBy[item.hookId].length" class="faint">
+                      No moveset you can see uses this hook.
+                    </p>
+                    <ul v-else class="usedby-list">
+                      <li v-for="m in usedBy[item.hookId]" :key="m.movesetId">
+                        <router-link
+                          :to="{ name: 'MovesetDetail', params: { movesetId: m.movesetId } }"
+                        >
+                          {{ m.moddedCharName }}
+                        </router-link>
+                        <span class="mono faint">{{ m.slottedId }}</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </template>
+        </v-data-table>
+      </TableScroll>
+      <EmptyState v-else message="No hooks have been submitted yet." />
+    </template>
+  </PageShell>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { format } from 'date-fns'
 import api from '@/services/api'
-import { UserType, UNVERIFIED_OFFSET_STATES } from '@/globals'
+import { HookableStatus } from '@/globals'
+import { isModder } from '@/navigation'
+import { formatOffset } from '@/services/offsets'
+import PageShell from '@/components/PageShell.vue'
+import SubNav from '@/components/SubNav.vue'
+import AppButton from '@/components/AppButton.vue'
+import AppLoading from '@/components/AppLoading.vue'
+import LabeledField from '@/components/LabeledField.vue'
+import HudReadout from '@/components/HudReadout.vue'
+import StatusTag from '@/components/StatusTag.vue'
+import TableScroll from '@/components/TableScroll.vue'
+import SkeletonTable from '@/components/SkeletonTable.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import OffsetStatePill from '@/components/OffsetStatePill.vue'
 
 const user = ref(null)
@@ -119,7 +194,17 @@ const hookableStatuses = ref([])
 const hookableStatusMap = ref({})
 const gameVersions = ref([])
 const selectedVersionId = ref(null)
+const hookableFilter = ref(null)
+const search = ref('')
 const expanded = ref([])
+const usedBy = ref({})
+const loading = ref(true)
+
+const hookableTone = {
+  [HookableStatus.Untested]: 'warn',
+  [HookableStatus.OnlyOnce]: 'err',
+  [HookableStatus.MoreThanOnce]: 'ok',
+}
 
 // Offsets are hex strings of varying length, so the column sorts by value rather than text.
 const compareHex = (a, b) => parseInt(a || '0', 16) - parseInt(b || '0', 16)
@@ -132,13 +217,15 @@ const headers = [
     sort: compareHex,
     cellProps: { class: 'offset-cell' },
   },
+  { title: 'State', key: 'offsetStateId', width: '1%', sortable: false },
   { title: 'Description', key: 'description' },
-  { title: 'Hookable?', key: 'hookableStatusId', width: '20%' },
-  { title: 'Actions', key: 'actions', width: '1%', sortable: false },
+  { title: 'Hookable', key: 'hookableStatusId', width: '14%' },
+  { title: 'Used by', key: 'usedByCount', width: '1%', align: 'end' },
+  { title: '', key: 'actions', width: '1%', sortable: false },
 ]
 const defaultSort = [{ key: 'offset', order: 'asc' }]
 
-const canConfirm = computed(() => !!user.value && user.value.userTypeId >= UserType.Modder)
+const canConfirm = computed(() => isModder(user.value))
 
 const selectedVersionName = computed(
   () => gameVersions.value.find((v) => v.gameVersionId === selectedVersionId.value)?.name ?? ''
@@ -152,12 +239,36 @@ const visibleHooks = computed(() =>
   })
 )
 
-const isUnverified = (stateId) => UNVERIFIED_OFFSET_STATES.includes(stateId)
+const filteredHooks = computed(() =>
+  hookableFilter.value == null
+    ? visibleHooks.value
+    : visibleHooks.value.filter((h) => h.hookableStatusId === hookableFilter.value)
+)
 
 const replaceEntry = (hookId, updated) => {
   const hook = hooks.value.find((h) => h.hookId === hookId)
   if (!hook) return
   hook.offsets = hook.offsets.map((o) => (o.gameVersionId === updated.gameVersionId ? updated : o))
+}
+
+const toggleExpanded = (hookId) => {
+  expanded.value = expanded.value.includes(hookId)
+    ? expanded.value.filter((id) => id !== hookId)
+    : [...expanded.value, hookId]
+  loadUsedBy(expanded.value)
+}
+
+// The moveset list behind a count is fetched the first time its row opens.
+const loadUsedBy = async (ids) => {
+  for (const hookId of ids) {
+    if (usedBy.value[hookId] !== undefined) continue
+    try {
+      const res = await api.get(`/hooks/${hookId}`)
+      usedBy.value[hookId] = res.data.usedBy ?? []
+    } catch {
+      usedBy.value[hookId] = []
+    }
+  }
 }
 
 const formatDate = (date) => (date ? format(new Date(date), 'PP') : '')
@@ -166,8 +277,8 @@ const fetchUser = async () => {
   try {
     const res = await api.get('/auth/me')
     user.value = res.data
-  } catch (err) {
-    console.error('Failed to fetch user info:', err)
+  } catch {
+    user.value = null
   }
 }
 
@@ -206,99 +317,119 @@ const fetchHookableStatuses = async () => {
 onMounted(async () => {
   await fetchUser()
   await Promise.all([fetchHookableStatuses(), fetchGameVersions(), fetchHooks()])
+  loading.value = false
 })
 </script>
 
 <style scoped>
-.page-title {
-  font-weight: bold;
+.hooks-toolbar {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 12px 16px;
+  align-items: end;
+  margin-bottom: 16px;
 }
 
-.col-fit {
-  width: fit-content;
+.hooks-toolbar__count {
+  margin: 0 0 10px;
+  color: var(--tx-2);
+  font-size: 13px;
+  white-space: nowrap;
 }
 
-.mono {
-  font-family: monospace;
-}
-
-/* App.vue caps dark-table cells at 150px with an ellipsis; the offset plus its pill needs the room. */
-:deep(.dark-table .offset-cell),
-:deep(.dark-table .expanded-cell) {
-  max-width: none;
-  overflow: visible;
-  text-overflow: clip;
-}
-
-/* The picker sits on the same baseline as the "Offset" label. */
 .offset-header {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-}
-.version-select {
-  width: 80px;
-  font-size: 0.85rem;
-  flex: 0 0 auto;
-}
-.version-select :deep(.v-input__control),
-.version-select :deep(.v-field),
-.version-select :deep(.v-field__field),
-.version-select :deep(.v-field__input) {
-  min-height: 0;
-  height: auto;
-  padding-top: 0;
-  padding-bottom: 0;
-  align-items: center;
-}
-.version-select :deep(.v-field__append-inner) {
-  padding-top: 0;
-  align-items: center;
+  gap: 8px;
 }
 
-.no-offset {
-  opacity: 0.5;
-  font-style: italic;
+.hooks-table :deep(.offset-cell) {
+  white-space: nowrap;
 }
 
-/* Hookable pill styling */
-.hookable-pill {
-  display: inline-block;
+.usedby {
+  min-width: 34px;
   padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  color: white;
-  font-weight: 500;
-  text-align: center;
+  border: 1px solid var(--line-2);
+  background: transparent;
+  color: var(--tx);
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 }
-.status-1 {
-  background-color: #fbc02d;
-  color: black;
-}
-.status-2 {
-  background-color: #c62828;
-}
-.status-3 {
-  background-color: #2e7d32;
+
+.usedby:hover {
+  background: var(--white);
+  color: #000;
 }
 
 .expanded-row td {
-  background-color: #181818;
-  padding: 8px 16px 8px 48px;
+  background: var(--panel-2) !important;
+  padding: 14px 16px 14px 56px;
   white-space: normal;
 }
+
+.expanded {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.expanded__title {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
 .version-table {
   border-collapse: collapse;
 }
+
 .version-table td {
-  padding: 2px 18px 2px 0;
+  padding: 3px 18px 3px 0;
   background: none;
-  font-size: 0.85rem;
+  font-size: 13px;
+  border: 0 !important;
 }
+
 .version-name {
-  font-weight: bold;
+  font-weight: 600;
 }
-.version-date {
-  opacity: 0.6;
+
+.usedby-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.usedby-list li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+@media (max-width: 959px) {
+  .hooks-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .hooks-toolbar__search {
+    grid-column: span 2;
+  }
+
+  .expanded {
+    grid-template-columns: 1fr;
+  }
+
+  .expanded-row td {
+    padding-left: 16px;
+  }
 }
 </style>

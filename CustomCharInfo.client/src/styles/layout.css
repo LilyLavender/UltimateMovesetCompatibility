@@ -1,0 +1,118 @@
+/* Page tiers, panels, and shared layout blocks. Views pick a tier and never set their own width. */
+.tier {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+.tier-narrow {
+  max-width: calc(var(--w-narrow) + 2 * var(--gutter));
+}
+
+.tier-standard {
+  max-width: calc(var(--w-standard) + 2 * var(--gutter));
+}
+
+.tier-wide {
+  max-width: calc(var(--w-wide) + 2 * var(--gutter));
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 20px;
+}
+
+.panel-raised {
+  background: var(--panel-2);
+}
+
+.hairline {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 16px 0;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.row-wrap {
+  flex-wrap: wrap;
+}
+
+.savebar {
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prose pages: guides, policies, about. One column of readable text on the narrow tier. */
+.prose {
+  color: var(--tx-2);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.prose p,
+.prose ul,
+.prose ol {
+  margin: 0 0 1em;
+}
+
+.prose h2 {
+  margin: 1.6em 0 0.4em;
+  color: var(--tx);
+  font-size: 1.3rem;
+}
+
+.prose h2:first-child {
+  margin-top: 0;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.5em;
+}
+
+.prose li {
+  margin-bottom: 0.3em;
+}
+
+.prose a {
+  color: var(--white);
+  text-decoration: underline;
+}
+
+.prose strong {
+  color: var(--tx);
+}
+
+.prose .prose-closing {
+  margin-top: 1.8em;
+  color: var(--tx);
+}
+
+.prose .prose-meta {
+  margin-bottom: 1.5em;
+  font-size: 13px;
+  color: var(--tx-3);
+}

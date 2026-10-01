@@ -7,6 +7,18 @@ import api from '@/services/api'
 const requestInterceptor = api.interceptors.request.handlers[0].fulfilled
 const responseRejectedInterceptor = api.interceptors.response.handlers[0].rejected
 
+describe('api query serialization', () => {
+  it('repeats the key for array params instead of using brackets', () => {
+    const uri = api.getUri({
+      url: '/logs/latest',
+      params: { acceptanceStates: [2, 4], itemTypes: [1] },
+    })
+
+    expect(uri).toContain('acceptanceStates=2&acceptanceStates=4&itemTypes=1')
+    expect(uri).not.toContain('%5B%5D')
+  })
+})
+
 describe('api request interceptor', () => {
   beforeEach(() => {
     localStorage.clear()

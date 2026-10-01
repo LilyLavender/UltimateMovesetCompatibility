@@ -1,101 +1,122 @@
 <template>
-  <section>
-    <h2>
-      Cloned Articles
-      <v-btn
-        variant="text"
-        density="compact"
-        icon="mdi-plus"
-        class="rotate-toggle"
-        :class="{ rotated: showForm }"
-        @click="toggleForm"
-      />
-    </h2>
-    <p class="subheader">
+  <div class="list-editor">
+    <div class="list-editor__head">
       <a
         href="https://docs.google.com/spreadsheets/d/16SEU3MibrzTJHTjxJb7c5e7JzGgrfWY_c_hqNJtGvNY/"
         target="_blank"
-        class="offsite unvisitable"
+        rel="noopener"
+        class="list-editor__hint offsite"
       >
         Learn more about articles
       </a>
-    </p>
+      <AppButton
+        variant="ghost"
+        size="sm"
+        :icon="showForm ? 'mdi-close' : 'mdi-plus'"
+        @click="toggleForm"
+      >
+        {{ showForm ? 'Cancel' : 'Add an article' }}
+      </AppButton>
+    </div>
 
     <!-- Add / edit -->
     <v-expand-transition>
-      <div v-if="showForm">
-        <v-row>
-          <v-col cols="12" sm="4">
-            <v-autocomplete
-              v-model="draft.articleId"
-              variant="outlined"
-              :items="articleOptions"
-              :item-title="(item) => `${item.vanillaCharInternalName}_${item.articleName}`"
-              item-value="articleId"
-              label="Article"
-            />
-          </v-col>
-          <v-col cols="12" sm="3">
-            <v-text-field
-              v-model="draft.moddedName"
-              variant="outlined"
-              label="Modded Internal Name"
-              placeholder="eg. shortaxe"
-            />
-          </v-col>
-          <v-col cols="12" sm="3">
-            <v-text-field
-              v-model="draft.description"
-              variant="outlined"
-              label="Display Name"
-              placeholder="eg. Short Axe"
-            />
-          </v-col>
-          <v-col cols="12" sm="2" class="justify-content-center">
-            <v-btn class="btn add-button" @click="commitDraft">
-              {{ editingIndex !== null ? 'Update Article' : 'Add Article' }}
-            </v-btn>
-          </v-col>
-        </v-row>
+      <div v-if="showForm" class="list-editor__form">
+        <LabeledField label="Article" required class="list-editor__wide">
+          <v-autocomplete
+            v-model="draft.articleId"
+            :items="pickerOptions"
+            :item-title="(item) => `${item.vanillaCharInternalName}_${item.articleName}`"
+            item-value="articleId"
+            density="compact"
+            hide-details
+          />
+        </LabeledField>
+        <LabeledField label="Modded internal name">
+          <v-text-field
+            v-model="draft.moddedName"
+            placeholder="e.g. shortaxe"
+            density="compact"
+            hide-details
+          />
+        </LabeledField>
+        <LabeledField label="Display name">
+          <v-text-field
+            v-model="draft.description"
+            placeholder="e.g. Short Axe"
+            density="compact"
+            hide-details
+          />
+        </LabeledField>
+        <AppButton size="sm" icon="mdi-check" class="list-editor__commit" @click="commitDraft">
+          {{ editingIndex !== null ? 'Update article' : 'Add article' }}
+        </AppButton>
       </div>
     </v-expand-transition>
 
     <!-- List -->
-    <v-list>
-      <v-list-item v-for="(entry, i) in articles" :key="i">
-        <v-list-item-title>
-          <strong>{{ entry.description }}</strong
-          >: {{ articleName(entry.articleId) }} ({{ entry.moddedName }})
-        </v-list-item-title>
-        <template #append>
-          <v-icon
-            class="reorder-icon"
-            :class="{ invisible: i === 0 }"
+    <ul v-if="articles.length" class="list-editor__list">
+      <li v-for="(entry, i) in articles" :key="i" class="list-editor__row">
+        <span class="list-editor__text">
+          <strong>{{ entry.description }}</strong>
+          <span class="mono muted">{{ articleName(entry.articleId) }}</span>
+          <span class="faint">({{ entry.moddedName }})</span>
+          <StatusTag
+            v-if="isSameCharacter(entry.articleId)"
+            variant="err"
+            label="Same character as this moveset"
+          />
+        </span>
+        <span class="list-editor__actions">
+          <button
+            type="button"
+            class="icon-btn"
+            :class="{ 'icon-btn--hidden': i === 0 }"
+            aria-label="Move up"
             @click="moveItem(articles, i, -1)"
-            >mdi-arrow-up</v-icon
           >
-          <v-icon
-            class="reorder-icon"
-            :class="{ invisible: i === articles.length - 1 }"
+            <v-icon size="18">mdi-arrow-up</v-icon>
+          </button>
+          <button
+            type="button"
+            class="icon-btn"
+            :class="{ 'icon-btn--hidden': i === articles.length - 1 }"
+            aria-label="Move down"
             @click="moveItem(articles, i, 1)"
-            >mdi-arrow-down</v-icon
           >
-          <v-icon class="edit-icon" @click="editEntry(i)">mdi-pencil</v-icon>
-          <v-icon class="delete-icon" @click="articles.splice(i, 1)">mdi-delete</v-icon>
-        </template>
-      </v-list-item>
-    </v-list>
-  </section>
+            <v-icon size="18">mdi-arrow-down</v-icon>
+          </button>
+          <button type="button" class="icon-btn" aria-label="Edit" @click="editEntry(i)">
+            <v-icon size="18">mdi-pencil</v-icon>
+          </button>
+          <button
+            type="button"
+            class="icon-btn icon-btn--danger"
+            aria-label="Remove"
+            @click="articles.splice(i, 1)"
+          >
+            <v-icon size="18">mdi-delete</v-icon>
+          </button>
+        </span>
+      </li>
+    </ul>
+    <p v-else class="list-editor__empty">No cloned articles yet.</p>
+  </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { moveItem } from '@/services/listUtils'
+import LabeledField from '@/components/LabeledField.vue'
+import AppButton from '@/components/AppButton.vue'
+import StatusTag from '@/components/StatusTag.vue'
 
 // Editable list of a moveset's cloned articles: { articleId, moddedName, description }.
 // The list is edited in place through v-model; the parent submits it as-is.
+// Articles of the moveset's own character cannot be picked, and existing ones are flagged.
 const props = defineProps({
   articleOptions: { type: Array, default: () => [] },
+  vanillaCharInternalName: { type: String, default: '' },
 })
 const articles = defineModel({ type: Array, default: () => [] })
 
@@ -103,6 +124,15 @@ const emptyDraft = () => ({ articleId: null, moddedName: '', description: '' })
 const draft = ref(emptyDraft())
 const showForm = ref(false)
 const editingIndex = ref(null)
+
+const isSameCharacter = (id) =>
+  !!props.vanillaCharInternalName &&
+  props.articleOptions.find((a) => a.articleId === id)?.vanillaCharInternalName ===
+    props.vanillaCharInternalName
+
+const pickerOptions = computed(() =>
+  props.articleOptions.filter((a) => a.vanillaCharInternalName !== props.vanillaCharInternalName)
+)
 
 const articleName = (id) => {
   const article = props.articleOptions.find((a) => a.articleId === id)
@@ -130,62 +160,118 @@ const commitDraft = () => {
   showForm.value = false
 }
 
+// A flagged entry opens with its article cleared so a valid one is picked in its place.
 const editEntry = (i) => {
   editingIndex.value = i
-  draft.value = { ...articles.value[i] }
+  const entry = articles.value[i]
+  draft.value = { ...entry, articleId: isSameCharacter(entry.articleId) ? null : entry.articleId }
   showForm.value = true
 }
 </script>
 
 <style scoped>
-h2 {
-  font-size: 2.25em;
-  margin-bottom: 10px;
+.list-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
-.subheader {
-  margin-top: -1.5em;
-  margin-bottom: 0.5em;
+
+.list-editor__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.list-editor__hint {
   font-size: 12px;
+  color: var(--tx-2);
 }
-.btn {
-  text-transform: unset;
-  letter-spacing: 0.009375em;
-  font-size: medium;
+
+.list-editor__form {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+  padding: 14px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
 }
-.add-button {
-  background-color: #2e2e2e;
-  color: #e2e2e2;
-  margin-top: 10px;
-  margin-left: 10px;
-  box-shadow: none;
+
+.list-editor__commit {
+  margin-bottom: 5px;
 }
-.edit-icon,
-.delete-icon,
-.reorder-icon {
+
+.list-editor__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list-editor__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.list-editor__row:last-child {
+  border-bottom: 0;
+}
+
+.list-editor__text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.list-editor__actions {
+  display: flex;
+  gap: 2px;
+  flex: none;
+}
+
+.list-editor__empty {
+  margin: 0;
+  color: var(--tx-3);
+  font-size: 13px;
+}
+
+.icon-btn {
+  display: flex;
+  padding: 4px;
+  border: 0;
   background: none;
-  font-size: 20px;
-  margin-left: 8px;
-  color: #aaaaaa;
-  transition: color 150ms ease-in-out;
+  color: var(--tx-2);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease);
 }
-.edit-icon:hover,
-.delete-icon:hover,
-.reorder-icon:hover {
-  color: #dddddd;
+
+.icon-btn:hover {
+  color: var(--white);
 }
-.edit-icon::before,
-.delete-icon::before,
-.reorder-icon::before {
-  margin-top: -4px;
+
+.icon-btn--danger:hover {
+  color: var(--err);
 }
-.invisible {
+
+.icon-btn--hidden {
   visibility: hidden;
   pointer-events: none;
 }
-:deep(.rotate-toggle > span > i::before) {
-  transition: transform 250ms ease-in-out;
-}
-:deep(.rotate-toggle.rotated span > i::before) {
-  transform: rotate(-45deg);
+
+@media (max-width: 959px) {
+  .list-editor__form {
+    grid-template-columns: 1fr;
+  }
+
+  .list-editor__commit {
+    margin-bottom: 0;
+  }
 }
 </style>

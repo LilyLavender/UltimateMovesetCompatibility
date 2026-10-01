@@ -1,8 +1,6 @@
 <template>
-  <v-container max-width="700px" class="page-container">
-    <h1 class="mb-1 page-title no-select">Why Open-Source Your Movesets?</h1>
-
-    <div class="content">
+  <PageShell title="Why open-source?" tier="narrow">
+    <div class="prose">
       <h2>More examples means everyone gets better</h2>
       <p>Moveset modding has a steep learning curve.</p>
       <p>
@@ -39,36 +37,15 @@
         anyone.
       </p>
 
-      <p class="closing">
+      <p class="prose-closing">
         Nobody is required to share anything. But if you're on the fence, think about the movesets
         you learned from. Someone made the call to share those.
       </p>
-      <p>Happy modding.</p>
+      <p class="prose-closing">Happy modding.</p>
     </div>
-  </v-container>
+  </PageShell>
 </template>
 
-<style scoped>
-.page-container {
-  padding-bottom: 4rem;
-}
-.page-title {
-  font-size: 3em;
-}
-.content {
-  font-size: 18px;
-}
-h2 {
-  font-size: 1.5em;
-  margin-top: 1.5em;
-  margin-bottom: 0.5em;
-}
-p {
-  opacity: 0.5;
-  line-height: 1.6;
-  margin-bottom: 0.85em;
-}
-.closing {
-  margin-top: 2em;
-}
-</style>
+<script setup>
+import PageShell from '@/components/PageShell.vue'
+</script>

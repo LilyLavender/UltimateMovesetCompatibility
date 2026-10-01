@@ -32,8 +32,12 @@ namespace CustomCharInfo.server.Helpers
                 .FirstOrDefaultAsync();
         }
 
+        // Super admins pass every admin check.
         public static bool IsAdmin([NotNullWhen(true)] this ApplicationUser? user) =>
-            user?.UserTypeId == UserTypes.Admin;
+            user != null && user.UserTypeId >= UserTypes.Admin;
+
+        public static bool IsSuperAdmin([NotNullWhen(true)] this ApplicationUser? user) =>
+            user?.UserTypeId == UserTypes.SuperAdmin;
 
         // Admins count as modders everywhere a modder is required.
         public static bool IsModder([NotNullWhen(true)] this ApplicationUser? user) =>
@@ -45,6 +49,7 @@ namespace CustomCharInfo.server.Helpers
 {
     public sealed record RequesterSummary(string Id, int UserTypeId, int? ModderId)
     {
-        public bool IsAdmin => UserTypeId == UserTypes.Admin;
+        public bool IsAdmin => UserTypeId >= UserTypes.Admin;
+        public bool IsSuperAdmin => UserTypeId == UserTypes.SuperAdmin;
     }
 }

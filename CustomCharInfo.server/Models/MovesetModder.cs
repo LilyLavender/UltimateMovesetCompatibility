@@ -13,5 +13,10 @@ namespace CustomCharInfo.server.Models
         public Modder Modder { get; set; }
 
         public int SortOrder { get; set; }
+
+        // Whether the name appears on the moveset card's creator line. The moveset page lists every credit.
+        public bool ShowOnCard { get; set; } = true;
+
+        public ICollection<MovesetModderRole> Roles { get; set; } = new List<MovesetModderRole>();
     }
 }

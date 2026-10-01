@@ -32,11 +32,11 @@
         <v-icon size="28" class="drop-icon">mdi-tray-arrow-up</v-icon>
         <span class="drop-label">{{ label }}</span>
         <span class="drop-sub">
-          Drag &amp; drop files or a folder, or
+          Drag and drop files or a folder, or
           <button type="button" class="link-btn" @click.stop="openFilePicker">browse files</button>
-          /
+          or
           <button type="button" class="link-btn" @click.stop="openFolderPicker">
-            browse folder
+            browse a folder
           </button>
         </span>
       </template>
@@ -48,7 +48,9 @@
             {{ skipped }} non-{{ extension }} file{{ skipped === 1 ? '' : 's' }} ignored
           </span>
         </div>
-        <v-icon size="18" class="clear-icon" @click.stop="clear">mdi-close</v-icon>
+        <button type="button" class="clear-btn" aria-label="Clear files" @click.stop="clear">
+          <v-icon size="18">mdi-close</v-icon>
+        </button>
       </template>
     </div>
   </div>
@@ -123,37 +125,36 @@ watch(
 .drop-wrap {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 6px;
 }
 
 .drop-zone {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.7rem 1rem;
-  border: 2px dashed #444;
-  border-radius: 8px;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1px dashed var(--line-2);
+  border-left: 4px solid var(--line-2);
+  background: var(--panel);
   cursor: pointer;
-  background-color: #1a1a1a;
   transition:
-    border-color 0.15s,
-    background-color 0.15s;
+    border-color var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease);
 }
 
-.drop-zone:hover {
-  border-color: #666;
-}
+.drop-zone:hover,
 .drop-zone--active {
-  border-color: #64b5f6;
-  background-color: #16232b;
+  border-color: var(--white);
+  background: var(--panel-2);
 }
+
 .drop-zone--has-files {
   border-style: solid;
-  border-color: #388e3c;
-  background-color: #142614;
+  border-left-color: var(--ok);
 }
+
 .drop-zone--large {
-  padding: 1.5rem 1.5rem;
+  padding: 24px;
   min-height: 90px;
 }
 
@@ -163,14 +164,15 @@ watch(
 
 .drop-icon {
   flex-shrink: 0;
-  color: #888;
+  color: var(--tx-3);
 }
+
 .drop-zone--has-files .drop-icon {
-  color: #81c784;
+  color: var(--ok);
 }
 
 .drop-label {
-  font-size: 0.92em;
+  font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -179,24 +181,24 @@ watch(
 .drop-label-group {
   display: flex;
   flex-direction: column;
+  gap: 2px;
   min-width: 0;
   flex: 1;
 }
+
 .drop-label-group .drop-label {
-  font-weight: bold;
+  font-weight: 600;
   white-space: normal;
-  color: #c8e6c9;
 }
 
 .drop-sub-inline {
-  font-size: 0.8em;
-  margin-top: 0.1rem;
-  color: #a5d6a7;
+  font-size: 12px;
+  color: var(--tx-2);
 }
 
 .drop-sub {
-  font-size: 0.8em;
-  color: #777;
+  font-size: 12px;
+  color: var(--tx-3);
   margin-left: auto;
   flex-shrink: 0;
 }
@@ -206,20 +208,34 @@ watch(
   border: none;
   padding: 0;
   font: inherit;
-  color: #90caf9;
+  color: var(--white);
+  text-decoration: underline;
   cursor: pointer;
 }
-.link-btn:hover {
-  text-decoration: underline;
+
+.clear-btn {
+  margin-left: auto;
+  align-self: flex-start;
+  display: flex;
+  padding: 2px;
+  border: 0;
+  background: none;
+  color: var(--tx-2);
+  cursor: pointer;
 }
 
-.clear-icon {
-  margin-left: auto;
-  color: #999;
-  flex-shrink: 0;
-  align-self: flex-start;
+.clear-btn:hover {
+  color: var(--white);
 }
-.clear-icon:hover {
-  color: #fff;
+
+@media (max-width: 599px) {
+  .drop-zone {
+    flex-wrap: wrap;
+  }
+
+  .drop-sub {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
 }
 </style>

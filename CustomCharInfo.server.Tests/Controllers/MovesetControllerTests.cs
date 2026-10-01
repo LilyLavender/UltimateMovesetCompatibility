@@ -258,6 +258,37 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
+        public async Task GetMovesets_ArticlesAndHooks_HiddenOnPrivateMovesetForNonOwners()
+        {
+            _db.Context.Articles.Add(new Article { ArticleId = 1, VanillaCharInternalName = "mario", ArticleName = "hat" });
+            _db.Context.HookableStatuses.Add(new HookableStatus { HookableStatusId = HookableStatuses.Untested, Name = "Untested" });
+            _db.Context.Hooks.Add(new Hook { HookId = 7, Offset = "1000", Description = "Hook", HookableStatusId = HookableStatuses.Untested });
+            SeedData.AddUser(_db.Context, "owner-user", userTypeId: UserTypes.Modder, modderId: 5);
+            SeedData.AddModder(_db.Context, 5, "owner-user", "Owner");
+            AddMoveset(1, "Public", isPrivate: false);
+            AddMoveset(2, "Secret", isPrivate: true);
+            _db.Context.MovesetModders.Add(new MovesetModder { MovesetId = 2, ModderId = 5, SortOrder = 0 });
+            foreach (var id in new[] { 1, 2 })
+            {
+                _db.Context.MovesetArticles.Add(new MovesetArticle { MovesetId = id, ArticleId = 1, ModdedName = "hat" });
+                _db.Context.MovesetHooks.Add(new MovesetHook { MovesetId = id, HookId = 7 });
+            }
+            _db.Context.SaveChanges();
+
+            var stranger = Unwrap(await CreateController().GetMovesets(null, null, null, null, null, null, null, null, null));
+            var owner = Unwrap(await CreateController("owner-user").GetMovesets(null, null, null, null, null, null, null, null, null));
+
+            object ById(List<object> list, int id) => list.Single(m => Prop<int>(m, "MovesetId") == id);
+
+            Assert.Equal(new[] { "mario_hat" }, Prop<IEnumerable<string>>(ById(stranger, 1), "ArticleNames"));
+            Assert.Equal(new[] { 7 }, Prop<IEnumerable<int>>(ById(stranger, 1), "HookIds"));
+            Assert.Null(Prop<IEnumerable<string>>(ById(stranger, 2), "ArticleNames"));
+            Assert.Null(Prop<IEnumerable<int>>(ById(stranger, 2), "HookIds"));
+            Assert.Equal(new[] { "mario_hat" }, Prop<IEnumerable<string>>(ById(owner, 2), "ArticleNames"));
+            Assert.Equal(new[] { 7 }, Prop<IEnumerable<int>>(ById(owner, 2), "HookIds"));
+        }
+
+        [Fact]
         public async Task GetMoveset_PrivateMoveset_ReturnsNotFoundForStranger()
         {
             AddMoveset(1, "Secret", isPrivate: true);

@@ -28,6 +28,8 @@ namespace CustomCharInfo.server.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<BlogPostDto>>> GetBlogPosts()
         {
+            var userId = _userManager.GetUserId(User);
+
             var posts = await _context.BlogPosts
                 .Include(p => p.User)
                 .OrderByDescending(p => p.PostedDate)
@@ -38,11 +40,37 @@ namespace CustomCharInfo.server.Controllers
                     BlogText = p.BlogText,
                     BlogImageUrl = p.BlogImageUrl,
                     PostedDate = p.PostedDate,
-                    AuthorUserName = p.User.UserName
+                    AuthorUserName = p.User.UserName,
+                    LikeCount = _context.BlogLikes.Count(bl => bl.BlogPostId == p.BlogPostId),
+                    UserLiked = userId != null && _context.BlogLikes.Any(bl => bl.BlogPostId == p.BlogPostId && bl.UserId == userId)
                 })
                 .ToListAsync();
 
             return Ok(posts);
+        }
+
+        [Authorize]
+        [HttpPost("{id}/like")]
+        public async Task<IActionResult> ToggleLike(int id)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return Forbid();
+
+            var post = await _context.BlogPosts.FindAsync(id);
+            if (post == null) return NotFound();
+
+            var existing = await _context.BlogLikes
+                .FirstOrDefaultAsync(bl => bl.BlogPostId == id && bl.UserId == userId);
+
+            if (existing != null)
+                _context.BlogLikes.Remove(existing);
+            else
+                _context.BlogLikes.Add(new BlogLike { BlogPostId = id, UserId = userId, CreatedAt = DateTime.UtcNow });
+
+            await _context.SaveChangesAsync();
+
+            var likeCount = await _context.BlogLikes.CountAsync(bl => bl.BlogPostId == id);
+            return Ok(new { likeCount, userLiked = existing == null });
         }
 
         [Authorize]

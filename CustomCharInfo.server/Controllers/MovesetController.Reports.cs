@@ -5,6 +5,7 @@ using CustomCharInfo.server.Models;
 using CustomCharInfo.server.Helpers;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -14,6 +15,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<ActionResult> GetSlotGrid()
         {
             
@@ -67,11 +69,12 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public-heavy")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<ActionResult<IEnumerable<object>>> GetMovesetsReport([FromQuery] bool includeHidden = false)
         {
             var user = await _userManager.GetRequesterSummaryAsync(_context, User);
 
-            var seeAll = user?.UserTypeId == UserTypes.Admin && includeHidden;
+            var seeAll = user?.IsAdmin == true && includeHidden;
             var userModderId = user?.ModderId;
 
             var query = _context.Movesets
@@ -158,7 +161,7 @@ namespace CustomCharInfo.server.Controllers
                             ? "???"
                             : x.Moveset.ReplacementId,
 
-                    SlotsRange = $"c{x.Moveset.SlotsStart:D3}-c{x.Moveset.SlotsEnd:D3}",
+                    SlotsRange = $"c{x.Moveset.SlotsStart:D2}-c{x.Moveset.SlotsEnd:D2}",
                     ReleaseState = x.Moveset.ReleaseState.ReleaseStateName,
 
                     // Flags

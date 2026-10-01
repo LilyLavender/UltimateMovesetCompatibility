@@ -1,18 +1,18 @@
 <template>
-  <div class="add-plugin-page">
-    <h1 class="page-title no-select">Submit a Plugin</h1>
-    <p class="subtitle">
+  <PageShell title="Submit a plugin">
+    <p class="intro">
       For a plugin belonging to a shared dependency or unrelated to any moveset. To attach a plugin
-      to a moveset, check out the moveset's edit page instead.
-    </p>
-    <p class="subtitle subtitle--note">
-      Submissions here go through admin review before they're searchable on the
-      <router-link to="/plugin-lookup" class="unvisitable">Plugin Lookup</router-link> page.
+      to a moveset, use the moveset's edit page instead. Submissions go through admin review before
+      they show up on the
+      <router-link to="/plugin-lookup">plugin lookup</router-link> page.
     </p>
 
-    <v-row>
-      <!-- Upload first. Everything else appears once we know it's not a duplicate -->
-      <v-col cols="12" sm="6">
+    <FormLayout>
+      <FormSection
+        id="file"
+        title="File"
+        description="Upload first. The rest appears once the file is not already known."
+      >
         <PluginDropZone
           v-model:hash="form.hash"
           v-model:duplicate="form.duplicate"
@@ -21,71 +21,47 @@
           large
           @update:model-value="onFilePicked"
         />
-      </v-col>
+      </FormSection>
 
-      <template v-if="form.hash && !form.duplicate">
-        <v-col cols="12">
-          <v-radio-group v-model="attachment" inline hide-details>
-            <v-radio label="Belongs to an existing dependency" value="dependency" />
-            <v-radio label="Unrelated / other" value="other" />
-          </v-radio-group>
-        </v-col>
+      <FormSection v-if="form.hash && !form.duplicate" id="plugin" title="Plugin">
+        <v-radio-group v-model="attachment" inline hide-details class="attachment-choice">
+          <v-radio label="Belongs to an existing dependency" value="dependency" />
+          <v-radio label="Unrelated or other" value="other" />
+        </v-radio-group>
 
-        <!-- Other -->
-        <template v-if="attachment === 'other'">
-          <v-col cols="12" sm="6">
+        <div class="form-grid">
+          <LabeledField
+            v-if="attachment === 'other'"
+            label="Plugin name"
+            required
+            hint="Pick an existing plugin to add a new version to it, or type a new name."
+            class="span-2"
+          >
             <v-combobox
               v-model="pluginSelection"
-              variant="outlined"
               :items="otherPlugins"
               :custom-filter="filterByName"
               item-title="name"
               item-value="pluginId"
               return-object
-              label="Plugin Name"
-              hint="Pick an existing plugin to add a new version to it, or type a new name"
-              persistent-hint
             />
-          </v-col>
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model="form.versionLabel"
-              variant="outlined"
-              label="Version"
-              placeholder="e.g. 1.0.0"
-              hide-details
-            />
-          </v-col>
-        </template>
-
-        <!-- Dependency -->
-        <template v-else>
-          <v-col cols="12" sm="6">
+          </LabeledField>
+          <LabeledField v-else label="Dependency" required class="span-2">
             <v-autocomplete
               v-model="form.dependencyId"
-              variant="outlined"
               :items="dependencies"
               item-title="name"
               item-value="dependencyId"
-              label="Dependency"
-              hide-details
             />
-          </v-col>
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model="form.versionLabel"
-              variant="outlined"
-              label="Version"
-              placeholder="e.g. 1.0.0"
-              hide-details
-            />
-          </v-col>
-        </template>
+          </LabeledField>
 
-        <!-- Adding a version to an existing plugin -->
-        <v-col v-if="isExistingSelected" cols="12">
-          <div class="existing-preview">
-            <p v-if="matchedPlugin.description" class="existing-preview-desc">
+          <LabeledField label="Version" required>
+            <v-text-field v-model="form.versionLabel" placeholder="e.g. 1.0.0" />
+          </LabeledField>
+
+          <!-- Adding a version to an existing plugin -->
+          <div v-if="isExistingSelected" class="existing-preview span-3">
+            <p v-if="matchedPlugin.description" class="existing-preview__desc">
               {{ matchedPlugin.description }}
             </p>
             <a
@@ -93,68 +69,51 @@
               :href="matchedPlugin.defaultLearnMoreUrl"
               target="_blank"
               rel="noopener"
-              class="unvisitable"
             >
-              Mod Link <v-icon size="small">mdi-open-in-new</v-icon>
+              Mod link <v-icon size="small">mdi-open-in-new</v-icon>
             </a>
-            <p v-else class="hook-usage-dim">No mod link set for this plugin.</p>
+            <p v-else class="faint">No mod link set for this plugin.</p>
           </div>
-        </v-col>
-        <template v-else>
-          <v-col v-if="attachment === 'other'" cols="12">
-            <v-textarea
-              v-model="form.description"
-              variant="outlined"
-              label="Description (optional)"
-              rows="2"
-              hide-details
-            />
-          </v-col>
-          <v-col cols="12" sm="6">
-            <v-text-field
-              v-model="form.defaultLearnMoreUrl"
-              variant="outlined"
-              label="Mod Link (optional)"
-              hide-details
-            />
-          </v-col>
-        </template>
-
-        <v-col cols="12">
-          <div class="d-flex align-start ga-3 justify-end">
-            <v-textarea
-              v-model="form.notes"
-              variant="outlined"
-              density="compact"
-              label="Notes for admins"
-              placeholder="Optional, shown to admins only."
-              rows="1"
-              auto-grow
-              hide-details
-              class="notes-field"
-            />
-            <v-btn
-              class="btn submit-button mt-1"
-              :loading="submitting"
-              :disabled="submitting"
-              @click="submit"
+          <template v-else>
+            <LabeledField
+              v-if="attachment === 'other'"
+              label="Description"
+              note="optional"
+              class="span-3"
             >
-              Submit for review
-            </v-btn>
-          </div>
-          <div class="submit-feedback">
-            <span v-if="error" class="error-text">{{ error }}</span>
-            <span v-if="submitted" class="success-text">Submitted!</span>
-          </div>
-        </v-col>
+              <v-textarea v-model="form.description" rows="2" />
+            </LabeledField>
+            <LabeledField label="Mod link" note="optional" class="span-2">
+              <v-text-field v-model="form.defaultLearnMoreUrl" />
+            </LabeledField>
+          </template>
+        </div>
+
+        <p v-if="error" class="note note--err">{{ error }}</p>
+        <p v-if="submitted" class="note note--ok">Submitted for review.</p>
+      </FormSection>
+
+      <template v-if="form.hash && !form.duplicate" #savebar>
+        <LabeledField label="Notes for admins" note="optional" class="savebar-notes">
+          <v-textarea v-model="form.notes" density="compact" rows="1" auto-grow hide-details />
+        </LabeledField>
+        <span class="savebar-spacer"></span>
+        <AppButton variant="primary" icon="mdi-check" :busy="submitting" @click="submit">
+          Submit for review
+        </AppButton>
       </template>
-    </v-row>
-  </div>
+    </FormLayout>
+  </PageShell>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import api from '@/services/api'
+import PageShell from '@/components/PageShell.vue'
+import FormLayout from '@/components/FormLayout.vue'
+import FormSection from '@/components/FormSection.vue'
+import LabeledField from '@/components/LabeledField.vue'
+import AppButton from '@/components/AppButton.vue'
 import PluginDropZone from '@/components/PluginDropZone.vue'
 
 const attachment = ref('other')
@@ -308,73 +267,84 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.add-plugin-page {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem 4rem;
-}
-.page-title {
-  font-size: 3em;
-  margin-bottom: 0.15em;
-}
-.subtitle {
-  color: #aaa;
-  margin-bottom: 1rem;
-  line-height: 1.5;
-}
-.subtitle--note {
-  font-size: 0.9em;
-}
-.error-text {
-  color: #ef9a9a;
-  font-size: 0.9em;
-  margin-left: 0.75rem;
-}
-.success-text {
-  color: #81c784;
-  font-size: 0.9em;
-  margin-left: 0.75rem;
-}
-.submit-feedback {
-  text-align: right;
-}
-.disabled :deep(input) {
-  color: #484848;
-}
-.existing-preview {
-  background-color: #1a1a1a;
-  border-radius: 6px;
-  padding: 0.75rem 1rem;
-}
-.existing-preview-desc {
-  margin: 0 0 0.4rem;
-  font-size: 0.92em;
-}
-.hook-usage-dim {
-  opacity: 0.6;
+.intro {
+  max-width: 720px;
+  margin: 0 0 20px;
+  color: var(--tx-2);
+  line-height: 1.55;
 }
 
-/* Shared with MovesetForm.vue's "Notes + Submit" row - duplicated because Vue's scoped
-   styles don't cross component boundaries. */
-.notes-field {
-  max-width: 400px;
+.intro a,
+.existing-preview a {
+  color: var(--white);
+  text-decoration: underline;
 }
-.notes-field :deep(.v-field__input) {
-  font-size: 0.85rem;
-  padding-top: 6px;
-  padding-bottom: 6px;
+
+.attachment-choice {
+  margin-bottom: 4px;
 }
-.notes-field :deep(.v-label) {
-  font-style: italic;
-  color: #6e6e6e !important;
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
 }
-.submit-button {
-  background-color: #2e2e2e;
-  color: #e2e2e2;
+
+.span-2 {
+  grid-column: span 2;
 }
-.btn {
-  text-transform: unset;
-  letter-spacing: 0.009375em;
-  font-size: medium;
+
+.span-3 {
+  grid-column: span 3;
+}
+
+.existing-preview {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  font-size: 14px;
+}
+
+.existing-preview__desc {
+  margin: 0 0 6px;
+}
+
+.note {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--line-2);
+  border-left: 4px solid var(--tx-3);
+  background: var(--panel);
+  color: var(--tx);
+  font-size: 14px;
+}
+
+.note--err {
+  border-left-color: var(--err);
+}
+
+.note--ok {
+  border-left-color: var(--ok);
+}
+
+.savebar-notes {
+  flex: 1 1 320px;
+  max-width: 480px;
+}
+
+.savebar-spacer {
+  flex: 1;
+}
+
+@media (max-width: 959px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .span-2,
+  .span-3 {
+    grid-column: span 1;
+  }
 }
 </style>

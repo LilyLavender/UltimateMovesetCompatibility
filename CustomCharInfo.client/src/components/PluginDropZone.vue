@@ -15,14 +15,13 @@
     >
       <input ref="inputEl" type="file" :accept="accept" class="hidden-input" @change="onPick" />
       <template v-if="duplicate">
-        <v-icon size="24" class="drop-icon drop-icon--duplicate">mdi-alert-circle</v-icon>
+        <v-icon size="24" class="drop-icon">mdi-alert-circle</v-icon>
         <div class="drop-label-group">
           <span class="drop-label">
-            Already uploaded! This plugin is
+            Already uploaded. This plugin is
             <router-link
               v-if="duplicate.attachmentType === 'Moveset'"
               :to="{ name: 'MovesetDetail', params: { movesetId: duplicate.movesetId } }"
-              class="unvisitable"
               @click.stop
               >{{ duplicate.pluginName }}</router-link
             >
@@ -30,28 +29,32 @@
           </span>
           <span class="drop-sub-inline">Version {{ duplicate.matchedVersionLabel }}</span>
         </div>
-        <v-icon size="18" class="clear-icon" @click.stop="clear">mdi-close</v-icon>
+        <button type="button" class="clear-btn" aria-label="Clear file" @click.stop="clear">
+          <v-icon size="18">mdi-close</v-icon>
+        </button>
       </template>
       <template v-else-if="!file">
         <v-icon size="28" class="drop-icon">mdi-tray-arrow-up</v-icon>
         <span class="drop-label">{{ label }}</span>
-        <span class="drop-sub">Drag & drop, or click to browse</span>
+        <span class="drop-sub">Drag and drop, or click to browse</span>
       </template>
       <template v-else>
         <v-icon size="24" class="drop-icon">mdi-file-code</v-icon>
         <div class="drop-label-group">
           <span class="drop-label">{{ file.name }}</span>
           <span v-if="hashing" class="drop-sub-inline">
-            <v-progress-circular indeterminate size="10" width="2" /> Hashing…
+            <AppLoading size="sm" label="Hashing" />
           </span>
           <span v-else-if="checking" class="drop-sub-inline">
-            <v-progress-circular indeterminate size="10" width="2" /> Checking for duplicates…
+            <AppLoading size="sm" label="Checking for duplicates" />
           </span>
-          <span v-else-if="hashValue" class="drop-sub-inline drop-sub-inline--hash"
+          <span v-else-if="hashValue" class="drop-sub-inline drop-sub-inline--hash mono"
             >SHA-256: {{ hashValue }}</span
           >
         </div>
-        <v-icon size="18" class="clear-icon" @click.stop="clear">mdi-close</v-icon>
+        <button type="button" class="clear-btn" aria-label="Clear file" @click.stop="clear">
+          <v-icon size="18">mdi-close</v-icon>
+        </button>
       </template>
     </div>
   </div>
@@ -61,6 +64,7 @@
 import { ref, watch } from 'vue'
 import api from '@/services/api'
 import { hashFile } from '@/services/hashFile'
+import AppLoading from '@/components/AppLoading.vue'
 
 const props = defineProps({
   modelValue: { type: [File, null], default: null },
@@ -169,42 +173,41 @@ watch(
 .drop-wrap {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 6px;
 }
 
 .drop-zone {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.7rem 1rem;
-  border: 2px dashed #444;
-  border-radius: 8px;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1px dashed var(--line-2);
+  border-left: 4px solid var(--line-2);
+  background: var(--panel);
   cursor: pointer;
-  background-color: #1a1a1a;
   transition:
-    border-color 0.15s,
-    background-color 0.15s;
+    border-color var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease);
 }
 
-.drop-zone:hover {
-  border-color: #666;
-}
+.drop-zone:hover,
 .drop-zone--active {
-  border-color: #64b5f6;
-  background-color: #16232b;
+  border-color: var(--white);
+  background: var(--panel-2);
 }
+
 .drop-zone--has-file {
   border-style: solid;
-  border-color: #388e3c;
-  background-color: #142614;
+  border-left-color: var(--ok);
 }
+
 .drop-zone--duplicate {
   border-style: solid;
-  border-color: #f9a825;
-  background-color: #2e2400;
+  border-left-color: var(--warn);
 }
+
 .drop-zone--large {
-  padding: 1.5rem 1.5rem;
+  padding: 24px;
   min-height: 90px;
 }
 
@@ -214,71 +217,74 @@ watch(
 
 .drop-icon {
   flex-shrink: 0;
-  color: #888;
+  color: var(--tx-3);
 }
+
 .drop-zone--has-file .drop-icon {
-  color: #81c784;
+  color: var(--ok);
 }
-.drop-icon--duplicate {
-  color: #ffb300;
+
+.drop-zone--duplicate .drop-icon {
+  color: var(--warn);
 }
 
 .drop-label {
-  font-size: 0.92em;
+  font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.drop-label a {
+  color: var(--white);
+  text-decoration: underline;
+}
+
 .drop-label-group {
   display: flex;
   flex-direction: column;
+  gap: 2px;
   min-width: 0;
   flex: 1;
 }
+
 .drop-label-group .drop-label {
-  font-weight: bold;
+  font-weight: 600;
   white-space: normal;
-}
-.drop-zone--duplicate .drop-label-group .drop-label {
-  color: #ffe082;
-}
-.drop-zone--has-file .drop-label-group .drop-label {
-  color: #c8e6c9;
 }
 
 .drop-sub-inline {
-  font-size: 0.8em;
-  margin-top: 0.1rem;
+  font-size: 12px;
+  color: var(--tx-2);
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 6px;
 }
-.drop-zone--duplicate .drop-sub-inline {
-  color: #cbb27a;
-}
-.drop-zone--has-file .drop-sub-inline {
-  color: #a5d6a7;
-}
+
 .drop-sub-inline--hash {
-  color: #90caf9;
   word-break: break-all;
   white-space: normal;
 }
 
 .drop-sub {
-  font-size: 0.8em;
-  color: #777;
+  font-size: 12px;
+  color: var(--tx-3);
   margin-left: auto;
   flex-shrink: 0;
 }
-.clear-icon {
+
+.clear-btn {
   margin-left: auto;
-  color: #999;
-  flex-shrink: 0;
   align-self: flex-start;
+  display: flex;
+  padding: 2px;
+  border: 0;
+  background: none;
+  color: var(--tx-2);
+  cursor: pointer;
 }
-.clear-icon:hover {
-  color: #fff;
+
+.clear-btn:hover {
+  color: var(--white);
 }
 </style>

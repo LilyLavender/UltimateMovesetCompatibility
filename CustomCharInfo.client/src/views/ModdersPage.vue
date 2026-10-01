@@ -1,43 +1,57 @@
 <template>
-  <v-container>
-    <h1 class="mb-4 page-title">Modders</h1>
+  <PageShell title="Modders" :head="false">
+    <div v-if="actions.length" class="modders-actions">
+      <AppButton
+        v-for="action in actions"
+        :key="action.label"
+        :to="resolveTo(action, user)"
+        :icon="action.icon"
+        size="sm"
+      >
+        {{ action.label }}
+      </AppButton>
+    </div>
 
-    <div class="modders-grid">
+    <div v-if="loading" class="modders-grid" aria-busy="true">
+      <Skeleton v-for="n in 10" :key="n" variant="line" height="58px" />
+    </div>
+    <div v-else class="modders-grid reveal">
       <router-link
         v-for="modder in modders"
         :key="modder.modderId"
         :to="{ name: 'ModderDetail', params: { id: modder.modderId } }"
-        class="modder-card unvisitable text-decoration-none"
+        class="modder-card"
       >
-        <div class="modder-pfp-wrap">
+        <span class="modder-card__pfp">
           <img
             v-if="modder.pfpUrl || avatars[modder.modderId]"
             :src="modder.pfpUrl || avatars[modder.modderId]"
-            class="modder-pfp"
             alt=""
           />
-          <v-icon v-else size="36" class="modder-pfp-placeholder">mdi-account</v-icon>
-        </div>
-        <div class="modder-info">
-          <span class="modder-name">
+          <v-icon v-else size="28">mdi-account</v-icon>
+        </span>
+        <span class="modder-card__text">
+          <span class="modder-card__name">
             {{ modder.name }}
-            <v-icon v-if="modder.isAdmin" size="16" class="admin-badge">mdi-shield-account</v-icon>
+            <v-icon v-if="modder.isAdmin" size="15" title="Admin">mdi-shield-account</v-icon>
           </span>
-          <span v-if="modder.bio" class="modder-bio">{{ modder.bio }}</span>
-          <!-- <span class="modder-count">
-            {{ modder.movesetCount }} {{ modder.movesetCount === 1 ? 'moveset' : 'movesets' }}
-          </span> -->
-        </div>
+          <span v-if="modder.bio" class="modder-card__bio">{{ modder.bio }}</span>
+        </span>
       </router-link>
     </div>
-  </v-container>
+  </PageShell>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useHead } from '@unhead/vue'
 import axios from 'axios'
 import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
+import { subnavs, visibleItems, resolveTo } from '@/navigation'
+import PageShell from '@/components/PageShell.vue'
+import AppButton from '@/components/AppButton.vue'
+import Skeleton from '@/components/Skeleton.vue'
 
 useHead({
   title: 'UMC | Modders',
@@ -52,10 +66,17 @@ useHead({
 
 const modders = ref([])
 const avatars = ref({})
+const loading = ref(true)
+
+// The hub has one page, so its actions sit above the grid instead of in a sub-nav.
+const authStore = useAuthStore()
+const user = computed(() => authStore.user)
+const actions = computed(() => visibleItems(subnavs.modders.actions, user.value))
 
 onMounted(async () => {
   const res = await api.get('/modders/public')
   modders.value = res.data
+  loading.value = false
 
   const fetches = modders.value
     .filter((m) => !m.pfpUrl && m.gamebananaId)
@@ -75,76 +96,78 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.page-title {
-  font-size: 4em;
+.modders-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 14px;
 }
+
 .modders-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 6px;
 }
+
 .modder-card {
   display: flex;
-  flex-direction: row;
   align-items: center;
-  gap: 0.6em;
-  background-color: #1e1e1e;
-  border-radius: 8px;
-  padding: 0.5em 0.75em;
-  color: #dedede;
-  transition: background-color 150ms ease-in-out;
+  gap: 10px;
   min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--tx);
+  text-decoration: none;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
 }
+
 .modder-card:hover {
-  background-color: #2a2a2a;
+  background: var(--panel-2);
+  border-color: var(--white);
 }
-.modder-pfp-wrap {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  overflow: hidden;
+
+.modder-card__pfp {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #333;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  background: var(--panel-2);
+  color: var(--tx-3);
 }
-.modder-pfp {
+
+.modder-card__pfp img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-.modder-pfp-placeholder {
-  color: #888;
-}
-.modder-info {
+
+.modder-card__text {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
-.modder-name {
-  font-size: 1.05em;
-  font-weight: 500;
+
+.modder-card__name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  font-size: 15px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.admin-badge {
-  vertical-align: middle;
-  margin-left: -2px;
-  margin-bottom: 2px;
-}
-.modder-count {
-  font-size: 0.8em;
-  color: #888;
-  margin-top: 1px;
-}
-.modder-bio {
-  font-size: 0.78em;
-  color: #aaa;
+
+.modder-card__bio {
+  font-size: 12.5px;
+  color: var(--tx-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-top: 1px;
 }
 </style>

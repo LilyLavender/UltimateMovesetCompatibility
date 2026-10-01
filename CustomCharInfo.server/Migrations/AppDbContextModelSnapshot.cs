@@ -195,6 +195,24 @@ namespace CustomCharInfo.server.Migrations
                     b.ToTable("BannerImages");
                 });
 
+            modelBuilder.Entity("CustomCharInfo.server.Models.BlogLike", b =>
+                {
+                    b.Property<int>("BlogPostId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("BlogPostId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("BlogLikes");
+                });
+
             modelBuilder.Entity("CustomCharInfo.server.Models.BlogPost", b =>
                 {
                     b.Property<int>("BlogPostId")
@@ -262,6 +280,65 @@ namespace CustomCharInfo.server.Migrations
                         .IsUnique();
 
                     b.ToTable("CompatibilityReports");
+                });
+
+            modelBuilder.Entity("CustomCharInfo.server.Models.ContributionRole", b =>
+                {
+                    b.Property<int>("ContributionRoleId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ContributionRoleId"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("ContributionRoleId");
+
+                    b.ToTable("ContributionRoles");
+
+                    b.HasData(
+                        new
+                        {
+                            ContributionRoleId = 1,
+                            Name = "Coding"
+                        },
+                        new
+                        {
+                            ContributionRoleId = 2,
+                            Name = "Animation"
+                        },
+                        new
+                        {
+                            ContributionRoleId = 3,
+                            Name = "Modelling"
+                        },
+                        new
+                        {
+                            ContributionRoleId = 4,
+                            Name = "Rendering"
+                        },
+                        new
+                        {
+                            ContributionRoleId = 5,
+                            Name = "Sounds"
+                        },
+                        new
+                        {
+                            ContributionRoleId = 6,
+                            Name = "Effects"
+                        },
+                        new
+                        {
+                            ContributionRoleId = 7,
+                            Name = "Concept/Design"
+                        },
+                        new
+                        {
+                            ContributionRoleId = 8,
+                            Name = "Other"
+                        });
                 });
 
             modelBuilder.Entity("CustomCharInfo.server.Models.Dependency", b =>
@@ -742,6 +819,11 @@ namespace CustomCharInfo.server.Migrations
                     b.Property<int>("ModderId")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("ShowOnCard")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
                     b.Property<int>("SortOrder")
                         .HasColumnType("integer");
 
@@ -750,6 +832,24 @@ namespace CustomCharInfo.server.Migrations
                     b.HasIndex("ModderId");
 
                     b.ToTable("MovesetModders");
+                });
+
+            modelBuilder.Entity("CustomCharInfo.server.Models.MovesetModderRole", b =>
+                {
+                    b.Property<int>("MovesetId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ModderId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ContributionRoleId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("MovesetId", "ModderId", "ContributionRoleId");
+
+                    b.HasIndex("ContributionRoleId");
+
+                    b.ToTable("MovesetModderRoles");
                 });
 
             modelBuilder.Entity("CustomCharInfo.server.Models.OffsetState", b =>
@@ -1091,6 +1191,25 @@ namespace CustomCharInfo.server.Migrations
                     b.ToTable("WatchedRepos");
                 });
 
+            modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FriendlyName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Xml")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DataProtectionKeys");
+                });
+
             modelBuilder.Entity("CustomCharInfo.server.Models.ActionLog", b =>
                 {
                     b.HasOne("CustomCharInfo.server.Models.AcceptanceState", "AcceptanceState")
@@ -1138,6 +1257,25 @@ namespace CustomCharInfo.server.Migrations
                         .IsRequired();
 
                     b.Navigation("VanillaChar");
+                });
+
+            modelBuilder.Entity("CustomCharInfo.server.Models.BlogLike", b =>
+                {
+                    b.HasOne("CustomCharInfo.server.Models.BlogPost", "BlogPost")
+                        .WithMany()
+                        .HasForeignKey("BlogPostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CustomCharInfo.server.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BlogPost");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("CustomCharInfo.server.Models.BlogPost", b =>
@@ -1408,6 +1546,25 @@ namespace CustomCharInfo.server.Migrations
                     b.Navigation("Moveset");
                 });
 
+            modelBuilder.Entity("CustomCharInfo.server.Models.MovesetModderRole", b =>
+                {
+                    b.HasOne("CustomCharInfo.server.Models.ContributionRole", "ContributionRole")
+                        .WithMany()
+                        .HasForeignKey("ContributionRoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CustomCharInfo.server.Models.MovesetModder", "MovesetModder")
+                        .WithMany("Roles")
+                        .HasForeignKey("MovesetId", "ModderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ContributionRole");
+
+                    b.Navigation("MovesetModder");
+                });
+
             modelBuilder.Entity("CustomCharInfo.server.Models.Plugin", b =>
                 {
                     b.HasOne("CustomCharInfo.server.Models.Dependency", "Dependency")
@@ -1542,6 +1699,11 @@ namespace CustomCharInfo.server.Migrations
                     b.Navigation("MovesetHooks");
 
                     b.Navigation("MovesetModders");
+                });
+
+            modelBuilder.Entity("CustomCharInfo.server.Models.MovesetModder", b =>
+                {
+                    b.Navigation("Roles");
                 });
 
             modelBuilder.Entity("CustomCharInfo.server.Models.OffsetState", b =>

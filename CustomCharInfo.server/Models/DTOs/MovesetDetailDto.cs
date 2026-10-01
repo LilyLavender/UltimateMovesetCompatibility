@@ -102,6 +102,9 @@ namespace CustomCharInfo.server.Models.DTOs
     {
         public ModderSummaryDto Modder { get; set; }
         public int? SortOrder { get; set; }
+
+        public List<int> RoleIds { get; set; } = new();
+        public bool ShowOnCard { get; set; } = true;
     }
 
     public class ModderSummaryDto
@@ -112,6 +115,7 @@ namespace CustomCharInfo.server.Models.DTOs
         public int? GamebananaId { get; set; }
         public string? DiscordUsername { get; set; }
         public string? UserId { get; set; }
+        public string? PfpUrl { get; set; }
     }
 
     public class MovesetArticleDetailDto

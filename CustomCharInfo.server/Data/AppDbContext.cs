@@ -1,9 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using CustomCharInfo.server.Models;
 
 namespace CustomCharInfo.server.Data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : DbContext, IDataProtectionKeyContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -13,6 +14,8 @@ namespace CustomCharInfo.server.Data
         public DbSet<MovesetDependency> MovesetDependencies { get; set; }
         public DbSet<Modder> Modders { get; set; }
         public DbSet<MovesetModder> MovesetModders { get; set; }
+        public DbSet<MovesetModderRole> MovesetModderRoles { get; set; }
+        public DbSet<ContributionRole> ContributionRoles { get; set; }
         public DbSet<MovesetEditor> MovesetEditors { get; set; }
         public DbSet<MovesetAdminNote> MovesetAdminNotes { get; set; }
         public DbSet<Article> Articles { get; set; }
@@ -39,8 +42,12 @@ namespace CustomCharInfo.server.Data
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<UserIpAddress> UserIpAddresses { get; set; }
 
+        // Data Protection key ring. Signs Identity password reset tokens
+        public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
+
         // Likes
         public DbSet<MovesetLike> MovesetLikes { get; set; }
+        public DbSet<BlogLike> BlogLikes { get; set; }
 
         // Compatibility
         public DbSet<CompatibilityReport> CompatibilityReports { get; set; }
@@ -63,6 +70,19 @@ namespace CustomCharInfo.server.Data
             modelBuilder.Entity<MovesetModder>()
                 .HasKey(mm => new { mm.MovesetId, mm.ModderId });
 
+            modelBuilder.Entity<MovesetModder>()
+                .Property(mm => mm.ShowOnCard)
+                .HasDefaultValue(true);
+
+            // Roles hang off the credit, so removing a credit or its moveset removes them too.
+            modelBuilder.Entity<MovesetModderRole>()
+                .HasKey(r => new { r.MovesetId, r.ModderId, r.ContributionRoleId });
+
+            modelBuilder.Entity<MovesetModderRole>()
+                .HasOne(r => r.MovesetModder)
+                .WithMany(mm => mm.Roles)
+                .HasForeignKey(r => new { r.MovesetId, r.ModderId });
+
             modelBuilder.Entity<MovesetEditor>()
                 .HasKey(me => new { me.MovesetId, me.ModderId });
 
@@ -74,6 +94,9 @@ namespace CustomCharInfo.server.Data
 
             modelBuilder.Entity<MovesetLike>()
                 .HasKey(ml => new { ml.MovesetId, ml.UserId });
+
+            modelBuilder.Entity<BlogLike>()
+                .HasKey(bl => new { bl.BlogPostId, bl.UserId });
 
             modelBuilder.Entity<Moveset>()
                 .HasOne(m => m.VanillaChar)
@@ -164,6 +187,17 @@ namespace CustomCharInfo.server.Data
                 new OffsetState { OffsetStateId = Models.OffsetStates.Confirmed, Name = "Confirmed" },
                 new OffsetState { OffsetStateId = Models.OffsetStates.Generated, Name = "Generated" },
                 new OffsetState { OffsetStateId = Models.OffsetStates.CarriedForward, Name = "Carried Forward" });
+
+            // Qualified for the same reason as OffsetStates above.
+            modelBuilder.Entity<ContributionRole>().HasData(
+                new ContributionRole { ContributionRoleId = Models.ContributionRoles.Coding, Name = "Coding" },
+                new ContributionRole { ContributionRoleId = Models.ContributionRoles.Animation, Name = "Animation" },
+                new ContributionRole { ContributionRoleId = Models.ContributionRoles.Modelling, Name = "Modelling" },
+                new ContributionRole { ContributionRoleId = Models.ContributionRoles.Rendering, Name = "Rendering" },
+                new ContributionRole { ContributionRoleId = Models.ContributionRoles.Sounds, Name = "Sounds" },
+                new ContributionRole { ContributionRoleId = Models.ContributionRoles.Effects, Name = "Effects" },
+                new ContributionRole { ContributionRoleId = Models.ContributionRoles.ConceptDesign, Name = "Concept/Design" },
+                new ContributionRole { ContributionRoleId = Models.ContributionRoles.Other, Name = "Other" });
 
             // Action Logs
             modelBuilder.Entity<ActionLog>()

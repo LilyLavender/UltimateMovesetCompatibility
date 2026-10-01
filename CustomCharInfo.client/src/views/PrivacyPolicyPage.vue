@@ -1,13 +1,11 @@
 <template>
-  <v-container max-width="700px">
-    <h1 class="mb-1 page-title no-select">Privacy Policy</h1>
-
-    <div class="content">
-      <p class="last-updated">Last updated: September 11, 2026</p>
+  <PageShell title="Privacy policy" tier="narrow">
+    <div class="prose">
+      <p class="prose-meta">Last updated: September 11, 2026</p>
 
       <h2>What we collect</h2>
       <p>
-        When you create an account, we store your email address and a salted & hashed password
+        When you create an account, we store your email address and a salted and hashed password
         (meaning your actual password never touches our database). Your email address is used only
         for account-related purposes and is never shared with third parties or displayed publicly.
       </p>
@@ -32,7 +30,7 @@
       <h2>Data visibility</h2>
       <p>
         Your username is publicly visible on any moveset, series, or hook you are credited on. Your
-        email address is never displayed publicly Modder profiles may optionally display a Discord
+        email address is never displayed publicly. Modder profiles may optionally display a Discord
         username, which is provided voluntarily.
       </p>
 
@@ -44,28 +42,9 @@
       <h2>Contact</h2>
       <p>For any privacy-related questions or requests, please contact Lily on Discord.</p>
     </div>
-  </v-container>
+  </PageShell>
 </template>
 
-<style scoped>
-.page-title {
-  font-size: 3em;
-}
-.content {
-  font-size: 18px;
-}
-.last-updated {
-  font-size: 14px;
-  margin-bottom: 1.5em;
-}
-h2 {
-  font-size: 1.4em;
-  margin-top: 1.5em;
-  margin-bottom: 0.3em;
-}
-p {
-  opacity: 0.5;
-  line-height: 1.6;
-  margin-bottom: 0.75em;
-}
-</style>
+<script setup>
+import PageShell from '@/components/PageShell.vue'
+</script>

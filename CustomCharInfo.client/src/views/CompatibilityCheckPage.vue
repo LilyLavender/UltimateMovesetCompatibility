@@ -1,432 +1,453 @@
 <template>
-  <div class="compat-page">
-    <h1 class="page-title no-select">Compatibility Check</h1>
-
-    <!-- Mode switch -->
-    <div class="mode-row">
-      <button
-        type="button"
-        :class="['mode-btn', mode === 'check' ? 'mode-btn--active' : '']"
-        @click="mode = 'check'"
-      >
-        <span class="mdi mdi-swap-horizontal" /> Check compatibility
-      </button>
-      <button
-        type="button"
-        :class="['mode-btn', mode === 'group' ? 'mode-btn--active' : '']"
-        @click="mode = 'group'"
-      >
-        <span class="mdi mdi-checkbox-multiple-marked-outline" /> Report a group
-      </button>
-    </div>
-
-    <p v-if="mode === 'check'" class="subtitle">
-      Click two movesets to check if they work together, or select up to {{ MAX_PREVIEW }} to
-      compare every pair at once.
-    </p>
-    <p v-else class="subtitle">
-      Select every moveset you run together (up to {{ MAX_GROUP }}) and report all of them as
-      compatible with each other in one go.
-    </p>
-
-    <!-- Group selection bar -->
-    <div v-if="mode === 'group'" class="group-bar">
-      <span class="group-bar__count">
-        <strong>{{ selection.length }}</strong> selected
-        <span v-if="selection.length >= 2" class="group-bar__pairs">· {{ pairCount }} pairs</span>
-      </span>
-      <div class="group-bar__actions">
-        <v-btn
-          size="small"
-          variant="text"
-          :disabled="selection.length === 0"
-          @click="clearGroupSelection"
+  <PageShell title="Compatibility check" tier="wide">
+    <template #subnav>
+      <SubNav section="movesets" label="Movesets" />
+    </template>
+    <div class="compat-page">
+      <!-- Mode switch -->
+      <div class="mode-row">
+        <AppButton
+          size="sm"
+          :variant="mode === 'check' ? 'primary' : 'ghost'"
+          icon="mdi-swap-horizontal"
+          @click="mode = 'check'"
         >
-          Clear
-        </v-btn>
-        <v-btn
-          size="small"
-          variant="tonal"
-          color="primary"
-          :disabled="selection.length < 2 || groupReview.loading"
-          :loading="groupReview.loading"
-          @click="startGroupReview"
+          Check compatibility
+        </AppButton>
+        <AppButton
+          size="sm"
+          :variant="mode === 'group' ? 'primary' : 'ghost'"
+          icon="mdi-checkbox-multiple-marked-outline"
+          @click="mode = 'group'"
         >
-          <v-icon start size="small">mdi-clipboard-check-outline</v-icon> Review and submit
-        </v-btn>
+          Report a group
+        </AppButton>
       </div>
-    </div>
 
-    <!-- Moveset grid -->
-    <div v-if="loading" class="loading-msg">Loading movesets…</div>
-    <div v-else class="moveset-grid">
-      <button
-        v-for="m in visibleMovesets"
-        :key="m.movesetId"
-        class="ms-card"
-        :class="{
-          'ms-card--selected': isSelected(m),
-          'ms-card--dimmed': isDimmed(m),
-          'ms-card--preview': showVotePreview(m),
-          'ms-card--vote-preview': showVotePreview(m) && !pairSummary(m.movesetId),
-        }"
-        :style="{
-          '--bg-color': showVotePreview(m) ? '#808080' : `#${normalizedBgColor(m)}`,
-        }"
-        @click="toggleSelect(m)"
-      >
-        <div class="ms-card__thumb" :style="thumbStyle(m)" />
-        <div class="ms-card__overlay" :style="overlayStyle(m)" />
-        <div class="ms-card__shade" />
-        <span class="ms-card__name"
-          >{{ m.moddedCharName
-          }}<span v-if="m.subtitle" class="ms-card__subtitle"> ({{ m.subtitle }})</span></span
-        >
-        <!-- Vote bar: shown when one moveset is selected and this card has vote data -->
-        <div v-if="showVotePreview(m) && pairSummary(m.movesetId)" class="ms-card__vote-bar">
-          <div class="ms-card__vote-bar-compat" :style="{ width: compatPct(m.movesetId) + '%' }" />
-          <div class="ms-card__vote-bar-incompat" />
+      <p v-if="mode === 'check'" class="subtitle">
+        Click two movesets to check if they work together, or select up to {{ MAX_PREVIEW }} to
+        compare every pair at once.
+      </p>
+      <p v-else class="subtitle">
+        Select every moveset you run together (up to {{ MAX_GROUP }}) and report all of them as
+        compatible with each other in one go.
+      </p>
+
+      <!-- Group selection bar -->
+      <div v-if="mode === 'group'" class="group-bar">
+        <span class="group-bar__count">
+          <strong>{{ selection.length }}</strong> selected
+          <span v-if="selection.length >= 2" class="group-bar__pairs">· {{ pairCount }} pairs</span>
+        </span>
+        <div class="group-bar__actions">
+          <AppButton
+            size="sm"
+            variant="ghost"
+            :disabled="selection.length === 0"
+            @click="clearGroupSelection"
+          >
+            Clear
+          </AppButton>
+          <AppButton
+            size="sm"
+            variant="primary"
+            icon="mdi-clipboard-check-outline"
+            :disabled="selection.length < 2"
+            :busy="groupReview.loading"
+            @click="startGroupReview"
+          >
+            Review and submit
+          </AppButton>
         </div>
-      </button>
-    </div>
+      </div>
 
-    <!-- Result area: the panels swap with a short slide and cross-blur -->
-    <Transition name="panel" mode="out-in">
-      <!-- Predicted pair list: three or more selected in check mode, or the group review step -->
-      <div v-if="pairPanel" key="pairs" class="result-section group-review">
-        <Transition name="panel" mode="out-in">
-          <div v-if="pairPanel.loading" key="loading" class="checking-msg">
-            <v-progress-circular indeterminate size="24" />
-            Checking…
+      <!-- Moveset grid -->
+      <div v-if="loading" class="moveset-grid" aria-busy="true">
+        <Skeleton v-for="n in 24" :key="n" variant="line" width="163px" height="50px" />
+      </div>
+      <div v-else class="moveset-grid reveal">
+        <button
+          v-for="m in visibleMovesets"
+          :key="m.movesetId"
+          class="ms-card"
+          :class="{
+            'ms-card--selected': isSelected(m),
+            'ms-card--dimmed': isDimmed(m),
+            'ms-card--preview': showVotePreview(m),
+            'ms-card--vote-preview': showVotePreview(m) && !pairSummary(m.movesetId),
+          }"
+          :style="{
+            '--bg-color': showVotePreview(m) ? 'var(--tx-3)' : `#${normalizedBgColor(m)}`,
+          }"
+          @click="toggleSelect(m)"
+        >
+          <div class="ms-card__thumb" :style="thumbStyle(m)" />
+          <div class="ms-card__overlay" :style="overlayStyle(m)" />
+          <div class="ms-card__shade" />
+          <span class="ms-card__name"
+            >{{ m.moddedCharName
+            }}<span v-if="m.subtitle" class="ms-card__subtitle"> ({{ m.subtitle }})</span></span
+          >
+          <!-- Vote bar: shown when one moveset is selected and this card has vote data -->
+          <div v-if="showVotePreview(m) && pairSummary(m.movesetId)" class="ms-card__vote-bar">
+            <div
+              class="ms-card__vote-bar-compat"
+              :style="{ width: compatPct(m.movesetId) + '%' }"
+            />
+            <div class="ms-card__vote-bar-incompat" />
           </div>
+        </button>
+      </div>
 
-          <div v-else-if="pairPanel.error" key="error" class="verdict-banner verdict--bad">
-            <v-icon class="verdict-icon">mdi-alert-circle</v-icon>
-            <div class="verdict-body">
-              <span class="verdict-text">{{ pairPanel.error }}</span>
+      <!-- Result area: the panels swap with a short slide and cross-blur -->
+      <Transition name="panel" mode="out-in">
+        <!-- Predicted pair list: three or more selected in check mode, or the group review step -->
+        <div v-if="pairPanel" key="pairs" class="result-section group-review">
+          <Transition name="panel" mode="out-in">
+            <div v-if="pairPanel.loading" key="loading" class="checking-msg">
+              <AppLoading size="sm" />
+              Checking…
             </div>
-          </div>
 
-          <div v-else key="content">
-            <p v-if="pairPanel.pairs === null && mode === 'check'" class="group-review__note">
-              Predicted results are available for up to {{ MAX_PREVIEW }} movesets. Deselect a few
-              to see them.
-            </p>
-            <p v-else-if="pairPanel.pairs === null" class="group-review__note">
-              Groups larger than {{ MAX_PREVIEW }} skip the predicted-conflict preview.
-            </p>
-            <template v-else>
-              <p v-if="mode === 'group'" class="group-review__note">
-                Predicted results for each pair. Only report the group if you actually ran these
-                movesets together.
-              </p>
-              <p v-else class="group-review__note">
-                Predicted results for each pair. Select exactly two movesets for the full breakdown
-                and community votes.
-              </p>
-              <div class="group-pairs">
-                <div
-                  v-for="pair in panelConflicts"
-                  :key="pair.key"
-                  :class="['group-pair', GROUP_SEVERITY[pair.severity].cls]"
-                >
-                  <v-icon size="small" class="group-pair__icon">{{
-                    GROUP_SEVERITY[pair.severity].icon
-                  }}</v-icon>
-                  <span class="group-pair__names">{{ pair.nameA }} + {{ pair.nameB }}</span>
-                  <span class="group-pair__label">{{ GROUP_SEVERITY[pair.severity].label }}</span>
-                  <span v-if="pair.hookOffsets.length" class="group-pair__hooks">
-                    shared hook{{ pair.hookOffsets.length === 1 ? '' : 's' }}:
-                    {{ pair.hookOffsets.map((o) => `0x${o}`).join(', ') }}
-                  </span>
-                  <span v-else-if="pair.articleCount" class="group-pair__hooks">
-                    {{ pair.articleCount }} shared article{{ pair.articleCount === 1 ? '' : 's' }}
-                  </span>
-                </div>
+            <div v-else-if="pairPanel.error" key="error" class="verdict-banner verdict--bad">
+              <v-icon class="verdict-icon">mdi-alert-circle</v-icon>
+              <div class="verdict-body">
+                <span class="verdict-text">{{ pairPanel.error }}</span>
+              </div>
+            </div>
 
-                <!-- Every clean pair collapses into one block -->
-                <div v-if="panelClear.length" class="group-pair group-clear verdict--good">
-                  <div class="group-clear__header">
-                    <v-icon size="small" class="group-pair__icon">mdi-check-circle</v-icon>
-                    <span class="group-pair__names">No issues between:</span>
-                  </div>
-                  <div class="group-clear__chips">
-                    <span v-for="pair in panelClear" :key="pair.key" class="group-chip">
-                      {{ pair.nameA }} + {{ pair.nameB }}
+            <div v-else key="content">
+              <p v-if="pairPanel.pairs === null && mode === 'check'" class="group-review__note">
+                Predicted results are available for up to {{ MAX_PREVIEW }} movesets. Deselect a few
+                to see them.
+              </p>
+              <p v-else-if="pairPanel.pairs === null" class="group-review__note">
+                Groups larger than {{ MAX_PREVIEW }} skip the predicted-conflict preview.
+              </p>
+              <template v-else>
+                <p v-if="mode === 'group'" class="group-review__note">
+                  Predicted results for each pair. Only report the group if you actually ran these
+                  movesets together.
+                </p>
+                <p v-else class="group-review__note">
+                  Predicted results for each pair. Select exactly two movesets for the full
+                  breakdown and community votes.
+                </p>
+                <div class="group-pairs">
+                  <div
+                    v-for="pair in panelConflicts"
+                    :key="pair.key"
+                    :class="['group-pair', GROUP_SEVERITY[pair.severity].cls]"
+                  >
+                    <v-icon size="small" class="group-pair__icon">{{
+                      GROUP_SEVERITY[pair.severity].icon
+                    }}</v-icon>
+                    <span class="group-pair__names">{{ pair.nameA }} + {{ pair.nameB }}</span>
+                    <span class="group-pair__label">{{ GROUP_SEVERITY[pair.severity].label }}</span>
+                    <span v-if="pair.hookOffsets.length" class="group-pair__hooks">
+                      shared hook{{ pair.hookOffsets.length === 1 ? '' : 's' }}:
+                      {{ pair.hookOffsets.map(formatOffset).join(', ') }}
+                    </span>
+                    <span v-else-if="pair.articleCount" class="group-pair__hooks">
+                      {{ pair.articleCount }} shared article{{ pair.articleCount === 1 ? '' : 's' }}
                     </span>
                   </div>
-                </div>
-              </div>
-            </template>
 
-            <template v-if="mode === 'group'">
-              <div v-if="user" class="group-review__confirm">
-                <v-btn
+                  <!-- Every clean pair collapses into one block -->
+                  <div v-if="panelClear.length" class="group-pair group-clear verdict--good">
+                    <div class="group-clear__header">
+                      <v-icon size="small" class="group-pair__icon">mdi-check-circle</v-icon>
+                      <span class="group-pair__names">No issues between:</span>
+                    </div>
+                    <div class="group-clear__chips">
+                      <span v-for="pair in panelClear" :key="pair.key" class="group-chip">
+                        {{ pair.nameA }} + {{ pair.nameB }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </template>
+
+              <template v-if="mode === 'group'">
+                <div v-if="user" class="group-review__confirm">
+                  <AppButton
+                    :class="[
+                      'report-btn',
+                      hasIncompatiblePair ? 'report-btn--muted' : 'report-btn--active-compat',
+                    ]"
+                    size="sm"
+                    variant="ghost"
+                    icon="mdi-thumb-up-outline"
+                    :busy="reportLoading"
+                    @click="confirmOrSubmitGroup"
+                  >
+                    Mark all {{ pairCount }} pairs compatible
+                  </AppButton>
+                  <span v-if="hasIncompatiblePair" class="group-review__warning">
+                    At least one pair is predicted not compatible.
+                  </span>
+                </div>
+                <p v-else class="sign-in-note">Sign in to submit a report.</p>
+              </template>
+            </div>
+          </Transition>
+        </div>
+
+        <!-- Checking spinner -->
+        <div v-else-if="mode === 'check' && checking" key="checking" class="checking-msg">
+          <AppLoading size="sm" />
+          Checking…
+        </div>
+
+        <!-- Results -->
+        <div v-else-if="mode === 'check' && result" key="result" class="result-section">
+          <!-- Verdict banner -->
+          <div :class="['verdict-banner', finalVerdictClass]">
+            <v-icon class="verdict-icon">{{ finalVerdictIcon }}</v-icon>
+            <div class="verdict-body">
+              <span class="verdict-text">{{ finalVerdictText }}</span>
+              <span v-if="communityFactored" class="verdict-note">{{ communityNote }}</span>
+            </div>
+          </div>
+
+          <!-- Issues list -->
+          <div v-if="result.issues.length > 0" class="issues-list">
+            <div
+              v-for="(issue, i) in result.issues"
+              :key="i"
+              :class="['issue-item', `issue-item--${issue.severity}`]"
+            >
+              <v-icon class="issue-icon" size="small">{{ severityIcon(issue.severity) }}</v-icon>
+              <span>{{ issue.message }}</span>
+            </div>
+          </div>
+
+          <!-- Community reports -->
+          <div class="community-section">
+            <!-- Vote banner -->
+            <div v-if="totalVotes > 0" :class="['community-banner', communityBannerClass]">
+              <v-icon class="community-banner-icon">{{ communityBannerIcon }}</v-icon>
+              <div class="community-banner-body">
+                <span class="community-banner-text">{{ communityBannerText }}</span>
+                <span class="community-banner-sub"
+                  >{{ reports.compatibleCount }} compatible · {{ reports.incompatibleCount }} not
+                  compatible</span
+                >
+              </div>
+            </div>
+            <p v-else class="community-no-votes">No community reports yet for this combination.</p>
+
+            <!-- User vote -->
+            <div v-if="user" class="community-vote-row">
+              <span class="report-label">Have you tested this combination?</span>
+              <div class="report-btn-row">
+                <AppButton
                   :class="[
                     'report-btn',
-                    hasIncompatiblePair ? 'report-btn--muted' : 'report-btn--active-compat',
+                    reports.userVote === true ? 'report-btn--active-compat' : '',
                   ]"
-                  size="small"
-                  variant="tonal"
-                  :loading="reportLoading"
-                  @click="confirmOrSubmitGroup"
+                  size="sm"
+                  variant="ghost"
+                  icon="mdi-thumb-up-outline"
+                  :busy="reportLoading"
+                  @click="submitReport(true)"
                 >
-                  <v-icon start>mdi-thumb-up-outline</v-icon>
-                  Mark all {{ pairCount }} pairs compatible
-                </v-btn>
-                <span v-if="hasIncompatiblePair" class="group-review__warning">
-                  At least one pair is predicted not compatible.
-                </span>
+                  Works together
+                </AppButton>
+                <AppButton
+                  :class="[
+                    'report-btn',
+                    reports.userVote === false ? 'report-btn--active-incompat' : '',
+                  ]"
+                  size="sm"
+                  variant="ghost"
+                  icon="mdi-thumb-down-outline"
+                  :busy="reportLoading"
+                  @click="submitReport(false)"
+                >
+                  Doesn't work
+                </AppButton>
               </div>
-              <p v-else class="sign-in-note">Sign in to submit a report.</p>
-            </template>
-          </div>
-        </Transition>
-      </div>
-
-      <!-- Checking spinner -->
-      <div v-else-if="mode === 'check' && checking" key="checking" class="checking-msg">
-        <v-progress-circular indeterminate size="24" />
-        Checking…
-      </div>
-
-      <!-- Results -->
-      <div v-else-if="mode === 'check' && result" key="result" class="result-section">
-        <!-- Verdict banner -->
-        <div :class="['verdict-banner', finalVerdictClass]">
-          <v-icon class="verdict-icon">{{ finalVerdictIcon }}</v-icon>
-          <div class="verdict-body">
-            <span class="verdict-text">{{ finalVerdictText }}</span>
-            <span v-if="communityFactored" class="verdict-note">{{ communityNote }}</span>
-          </div>
-        </div>
-
-        <!-- Issues list -->
-        <div v-if="result.issues.length > 0" class="issues-list">
-          <div
-            v-for="(issue, i) in result.issues"
-            :key="i"
-            :class="['issue-item', `issue-item--${issue.severity}`]"
-          >
-            <v-icon class="issue-icon" size="small">{{ severityIcon(issue.severity) }}</v-icon>
-            <span>{{ issue.message }}</span>
-          </div>
-        </div>
-
-        <!-- Community reports -->
-        <div class="community-section">
-          <!-- Vote banner -->
-          <div v-if="totalVotes > 0" :class="['community-banner', communityBannerClass]">
-            <v-icon class="community-banner-icon">{{ communityBannerIcon }}</v-icon>
-            <div class="community-banner-body">
-              <span class="community-banner-text">{{ communityBannerText }}</span>
-              <span class="community-banner-sub"
-                >{{ reports.compatibleCount }} compatible · {{ reports.incompatibleCount }} not
-                compatible</span
-              >
             </div>
+            <p v-else class="sign-in-note">Sign in to submit a report.</p>
           </div>
-          <p v-else class="community-no-votes">No community reports yet for this combination.</p>
 
-          <!-- User vote -->
-          <div v-if="user" class="community-vote-row">
-            <span class="report-label">Have you tested this combination?</span>
-            <div class="report-btn-row">
-              <v-btn
-                :class="[
-                  'report-btn',
-                  reports.userVote === true ? 'report-btn--active-compat' : '',
-                ]"
-                size="small"
-                variant="tonal"
-                :loading="reportLoading"
-                @click="submitReport(true)"
-              >
-                <v-icon start>mdi-thumb-up-outline</v-icon> Works Together
-              </v-btn>
-              <v-btn
-                :class="[
-                  'report-btn',
-                  reports.userVote === false ? 'report-btn--active-incompat' : '',
-                ]"
-                size="small"
-                variant="tonal"
-                :loading="reportLoading"
-                @click="submitReport(false)"
-              >
-                <v-icon start>mdi-thumb-down-outline</v-icon> Doesn't Work
-              </v-btn>
-            </div>
-          </div>
-          <p v-else class="sign-in-note">Sign in to submit a report.</p>
-        </div>
-
-        <!-- Moveset comparison panel -->
-        <div v-if="result.a && result.b" class="compare-panel">
-          <div class="compare-col">
-            <div class="compare-header">
-              <strong
-                >{{ result.a.moddedCharName
-                }}<span v-if="result.a.subtitle" class="compare-subtitle">
-                  ({{ result.a.subtitle }})</span
-                ></strong
-              >
-            </div>
-            <div class="compare-meta">
-              <img
-                v-if="result.a.vanillaChar"
-                :src="iconUrl(result.a.vanillaChar.vanillaCharInternalName)"
-                class="meta-char-icon"
-              />
-              {{ result.a.vanillaChar?.displayName ?? '-' }}
-              <span v-if="result.a.slotsStart != null" class="meta-slots"
-                >(c{{ pad(result.a.slotsStart) }}–c{{ pad(result.a.slotsEnd) }})</span
-              >
-            </div>
-            <div class="compare-section">
-              <span class="compare-label">Articles ({{ result.a.movesetArticles.length }})</span>
-              <ul class="compare-list">
-                <li
-                  v-for="ma in result.a.movesetArticles"
-                  :key="ma.article.articleId"
-                  :class="{
-                    'compare-conflict': result.conflictingArticleIds.has(ma.article.articleId),
-                  }"
+          <!-- Moveset comparison panel -->
+          <div v-if="result.a && result.b" class="compare-panel">
+            <div class="compare-col">
+              <div class="compare-header">
+                <strong
+                  >{{ result.a.moddedCharName
+                  }}<span v-if="result.a.subtitle" class="compare-subtitle">
+                    ({{ result.a.subtitle }})</span
+                  ></strong
                 >
-                  <v-icon
-                    v-if="result.conflictingArticleIds.has(ma.article.articleId)"
-                    size="x-small"
-                    class="conflict-icon"
-                    >mdi-alert</v-icon
-                  >
-                  {{ ma.article.vanillaCharInternalName }}_{{ ma.article.articleName }}
-                </li>
-                <li v-if="!result.a.movesetArticles.length" class="compare-none">none</li>
-              </ul>
-            </div>
-            <div class="compare-section">
-              <span class="compare-label">Hooks ({{ result.a.movesetHooks.length }})</span>
-              <ul class="compare-list">
-                <li
-                  v-for="mh in result.a.movesetHooks"
-                  :key="mh.hook.hookId"
-                  :class="{ 'compare-conflict': result.conflictingHookIds.has(mh.hook.hookId) }"
+              </div>
+              <div class="compare-meta">
+                <img
+                  v-if="result.a.vanillaChar"
+                  :src="iconUrl(result.a.vanillaChar.vanillaCharInternalName)"
+                  class="meta-char-icon"
+                />
+                {{ result.a.vanillaChar?.displayName ?? '-' }}
+                <span v-if="result.a.slotsStart != null" class="meta-slots"
+                  >({{ formatSlotRange(result.a.slotsStart, result.a.slotsEnd) }})</span
                 >
-                  <v-icon
-                    v-if="result.conflictingHookIds.has(mh.hook.hookId)"
-                    size="x-small"
-                    class="conflict-icon"
-                    >mdi-alert</v-icon
+              </div>
+              <div class="compare-section">
+                <span class="compare-label">Articles ({{ result.a.movesetArticles.length }})</span>
+                <ul class="compare-list">
+                  <li
+                    v-for="ma in result.a.movesetArticles"
+                    :key="ma.article.articleId"
+                    :class="{
+                      'compare-conflict': result.conflictingArticleIds.has(ma.article.articleId),
+                    }"
                   >
-                  0x{{ mh.hook.offset }}
-                </li>
-                <li v-if="!result.a.movesetHooks.length" class="compare-none">none</li>
-              </ul>
+                    <v-icon
+                      v-if="result.conflictingArticleIds.has(ma.article.articleId)"
+                      size="x-small"
+                      class="conflict-icon"
+                      >mdi-alert</v-icon
+                    >
+                    {{ ma.article.vanillaCharInternalName }}_{{ ma.article.articleName }}
+                  </li>
+                  <li v-if="!result.a.movesetArticles.length" class="compare-none">none</li>
+                </ul>
+              </div>
+              <div class="compare-section">
+                <span class="compare-label">Hooks ({{ result.a.movesetHooks.length }})</span>
+                <ul class="compare-list">
+                  <li
+                    v-for="mh in result.a.movesetHooks"
+                    :key="mh.hook.hookId"
+                    :class="{ 'compare-conflict': result.conflictingHookIds.has(mh.hook.hookId) }"
+                  >
+                    <v-icon
+                      v-if="result.conflictingHookIds.has(mh.hook.hookId)"
+                      size="x-small"
+                      class="conflict-icon"
+                      >mdi-alert</v-icon
+                    >
+                    {{ formatOffset(mh.hook.offset) }}
+                  </li>
+                  <li v-if="!result.a.movesetHooks.length" class="compare-none">none</li>
+                </ul>
+              </div>
             </div>
-          </div>
 
-          <div class="compare-divider" />
+            <div class="compare-divider" />
 
-          <div class="compare-col">
-            <div class="compare-header">
-              <strong
-                >{{ result.b.moddedCharName
-                }}<span v-if="result.b.subtitle" class="compare-subtitle">
-                  ({{ result.b.subtitle }})</span
-                ></strong
-              >
-            </div>
-            <div class="compare-meta">
-              <img
-                v-if="result.b.vanillaChar"
-                :src="iconUrl(result.b.vanillaChar.vanillaCharInternalName)"
-                class="meta-char-icon"
-              />
-              {{ result.b.vanillaChar?.displayName ?? '-' }}
-              <span v-if="result.b.slotsStart != null" class="meta-slots"
-                >(c{{ pad(result.b.slotsStart) }}–c{{ pad(result.b.slotsEnd) }})</span
-              >
-            </div>
-            <div class="compare-section">
-              <span class="compare-label">Articles ({{ result.b.movesetArticles.length }})</span>
-              <ul class="compare-list">
-                <li
-                  v-for="ma in result.b.movesetArticles"
-                  :key="ma.article.articleId"
-                  :class="{
-                    'compare-conflict': result.conflictingArticleIds.has(ma.article.articleId),
-                  }"
+            <div class="compare-col">
+              <div class="compare-header">
+                <strong
+                  >{{ result.b.moddedCharName
+                  }}<span v-if="result.b.subtitle" class="compare-subtitle">
+                    ({{ result.b.subtitle }})</span
+                  ></strong
                 >
-                  <v-icon
-                    v-if="result.conflictingArticleIds.has(ma.article.articleId)"
-                    size="x-small"
-                    class="conflict-icon"
-                    >mdi-alert</v-icon
-                  >
-                  {{ ma.article.vanillaCharInternalName }}_{{ ma.article.articleName }}
-                </li>
-                <li v-if="!result.b.movesetArticles.length" class="compare-none">none</li>
-              </ul>
-            </div>
-            <div class="compare-section">
-              <span class="compare-label">Hooks ({{ result.b.movesetHooks.length }})</span>
-              <ul class="compare-list">
-                <li
-                  v-for="mh in result.b.movesetHooks"
-                  :key="mh.hook.hookId"
-                  :class="{ 'compare-conflict': result.conflictingHookIds.has(mh.hook.hookId) }"
+              </div>
+              <div class="compare-meta">
+                <img
+                  v-if="result.b.vanillaChar"
+                  :src="iconUrl(result.b.vanillaChar.vanillaCharInternalName)"
+                  class="meta-char-icon"
+                />
+                {{ result.b.vanillaChar?.displayName ?? '-' }}
+                <span v-if="result.b.slotsStart != null" class="meta-slots"
+                  >({{ formatSlotRange(result.b.slotsStart, result.b.slotsEnd) }})</span
                 >
-                  <v-icon
-                    v-if="result.conflictingHookIds.has(mh.hook.hookId)"
-                    size="x-small"
-                    class="conflict-icon"
-                    >mdi-alert</v-icon
+              </div>
+              <div class="compare-section">
+                <span class="compare-label">Articles ({{ result.b.movesetArticles.length }})</span>
+                <ul class="compare-list">
+                  <li
+                    v-for="ma in result.b.movesetArticles"
+                    :key="ma.article.articleId"
+                    :class="{
+                      'compare-conflict': result.conflictingArticleIds.has(ma.article.articleId),
+                    }"
                   >
-                  0x{{ mh.hook.offset }}
-                </li>
-                <li v-if="!result.b.movesetHooks.length" class="compare-none">none</li>
-              </ul>
+                    <v-icon
+                      v-if="result.conflictingArticleIds.has(ma.article.articleId)"
+                      size="x-small"
+                      class="conflict-icon"
+                      >mdi-alert</v-icon
+                    >
+                    {{ ma.article.vanillaCharInternalName }}_{{ ma.article.articleName }}
+                  </li>
+                  <li v-if="!result.b.movesetArticles.length" class="compare-none">none</li>
+                </ul>
+              </div>
+              <div class="compare-section">
+                <span class="compare-label">Hooks ({{ result.b.movesetHooks.length }})</span>
+                <ul class="compare-list">
+                  <li
+                    v-for="mh in result.b.movesetHooks"
+                    :key="mh.hook.hookId"
+                    :class="{ 'compare-conflict': result.conflictingHookIds.has(mh.hook.hookId) }"
+                  >
+                    <v-icon
+                      v-if="result.conflictingHookIds.has(mh.hook.hookId)"
+                      size="x-small"
+                      class="conflict-icon"
+                      >mdi-alert</v-icon
+                    >
+                    {{ formatOffset(mh.hook.offset) }}
+                  </li>
+                  <li v-if="!result.b.movesetHooks.length" class="compare-none">none</li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </Transition>
+      </Transition>
 
-    <!-- Confirm a group report that includes a predicted-incompatible pair -->
-    <v-dialog v-model="confirmDialog" max-width="480">
-      <v-card color="#2e2e2e">
-        <v-card-title>
-          <v-icon class="mr-1">mdi-alert</v-icon>
-          Report anyway?
-        </v-card-title>
-        <v-card-text>
-          At least one pair in this group is predicted not compatible. Only mark all
-          {{ pairCount }} pairs compatible if you have actually run every one of these movesets
-          together without problems.
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn @click="confirmDialog = false">Cancel</v-btn>
-          <v-btn class="report-btn--active-compat" :loading="reportLoading" @click="submitGroup">
-            Mark all compatible
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-  </div>
+      <!-- Confirm a group report that includes a predicted-incompatible pair -->
+      <v-dialog v-bind="dialogProps" v-model="confirmDialog" max-width="480">
+        <v-card>
+          <v-card-title class="dialog-title">
+            <v-icon class="mr-1">mdi-alert</v-icon>
+            Report anyway?
+          </v-card-title>
+          <v-card-text>
+            At least one pair in this group is predicted not compatible. Only mark all
+            {{ pairCount }} pairs compatible if you have actually run every one of these movesets
+            together without problems.
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <AppButton variant="ghost" @click="confirmDialog = false">Cancel</AppButton>
+            <AppButton
+              class="report-btn--active-compat"
+              variant="ghost"
+              :busy="reportLoading"
+              @click="submitGroup"
+            >
+              Mark all compatible
+            </AppButton>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+    </div>
+  </PageShell>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import api from '@/services/api'
 import { useNotify } from '@/composables/useNotify'
-import {
-  ItemType,
-  ReleaseState,
-  RELEASE_STATE_NAMES,
-  ALL_ACCEPTANCE_STATES,
-  HookableStatus,
-} from '@/globals'
+import { ItemType, ReleaseState, RELEASE_STATE_NAMES, HARD_STATES, HookableStatus } from '@/globals'
+import { formatOffset } from '@/services/offsets'
+import { formatSlotRange } from '@/services/slots'
+import { useDialogProps } from '@/composables/useDialogProps'
+import PageShell from '@/components/PageShell.vue'
+import SubNav from '@/components/SubNav.vue'
+import AppButton from '@/components/AppButton.vue'
+import AppLoading from '@/components/AppLoading.vue'
+import Skeleton from '@/components/Skeleton.vue'
+const dialogProps = useDialogProps()
 
 const apiUrl = import.meta.env.VITE_API_URL
 
@@ -471,6 +492,16 @@ const user = ref(null)
 
 const selection = ref([])
 const result = ref(null)
+
+const route = useRoute()
+const preselectFromRoute = () => {
+  const wanted = Number(route.query.moveset)
+  if (!wanted) return
+  const found = movesets.value.find((m) => m.movesetId === wanted)
+  if (!found || hardHeldIds.value.has(found.movesetId)) return
+  mode.value = 'check'
+  selection.value = [found]
+}
 const reports = ref({ compatibleCount: 0, incompatibleCount: 0, userVote: null })
 
 // Map<partnerMovesetId, {compatibleCount, incompatibleCount}>
@@ -645,9 +676,6 @@ const overlayStyle = (m) => {
   }
 }
 
-function pad(n) {
-  return String(n).padStart(3, '0')
-}
 function iconUrl(internalName) {
   return `${import.meta.env.BASE_URL}vanilla-stock-icons/chara_2_${internalName}.png`
 }
@@ -693,17 +721,17 @@ const runCheck = async () => {
       if (sid === HookableStatus.MoreThanOnce) {
         issues.push({
           severity: 'warning',
-          message: `Both movesets use hook 0x${mhA.hook.offset}. This hook supports multiple uses, but too many at the same offset may still cause issues.`,
+          message: `Both movesets use hook ${formatOffset(mhA.hook.offset)}. This hook supports multiple uses, but too many at the same offset may still cause issues.`,
         })
       } else if (sid === HookableStatus.OnlyOnce) {
         issues.push({
           severity: 'incompatible',
-          message: `Both movesets use hook 0x${mhA.hook.offset} - this hook can only be used once and will cause a crash.`,
+          message: `Both movesets use hook ${formatOffset(mhA.hook.offset)} - this hook can only be used once and will cause a crash.`,
         })
       } else {
         issues.push({
           severity: 'predicted-incompat',
-          message: `Both movesets use hook 0x${mhA.hook.offset}. This hook's behavior with multiple users is untested. It will likely crash.`,
+          message: `Both movesets use hook ${formatOffset(mhA.hook.offset)}. This hook's behavior with multiple users is untested. It will likely crash.`,
         })
       }
     }
@@ -921,26 +949,16 @@ onMounted(async () => {
     const [msRes, userRes, logsRes] = await Promise.allSettled([
       api.get('/movesets'),
       api.get('/auth/me'),
-      api.get('/logs', {
-        params: { acceptanceStates: ALL_ACCEPTANCE_STATES, itemTypes: [ItemType.Moveset] },
+      api.get('/logs/latest', {
+        params: { acceptanceStates: HARD_STATES, itemTypes: [ItemType.Moveset] },
       }),
     ])
     if (msRes.status === 'fulfilled') movesets.value = msRes.value.data
     if (userRes.status === 'fulfilled') user.value = userRes.value.data
     if (logsRes.status === 'fulfilled') {
-      const latest = new Map()
-      for (const log of logsRes.value.data) {
-        const id = log.item?.movesetId
-        if (id == null) continue
-        const cur = latest.get(id)
-        if (!cur || new Date(log.createdAt) > new Date(cur.createdAt)) latest.set(id, log)
-      }
-      const held = new Set()
-      for (const [id, log] of latest) {
-        if ([2, 4].includes(log.acceptanceState?.acceptanceStateId)) held.add(id)
-      }
-      hardHeldIds.value = held
+      hardHeldIds.value = new Set(logsRes.value.data.map((row) => row.itemId))
     }
+    preselectFromRoute()
   } finally {
     loading.value = false
   }
@@ -949,21 +967,12 @@ onMounted(async () => {
 
 <style scoped>
 .compat-page {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem 4rem;
-
   /* Motion tokens shared by every transition on this page */
-  --duration-quick: 150ms;
-  --duration-fast: 250ms;
-  --duration-medium: 350ms;
-  --duration-slow: 400ms;
-  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --panel-open-dur: var(--duration-slow);
-  --panel-close-dur: var(--duration-medium);
+  --panel-open-dur: var(--dur-slow);
+  --panel-close-dur: var(--dur-base);
   --panel-translate-y: 12px;
   --panel-blur: 2px;
-  --panel-ease: var(--ease-smooth-out);
+  --panel-ease: var(--ease);
 }
 
 /* Panel reveal */
@@ -995,51 +1004,22 @@ onMounted(async () => {
   .ms-card,
   .ms-card__overlay,
   .ms-card__shade,
-  .ms-card__name,
-  .mode-btn,
-  .report-btn {
+  .ms-card__name {
     transition: none !important;
   }
 }
 
-.page-title {
-  font-size: 4em;
-  margin-bottom: 0.15em;
-}
 .subtitle {
-  color: #aaa;
-  margin-bottom: 1.5rem;
+  color: var(--tx-2);
+  margin: 0 0 20px;
+  max-width: 720px;
 }
 
 /* Mode switch and group bar */
 .mode-row {
   display: flex;
-  gap: 0.4rem;
-  margin-bottom: 0.9rem;
-}
-.mode-btn {
-  display: inline-flex;
-  align-items: center;
   gap: 6px;
-  font-size: 14px;
-  padding: 5px 14px;
-  border-radius: 4px;
-  border: 1px solid #444;
-  background: #1e1e1e;
-  color: #ccc;
-  cursor: pointer;
-  transition:
-    background-color var(--duration-quick) var(--ease-smooth-out),
-    border-color var(--duration-quick) var(--ease-smooth-out),
-    color var(--duration-quick) var(--ease-smooth-out);
-}
-.mode-btn:hover {
-  background: #2a2a2a;
-}
-.mode-btn--active {
-  background: #e2e2e2;
-  border-color: #e2e2e2;
-  color: #111;
+  margin-bottom: 14px;
 }
 
 .group-bar {
@@ -1050,136 +1030,99 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
-  padding: 0.5rem 0.75rem;
-  background-color: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 6px;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 8px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
 }
 .group-bar__count {
-  font-size: 0.92em;
-  color: #ccc;
+  font-size: 14px;
+  color: var(--tx-2);
 }
 .group-bar__pairs {
-  color: #888;
+  color: var(--tx-3);
 }
 .group-bar__actions {
   display: flex;
-  gap: 0.4rem;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .group-review__note {
-  font-size: 0.85em;
-  color: #888;
-  margin: 0 0 0.75rem;
+  font-size: 13px;
+  color: var(--tx-3);
+  margin: 0 0 12px;
 }
 .group-pairs {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  margin-bottom: 1rem;
+  gap: 6px;
+  margin-bottom: 16px;
 }
 .group-pair {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  padding: 0.45rem 0.75rem;
-  border-radius: 6px;
-  font-size: 0.9em;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
 }
 .group-pair__icon {
   flex-shrink: 0;
 }
 .group-pair__names {
-  font-weight: bold;
+  font-weight: 600;
 }
 .group-pair__label {
   opacity: 0.85;
 }
 .group-pair__hooks {
-  font-size: 0.85em;
+  font-size: 13px;
   opacity: 0.75;
   margin-left: auto;
+  font-family: var(--font-mono);
 }
 .group-review__confirm {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 12px;
   flex-wrap: wrap;
 }
 .group-review__warning {
-  font-size: 0.82em;
-  color: #ffb74d;
+  font-size: 13px;
+  color: var(--warn);
 }
 
 /* One block for every pair with nothing to report */
 .group-clear {
   flex-direction: column;
   align-items: stretch;
-  gap: 0.4rem;
+  gap: 8px;
 }
 .group-clear__header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
 }
 .group-clear__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem;
+  gap: 6px;
 }
 .group-chip {
-  padding: 0.15rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.85em;
-  background-color: rgba(129, 199, 132, 0.12);
-  border: 1px solid rgba(129, 199, 132, 0.35);
+  padding: 2px 8px;
+  font-size: 13px;
+  border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent);
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
 }
 
-/* ── Selection bar ── */
-.selection-status {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
-  padding: 0.5rem 0.75rem;
-  background-color: #1a1a1a;
-  border-radius: 6px;
-  min-height: 42px;
-}
-
-.selection-pill {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  background-color: #2a2a2a;
-  border: 1px solid #fff3;
-  border-radius: 4px;
-  padding: 0.15rem 0.4rem 0.15rem 0.6rem;
-  font-size: 0.88em;
-}
-
-.slot-empty {
-  color: #555;
-  font-style: italic;
-  font-size: 0.88em;
-}
-
-/* ── Grid ── */
-.loading-msg {
-  color: #888;
-  padding: 1rem 0;
-}
-
+/* Grid */
 .moveset-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin-bottom: 2rem;
+  margin-bottom: 28px;
   justify-content: center;
 }
 
@@ -1187,44 +1130,43 @@ onMounted(async () => {
   position: relative;
   width: 163px;
   height: 50px;
-  background-color: var(--bg-color, #111);
+  background-color: var(--bg-color, var(--panel-2));
   border: 3px solid transparent;
-  border-radius: 3px;
   overflow: hidden;
   cursor: pointer;
   text-align: left;
+  padding: 0;
   transition:
-    background-color var(--duration-fast) var(--ease-smooth-out),
-    border-color var(--duration-fast) var(--ease-smooth-out),
-    outline-color var(--duration-fast) var(--ease-smooth-out),
-    border-radius var(--duration-fast) var(--ease-smooth-out),
-    box-shadow var(--duration-fast) var(--ease-smooth-out),
-    opacity var(--duration-fast) var(--ease-smooth-out),
-    filter var(--duration-fast) var(--ease-smooth-out);
+    background-color var(--dur-base) var(--ease),
+    border-color var(--dur-base) var(--ease),
+    outline-color var(--dur-base) var(--ease),
+    opacity var(--dur-base) var(--ease),
+    filter var(--dur-base) var(--ease);
   flex-shrink: 0;
   outline: 2px solid transparent;
 }
 
 .ms-card:hover:not(.ms-card--dimmed) {
   filter: brightness(0.9);
-  border-radius: 11px;
+  border-color: var(--tx-2);
 }
 .ms-card--dimmed {
   opacity: 0.35;
   cursor: default;
 }
 
-.ms-card--selected {
-  border-color: #ffffff;
-  outline-color: #fff;
+.ms-card--selected,
+.ms-card--selected:hover:not(.ms-card--dimmed) {
+  border-color: var(--white);
+  outline-color: var(--white);
 }
 
 .ms-card--vote-preview {
-  background-color: #808080;
+  background-color: var(--tx-3);
 }
 .ms-card--vote-preview .ms-card__name {
-  color: #111;
-  text-shadow: 0 0px 2px #ffffff60;
+  color: var(--ink);
+  text-shadow: 0 0 2px color-mix(in srgb, var(--white) 40%, transparent);
 }
 
 .ms-card__thumb {
@@ -1237,7 +1179,7 @@ onMounted(async () => {
   position: absolute;
   inset: 0;
   z-index: 1;
-  transition: opacity var(--duration-fast) var(--ease-smooth-out);
+  transition: opacity var(--dur-base) var(--ease);
 }
 /* Dark shade that fades in over the colored gradient while one card is selected */
 .ms-card__shade {
@@ -1263,9 +1205,10 @@ onMounted(async () => {
   right: 0;
   top: 50%;
   transform: translateY(-50%);
-  padding: 2px 0.5rem 2px 0.4rem;
-  font-size: 0.82em;
-  font-weight: bold;
+  padding: 2px 8px 2px 6px;
+  font-family: var(--font-condensed);
+  font-size: 13px;
+  font-weight: 700;
   line-height: 1.2;
   letter-spacing: 0.25px;
   color: #fff;
@@ -1275,8 +1218,8 @@ onMounted(async () => {
   text-overflow: ellipsis;
   white-space: nowrap;
   transition:
-    color var(--duration-fast) var(--ease-smooth-out),
-    text-shadow var(--duration-fast) var(--ease-smooth-out);
+    color var(--dur-base) var(--ease),
+    text-shadow var(--dur-base) var(--ease);
 }
 .ms-card__subtitle {
   font-size: 0.8em;
@@ -1284,7 +1227,7 @@ onMounted(async () => {
   font-weight: normal;
 }
 
-/* Vote bar — full card background, behind overlay */
+/* Vote bar, full card background, behind overlay */
 .ms-card__vote-bar {
   position: absolute;
   inset: 0;
@@ -1293,42 +1236,42 @@ onMounted(async () => {
 }
 
 .ms-card__vote-bar-compat {
-  background-color: rgba(46, 125, 50, 0.65);
+  background-color: color-mix(in srgb, var(--ok) 65%, transparent);
   height: 100%;
   flex-shrink: 0;
-  transition: width 0.3s ease;
+  transition: width var(--dur-slow) var(--ease);
 }
 
 .ms-card__vote-bar-incompat {
-  background-color: rgba(198, 40, 40, 0.65);
+  background-color: color-mix(in srgb, var(--err) 65%, transparent);
   flex: 1;
 }
 
-/* ── Checking ── */
+/* Checking */
 .checking-msg {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  color: #aaa;
-  padding: 1rem 0;
+  gap: 12px;
+  color: var(--tx-2);
+  padding: 16px 0;
 }
 
-/* ── Compare panel ── */
+/* Compare panel */
 .compare-panel {
   display: flex;
-  background-color: #141414;
-  border-radius: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
   overflow: hidden;
-  font-size: 1.05em;
+  font-size: 15px;
 }
 
 .compare-col {
   flex: 1;
-  padding: 0.875rem 1rem;
+  padding: 14px 16px;
   min-width: 0;
 }
 .compare-header {
-  margin-bottom: 0.2rem;
+  margin-bottom: 3px;
 }
 .compare-header strong {
   font-size: 1em;
@@ -1343,9 +1286,9 @@ onMounted(async () => {
   font-weight: normal;
 }
 .compare-meta {
-  font-size: 0.9em;
-  color: #aaa;
-  margin-bottom: 0.6rem;
+  font-size: 13px;
+  color: var(--tx-2);
+  margin-bottom: 10px;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -1360,73 +1303,73 @@ onMounted(async () => {
 }
 
 .meta-slots {
-  color: #777;
+  color: var(--tx-3);
+  font-family: var(--font-mono);
 }
 .compare-divider {
   width: 1px;
-  background-color: #2a2a2a;
-  margin: 0.5rem 0;
+  background: var(--line-2);
+  margin: 8px 0;
   flex-shrink: 0;
 }
 .compare-section {
-  margin-bottom: 0.5rem;
+  margin-bottom: 8px;
 }
 .compare-label {
-  font-size: 0.8em;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #666;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--tx-3);
   display: block;
-  margin-bottom: 0.2rem;
+  margin-bottom: 3px;
 }
 
 .compare-list {
   list-style: none;
   padding: 0;
   margin: 0;
-  font-size: 0.88em;
-  color: #ccc;
-  font-family: monospace;
+  font-size: 13px;
+  color: var(--tx-2);
+  font-family: var(--font-mono);
 }
 
 .compare-list li {
   line-height: 1.6;
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 5px;
 }
 
 .compare-conflict {
-  color: #ffb74d;
+  color: var(--warn);
 }
 
 .conflict-icon {
-  color: #ffb74d;
+  color: var(--warn);
   flex-shrink: 0;
 }
 
 .compare-none {
-  color: #555;
+  color: var(--tx-3);
   font-style: italic;
   font-family: inherit;
 }
 
-/* ── Verdict ── */
+/* Verdict. Each severity tints a panel with its functional color and rails the left edge with it. */
 .verdict-banner {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.75rem 1.25rem;
-  border-radius: 6px;
-  font-size: 1.1em;
-  font-weight: bold;
-  margin-bottom: 1.25rem;
+  gap: 10px;
+  padding: 12px 20px;
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 20px;
 }
 
 .verdict-body {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 2px;
 }
 .verdict-text {
   line-height: 1.2;
@@ -1441,51 +1384,65 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
-.verdict--good {
-  background-color: #1b3a1b;
-  color: #81c784;
-  border: 1px solid #388e3c;
+.verdict--good,
+.verdict--warn,
+.verdict--predicted-bad,
+.verdict--bad,
+.verdict--community-compat,
+.verdict--community-incompat,
+.community-banner--compat,
+.community-banner--incompat,
+.community-banner--neutral,
+.issue-item {
+  --tone: var(--tx-2);
+  background: color-mix(in srgb, var(--tone) 12%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--tone) 35%, transparent);
+  border-left: 4px solid var(--tone);
+  color: var(--tx);
 }
-.verdict--warn {
-  background-color: #3a2f00;
-  color: #ffd54f;
-  border: 1px solid #f9a825;
+
+.verdict--good,
+.community-banner--compat {
+  --tone: var(--ok);
+}
+.verdict--warn,
+.community-banner--neutral {
+  --tone: var(--warn);
 }
 .verdict--predicted-bad {
-  background-color: #2e1f00;
-  color: #ffb74d;
-  border: 1px solid #e65100;
+  --tone: var(--orange);
 }
-.verdict--bad {
-  background-color: #3a1010;
-  color: #ef9a9a;
-  border: 1px solid #c62828;
+.verdict--bad,
+.community-banner--incompat {
+  --tone: var(--err);
 }
 .verdict--community-compat {
-  background-color: #0d2e2e;
-  color: #80cbc4;
-  border: 1px solid #00897b;
+  --tone: var(--info);
 }
 .verdict--community-incompat {
-  background-color: #2a1030;
-  color: #ce93d8;
-  border: 1px solid #8e24aa;
+  --tone: var(--purple);
+}
+
+.verdict-icon,
+.community-banner-icon,
+.group-pair__icon,
+.issue-icon {
+  color: var(--tone);
 }
 
 .issues-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1.75rem;
+  gap: 6px;
+  margin-bottom: 24px;
 }
 
 .issue-item {
   display: flex;
   align-items: flex-start;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 4px;
-  font-size: 0.92em;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
   line-height: 1.5;
 }
 
@@ -1494,41 +1451,35 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 .issue-item--incompatible {
-  background-color: #2a0a0a;
-  color: #ef9a9a;
+  --tone: var(--err);
 }
 .issue-item--predicted-incompat {
-  background-color: #271500;
-  color: #ffcc80;
+  --tone: var(--orange);
 }
 .issue-item--warning {
-  background-color: #1e1a00;
-  color: #fff176;
+  --tone: var(--warn);
 }
 .issue-item--error {
-  background-color: #1a1a1a;
-  color: #ccc;
+  --tone: var(--tx-3);
 }
 
-/* ── Community ── */
+/* Community */
 .community-section {
-  background-color: #12121280;
-  padding: 0.875rem 1rem;
-  margin-bottom: 1.25rem;
-  border-radius: 6px;
-  backdrop-filter: blur(2px);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 14px 16px;
+  margin-bottom: 20px;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 12px;
 }
 
 .community-banner {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.6rem 0.9rem;
-  border-radius: 5px;
-  font-weight: bold;
+  gap: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
 }
 
 .community-banner-icon {
@@ -1539,84 +1490,67 @@ onMounted(async () => {
 .community-banner-body {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 2px;
 }
 
 .community-banner-text {
-  font-size: 0.92em;
+  font-size: 14px;
   line-height: 1.2;
 }
 .community-banner-sub {
-  font-size: 0.75em;
+  font-size: 12px;
   font-weight: normal;
   opacity: 0.8;
 }
 
-.community-banner--compat {
-  background-color: #1b3a1b;
-  color: #81c784;
-  border: 1px solid #388e3c;
-}
-.community-banner--incompat {
-  background-color: #3a1010;
-  color: #ef9a9a;
-  border: 1px solid #c62828;
-}
-.community-banner--neutral {
-  background-color: #2a2a1a;
-  color: #ffd54f;
-  border: 1px solid #f9a825;
-}
-
 .community-no-votes {
-  font-size: 0.85em;
-  color: #555;
+  font-size: 13px;
+  color: var(--tx-3);
   margin: 0;
 }
 
 .community-vote-row {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 6px;
 }
 
 .report-label {
-  font-size: 0.82em;
-  color: #888;
+  font-size: 13px;
+  color: var(--tx-3);
 }
 
 .report-btn-row {
   display: flex;
-  gap: 0.5rem;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
-.report-btn {
-  transition:
-    background-color var(--duration-fast) var(--ease-smooth-out),
-    color var(--duration-fast) var(--ease-smooth-out);
-}
 .report-btn--active-compat {
-  background-color: #2e7d32 !important;
-  color: #fff !important;
+  background: var(--ok) !important;
+  border-color: var(--ok) !important;
+  color: #000 !important;
 }
 .report-btn--muted {
-  background-color: #555 !important;
-  color: #ddd !important;
+  background: var(--panel-2) !important;
+  border-color: var(--line-2) !important;
+  color: var(--tx-2) !important;
 }
 .report-btn--active-incompat {
-  background-color: #c62828 !important;
-  color: #fff !important;
+  background: var(--err) !important;
+  border-color: var(--err) !important;
+  color: #000 !important;
 }
 
-.vote-note {
-  font-size: 0.78em;
-  color: #666;
-  margin: 0;
-}
 .sign-in-note {
-  font-size: 0.82em;
-  color: #555;
+  font-size: 13px;
+  color: var(--tx-3);
+}
+
+.dialog-title {
+  font-family: var(--font-condensed);
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 @media (max-width: 680px) {
@@ -1630,6 +1564,10 @@ onMounted(async () => {
     width: auto;
     height: 1px;
     margin: 0;
+  }
+  .group-pair__hooks {
+    margin-left: 0;
+    flex-basis: 100%;
   }
 }
 </style>

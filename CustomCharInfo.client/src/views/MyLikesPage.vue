@@ -1,24 +1,36 @@
 <template>
-  <div class="my-likes-page">
-    <h1 class="page-title no-select">My Likes</h1>
-
-    <div v-if="loading" class="text-center mt-8">
-      <v-progress-circular indeterminate />
-    </div>
-
-    <template v-else>
-      <p v-if="movesets.length === 0" class="empty-msg">You haven't liked any movesets yet.</p>
-      <div v-else class="moveset-grid">
-        <MovesetCard v-for="moveset in movesets" :key="moveset.movesetId" :moveset="moveset" />
-      </div>
+  <PageShell title="My likes">
+    <template #subnav>
+      <SubNav section="account" label="Account" />
     </template>
-  </div>
+
+    <SkeletonList v-if="loading" />
+    <template v-else>
+      <EmptyState
+        v-if="movesets.length === 0"
+        message="You haven't liked any movesets yet."
+        icon="mdi-heart-outline"
+      >
+        <template #action>
+          <AppButton :to="{ name: 'Movesets' }" size="sm" icon="mdi-view-list">
+            Browse movesets
+          </AppButton>
+        </template>
+      </EmptyState>
+      <MovesetList v-else class="reveal" :movesets="movesets" />
+    </template>
+  </PageShell>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/services/api'
-import MovesetCard from '@/components/MovesetCard.vue'
+import PageShell from '@/components/PageShell.vue'
+import SubNav from '@/components/SubNav.vue'
+import SkeletonList from '@/components/SkeletonList.vue'
+import EmptyState from '@/components/EmptyState.vue'
+import AppButton from '@/components/AppButton.vue'
+import MovesetList from '@/components/MovesetList.vue'
 
 const loading = ref(true)
 const movesets = ref([])
@@ -37,26 +49,3 @@ onMounted(async () => {
   }
 })
 </script>
-
-<style scoped>
-.my-likes-page {
-  max-width: 1060px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-}
-
-.page-title {
-  margin-bottom: 2rem;
-}
-
-.empty-msg {
-  color: #666;
-  font-style: italic;
-}
-
-.moveset-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-</style>

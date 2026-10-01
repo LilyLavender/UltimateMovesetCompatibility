@@ -1,14 +1,14 @@
 <template>
-  <v-container>
-    <v-row class="modder-section-1">
-      <v-col cols="2" class="text-center">
-        <!-- Pfp -->
-        <img v-if="modderPfpUrl" :src="modderPfpUrl" class="modder-pfp" alt="Profile picture" />
-        <div v-else class="modder-pfp-null"><v-icon size="128">mdi-account</v-icon></div>
+  <PageShell :title="modder?.name ?? 'Modder'" :head="false" keep-case>
+    <div v-if="modder" class="modder">
+      <div class="modder__side">
+        <img v-if="modderPfpUrl" :src="modderPfpUrl" class="modder__pfp" alt="Profile picture" />
+        <div v-else class="modder__pfp modder__pfp--empty">
+          <v-icon size="72">mdi-account</v-icon>
+        </div>
 
-        <!-- Social Links -->
-        <div class="social-links">
-          <v-tooltip v-if="modder?.gamebananaId" location="bottom">
+        <div class="modder__social">
+          <v-tooltip v-if="modder.gamebananaId" location="bottom">
             <template #activator="{ props: tip }">
               <a
                 v-bind="tip"
@@ -29,15 +29,15 @@
             >
           </v-tooltip>
 
-          <v-tooltip v-if="modder?.discordUsername && !modder?.problematic" location="bottom">
+          <v-tooltip v-if="modder.discordUsername && !modder.problematic" location="bottom">
             <template #activator="{ props: tip }">
-              <span v-bind="tip" class="social-link" role="button" @click="copyDiscord">
+              <button v-bind="tip" type="button" class="social-link" @click="copyDiscord">
                 <img
                   src="https://cdn.simpleicons.org/discord/5865F2"
                   class="social-icon-img"
                   alt="Discord"
                 />
-              </span>
+              </button>
             </template>
             <span class="tooltip-label">
               {{ discordCopied ? 'Copied!' : `@${modder.discordUsername}` }}
@@ -45,7 +45,7 @@
             </span>
           </v-tooltip>
 
-          <v-tooltip v-if="modder?.twitterUsername" location="bottom">
+          <v-tooltip v-if="modder.twitterUsername" location="bottom">
             <template #activator="{ props: tip }">
               <a
                 v-bind="tip"
@@ -66,7 +66,7 @@
             >
           </v-tooltip>
 
-          <v-tooltip v-if="modder?.blueskyHandle" location="bottom">
+          <v-tooltip v-if="modder.blueskyHandle" location="bottom">
             <template #activator="{ props: tip }">
               <a
                 v-bind="tip"
@@ -87,7 +87,7 @@
             >
           </v-tooltip>
 
-          <v-tooltip v-if="modder?.githubUsername" location="bottom">
+          <v-tooltip v-if="modder.githubUsername" location="bottom">
             <template #activator="{ props: tip }">
               <a
                 v-bind="tip"
@@ -108,28 +108,38 @@
             >
           </v-tooltip>
         </div>
-      </v-col>
-      <v-col cols="10">
-        <div class="title-container">
-          <h1 class="page-title">{{ modder?.name }}</h1>
-          <v-icon v-if="modderIsAdmin" class="admin-display"> mdi-shield-account </v-icon>
+      </div>
+
+      <div class="modder__body">
+        <div class="modder__tags">
+          <StatusTag v-if="modderIsAdmin" variant="neutral" icon="mdi-shield-account"
+            >Admin</StatusTag
+          >
+          <HudReadout label="Movesets" :value="movesets.length" tone="info" />
+          <HudReadout
+            v-for="role in roleCountRows"
+            :key="role.roleId"
+            :label="role.name"
+            :value="role.count"
+            tone="neutral"
+          />
         </div>
-        <p v-if="modder?.problematic" class="problematic-warning">
-          <v-icon>mdi-alert</v-icon>
+        <p v-if="modder.problematic" class="note note--err">
+          <v-icon size="18">mdi-alert</v-icon>
           This user has been deemed problematic by the community. Please be careful when interacting
           with them and do your own research on their actions.
         </p>
-        <p v-else class="bio">{{ modder?.bio }}</p>
-      </v-col>
-    </v-row>
+        <p v-else-if="modder.bio" class="modder__bio">{{ modder.bio }}</p>
+      </div>
+    </div>
 
-    <v-row>
-      <v-col cols="12">
-        <h2 class="movesets-title">Movesets</h2>
-        <MovesetList :movesets="movesets" />
-      </v-col>
-    </v-row>
-  </v-container>
+    <SectionHeading title="Movesets" :count="movesets.length" />
+    <SkeletonList v-if="loading" :count="3" />
+    <template v-else>
+      <MovesetList v-if="movesets.length" class="reveal" :movesets="movesets" />
+      <EmptyState v-else message="This modder doesn't have any movesets yet..." />
+    </template>
+  </PageShell>
 </template>
 
 <script setup>
@@ -138,9 +148,16 @@ import { useRoute, useRouter } from 'vue-router'
 import { useHead } from '@unhead/vue'
 import axios from 'axios'
 import api from '@/services/api'
+import PageShell from '@/components/PageShell.vue'
+import SectionHeading from '@/components/SectionHeading.vue'
+import StatusTag from '@/components/StatusTag.vue'
+import HudReadout from '@/components/HudReadout.vue'
+import SkeletonList from '@/components/SkeletonList.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import MovesetList from '@/components/MovesetList.vue'
 import { GB_MEMBER_URL } from '@/globals'
 import { compareDateOnlyStrings } from '@/services/dateOnly'
+import { roleCounts } from '@/services/contributionRoles'
 
 const route = useRoute()
 const router = useRouter()
@@ -167,9 +184,12 @@ useHead(
   })
 )
 const movesets = ref([])
+// Tallied from the same visible list as the Movesets count so the two always agree.
+const roleCountRows = computed(() => roleCounts(movesets.value))
 const modderPfpUrl = ref(null)
 const modderIsAdmin = ref(false)
 const discordCopied = ref(false)
+const loading = ref(true)
 
 const copyDiscord = async () => {
   try {
@@ -193,12 +213,13 @@ onMounted(async () => {
     const adminRes = await api.get(`/modders/is-admin?modderId=${modderId}`)
     modderIsAdmin.value = adminRes.data.isAdmin
 
-    // Fetch movesets via the general endpoint (which already excludes hardheld movesets)
-    // and filter client-side by modder name.
-    const movesetRes = await api.get('movesets')
+    // Ask for this modder's movesets only (the endpoint already excludes hardheld ones),
+    // and filter so a modder hidden from the credits list stays hidden here.
+    const movesetRes = await api.get('movesets', { params: { modderId } })
     movesets.value = movesetRes.data
       .filter((m) => m.modders.includes(modder.value.name))
       .sort((a, b) => compareDateOnlyStrings(a.releaseDate, b.releaseDate))
+    loading.value = false
 
     if (modder.value.pfpUrl) {
       modderPfpUrl.value = modder.value.pfpUrl
@@ -228,74 +249,55 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.title-container {
-  position: absolute;
-  width: fit-content;
-  padding-right: 1em;
-  z-index: 0;
+.modder {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 28px;
+  align-items: start;
+  margin-bottom: 8px;
 }
 
-.title-container::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100px;
-  right: 0;
-  bottom: 0;
-  background-color: black;
-  background-image: url(/src/assets/ptn_diagonal_12.png);
-  background-repeat: repeat;
-  display: block;
-  -webkit-transform: skewX(-29deg);
-  transform: skewX(-29deg);
-}
-
-.title-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 99%;
-  right: -20px;
-  bottom: 0;
-  background-color: #dedede;
-  display: block;
-  -webkit-transform: skewX(-29deg);
-  transform: skewX(-29deg);
-}
-
-.page-title {
-  display: inline-block;
-  position: relative;
-  z-index: 10;
-  font-size: 4.5em;
-  margin: -16px 0.25em -16px -0.25em;
-  filter: drop-shadow(5px 4px 3px #000000c0);
-}
-
-i.admin-display {
-  z-index: 10;
-  font-size: 32px;
-  margin-left: -0.5em;
-  margin-top: -0.5em;
-}
-
-.social-links {
+.modder__side {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.modder__pfp {
+  width: 128px;
+  height: 128px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.modder__pfp--empty {
+  display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 2px;
-  margin-top: 8px;
+  color: var(--tx-3);
+}
+
+/* Five 22px icons at 28px each fit the 150px column on one line */
+.modder__social {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 0;
 }
 
 .social-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  padding: 3px;
+  border: 0;
+  background: none;
   cursor: pointer;
   opacity: 0.8;
-  transition: opacity 0.15s;
+  transition: opacity var(--dur-fast) var(--ease);
   text-decoration: none;
-  padding: 2px;
 }
 
 .social-link:hover {
@@ -307,46 +309,52 @@ i.admin-display {
   height: 22px;
 }
 
-.modder-section-1 {
-  margin-top: 1.5em;
-  padding-top: 0.5em;
+.modder__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
 }
 
-.modder-pfp,
-.modder-pfp-null {
-  z-index: 20;
-  position: relative;
-  width: 128px;
-  height: 128px;
-  background-color: black;
+.modder__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.modder-pfp-null {
-  margin-left: 23px;
-  margin-bottom: 6px;
-  color: #333333;
+.modder__bio {
+  margin: 0;
+  font-size: 16px;
+  white-space: pre-line;
 }
 
-.bio {
-  margin-top: 4em;
-  margin-left: -2em;
-  font-size: larger;
-}
-
-.problematic-warning {
-  margin-top: 4em;
-  margin-left: -2em;
-  font-size: larger;
-  color: #b00020;
-}
-
-.movesets-title {
-  font-size: 2.5em;
+.note {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--line-2);
+  border-left: 4px solid var(--err);
+  background: var(--panel);
+  color: var(--tx-2);
+  font-size: 14px;
 }
 
 .tooltip-label {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+@media (max-width: 599px) {
+  .modder {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .modder__tags {
+    justify-content: center;
+  }
 }
 </style>

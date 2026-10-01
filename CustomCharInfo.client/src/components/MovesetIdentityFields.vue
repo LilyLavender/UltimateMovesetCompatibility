@@ -1,105 +1,89 @@
 <template>
-  <!-- Internal ID -->
-  <v-col cols="12" sm="4">
-    <v-checkbox v-model="showSeparateIds" label="Slotted ID and Replacement ID are different" />
-  </v-col>
-  <v-col v-if="!showSeparateIds" cols="12" sm="4">
-    <v-text-field v-model="slottedId" variant="outlined" label="Internal ID">
-      <template #label>Internal ID <span class="required-asterisk">*</span></template>
-    </v-text-field>
-  </v-col>
-  <v-col v-else cols="12" sm="8" class="two-of-them">
-    <v-col cols="6">
-      <v-text-field v-model="slottedId" variant="outlined" label="Slotted ID">
-        <template #label>Slotted ID <span class="required-asterisk">*</span></template>
-      </v-text-field>
-    </v-col>
-    <v-col cols="6">
-      <v-text-field v-model="replacementId" variant="outlined" label="Replacement ID" />
-    </v-col>
-  </v-col>
+  <!-- Internal IDs -->
+  <div class="check-item span-3">
+    <v-checkbox
+      v-model="showSeparateIds"
+      label="Slotted ID and Replacement ID are different"
+      hide-details
+    />
+  </div>
+  <LabeledField v-if="!showSeparateIds" label="Internal ID" required>
+    <v-text-field v-model="slottedId" class="mono-input" />
+  </LabeledField>
+  <template v-else>
+    <LabeledField label="Slotted ID" required>
+      <v-text-field v-model="slottedId" class="mono-input" />
+    </LabeledField>
+    <LabeledField label="Replacement ID">
+      <v-text-field v-model="replacementId" class="mono-input" />
+    </LabeledField>
+  </template>
 
   <!-- Vanilla Character -->
-  <v-col cols="12" sm="4">
+  <LabeledField label="Vanilla character" required>
     <v-select
       v-model="vanillaCharInternalName"
-      variant="outlined"
       :items="vanillaChars"
       item-title="displayName"
       item-value="vanillaCharInternalName"
-      label="Vanilla Character"
     >
-      <template #label>Vanilla Character <span class="required-asterisk">*</span></template>
       <template #item="{ props: itemProps, item }">
         <v-list-item v-bind="itemProps" class="remove-bound-props">
           <div class="filter-option">
-            <div>
-              <v-img
-                :src="stockIconUrl(item.raw.vanillaCharInternalName)"
-                class="stock-icon-small"
-              />
-            </div>
+            <img :src="stockIconUrl(item.raw.vanillaCharInternalName)" class="stock-icon" alt="" />
             <v-list-item-title>{{ item.raw.displayName }}</v-list-item-title>
           </div>
         </v-list-item>
       </template>
       <template #selection="{ item }">
-        <div class="filter-option d-flex align-center">
-          <v-avatar class="me-2" size="26">
-            <v-img :src="stockIconUrl(item.raw.vanillaCharInternalName)" />
-          </v-avatar>
+        <div class="filter-option">
+          <img :src="stockIconUrl(item.raw.vanillaCharInternalName)" class="stock-icon" alt="" />
           <span>{{ item.raw.displayName }}</span>
         </div>
       </template>
     </v-select>
-  </v-col>
+  </LabeledField>
 
   <!-- Slots -->
-  <v-col cols="12" sm="2" class="left-merged-input-container">
-    <v-text-field
-      :model-value="slotsStart"
-      variant="outlined"
-      label="Start Slot"
-      :min="8"
-      :max="255"
-      prefix="c"
-      class="left-merged-input"
-      @update:model-value="(v) => (slotsStart = digitsOnly(v))"
-      @blur="checkSlotAlignment"
-    >
-      <template #label>Start Slot <span class="required-asterisk">*</span></template>
-    </v-text-field>
-  </v-col>
-  <v-col cols="12" sm="2" class="right-merged-input-container">
-    <v-text-field
-      :model-value="slotsEnd"
-      variant="outlined"
-      label="End Slot"
-      :min="8"
-      :max="255"
-      prefix="c"
-      class="right-merged-input"
-      @update:model-value="(v) => (slotsEnd = digitsOnly(v))"
-      @blur="checkSlotAlignment"
-    >
-      <template #label>End Slot <span class="required-asterisk">*</span></template>
-    </v-text-field>
-  </v-col>
+  <LabeledField label="Slots" required hint="Costume slots the moveset occupies, from 8 to 255.">
+    <div class="slot-range">
+      <v-text-field
+        :model-value="slotsStart"
+        placeholder="Start"
+        prefix="c"
+        class="mono-input"
+        inputmode="numeric"
+        @update:model-value="(v) => (slotsStart = digitsOnly(v))"
+        @blur="checkSlotAlignment"
+      />
+      <span class="slot-range__to">to</span>
+      <v-text-field
+        :model-value="slotsEnd"
+        placeholder="End"
+        prefix="c"
+        class="mono-input"
+        inputmode="numeric"
+        @update:model-value="(v) => (slotsEnd = digitsOnly(v))"
+        @blur="checkSlotAlignment"
+      />
+    </div>
+  </LabeledField>
 
   <!-- Slot alignment warning -->
-  <v-dialog v-model="slotWarningDialog" max-width="480">
-    <v-card color="#2e2e2e">
-      <v-card-title>
+  <v-dialog v-bind="dialogProps" v-model="slotWarningDialog" max-width="480">
+    <v-card>
+      <v-card-title class="dialog-title">
         <v-icon>mdi-alert</v-icon>
-        Unusual Slot Range
+        Unusual slot range
       </v-card-title>
       <v-card-text>
-        Slots c{{ slotsStart }} through c{{ slotsEnd }} aren't a standard 8-slot-aligned range (e.g.
-        c08-c15, c120-c127). Please double-check this is intentional before saving.
+        Slots {{ formatSlot(slotsStart) }} through {{ formatSlot(slotsEnd) }} aren't a standard
+        8-slot-aligned range (e.g. c08-c15, c120-c127). Please double-check this is intentional
+        before saving.
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn @click="dismissSlotWarning">Dismiss</v-btn>
+        <AppButton variant="ghost" @click="dismissSlotWarning">Dismiss</AppButton>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -107,9 +91,14 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { formatSlot } from '@/services/slots'
+import { useDialogProps } from '@/composables/useDialogProps'
+import LabeledField from '@/components/LabeledField.vue'
+import AppButton from '@/components/AppButton.vue'
+const dialogProps = useDialogProps()
 
 // The identity block of the moveset form: internal IDs, vanilla character, and costume slot range.
-// Renders as a fragment of v-cols so the parent's v-row keeps its layout.
+// Renders as a fragment of fields so the parent's form grid keeps its layout.
 defineProps({
   vanillaChars: { type: Array, default: () => [] },
 })
@@ -165,64 +154,65 @@ const dismissSlotWarning = () => {
 </script>
 
 <style scoped>
-.required-asterisk {
-  color: #cf6679;
-}
-
-/* Fix for showing/hiding extra ID input */
-.two-of-them {
+.check-item {
   display: flex;
-}
-.two-of-them > .v-col {
-  padding-top: 0;
-  padding-bottom: 0;
-}
-.two-of-them > .v-col:first-of-type {
-  padding-left: 0;
-}
-.two-of-them > .v-col:last-of-type {
-  padding-right: 0;
+  align-items: center;
 }
 
-/* Dropdown display */
-.stock-icon-small {
-  width: 20px;
+.span-3 {
+  grid-column: span 3;
 }
+
+.mono-input :deep(input),
+.mono-input :deep(.v-text-field__prefix__text) {
+  font-family: var(--font-mono);
+}
+
+.stock-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
 .filter-option {
   display: flex;
+  align-items: center;
+  gap: 8px;
 }
-:deep(.filter-option div) {
-  margin-right: 4px;
-}
+
 .remove-bound-props :deep(.v-list-item-title:not(.filter-option .v-list-item-title)) {
   display: none;
 }
-.v-avatar {
-  background: transparent;
+
+.slot-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-/* Merge the two slot inputs into one control */
-.left-merged-input-container {
-  padding-right: 0;
+.slot-range > * {
+  flex: 1;
+  min-width: 0;
 }
-.right-merged-input-container {
-  padding-left: 0;
+
+.slot-range__to {
+  flex: none;
+  color: var(--tx-3);
+  font-size: 13px;
 }
-.right-merged-input :deep(.v-field) {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
+
+.dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-condensed);
+  font-weight: 700;
+  text-transform: uppercase;
 }
-.left-merged-input :deep(.v-field) {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-}
-.right-merged-input :deep(.v-field__outline__start) {
-  border-left: none;
-}
-.left-merged-input :deep(.v-field__outline__end) {
-  border-right: none;
-}
-:deep(.v-text-field__prefix__text) {
-  color: #e4e4e4;
+
+@media (max-width: 959px) {
+  .span-3 {
+    grid-column: span 1;
+  }
 }
 </style>

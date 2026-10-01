@@ -1,17 +1,78 @@
 <template>
-  <div class="moveset-table-page">
-    <h1 class="page-title no-select mb-3">Moveset Table</h1>
+  <PageShell title="Moveset table" tier="wide">
+    <template #subnav>
+      <SubNav section="movesets" label="Movesets">
+        <template #actions>
+          <AppButton
+            variant="ghost"
+            size="sm"
+            icon="mdi-file-download"
+            :disabled="!normalizedMovesets.length"
+            @click="downloadCSV"
+          >
+            Download CSV
+          </AppButton>
+        </template>
+      </SubNav>
+    </template>
 
-    <!-- Controls row -->
-    <div class="controls-row mb-3">
-      <button class="dl-btn" @click="downloadCSV">
-        <span class="mdi mdi-file-download" />
-        Download CSV
-      </button>
+    <p class="table-hint">
+      Every moveset with its slots, release state, functions, articles, and hooks. Scroll sideways
+      for the full width; the character column stays put.
+    </p>
+
+    <!-- Each column group has its toggle and, while shown, its filter. Both pairs sit on the right -->
+    <div class="table-toolbar">
+      <div class="table-toolbar__group">
+        <AppButton
+          size="sm"
+          :variant="showArticles ? 'default' : 'ghost'"
+          :icon="showArticles ? 'mdi-eye' : 'mdi-eye-off'"
+          :aria-pressed="showArticles"
+          @click="toggleGroup('articles')"
+        >
+          Articles ({{ articleKeys.length }})
+        </AppButton>
+        <v-text-field
+          v-if="showArticles"
+          v-model="articleFilter"
+          placeholder="Filter articles"
+          density="compact"
+          hide-details
+          clearable
+          class="table-toolbar__filter"
+        />
+      </div>
+      <div class="table-toolbar__group">
+        <AppButton
+          size="sm"
+          :variant="showHooks ? 'default' : 'ghost'"
+          :icon="showHooks ? 'mdi-eye' : 'mdi-eye-off'"
+          :aria-pressed="showHooks"
+          @click="toggleGroup('hooks')"
+        >
+          Hooks ({{ hookKeys.length }})
+        </AppButton>
+        <v-text-field
+          v-if="showHooks"
+          v-model="hookFilter"
+          placeholder="Filter hooks"
+          density="compact"
+          hide-details
+          clearable
+          class="table-toolbar__filter mono-input"
+        />
+      </div>
     </div>
 
-    <!-- Table -->
-    <div class="scroll-container">
+    <SkeletonTable
+      v-if="loading"
+      :headers="['Creators', 'Modded char', 'Vanilla char', 'Slotted', 'Slots', 'Release']"
+      :columns="[1.5, 1.5, 1.2, 1.2, 1, 1]"
+      :rows="10"
+    />
+
+    <TableScroll v-else class="reveal">
       <v-data-table
         :headers="headers"
         :items="normalizedMovesets"
@@ -21,95 +82,120 @@
         :items-per-page="-1"
         hide-default-footer
       >
+        <!-- Creators, clamped -->
+        <template #item.modders="{ value }">
+          <span class="clamp" :title="value">{{ value }}</span>
+        </template>
+
         <!-- Modded char name with subtitle -->
         <template #item.moddedCharName="{ item }">
           {{ item.moddedCharName
           }}<span v-if="item.subtitle" class="table-subtitle"> ({{ item.subtitle }})</span>
         </template>
 
-        <!-- Slotted/Replacement ID -->
+        <!-- Slotted/Replacement ID, clamped -->
         <template #item.slotReplacementId="{ item }">
-          <span v-if="item.slottedId === item.replacementId">
-            {{ item.slottedId }}
+          <span class="clamp mono" :title="slotReplacementText(item)">
+            {{ slotReplacementText(item) }}
           </span>
-          <span v-else> {{ item.slottedId }} / {{ item.replacementId }} </span>
+        </template>
+
+        <template #item.slotsRange="{ value }">
+          <span class="mono">{{ value }}</span>
         </template>
 
         <!-- Release state -->
         <template #item.releaseState="{ item }">
-          <span
-            class="release-pill"
-            :class="{
-              released: item.releaseState === RELEASE_STATE_NAMES[ReleaseState.Released],
-              upcoming: item.releaseState === RELEASE_STATE_NAMES[ReleaseState.Upcoming],
-              pending: item.releaseState === RELEASE_STATE_NAMES[ReleaseState.PendingUpdate],
-              beta: item.releaseState === RELEASE_STATE_NAMES[ReleaseState.OpenBeta],
-              deprecated: item.releaseState === RELEASE_STATE_NAMES[ReleaseState.Deprecated],
-            }"
-          >
-            {{ item.releaseState }}
-          </span>
+          <StatusTag :variant="releaseTone(item.releaseState)">{{ item.releaseState }}</StatusTag>
         </template>
 
         <!-- Bools -->
-        <template #item.hasGlobalOpff="{ value }">
-          <span :class="['bool-pill', value ? 'yes' : 'no']">
-            {{ value ? 'Yes' : 'No' }}
-          </span>
-        </template>
-
-        <template #item.hasCharacterOpff="{ value }">
-          <span :class="['bool-pill', value ? 'yes' : 'no']">
-            {{ value ? 'Yes' : 'No' }}
-          </span>
-        </template>
-
-        <template #item.hasAgentInit="{ value }">
-          <span :class="['bool-pill', value ? 'yes' : 'no']">
-            {{ value ? 'Yes' : 'No' }}
-          </span>
-        </template>
-
-        <template #item.hasGlobalOnLinePre="{ value }">
-          <span :class="['bool-pill', value ? 'yes' : 'no']">
-            {{ value ? 'Yes' : 'No' }}
-          </span>
-        </template>
-
-        <template #item.hasGlobalOnLineEnd="{ value }">
-          <span :class="['bool-pill', value ? 'yes' : 'no']">
-            {{ value ? 'Yes' : 'No' }}
-          </span>
+        <template v-for="key in boolKeys" :key="`bool-${key}`" #[`item.${key}`]="{ value }">
+          <StatusTag :variant="value ? 'ok' : 'err'">{{ value ? 'Yes' : 'No' }}</StatusTag>
         </template>
 
         <!-- Articles -->
         <template
-          v-for="key in [...articleKeys, ...hookKeys]"
+          v-for="key in visibleArticleKeys"
           :key="`article-${key}`"
           #[`item.article:${key}`]="{ value }"
         >
-          <div v-if="value" class="usage-pill">
-            {{ value }}
-          </div>
+          <StatusTag v-if="value" variant="neutral">{{ value }}</StatusTag>
         </template>
 
         <!-- Hooks -->
-        <template v-for="key in hookKeys" :key="`hook-${key}`" #[`item.hook:${key}`]="{ value }">
-          <div v-if="value" class="usage-pill">
-            {{ value }}
-          </div>
+        <template
+          v-for="key in visibleHookKeys"
+          :key="`hook-${key}`"
+          #[`item.hook:${key}`]="{ value }"
+        >
+          <StatusTag v-if="value" variant="neutral">{{ value }}</StatusTag>
         </template>
       </v-data-table>
-    </div>
-  </div>
+    </TableScroll>
+  </PageShell>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import api from '@/services/api'
 import { ReleaseState, RELEASE_STATE_NAMES } from '@/globals'
+import { formatOffset } from '@/services/offsets'
+import PageShell from '@/components/PageShell.vue'
+import SubNav from '@/components/SubNav.vue'
+import AppButton from '@/components/AppButton.vue'
+import StatusTag from '@/components/StatusTag.vue'
+import TableScroll from '@/components/TableScroll.vue'
+import SkeletonTable from '@/components/SkeletonTable.vue'
 
 const movesets = ref([])
+const loading = ref(true)
+
+// The article and hook column groups can be hidden, and narrowed by text. Toggles are remembered per browser.
+const GROUPS_KEY = 'umc.movesetTable.groups'
+const readGroups = () => {
+  try {
+    return { articles: true, hooks: true, ...JSON.parse(localStorage.getItem(GROUPS_KEY) || '{}') }
+  } catch {
+    return { articles: true, hooks: true }
+  }
+}
+const groups = ref(readGroups())
+const showArticles = computed(() => groups.value.articles)
+const showHooks = computed(() => groups.value.hooks)
+const articleFilter = ref('')
+const hookFilter = ref('')
+
+const toggleGroup = (name) => {
+  groups.value = { ...groups.value, [name]: !groups.value[name] }
+  try {
+    localStorage.setItem(GROUPS_KEY, JSON.stringify(groups.value))
+  } catch {
+    // Storage may be unavailable. Toggle still works for this visit
+  }
+}
+
+const slotReplacementText = (item) =>
+  item.slottedId === item.replacementId
+    ? String(item.slottedId)
+    : `${item.slottedId} / ${item.replacementId}`
+
+const boolKeys = [
+  'hasGlobalOpff',
+  'hasCharacterOpff',
+  'hasAgentInit',
+  'hasGlobalOnLinePre',
+  'hasGlobalOnLineEnd',
+]
+
+const RELEASE_TONES = {
+  [RELEASE_STATE_NAMES[ReleaseState.Released]]: 'ok',
+  [RELEASE_STATE_NAMES[ReleaseState.Upcoming]]: 'warn',
+  [RELEASE_STATE_NAMES[ReleaseState.PendingUpdate]]: 'warn',
+  [RELEASE_STATE_NAMES[ReleaseState.OpenBeta]]: 'info',
+  [RELEASE_STATE_NAMES[ReleaseState.Deprecated]]: 'err',
+}
+const releaseTone = (name) => RELEASE_TONES[name] ?? 'neutral'
 
 // Headers before processing
 const baseHeaders = [
@@ -120,19 +206,19 @@ const baseHeaders = [
     cellProps: { class: 'core-col' },
   },
   {
-    title: 'Modded Char',
+    title: 'Modded char',
     key: 'moddedCharName',
     headerProps: { class: 'sticky core-col' },
     cellProps: { class: 'sticky core-col' },
   },
   {
-    title: 'Vanilla Char',
+    title: 'Vanilla char',
     key: 'vanillaCharName',
     headerProps: { class: 'core-col' },
     cellProps: { class: 'core-col' },
   },
   {
-    title: 'Slotted/Replacement',
+    title: 'Slotted / replacement',
     key: 'slotReplacementId',
     headerProps: { class: 'core-col' },
     cellProps: { class: 'core-col' },
@@ -164,6 +250,19 @@ const hookKeys = computed(() => {
   return [...set].sort()
 })
 
+const visibleArticleKeys = computed(() => {
+  if (!showArticles.value) return []
+  const term = (articleFilter.value ?? '').trim().toLowerCase()
+  return term ? articleKeys.value.filter((a) => a.toLowerCase().includes(term)) : articleKeys.value
+})
+
+// Offsets match w/ or w/o prefix
+const visibleHookKeys = computed(() => {
+  if (!showHooks.value) return []
+  const term = (hookFilter.value ?? '').trim().toLowerCase().replace(/^0x/, '')
+  return term ? hookKeys.value.filter((h) => h.toLowerCase().includes(term)) : hookKeys.value
+})
+
 // Final headers
 // section-divider is a calculated class to set sections in the table
 const headers = computed(() => [
@@ -187,19 +286,19 @@ const headers = computed(() => [
     return h
   }),
 
-  ...articleKeys.value.map((a, i, arr) => ({
+  ...visibleArticleKeys.value.map((a, i, arr) => ({
     title: a,
     key: `article:${a}`,
     headerProps: {
-      class: i === arr.length - 1 ? 'section-divider' : '',
+      class: i === arr.length - 1 && visibleHookKeys.value.length ? 'section-divider' : '',
     },
     cellProps: {
-      class: i === arr.length - 1 ? 'section-divider' : '',
+      class: i === arr.length - 1 && visibleHookKeys.value.length ? 'section-divider' : '',
     },
   })),
 
-  ...hookKeys.value.map((h) => ({
-    title: `0x${h}`,
+  ...visibleHookKeys.value.map((h) => ({
+    title: formatOffset(h),
     key: `hook:${h}`,
   })),
 ])
@@ -227,6 +326,7 @@ const normalizedMovesets = computed(() =>
 onMounted(async () => {
   const res = await api.get('/movesets/report')
   movesets.value = res.data
+  loading.value = false
 })
 
 // Download table as csv
@@ -250,15 +350,7 @@ function downloadCSV() {
           val = [row.slottedId, row.replacementId]
         } else {
           val = row[h.key] ?? ''
-          if (
-            [
-              'hasGlobalOpff',
-              'hasCharacterOpff',
-              'hasAgentInit',
-              'hasGlobalOnLinePre',
-              'hasGlobalOnLineEnd',
-            ].includes(h.key)
-          ) {
+          if (boolKeys.includes(h.key)) {
             val = val ? 'Yes' : 'No'
           }
         }
@@ -290,91 +382,72 @@ function downloadCSV() {
 </script>
 
 <style scoped>
-/* Page */
-.moveset-table-page {
-  padding: 1.5rem;
+.table-hint {
+  margin: 0 0 14px;
+  color: var(--tx-3);
+  font-size: 13px;
 }
 
-.page-title {
-  text-align: center;
+.table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px 24px;
+  margin-bottom: 14px;
 }
 
-/* Controls row */
-.controls-row {
+.table-toolbar__group {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  gap: 8px;
 }
 
-/* Download button — styled like slot-grid sort-btn, but larger */
-.dl-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  padding: 5px 16px;
-  border-radius: 4px;
-  border: 1px solid #444;
-  background: #1e1e1e;
-  color: #ccc;
-  cursor: pointer;
-  transition:
-    background 0.1s,
-    color 0.1s;
+.table-toolbar__filter {
+  width: 200px;
 }
 
-.dl-btn:hover {
-  background: #2a2a2a;
+.mono-input :deep(input) {
+  font-family: var(--font-mono);
 }
 
-/* Table container */
-.scroll-container {
-  border: 1px solid #333;
-  border-radius: 6px;
+.clamp {
+  display: inline-block;
+  max-width: 180px;
   overflow: hidden;
-}
-
-/* Vuetify table overrides */
-:deep(.umc-table) {
-  background: transparent !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
 }
 
 :deep(.umc-table .v-data-table__th) {
-  padding: 3px 10px !important;
-  font-size: 13px !important;
+  padding: 4px 10px !important;
   white-space: nowrap;
-  border-bottom: 1px solid #333 !important;
-  color: #fff !important;
 }
 
 :deep(.umc-table .v-data-table__td) {
   max-width: none !important;
-  padding: 3px 10px !important;
+  padding: 4px 10px !important;
   font-size: 13px !important;
   white-space: nowrap;
-  border-bottom: 1px solid #252525 !important;
-  color: #fff !important;
-}
-
-:deep(.umc-table .v-data-table__tr:hover td) {
-  background: #181818 !important;
 }
 
 /* Section dividers */
 :deep(.section-divider) {
-  border-right: 2px solid #1a1a1a !important;
+  border-right: 2px solid var(--line-2) !important;
 }
 
-/* Core columns (#121212 background) */
-:deep(.umc-table .v-data-table__th.core-col) {
-  background: #121212 !important;
-}
-
+/* Core columns sit on the panel color so they read as one block */
+:deep(.umc-table .v-data-table__th.core-col),
 :deep(.umc-table .v-data-table__td.core-col) {
-  background: #121212 !important;
+  background: var(--panel) !important;
+}
+
+:deep(.umc-table .v-data-table__tr:hover .v-data-table__td.core-col) {
+  background: var(--panel-2) !important;
 }
 
 /* Sticky char name column */
+:deep(.v-data-table__th.sticky),
 :deep(.v-data-table__td.sticky) {
   position: sticky;
   left: 0;
@@ -386,60 +459,5 @@ function downloadCSV() {
   font-size: 0.85em;
   opacity: 0.5;
   font-weight: normal;
-}
-
-/* Pills — flat corners to match slot-grid */
-.bool-pill {
-  display: inline-block;
-  text-align: center;
-  padding: 1px 8px;
-  border-radius: 3px;
-  font-size: 12px;
-  color: #fff;
-}
-
-.bool-pill.yes {
-  background-color: #2e7d32;
-}
-
-.bool-pill.no {
-  background-color: #c62828;
-}
-
-.usage-pill {
-  display: inline-block;
-  background-color: #1565c0cc;
-  border: 1px solid #1976d2;
-  color: #fff;
-  padding: 1px 6px;
-  border-radius: 3px;
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.release-pill {
-  display: inline-block;
-  padding: 1px 8px;
-  border-radius: 3px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #fff;
-  white-space: nowrap;
-}
-
-.release-pill.released {
-  background-color: #2e7d32;
-}
-.release-pill.upcoming,
-.release-pill.pending {
-  background-color: #fbc02d;
-  color: #000;
-}
-.release-pill.beta {
-  background-color: #acba22;
-  color: #000;
-}
-.release-pill.deprecated {
-  background-color: #c62828;
 }
 </style>

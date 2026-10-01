@@ -30,4 +30,13 @@ namespace CustomCharInfo.server.Models
         public int AcceptanceStateId { get; set; }
         public string AcceptanceStateName { get; set; }
     }
+
+    // One row per item from GET /api/logs/latest: the item's newest log reduced to its state.
+    public class LatestStateDto
+    {
+        public int ItemTypeId { get; set; }
+        public int ItemId { get; set; }
+        public int AcceptanceStateId { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
 }

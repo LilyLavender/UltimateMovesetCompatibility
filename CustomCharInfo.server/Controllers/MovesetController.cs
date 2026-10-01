@@ -8,6 +8,7 @@ using CustomCharInfo.server.Helpers;
 
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace CustomCharInfo.server.Controllers
 {
@@ -29,6 +30,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<ActionResult<IEnumerable<object>>> GetMovesets(
             [FromQuery] int? seriesId,
             [FromQuery] int? releaseStateId,
@@ -49,7 +51,7 @@ namespace CustomCharInfo.server.Controllers
             var user = await _userManager.GetRequesterSummaryAsync(_context, User);
 
             // Admins get the same view as a modder unless they ask for hidden content explicitly.
-            bool seeAll = user?.UserTypeId == UserTypes.Admin && includeHidden;
+            bool seeAll = user?.IsAdmin == true && includeHidden;
             int? currentModderId = user?.ModderId;
 
             var query = _context.Movesets
@@ -194,6 +196,24 @@ namespace CustomCharInfo.server.Controllers
                                 .Select(mm => mm.Modder.User.UserName ?? mm.Modder.Name)
                                 .ToList(),
 
+                    // The card's creator line: only credits flagged ShowOnCard. Search and sort keep using Modders.
+                    CardModders =
+                        x.Moveset.PrivateModder == true && !(seeAll || x.IsOwner)
+                            ? new List<string> { "???" }
+                            : x.Moveset.MovesetModders
+                                .Where(mm => mm.ShowOnCard && (mm.Modder.User == null || mm.Modder.User.Problematic != true))
+                                .OrderBy(mm => mm.SortOrder)
+                                .Select(mm => mm.Modder.User.UserName ?? mm.Modder.Name)
+                                .ToList(),
+
+                    // The filtered modder's roles on this moveset, so a profile can tally them from the same visible list.
+                    ModderRoleIds = modderId.HasValue
+                        ? x.Moveset.MovesetModders
+                            .Where(mm => mm.ModderId == modderId)
+                            .SelectMany(mm => mm.Roles.Select(r => r.ContributionRoleId))
+                            .ToList()
+                        : null,
+
                     x.Moveset.ReleaseDate,
                     x.Moveset.AdminPick,
                     x.Moveset.PrivateMoveset,
@@ -213,8 +233,15 @@ namespace CustomCharInfo.server.Controllers
                     SeriesName = x.Moveset.PrivateMoveset == true && !(seeAll || x.IsOwner)
                         ? null
                         : (x.Moveset.Series != null ? x.Moveset.Series.SeriesName : null),
-                    ArticleNames = x.Moveset.MovesetArticles
-                        .Select(ma => $"{ma.Article.VanillaCharInternalName}_{ma.Article.ArticleName}"),
+                    // Null instead of empty when hidden, so a private moveset never matches a "has none" filter.
+                    ArticleNames = x.Moveset.PrivateMoveset == true && !(seeAll || x.IsOwner)
+                        ? null
+                        : x.Moveset.MovesetArticles
+                            .Select(ma => ma.Article.VanillaCharInternalName + "_" + ma.Article.ArticleName)
+                            .ToList(),
+                    HookIds = x.Moveset.PrivateMoveset == true && !(seeAll || x.IsOwner)
+                        ? null
+                        : x.Moveset.MovesetHooks.Select(mh => mh.HookId).ToList(),
                     HasSourceCode = x.Moveset.SourceCode != null && x.Moveset.SourceCode != "",
                     HasModsWikiLink = x.Moveset.ModsWikiLink != null && x.Moveset.ModsWikiLink != "",
                 })
@@ -231,6 +258,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public-heavy")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<ActionResult<IEnumerable<object>>> SearchMovesets([FromQuery] string q, [FromQuery] bool includeHidden = false)
         {
             if (string.IsNullOrWhiteSpace(q))
@@ -238,7 +266,7 @@ namespace CustomCharInfo.server.Controllers
 
             var user = await _userManager.GetRequesterSummaryAsync(_context, User);
 
-            bool seeAll = user?.UserTypeId == UserTypes.Admin && includeHidden;
+            bool seeAll = user?.IsAdmin == true && includeHidden;
             int? currentModderId = user?.ModderId;
             var lowered = q.Trim().ToLower();
 
@@ -281,6 +309,7 @@ namespace CustomCharInfo.server.Controllers
         [EnableCors("PublicApi")]
         [EnableRateLimiting("public")]
         [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
         public async Task<ActionResult<MovesetDetailDto>> GetMoveset(string idOrSlottedId)
         {
             var user = await _userManager.GetRequesterSummaryAsync(_context, User);
@@ -314,14 +343,16 @@ namespace CustomCharInfo.server.Controllers
                 ? null
                 : moveset.MovesetEditors?.FirstOrDefault(me => me.Modder.ModderId == user.ModderId);
             bool isOwner = isCredited || editorEntry != null;
+            bool isAdmin = user?.IsAdmin == true;
 
-            moveset.CanEdit = isOwner;
-            moveset.CanManageMembers = isCredited || (editorEntry != null && editorEntry.FullAccess);
-            if (!isOwner)
+            // Admins have full owner powers on every moveset.
+            moveset.CanEdit = isOwner || isAdmin;
+            moveset.CanManageMembers = isCredited || isAdmin || (editorEntry != null && editorEntry.FullAccess);
+            if (!isOwner && !isAdmin)
                 moveset.MovesetEditors = null;
 
             // Hide if private
-            if ((bool)moveset.PrivateMoveset && user?.UserTypeId != UserTypes.Admin && !isOwner)
+            if ((bool)moveset.PrivateMoveset && !isAdmin && !isOwner)
                 return NotFound();
 
             // Find latest log
@@ -332,7 +363,7 @@ namespace CustomCharInfo.server.Controllers
 
             
             // Enforce rules
-            if (user?.UserTypeId != UserTypes.Admin)
+            if (!isAdmin)
             {
                 if (
                     latestLog != null

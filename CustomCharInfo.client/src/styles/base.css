@@ -1,0 +1,256 @@
+/*
+  Reset, typography, links, focus, texture, and reduced motion.
+  Page-level layout lives in layout.css; Vuetify overrides in vuetify.css.
+*/
+:root {
+  color-scheme: dark;
+  font-family: var(--font-body);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body {
+  background: var(--bg);
+}
+
+/* Horizontal clipping lives on html so it reaches the viewport; on body it would make body the scroll container and break position: sticky. */
+html {
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  color: var(--tx);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: var(--white);
+  color: #000;
+}
+
+/* Headings. DFHeiGB is reserved for the one main title per page, drawn by PageShell. */
+h1,
+h2,
+h3,
+h4 {
+  margin: 0 0 0.4em;
+  line-height: 1.15;
+  font-weight: 700;
+}
+
+h2,
+h3 {
+  font-family: var(--font-condensed);
+}
+
+h2 {
+  font-size: 1.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+
+h3 {
+  font-size: 1.25rem;
+}
+
+p {
+  margin: 0 0 0.75em;
+}
+
+strong,
+b {
+  font-weight: 600;
+}
+
+small {
+  font-size: 0.85em;
+}
+
+/* Code and identifiers */
+code,
+kbd,
+pre,
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+code {
+  background: var(--panel-2);
+  padding: 0.1rem 0.3rem 0.2rem;
+  margin: 0 0.2rem;
+  word-wrap: break-word;
+}
+
+/* Links */
+a {
+  color: var(--tx);
+  text-decoration-color: var(--tx-3);
+  text-underline-offset: 2px;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+a:hover {
+  color: var(--white);
+  text-decoration-color: var(--white);
+}
+
+a.offsite {
+  position: relative;
+  padding-right: 1.2em;
+}
+
+a.offsite::after {
+  content: '\F03CC';
+  font-family: 'Material Design Icons';
+  position: relative;
+  display: inline-block;
+  font-size: 0.9em;
+  text-decoration: none;
+  right: -2px;
+  top: -2px;
+}
+
+a.unvisitable,
+a.unvisitable:visited {
+  color: unset;
+}
+
+a.question {
+  cursor: help;
+}
+
+/* Focus: one ring everywhere, only for keyboard focus */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: 2px;
+}
+
+/*
+  The grid texture behind every page, header included: full strength at the edges, gone by a fifth of the way in.
+  It is anchored to the document rather than the viewport so the home page can fade it in with the hero.
+*/
+.page-texture {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 28px 28px;
+  /* Vuetify resets every element to no-repeat; the grid has to tile */
+  background-repeat: repeat;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    #000 0%,
+    #000 5%,
+    rgba(0, 0, 0, 0.4) 12%,
+    transparent 22%,
+    transparent 78%,
+    rgba(0, 0, 0, 0.4) 88%,
+    #000 95%,
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    #000 0%,
+    #000 5%,
+    rgba(0, 0, 0, 0.4) 12%,
+    transparent 22%,
+    transparent 78%,
+    rgba(0, 0, 0, 0.4) 88%,
+    #000 95%,
+    #000 100%
+  );
+}
+
+/* The moveset detail page draws its own grid inside the color and down its right edge */
+.page-texture--off {
+  display: none;
+}
+
+/* On Home the grid rises over the hero images, fading out upward through the same band in which they fade to black */
+.page-texture--hero {
+  z-index: 2;
+  -webkit-mask-image:
+    linear-gradient(
+      90deg,
+      #000 0%,
+      #000 5%,
+      rgba(0, 0, 0, 0.4) 12%,
+      transparent 22%,
+      transparent 78%,
+      rgba(0, 0, 0, 0.4) 88%,
+      #000 95%,
+      #000 100%
+    ),
+    linear-gradient(180deg, transparent 54vh, #000 75vh);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(
+      90deg,
+      #000 0%,
+      #000 5%,
+      rgba(0, 0, 0, 0.4) 12%,
+      transparent 22%,
+      transparent 78%,
+      rgba(0, 0, 0, 0.4) 88%,
+      #000 95%,
+      #000 100%
+    ),
+    linear-gradient(180deg, transparent 54vh, #000 75vh);
+  mask-composite: intersect;
+}
+
+/* Content that replaces a skeleton fades in so the swap reads as one motion */
+.reveal {
+  animation: reveal var(--dur-base) var(--ease-out) backwards;
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Helpers */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.muted {
+  color: var(--tx-2);
+}
+
+.faint {
+  color: var(--tx-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

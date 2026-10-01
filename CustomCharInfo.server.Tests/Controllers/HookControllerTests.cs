@@ -448,6 +448,109 @@ namespace CustomCharInfo.server.Tests.Controllers
             Assert.Contains("ToDelete", log.Diff);
         }
 
+        // A moveset that uses the hook, credited to the given modder when one is passed.
+        private Moveset AddMovesetUsingHook(int movesetId, int hookId, bool isPrivate = false, int? modderId = null)
+        {
+            var moveset = new Moveset
+            {
+                MovesetId = movesetId,
+                ModdedCharName = $"Char{movesetId}",
+                VanillaCharInternalName = "mario",
+                SlottedId = $"char{movesetId}",
+                ReleaseStateId = ReleaseStates.Released,
+                PrivateMoveset = isPrivate
+            };
+            _db.Context.Movesets.Add(moveset);
+            _db.Context.MovesetHooks.Add(new MovesetHook { MovesetId = movesetId, HookId = hookId });
+            if (modderId != null)
+                _db.Context.MovesetModders.Add(new MovesetModder { MovesetId = movesetId, ModderId = modderId.Value });
+            _db.Context.SaveChanges();
+            return moveset;
+        }
+
+        [Fact]
+        public async Task GetHooks_Anonymous_CountsOnlyPublicUnblockedMovesets()
+        {
+            SeedData.AddHookWithOffset(_db.Context, 1, "1234", 1);
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: UserTypes.Modder, modderId: 7);
+            SeedData.AddModder(_db.Context, 7, "modder-1", "Seven");
+            AddMovesetUsingHook(1, 1);
+            AddMovesetUsingHook(2, 1, isPrivate: true, modderId: 7);
+            AddMovesetUsingHook(3, 1);
+            SeedData.AddActionLog(_db.Context, 3, AcceptanceStates.PendingAdminHard, DateTime.UtcNow, "modder-1");
+
+            var result = await CreateController().GetHooks();
+
+            var hooks = Assert.IsAssignableFrom<IEnumerable<HookDto>>(Assert.IsType<OkObjectResult>(result.Result).Value);
+            Assert.Equal(1, Assert.Single(hooks).UsedByCount);
+        }
+
+        [Fact]
+        public async Task GetHooks_Anonymous_CountsMovesetWhoseBlockWasSuperseded()
+        {
+            SeedData.AddHookWithOffset(_db.Context, 1, "1234", 1);
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: UserTypes.Modder, modderId: 7);
+            AddMovesetUsingHook(1, 1);
+            AddMovesetUsingHook(3, 1);
+            var t0 = new DateTime(2026, 9, 1, 0, 0, 0, DateTimeKind.Utc);
+            SeedData.AddActionLog(_db.Context, 3, AcceptanceStates.PendingAdminHard, t0, "modder-1");
+            SeedData.AddActionLog(_db.Context, 3, AcceptanceStates.Accepted, t0.AddDays(1), "modder-1");
+
+            var result = await CreateController().GetHooks();
+
+            var hooks = Assert.IsAssignableFrom<IEnumerable<HookDto>>(Assert.IsType<OkObjectResult>(result.Result).Value);
+            Assert.Equal(2, Assert.Single(hooks).UsedByCount);
+        }
+
+        [Fact]
+        public async Task GetHooks_Owner_CountsTheirOwnPrivateAndBlockedMovesets()
+        {
+            SeedData.AddHookWithOffset(_db.Context, 1, "1234", 1);
+            SeedData.AddUser(_db.Context, "modder-1", userTypeId: UserTypes.Modder, modderId: 7);
+            SeedData.AddModder(_db.Context, 7, "modder-1", "Seven");
+            AddMovesetUsingHook(1, 1);
+            AddMovesetUsingHook(2, 1, isPrivate: true, modderId: 7);
+            AddMovesetUsingHook(3, 1, modderId: 7);
+            SeedData.AddActionLog(_db.Context, 3, AcceptanceStates.PendingAdminHard, DateTime.UtcNow, "modder-1");
+            AddMovesetUsingHook(4, 1, isPrivate: true);
+
+            var result = await CreateController("modder-1").GetHooks();
+
+            var hooks = Assert.IsAssignableFrom<IEnumerable<HookDto>>(Assert.IsType<OkObjectResult>(result.Result).Value);
+            Assert.Equal(3, Assert.Single(hooks).UsedByCount);
+        }
+
+        [Fact]
+        public async Task GetHook_Admin_ListsEveryMovesetUsingIt()
+        {
+            SeedData.AddHookWithOffset(_db.Context, 1, "1234", 1);
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
+            AddMovesetUsingHook(1, 1);
+            AddMovesetUsingHook(2, 1, isPrivate: true);
+
+            var result = await CreateController("admin-1").GetHook(1);
+
+            var hook = Assert.IsType<HookDto>(Assert.IsType<OkObjectResult>(result.Result).Value);
+            Assert.Equal(2, hook.UsedByCount);
+            Assert.NotNull(hook.UsedBy);
+            Assert.Equal(new[] { "Char1", "Char2" }, hook.UsedBy!.Select(m => m.ModdedCharName));
+            Assert.Equal("char1", hook.UsedBy![0].SlottedId);
+        }
+
+        [Fact]
+        public async Task GetHook_Anonymous_ListsOnlyPublicMovesets()
+        {
+            SeedData.AddHookWithOffset(_db.Context, 1, "1234", 1);
+            AddMovesetUsingHook(1, 1);
+            AddMovesetUsingHook(2, 1, isPrivate: true);
+
+            var result = await CreateController().GetHook(1);
+
+            var hook = Assert.IsType<HookDto>(Assert.IsType<OkObjectResult>(result.Result).Value);
+            Assert.Equal(1, hook.UsedByCount);
+            Assert.Equal(1, Assert.Single(hook.UsedBy!).MovesetId);
+        }
+
         [Fact]
         public async Task GetHook_UnknownId_ReturnsNotFound()
         {

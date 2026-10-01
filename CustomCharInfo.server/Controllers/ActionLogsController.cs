@@ -5,10 +5,7 @@ using CustomCharInfo.server.Models;
 using CustomCharInfo.server.Helpers;
 using CustomCharInfo.server.Models.DTOs;
 using Microsoft.AspNetCore.Identity;
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using System.Security.Claims;
+using System.Linq.Expressions;
 using Microsoft.AspNetCore.Authorization;
 
 namespace CustomCharInfo.server.Controllers
@@ -41,7 +38,7 @@ namespace CustomCharInfo.server.Controllers
             if (requester == null)
                 return false;
 
-            if (requester.UserTypeId == UserTypes.Admin)
+            if (requester.UserTypeId >= UserTypes.Admin)
                 return true;
 
             if (itemTypeId == ItemTypes.Hook)
@@ -69,6 +66,39 @@ namespace CustomCharInfo.server.Controllers
             }
         }
 
+        // The columns the log DTOs need, projected so no full entity row (least of all the Identity user) leaves the database.
+        private sealed class LogRow
+        {
+            public int ActionLogId { get; set; }
+            public string UserId { get; set; } = "";
+            public string? UserName { get; set; }
+            public string? Email { get; set; }
+            public int ItemTypeId { get; set; }
+            public string ItemTypeName { get; set; } = "";
+            public int ItemId { get; set; }
+            public int AcceptanceStateId { get; set; }
+            public string AcceptanceStateName { get; set; } = "";
+            public string Notes { get; set; } = "";
+            public string? Diff { get; set; }
+            public DateTime CreatedAt { get; set; }
+        }
+
+        private static readonly Expression<Func<ActionLog, LogRow>> ToRow = a => new LogRow
+        {
+            ActionLogId = a.ActionLogId,
+            UserId = a.UserId,
+            UserName = a.User.UserName,
+            Email = a.User.Email,
+            ItemTypeId = a.ItemTypeId,
+            ItemTypeName = a.ItemType.ItemTypeName,
+            ItemId = a.ItemId,
+            AcceptanceStateId = a.AcceptanceStateId,
+            AcceptanceStateName = a.AcceptanceState.AcceptanceStateName,
+            Notes = a.Notes,
+            Diff = a.Diff,
+            CreatedAt = a.CreatedAt
+        };
+
         private class ItemLookups
         {
             public Dictionary<int, (int Id, string Name)> Movesets { get; set; } = new();
@@ -80,7 +110,7 @@ namespace CustomCharInfo.server.Controllers
 
         // Batches the item-detail lookups (moveset/modder/series/hook names) needed to
         // render a set of action logs, so callers avoid N+1 queries per log.
-        private async Task<ItemLookups> BuildItemLookupsAsync(IEnumerable<ActionLog> logs)
+        private async Task<ItemLookups> BuildItemLookupsAsync(IEnumerable<LogRow> logs)
         {
             var modderIds = logs.Where(l => l.ItemTypeId == ItemTypes.Modder).Select(l => l.ItemId).Distinct().ToList();
             var movesetIds = logs.Where(l => l.ItemTypeId == ItemTypes.Moveset).Select(l => l.ItemId).Distinct().ToList();
@@ -116,7 +146,7 @@ namespace CustomCharInfo.server.Controllers
             return new ItemLookups { Movesets = movesets, Modders = modders, Series = series, Hooks = hooks, PluginVersions = pluginVersions };
         }
 
-        private static object? BuildItemDetails(ActionLog a, ItemLookups lookups)
+        private static object? BuildItemDetails(LogRow a, ItemLookups lookups)
         {
             return a.ItemTypeId switch
             {
@@ -149,32 +179,149 @@ namespace CustomCharInfo.server.Controllers
             };
         }
 
-        private static GetActionLogDto ToDto(ActionLog a, ItemLookups lookups, bool isAdmin)
+        private static GetActionLogDto ToDto(LogRow a, ItemLookups lookups, bool isAdmin)
         {
             return new GetActionLogDto
             {
                 ActionLogId = a.ActionLogId,
                 User = new UserSummaryDto
                 {
-                    Id = a.User.Id,
-                    UserName = a.User.UserName,
-                    Email = isAdmin ? a.User.Email : null
+                    Id = a.UserId,
+                    UserName = a.UserName,
+                    Email = isAdmin ? a.Email : null
                 },
                 ItemType = new ItemTypeDto
                 {
-                    ItemTypeId = a.ItemType.ItemTypeId,
-                    ItemTypeName = a.ItemType.ItemTypeName
+                    ItemTypeId = a.ItemTypeId,
+                    ItemTypeName = a.ItemTypeName
                 },
                 Item = BuildItemDetails(a, lookups),
                 AcceptanceState = new AcceptanceStateDto
                 {
-                    AcceptanceStateId = a.AcceptanceState.AcceptanceStateId,
-                    AcceptanceStateName = a.AcceptanceState.AcceptanceStateName
+                    AcceptanceStateId = a.AcceptanceStateId,
+                    AcceptanceStateName = a.AcceptanceStateName
                 },
                 Notes = a.Notes,
                 Diff = a.Diff,
                 CreatedAt = a.CreatedAt
             };
+        }
+
+        // Who is asking and whose logs the request is about.
+        private sealed record LogScope(bool IsAdmin, string EffectiveUserId, int? ModderId);
+
+        // Applies the shared rules of the list endpoints: only admins may view everything or another user's logs.
+        private async Task<(LogScope? Scope, ActionResult? Error)> ResolveScopeAsync(bool viewAll, string? targetUserId)
+        {
+            var requesterId = _userManager.GetUserId(User);
+            if (requesterId == null)
+                return (null, Forbid());
+
+            var requester = await _context.Users
+                .Select(u => new { u.Id, u.UserTypeId, u.ModderId })
+                .FirstOrDefaultAsync(u => u.Id == requesterId);
+
+            if (requester == null)
+                return (null, Forbid());
+
+            bool isAdmin = requester.UserTypeId >= UserTypes.Admin;
+
+            // Only admins may view all logs
+            if (viewAll && !isAdmin)
+                return (null, Forbid());
+
+            // Only admins may query another user's logs
+            if (targetUserId != null && !isAdmin)
+                return (null, Forbid());
+
+            // Determine user being queried for
+            var effectiveUserId = targetUserId ?? requesterId;
+
+            var user = await _context.Users
+                .Select(u => new { u.Id, u.UserTypeId, u.ModderId })
+                .FirstOrDefaultAsync(u => u.Id == effectiveUserId);
+
+            if (user == null)
+                return (null, NotFound("Target user not found."));
+
+            return (new LogScope(isAdmin, effectiveUserId, user.ModderId), null);
+        }
+
+        // States a user's own create, edit, or application logs carry.
+        // Decisions an admin posts through the Admin viewer use other states, so they never make an item "theirs".
+        private static readonly int[] SubmissionStates =
+        {
+            AcceptanceStates.PendingAdminSoft,
+            AcceptanceStates.PendingAdminHard,
+            AcceptanceStates.AutoAccepted
+        };
+
+        // Narrows logs to the items the effective user may see: their modder row, movesets they are credited on or edit,
+        // those movesets' series, hooks they logged on or their movesets use, and plugin versions they own.
+        private async Task<IQueryable<ActionLog>> ScopeToUserAsync(IQueryable<ActionLog> query, LogScope scope)
+        {
+            var effectiveUserId = scope.EffectiveUserId;
+            var modderId = scope.ModderId;
+            var extraModderItemIds = new List<int>();
+
+            if (modderId == null)
+            {
+                extraModderItemIds = await _context.ActionLogs
+                    .Where(log => log.UserId == effectiveUserId && log.ItemTypeId == ItemTypes.Modder
+                        && SubmissionStates.Contains(log.AcceptanceStateId))
+                    .Select(log => log.ItemId)
+                    .Distinct()
+                    .ToListAsync();
+            }
+
+            // Hooks are shared/unowned - a user can see a hook's logs if they've submitted a
+            // log entry for it before (i.e. they've created or edited it at some point).
+            var editedHookIds = await _context.ActionLogs
+                .Where(log => log.UserId == effectiveUserId && log.ItemTypeId == ItemTypes.Hook
+                    && SubmissionStates.Contains(log.AcceptanceStateId))
+                .Select(log => log.ItemId)
+                .Distinct()
+                .ToListAsync();
+
+            if (modderId != null)
+            {
+                // Movesets the user is credited on or edits
+                var userMovesetIds = await MovesetAccess.EditableMovesetIdsAsync(_context, modderId);
+
+                // Get seriesIds from movesets
+                var seriesIdsFromMovesets = await _context.Movesets
+                    .Where(m => userMovesetIds.Contains(m.MovesetId))
+                    .Select(m => m.SeriesId)
+                    .Distinct()
+                    .ToListAsync();
+
+                // Dependency/standalone plugins this modder owns (case 1 plugins are never logged)
+                var ownedPluginVersionIds = await _context.PluginVersions
+                    .Where(v => v.Plugin.OwnerModderId == modderId)
+                    .Select(v => v.PluginVersionId)
+                    .ToListAsync();
+
+                // Hooks any of those movesets use, so offset changes reach the modders they affect.
+                var usedHookIds = await _context.MovesetHooks
+                    .Where(mh => userMovesetIds.Contains(mh.MovesetId))
+                    .Select(mh => mh.HookId)
+                    .Distinct()
+                    .ToListAsync();
+                var visibleHookIds = editedHookIds.Union(usedHookIds).ToList();
+
+                return query.Where(a =>
+                    (a.ItemTypeId == ItemTypes.Modder && a.ItemId == modderId) ||
+                    (a.ItemTypeId == ItemTypes.Moveset && userMovesetIds.Contains(a.ItemId)) ||
+                    (a.ItemTypeId == ItemTypes.Series && seriesIdsFromMovesets.Contains(a.ItemId)) ||
+                    (a.ItemTypeId == ItemTypes.Hook && visibleHookIds.Contains(a.ItemId)) ||
+                    (a.ItemTypeId == ItemTypes.Plugin && ownedPluginVersionIds.Contains(a.ItemId))
+                );
+            }
+
+            return query.Where(a =>
+                (a.ItemTypeId == ItemTypes.Modder && extraModderItemIds.Contains(a.ItemId)) ||
+                (a.ItemTypeId == ItemTypes.Hook && editedHookIds.Contains(a.ItemId))
+            );
         }
 
         [Authorize]
@@ -190,109 +337,15 @@ namespace CustomCharInfo.server.Controllers
             if (page <= 0 || pageSize <= 0)
                 return BadRequest("Page and pageSize must be greater than 0.");
 
-            var requesterId = _userManager.GetUserId(User);
-            if (requesterId == null)
-                return Forbid();
+            var (scope, error) = await ResolveScopeAsync(viewAll, targetUserId);
+            if (error != null)
+                return error;
 
-            var requester = await _context.Users
-                .Select(u => new { u.Id, u.UserTypeId, u.ModderId })
-                .FirstOrDefaultAsync(u => u.Id == requesterId);
-
-            if (requester == null)
-                return Forbid();
-
-            bool isAdmin = requester.UserTypeId == UserTypes.Admin;
-
-            // Only admins may view all logs
-            if (viewAll && !isAdmin)
-                return Forbid();
-
-            // Only admins may query another user's logs
-            if (targetUserId != null && !isAdmin)
-                return Forbid();
-
-            // Determine user being queried for
-            var effectiveUserId = targetUserId ?? requesterId;
-
-            var user = await _context.Users
-                .Select(u => new { u.Id, u.UserTypeId, u.ModderId })
-                .FirstOrDefaultAsync(u => u.Id == effectiveUserId);
-
-            if (user == null)
-                return NotFound("Target user not found.");
-
-            var query = _context.ActionLogs
-                .Include(a => a.User)
-                .Include(a => a.ItemType)
-                .Include(a => a.AcceptanceState)
-                .OrderByDescending(a => a.CreatedAt)
-                .AsQueryable();
+            var query = _context.ActionLogs.AsNoTracking();
 
             // Restrict scope
             if (!viewAll)
-            {
-                var modderId = user.ModderId;
-                var extraModderItemIds = new List<int>();
-
-                if (modderId == null)
-                {
-                    extraModderItemIds = await _context.ActionLogs
-                        .Where(log => log.UserId == effectiveUserId && log.ItemTypeId == ItemTypes.Modder)
-                        .Select(log => log.ItemId)
-                        .Distinct()
-                        .ToListAsync();
-                }
-
-                // Hooks are shared/unowned - a user can see a hook's logs if they've submitted a
-                // log entry for it before (i.e. they've created or edited it at some point).
-                var editedHookIds = await _context.ActionLogs
-                    .Where(log => log.UserId == effectiveUserId && log.ItemTypeId == ItemTypes.Hook)
-                    .Select(log => log.ItemId)
-                    .Distinct()
-                    .ToListAsync();
-
-                if (modderId != null)
-                {
-                    // Movesets the user is credited on or edits
-                    var userMovesetIds = await MovesetAccess.EditableMovesetIdsAsync(_context, modderId);
-
-                    // Get seriesIds from movesets
-                    var seriesIdsFromMovesets = await _context.Movesets
-                        .Where(m => userMovesetIds.Contains(m.MovesetId))
-                        .Select(m => m.SeriesId)
-                        .Distinct()
-                        .ToListAsync();
-
-                    // Dependency/standalone plugins this modder owns (case 1 plugins are never logged)
-                    var ownedPluginVersionIds = await _context.PluginVersions
-                        .Where(v => v.Plugin.OwnerModderId == modderId)
-                        .Select(v => v.PluginVersionId)
-                        .ToListAsync();
-
-                    // Hooks any of those movesets use, so offset changes reach the modders they affect.
-                    var usedHookIds = await _context.MovesetHooks
-                        .Where(mh => userMovesetIds.Contains(mh.MovesetId))
-                        .Select(mh => mh.HookId)
-                        .Distinct()
-                        .ToListAsync();
-                    var visibleHookIds = editedHookIds.Union(usedHookIds).ToList();
-
-                    query = query.Where(a =>
-                        (a.ItemTypeId == ItemTypes.Modder && a.ItemId == modderId) ||
-                        (a.ItemTypeId == ItemTypes.Moveset && userMovesetIds.Contains(a.ItemId)) ||
-                        (a.ItemTypeId == ItemTypes.Series && seriesIdsFromMovesets.Contains(a.ItemId)) ||
-                        (a.ItemTypeId == ItemTypes.Hook && visibleHookIds.Contains(a.ItemId)) ||
-                        (a.ItemTypeId == ItemTypes.Plugin && ownedPluginVersionIds.Contains(a.ItemId))
-                    );
-                }
-                else
-                {
-                    query = query.Where(a =>
-                        (a.ItemTypeId == ItemTypes.Modder && extraModderItemIds.Contains(a.ItemId)) ||
-                        (a.ItemTypeId == ItemTypes.Hook && editedHookIds.Contains(a.ItemId))
-                    );
-                }
-            }
+                query = await ScopeToUserAsync(query, scope!);
 
             // AcceptanceState filter
             if (acceptanceStates != null && acceptanceStates.Any())
@@ -306,15 +359,61 @@ namespace CustomCharInfo.server.Controllers
                 query = query.Where(a => itemTypes.Contains(a.ItemTypeId));
             }
 
-            var logsRaw = await query
+            var rows = await query
+                .OrderByDescending(a => a.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Select(ToRow)
                 .ToListAsync();
 
-            var lookups = await BuildItemLookupsAsync(logsRaw);
-            var logs = logsRaw.Select(a => ToDto(a, lookups, isAdmin)).ToList();
+            var lookups = await BuildItemLookupsAsync(rows);
+            var logs = rows.Select(a => ToDto(a, lookups, scope!.IsAdmin)).ToList();
 
             return Ok(logs);
+        }
+
+        // The newest log per item, reduced to its state, for the pages that only need to know where an item sits in review.
+        // Same scope rules as the list; the acceptance-state filter applies to the newest log, not to the history.
+        [Authorize]
+        [HttpGet("latest")]
+        public async Task<ActionResult<IEnumerable<LatestStateDto>>> GetLatestStates(
+            [FromQuery] bool viewAll = false,
+            [FromQuery] string? targetUserId = null,
+            [FromQuery] int[]? acceptanceStates = null,
+            [FromQuery] int[]? itemTypes = null
+        ) {
+            var (scope, error) = await ResolveScopeAsync(viewAll, targetUserId);
+            if (error != null)
+                return error;
+
+            var query = _context.ActionLogs.AsNoTracking();
+
+            if (!viewAll)
+                query = await ScopeToUserAsync(query, scope!);
+
+            if (itemTypes != null && itemTypes.Any())
+            {
+                query = query.Where(a => itemTypes.Contains(a.ItemTypeId));
+            }
+
+            var latest = query.LatestPerItem(_context);
+
+            if (acceptanceStates != null && acceptanceStates.Any())
+            {
+                latest = latest.Where(a => acceptanceStates.Contains(a.AcceptanceStateId));
+            }
+
+            var rows = await latest
+                .Select(a => new LatestStateDto
+                {
+                    ItemTypeId = a.ItemTypeId,
+                    ItemId = a.ItemId,
+                    AcceptanceStateId = a.AcceptanceStateId,
+                    CreatedAt = a.CreatedAt
+                })
+                .ToListAsync();
+
+            return Ok(rows);
         }
 
         [Authorize]
@@ -333,22 +432,21 @@ namespace CustomCharInfo.server.Controllers
 
             var isAdmin = await _context.Users
                 .Where(u => u.Id == requesterId)
-                .Select(u => u.UserTypeId == UserTypes.Admin)
+                .Select(u => u.UserTypeId >= UserTypes.Admin)
                 .FirstOrDefaultAsync();
 
-            var logsRaw = await _context.ActionLogs
-                .Include(a => a.User)
-                .Include(a => a.ItemType)
-                .Include(a => a.AcceptanceState)
+            var rows = await _context.ActionLogs
+                .AsNoTracking()
                 .Where(a => a.ItemTypeId == itemTypeId && a.ItemId == itemId)
                 .OrderByDescending(a => a.CreatedAt)
+                .Select(ToRow)
                 .ToListAsync();
 
-            if (!logsRaw.Any())
+            if (!rows.Any())
                 return Ok(Array.Empty<GetActionLogDto>());
 
-            var lookups = await BuildItemLookupsAsync(logsRaw);
-            var logs = logsRaw.Select(a => ToDto(a, lookups, isAdmin)).ToList();
+            var lookups = await BuildItemLookupsAsync(rows);
+            var logs = rows.Select(a => ToDto(a, lookups, isAdmin)).ToList();
 
             return Ok(logs);
         }
@@ -424,30 +522,30 @@ namespace CustomCharInfo.server.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<GetActionLogDto>> GetActionLog(int id)
         {
-            var actionLog = await _context.ActionLogs
-                .Include(a => a.User)
-                .Include(a => a.ItemType)
-                .Include(a => a.AcceptanceState)
-                .SingleOrDefaultAsync(a => a.ActionLogId == id);
+            var row = await _context.ActionLogs
+                .AsNoTracking()
+                .Where(a => a.ActionLogId == id)
+                .Select(ToRow)
+                .SingleOrDefaultAsync();
 
-            if (actionLog == null)
+            if (row == null)
                 return NotFound();
 
             var requesterId = _userManager.GetUserId(User);
             if (requesterId == null)
                 return Forbid();
 
-            var canView = await CanViewItemLogsAsync(requesterId, actionLog.ItemTypeId, actionLog.ItemId);
+            var canView = await CanViewItemLogsAsync(requesterId, row.ItemTypeId, row.ItemId);
             if (!canView)
                 return Forbid();
 
             var isAdmin = await _context.Users
                 .Where(u => u.Id == requesterId)
-                .Select(u => u.UserTypeId == UserTypes.Admin)
+                .Select(u => u.UserTypeId >= UserTypes.Admin)
                 .FirstOrDefaultAsync();
 
-            var lookups = await BuildItemLookupsAsync(new[] { actionLog });
-            var logDto = ToDto(actionLog, lookups, isAdmin);
+            var lookups = await BuildItemLookupsAsync(new[] { row });
+            var logDto = ToDto(row, lookups, isAdmin);
 
             return Ok(logDto);
         }

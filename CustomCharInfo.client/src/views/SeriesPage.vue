@@ -1,10 +1,14 @@
 <template>
-  <v-container>
-    <h1 class="mb-4 page-title">Series</h1>
+  <PageShell title="Series">
+    <template #subnav>
+      <SubNav section="series" label="Series" />
+    </template>
     <SeriesList />
-  </v-container>
+  </PageShell>
 </template>
 
 <script setup>
+import PageShell from '@/components/PageShell.vue'
+import SubNav from '@/components/SubNav.vue'
 import SeriesList from '@/components/SeriesList.vue'
 </script>

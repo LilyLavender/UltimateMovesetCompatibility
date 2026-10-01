@@ -4,6 +4,8 @@ const apiUrl = import.meta.env.VITE_API_URL.replace(/\/+$/, '')
 
 const api = axios.create({
   baseURL: `${apiUrl}/api`,
+  // ASP.NET Core binds array params only as ?a=1&a=2; axios's default a[]=1 form is silently ignored.
+  paramsSerializer: { indexes: null },
 })
 
 // Attach access token to every request

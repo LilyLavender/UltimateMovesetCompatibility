@@ -10,11 +10,14 @@ namespace CustomCharInfo.server.Helpers
     // and resolves ids to names so admins read a series name rather than its number.
     public static class MovesetDiffBuilder
     {
-        public static async Task<string?> BuildAsync(AppDbContext context, Moveset moveset, CreateMovesetDto dto)
+        // credits is the request's credited modders as MovesetCredits.FromDto read them; moveset.MovesetModders needs Roles loaded.
+        public static async Task<string?> BuildAsync(AppDbContext context, Moveset moveset, CreateMovesetDto dto, List<CreditSpec> credits)
         {
+            var creditIds = credits.Select(c => c.ModderId).ToHashSet();
+
             // Batch lookups for human-readable diff values
             var allModderIds = moveset.MovesetModders.Select(m => m.ModderId)
-                .Concat(dto.ModderIds ?? new())
+                .Concat(creditIds)
                 .Concat(moveset.MovesetEditors.Select(e => e.ModderId))
                 .Concat((dto.Editors ?? new()).Select(e => e.ModderId))
                 .Distinct().ToList();
@@ -34,6 +37,9 @@ namespace CustomCharInfo.server.Helpers
             var modderNameMap = await context.Modders
                 .Where(m => allModderIds.Contains(m.ModderId))
                 .ToDictionaryAsync(m => m.ModderId, m => m.Name ?? m.ModderId.ToString());
+            var roleNameMap = await context.ContributionRoles
+                .ToDictionaryAsync(r => r.ContributionRoleId, r => r.Name);
+            string ModderName(int id) => modderNameMap.TryGetValue(id, out var n) ? n : id.ToString();
             var depNameMap = await context.Dependencies
                 .Where(d => allDepIds.Contains(d.DependencyId))
                 .ToDictionaryAsync(d => d.DependencyId, d => d.Name);
@@ -74,7 +80,7 @@ namespace CustomCharInfo.server.Helpers
                 moveset.ModpackName, moveset.SourceCode, moveset.PrivateMoveset, moveset.PrivateModder,
                 moveset.IsJokeMoveset, moveset.Subtitle,
                 Modders       = string.Join(", ", moveset.MovesetModders
-                    .Select(m => modderNameMap.TryGetValue(m.ModderId, out var n) ? n : m.ModderId.ToString())
+                    .Select(m => MovesetCredits.Label(ModderName(m.ModderId), m.Roles.Select(r => r.ContributionRoleId), m.ShowOnCard, roleNameMap))
                     .OrderBy(x => x)),
                 Editors       = string.Join(", ", moveset.MovesetEditors
                     .Select(e => EditorLabel(modderNameMap, e.ModderId, e.FullAccess))
@@ -90,11 +96,11 @@ namespace CustomCharInfo.server.Helpers
                     .OrderBy(x => x)),
             };
 
-            var newModders = string.Join(", ", (dto.ModderIds ?? new())
-                .Select(mid => modderNameMap.TryGetValue(mid, out var n) ? n : mid.ToString())
+            var newModders = string.Join(", ", credits
+                .Select(c => MovesetCredits.Label(ModderName(c.ModderId), c.RoleIds, c.ShowOnCard, roleNameMap))
                 .OrderBy(x => x));
             var newEditors = string.Join(", ", (dto.Editors ?? new())
-                .Where(e => !(dto.ModderIds ?? new()).Contains(e.ModderId))
+                .Where(e => !creditIds.Contains(e.ModderId))
                 .Select(e => EditorLabel(modderNameMap, e.ModderId, e.FullAccess))
                 .OrderBy(x => x));
             var newDeps = string.Join(", ", (dto.DependencyIds ?? new())

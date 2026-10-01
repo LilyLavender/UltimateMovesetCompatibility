@@ -37,6 +37,30 @@ namespace CustomCharInfo.server.Tests.Data
         }
 
         [Fact]
+        public async Task DeletingMoveset_RemovesMovesetModderRoleRows()
+        {
+            var user = SeedData.AddUser(_db.Context, "modder-user", userTypeId: UserTypes.Modder, modderId: 1);
+            SeedData.AddModder(_db.Context, 1, user.Id, "SomeModder");
+            var moveset = new Moveset { MovesetId = 1, ModdedCharName = "Test", VanillaCharInternalName = "mario", SlottedId = "slotone", ReleaseStateId = ReleaseStates.Released };
+            _db.Context.Movesets.Add(moveset);
+            _db.Context.MovesetModders.Add(new MovesetModder
+            {
+                MovesetId = 1,
+                ModderId = 1,
+                SortOrder = 0,
+                Roles = new List<MovesetModderRole> { new() { MovesetId = 1, ModderId = 1, ContributionRoleId = ContributionRoles.Coding } }
+            });
+            await _db.Context.SaveChangesAsync();
+
+            _db.Context.Movesets.Remove(moveset);
+            await _db.Context.SaveChangesAsync();
+
+            Assert.Empty(await _db.Context.MovesetModderRoles.ToListAsync());
+            // The lookup row itself survives.
+            Assert.Equal(8, await _db.Context.ContributionRoles.CountAsync());
+        }
+
+        [Fact]
         public async Task DeletingMoveset_RemovesMovesetEditorRow()
         {
             var user = SeedData.AddUser(_db.Context, "editor-user", userTypeId: UserTypes.Modder, modderId: 1);

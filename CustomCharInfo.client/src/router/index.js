@@ -7,7 +7,7 @@ import {
   createModderApplyGuard,
   createModderEditGuard,
 } from '@/router/guards'
-import { UserType } from '@/globals'
+import { isModder, isAdmin } from '@/navigation'
 // Basic
 import HomePage from '@/views/HomePage.vue'
 import ErrorPage from '@/views/ErrorPage.vue'
@@ -110,7 +110,7 @@ const routes = [
     name: 'AddPlugin',
     component: AddPluginPage,
     meta: { title: 'Submit a Plugin' },
-    beforeEnter: createAuthGuard((user) => user.userTypeId >= UserType.Modder),
+    beforeEnter: createAuthGuard(isModder),
   },
   {
     path: '/blog',
@@ -129,7 +129,7 @@ const routes = [
     name: 'RequestEditSeries',
     component: RequestEditSeries,
     meta: { title: 'Edit a Series' },
-    beforeEnter: createAuthGuard((user) => user.userTypeId >= UserType.Modder),
+    beforeEnter: createAuthGuard(isModder),
   },
   {
     path: '/series/:seriesId',
@@ -163,14 +163,14 @@ const routes = [
     name: 'AddMoveset',
     component: AddMoveset,
     meta: { title: 'Submit Moveset' },
-    beforeEnter: createAuthGuard((user) => user.userTypeId >= UserType.Modder),
+    beforeEnter: createAuthGuard(isModder),
   },
   {
     path: '/series/add',
     name: 'AddSeries',
     component: AddSeries,
     meta: { title: 'Submit Series' },
-    beforeEnter: createAuthGuard((user) => user.userTypeId >= UserType.Modder),
+    beforeEnter: createAuthGuard(isModder),
   },
   {
     path: '/modders',
@@ -210,14 +210,14 @@ const routes = [
     name: 'AddHook',
     component: AddHook,
     meta: { title: 'Submit Hook' },
-    beforeEnter: createAuthGuard((user) => user.userTypeId >= UserType.Modder),
+    beforeEnter: createAuthGuard(isModder),
   },
   {
     path: '/hooks/edit/:hookId',
     name: 'EditHook',
     component: EditHook,
     props: true,
-    beforeEnter: createAuthGuard((user) => user.userTypeId >= UserType.Modder),
+    beforeEnter: createAuthGuard(isModder),
   },
   {
     path: '/user-actions',
@@ -243,98 +243,98 @@ const routes = [
     name: 'AdminPortal',
     component: AdminPortal,
     meta: { title: 'Admin portal' },
-    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard(isAdmin),
   },
   {
     path: '/action-log-manager',
     name: 'AdminAccepter',
     component: AdminAccepter,
     meta: { title: 'Action Log Manager' },
-    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard(isAdmin),
   },
   {
     path: '/notification-simulator',
     name: 'NotificationSimulator',
     component: NotificationSimulator,
     meta: { title: 'Notification Simulator' },
-    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard(isAdmin),
   },
   {
     path: '/hidden-content',
     name: 'HiddenContent',
     component: HiddenContentPage,
     meta: { title: 'Hidden Content' },
-    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard(isAdmin),
   },
   {
     path: '/admin-picks',
     name: 'AdminPicks',
     component: AdminPicks,
     meta: { title: 'Admin Picks' },
-    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard(isAdmin),
   },
   {
     path: '/admin-password-resetter',
     name: 'AdminPasswordResetter',
     component: AdminPasswordResetter,
     meta: { title: 'Password Resetter' },
-    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard(isAdmin),
   },
   {
     path: '/add-blog-post',
     name: 'AddBlogPost',
     component: BlogPostForm,
     meta: { title: 'Add Blog Post' },
-    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard(isAdmin),
   },
   {
     path: '/user-list',
     name: 'UserList',
     component: UserList,
     meta: { title: 'User List' },
-    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard(isAdmin),
   },
   {
     path: '/image-garbage-collector',
     name: 'ImageGarbageCollector',
     component: ImageGarbageCollector,
     meta: { title: 'Image Garbage Collector' },
-    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard(isAdmin),
   },
   {
     path: '/banner-image-manager',
     name: 'BannerImageManager',
     component: BannerImageManager,
     meta: { title: 'Banner Image Manager' },
-    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard(isAdmin),
   },
   {
     path: '/moveset-delete-manager',
     name: 'MovesetDeleteManager',
     component: MovesetDeleteManager,
     meta: { title: 'Moveset Delete Manager' },
-    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard(isAdmin),
   },
   {
     path: '/all-plugins',
     name: 'AllPlugins',
     component: AllPluginsPage,
     meta: { title: 'All Plugins' },
-    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard(isAdmin),
   },
   {
     path: '/repo-releases',
     name: 'RepoReleases',
     component: RepoReleasesPage,
     meta: { title: 'Repo Releases' },
-    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard(isAdmin),
   },
   {
     path: '/game-versions',
     name: 'GameVersions',
     component: GameVersionsPage,
     meta: { title: 'Game Versions' },
-    beforeEnter: createAuthGuard((user) => user.userTypeId === UserType.Admin),
+    beforeEnter: createAuthGuard(isAdmin),
   },
   {
     path: '/about',
@@ -418,4 +418,9 @@ const routes = [
 export default createRouter({
   history: createWebHashHistory('/UltimateMovesetCompatibility/'),
   routes,
+  // Back and forward restore where the reader was; any other navigation opens the page at its title.
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition
+    return { top: 0 }
+  },
 })

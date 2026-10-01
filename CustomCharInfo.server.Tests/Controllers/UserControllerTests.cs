@@ -68,5 +68,47 @@ namespace CustomCharInfo.server.Tests.Controllers
             Assert.Equal(4, onlyUsers.Cast<object>().Count());
             Assert.Single(onlyModders.Cast<object>());
         }
+
+        private static object? Prop(object item, string name) =>
+            item.GetType().GetProperty(name)!.GetValue(item);
+
+        // Seeds one user with an email and two recorded IPs, then returns that user's row from the onlyUsers list.
+        private async Task<object> GetSeededUserRowAsAsync(string requesterId)
+        {
+            var target = SeedData.AddUser(_db.Context, "target-1", userTypeId: UserTypes.User);
+            target.Email = "target@example.com";
+            _db.Context.UserIpAddresses.Add(new UserIpAddress { UserId = target.Id, IpAddress = "10.0.0.1", LastSeenAt = DateTime.UtcNow.AddDays(-1) });
+            _db.Context.UserIpAddresses.Add(new UserIpAddress { UserId = target.Id, IpAddress = "10.0.0.2", LastSeenAt = DateTime.UtcNow });
+            _db.Context.SaveChanges();
+
+            var result = await CreateController(requesterId).GetAllUsers();
+            var ok = Assert.IsType<OkObjectResult>(result);
+            var onlyUsers = ((System.Collections.IEnumerable)Prop(ok.Value!, "onlyUsers")!).Cast<object>();
+            return onlyUsers.Single(u => (string?)Prop(u, "Id") == target.Id);
+        }
+
+        [Fact]
+        public async Task GetAllUsers_Admin_GetsIpCountButNoEmailOrLastIp()
+        {
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
+
+            var row = await GetSeededUserRowAsAsync("admin-1");
+
+            Assert.Null(Prop(row, "Email"));
+            Assert.Null(Prop(row, "LastIp"));
+            Assert.Equal(2, Prop(row, "IpCount"));
+        }
+
+        [Fact]
+        public async Task GetAllUsers_SuperAdmin_GetsEmailAndLastIp()
+        {
+            SeedData.AddUser(_db.Context, "super-1", userTypeId: UserTypes.SuperAdmin);
+
+            var row = await GetSeededUserRowAsAsync("super-1");
+
+            Assert.Equal("target@example.com", Prop(row, "Email"));
+            Assert.Equal("10.0.0.2", Prop(row, "LastIp"));
+            Assert.Equal(2, Prop(row, "IpCount"));
+        }
     }
 }

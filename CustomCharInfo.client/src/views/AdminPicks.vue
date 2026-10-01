@@ -1,59 +1,46 @@
 <template>
-  <v-container max-width="1200px">
-    <h1 class="mb-5 page-title no-select">Admin Picks</h1>
-
-    <!-- Controls -->
-    <v-row class="mb-5" align="center">
-      <!-- Select -->
-      <v-col cols="12" sm="6">
+  <PageShell
+    title="Admin picks"
+    :back-to="{ name: 'AdminPortal' }"
+    back-label="Admin portal"
+    lede="The movesets featured on the home page. Hover a card for its private admin note."
+  >
+    <div class="controls">
+      <LabeledField label="Moveset" class="controls__pick">
         <v-select
           v-model="selectedMovesetId"
-          variant="outlined"
           :items="movesetsOptions"
-          label="Select a moveset"
+          placeholder="Pick a moveset"
           item-title="moddedCharName"
           item-value="movesetId"
           hide-details
-          outlined
         />
-      </v-col>
-      <!-- Buttons -->
-      <v-col cols="12" sm="6">
-        <div class="d-flex justify-space-around">
-          <!-- Add -->
-          <v-btn
-            color="primary"
-            class="btn"
-            :disabled="!selectedMovesetId || adminPicksIds.has(selectedMovesetId)"
-            @click="addAdminPick"
-          >
-            <v-icon class="mr-1">mdi-account-plus</v-icon>
-            Add Admin Pick
-          </v-btn>
+      </LabeledField>
+      <div class="controls__actions">
+        <AppButton
+          icon="mdi-star-plus"
+          :disabled="!selectedMovesetId || adminPicksIds.has(selectedMovesetId)"
+          @click="addAdminPick"
+        >
+          Add pick
+        </AppButton>
+        <AppButton
+          variant="ghost"
+          icon="mdi-star-minus"
+          :disabled="!selectedMovesetId || !adminPicksIds.has(selectedMovesetId)"
+          @click="removeAdminPick"
+        >
+          Remove pick
+        </AppButton>
+        <AppButton variant="primary" icon="mdi-content-save" :busy="saving" @click="saveAdminPicks">
+          Save changes
+        </AppButton>
+      </div>
+    </div>
 
-          <!-- Remove -->
-          <v-btn
-            color="error"
-            class="btn"
-            :disabled="!selectedMovesetId || !adminPicksIds.has(selectedMovesetId)"
-            @click="removeAdminPick"
-          >
-            <v-icon class="mr-1">mdi-account-remove</v-icon>
-            Remove Admin Pick
-          </v-btn>
-
-          <!-- Save -->
-          <v-btn color="success" class="btn" :loading="saving" @click="saveAdminPicks">
-            <v-icon class="mr-1">mdi-content-save</v-icon>
-            Save Changes
-          </v-btn>
-        </div>
-      </v-col>
-    </v-row>
-
-    <!-- Moveset Lists -->
-    <h2>Admin Picks</h2>
-    <div class="moveset-grid">
+    <SectionHeading title="Admin picks" :count="adminPicksList.length" />
+    <SkeletonList v-if="loading" :count="6" />
+    <div v-else class="moveset-grid reveal">
       <div
         v-for="m in adminPicksList"
         :key="m.movesetId"
@@ -62,14 +49,12 @@
         @mouseleave="hoveredId = null"
       >
         <MovesetCard :moveset="m" />
-        <div v-if="hiddenPills(m).length" class="pill-overlay">
-          <span
-            v-for="pill in hiddenPills(m)"
-            :key="pill.label"
-            class="state-pill"
-            :style="{ backgroundColor: pill.color }"
-            >{{ pill.label }}</span
-          >
+        <div class="tag-overlay">
+          <StatusTag
+            v-if="statusPillFor(movesetStates[m.movesetId])"
+            :state="movesetStates[m.movesetId]"
+          />
+          <StatusTag v-if="m.privateMoveset" variant="err">Private</StatusTag>
         </div>
         <AdminNotePopover
           v-model:note="notes[m.movesetId]"
@@ -82,8 +67,9 @@
       </div>
     </div>
 
-    <h2>Other Movesets</h2>
-    <div class="moveset-grid">
+    <SectionHeading title="Other movesets" :count="nonAdminPicksList.length" />
+    <SkeletonList v-if="loading" :count="9" />
+    <div v-else class="moveset-grid reveal">
       <div
         v-for="m in nonAdminPicksList"
         :key="m.movesetId"
@@ -92,14 +78,12 @@
         @mouseleave="hoveredId = null"
       >
         <MovesetCard :moveset="m" />
-        <div v-if="hiddenPills(m).length" class="pill-overlay">
-          <span
-            v-for="pill in hiddenPills(m)"
-            :key="pill.label"
-            class="state-pill"
-            :style="{ backgroundColor: pill.color }"
-            >{{ pill.label }}</span
-          >
+        <div class="tag-overlay">
+          <StatusTag
+            v-if="statusPillFor(movesetStates[m.movesetId])"
+            :state="movesetStates[m.movesetId]"
+          />
+          <StatusTag v-if="m.privateMoveset" variant="err">Private</StatusTag>
         </div>
         <AdminNotePopover
           v-model:note="notes[m.movesetId]"
@@ -111,23 +95,30 @@
         />
       </div>
     </div>
-  </v-container>
+  </PageShell>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
+import PageShell from '@/components/PageShell.vue'
+import LabeledField from '@/components/LabeledField.vue'
+import AppButton from '@/components/AppButton.vue'
+import SectionHeading from '@/components/SectionHeading.vue'
+import SkeletonList from '@/components/SkeletonList.vue'
+import StatusTag from '@/components/StatusTag.vue'
 import MovesetCard from '@/components/MovesetCard.vue'
 import AdminNotePopover from '@/components/AdminNotePopover.vue'
 import { useNotify } from '@/composables/useNotify'
 import { ItemType, ALL_ACCEPTANCE_STATES } from '@/globals'
-import { PRIVATE_COLOR, statusPillFor, latestLogsByItem } from '@/services/acceptanceStateDisplay'
+import { statusPillFor, latestLogsByItem } from '@/services/acceptanceStateDisplay'
 
 const notify = useNotify()
 
 const movesets = ref([])
 const selectedMovesetId = ref(null)
 const saving = ref(false)
+const loading = ref(true)
 const movesetStates = ref({})
 
 // Set of moveset IDs currently marked as admin picks
@@ -170,17 +161,10 @@ onMounted(async () => {
     )
   } catch (err) {
     console.error('Failed to fetch movesets:', err)
+  } finally {
+    loading.value = false
   }
 })
-
-// This page loads hidden movesets too, so mark the ones the public cannot see.
-const hiddenPills = (m) => {
-  const pills = []
-  const state = statusPillFor(movesetStates.value[m.movesetId])
-  if (state) pills.push(state)
-  if (m.privateMoveset) pills.push({ label: 'Private', color: PRIVATE_COLOR })
-  return pills
-}
 
 // Compute lists for display
 const adminPicksList = computed(() =>
@@ -228,44 +212,38 @@ const saveAdminPicks = async () => {
 </script>
 
 <style scoped>
-.page-title {
-  font-size: 5em;
-  margin-top: 0.5em;
+.controls {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px 20px;
 }
 
-.btn {
-  text-transform: unset;
-  letter-spacing: 0.009375em;
-  font-size: medium;
-  background-color: #2e2e2e;
-  color: #e2e2e2;
+.controls__pick {
+  flex: 1 1 280px;
+  max-width: 420px;
 }
 
-.btn:disabled {
-  background-color: grey !important;
-}
-
-.notes-hint {
-  color: #888;
-  font-size: 0.9em;
-  margin-bottom: 1rem;
+.controls__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .moveset-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 340px);
   justify-content: center;
-  gap: 4px;
-  margin-bottom: 2rem;
+  gap: 0;
 }
 
 /* Hugs the 340px card so the corner icon and the popover line up with its edges */
 .moveset-wrapper {
   position: relative;
-  flex: 0 0 auto;
+  width: 340px;
 }
 
-.pill-overlay {
+.tag-overlay {
   position: absolute;
   bottom: 4px;
   right: 6px;
@@ -273,14 +251,5 @@ const saveAdminPicks = async () => {
   gap: 4px;
   pointer-events: none;
   z-index: 60;
-}
-
-.state-pill {
-  padding: 2px 8px;
-  border-radius: 9999px;
-  color: rgb(20, 20, 20);
-  font-weight: bold;
-  font-size: 0.7rem;
-  white-space: nowrap;
 }
 </style>

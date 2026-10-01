@@ -248,5 +248,62 @@ namespace CustomCharInfo.server.Tests.Controllers
 
             Assert.IsType<BadRequestObjectResult>(result);
         }
+
+        private void AddRefreshToken(string token, string userId)
+        {
+            _db.Context.RefreshTokens.Add(new RefreshToken
+            {
+                Token = token,
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddDays(10),
+                Revoked = false
+            });
+            _db.Context.SaveChanges();
+        }
+
+        [Fact]
+        public async Task ResetPassword_Success_RevokesUsersRefreshTokens()
+        {
+            var user = SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
+            SeedData.AddUser(_db.Context, "user-2", userTypeId: UserTypes.User);
+            AddRefreshToken("user-1-a", "user-1");
+            AddRefreshToken("user-1-b", "user-1");
+            AddRefreshToken("user-2-a", "user-2");
+
+            var userManager = MockUserManagerFactory.Create(users: _db.Context.Users);
+            userManager.Setup(m => m.FindByIdAsync("user-1")).ReturnsAsync(user);
+            userManager
+                .Setup(m => m.ResetPasswordAsync(user, It.IsAny<string>(), It.IsAny<string>()))
+                .ReturnsAsync(IdentityResult.Success);
+
+            var controller = CreateController(userManager);
+
+            var result = await controller.ResetPassword(new ResetPasswordDto { UserId = "user-1", Token = "t", NewPassword = "NewPass1!" });
+
+            Assert.IsType<OkResult>(result);
+            Assert.All(_db.Context.RefreshTokens.Where(r => r.UserId == "user-1"), r => Assert.True(r.Revoked));
+            Assert.False(_db.Context.RefreshTokens.Single(r => r.UserId == "user-2").Revoked);
+        }
+
+        [Fact]
+        public async Task ResetPassword_Failure_LeavesRefreshTokens()
+        {
+            var user = SeedData.AddUser(_db.Context, "user-1", userTypeId: UserTypes.User);
+            AddRefreshToken("user-1-a", "user-1");
+
+            var userManager = MockUserManagerFactory.Create(users: _db.Context.Users);
+            userManager.Setup(m => m.FindByIdAsync("user-1")).ReturnsAsync(user);
+            userManager
+                .Setup(m => m.ResetPasswordAsync(user, It.IsAny<string>(), It.IsAny<string>()))
+                .ReturnsAsync(IdentityResult.Failed(new IdentityError { Code = "InvalidToken", Description = "Invalid token." }));
+
+            var controller = CreateController(userManager);
+
+            var result = await controller.ResetPassword(new ResetPasswordDto { UserId = "user-1", Token = "bad", NewPassword = "NewPass1!" });
+
+            Assert.IsType<BadRequestObjectResult>(result);
+            Assert.False(_db.Context.RefreshTokens.Single().Revoked);
+        }
     }
 }
