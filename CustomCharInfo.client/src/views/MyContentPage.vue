@@ -25,7 +25,11 @@
         <div v-for="moveset in movesets" :key="moveset.movesetId" class="moveset-wrapper">
           <MovesetCard :moveset="moveset" />
           <div class="tag-overlay">
-            <StatusTag v-if="stateTagFor(moveset)" :state="stateTagFor(moveset)" />
+            <LogStatePill
+              v-if="stateTagFor(moveset)"
+              :state="stateTagFor(moveset)"
+              :log="movesetLogs[moveset.movesetId]"
+            />
             <StatusTag v-if="moveset.privateMoveset" variant="err">Private</StatusTag>
           </div>
         </div>
@@ -38,7 +42,11 @@
           <div v-for="moveset in editedMovesets" :key="moveset.movesetId" class="moveset-wrapper">
             <MovesetCard :moveset="moveset" />
             <div class="tag-overlay">
-              <StatusTag v-if="stateTagFor(moveset)" :state="stateTagFor(moveset)" />
+              <LogStatePill
+                v-if="stateTagFor(moveset)"
+                :state="stateTagFor(moveset)"
+                :log="movesetLogs[moveset.movesetId]"
+              />
               <StatusTag v-if="moveset.privateMoveset" variant="err">Private</StatusTag>
             </div>
           </div>
@@ -52,7 +60,12 @@
         <SeriesCard v-for="s in userSeries" :key="s.seriesId" :series="s" :api-url="apiUrl">
           <template #subtitle>
             <span class="series-tags">
-              <StatusTag v-for="stateId in seriesTagStates(s)" :key="stateId" :state="stateId" />
+              <LogStatePill
+                v-for="stateId in seriesTagStates(s)"
+                :key="stateId"
+                :state="stateId"
+                :log="seriesLogs[s.seriesId]"
+              />
               <span v-if="!seriesTagStates(s).length" class="series-card__count">
                 {{ s.movesetCount }} {{ s.movesetCount === 1 ? 'moveset' : 'movesets' }}
               </span>
@@ -76,9 +89,10 @@ import SkeletonPanel from '@/components/SkeletonPanel.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import AppButton from '@/components/AppButton.vue'
 import StatusTag from '@/components/StatusTag.vue'
+import LogStatePill from '@/components/LogStatePill.vue'
 import MovesetCard from '@/components/MovesetCard.vue'
 import SeriesCard from '@/components/SeriesCard.vue'
-import { statusPillFor, latestStatesByItem } from '@/services/acceptanceStateDisplay'
+import { statusPillFor, latestRowsByItem } from '@/services/acceptanceStateDisplay'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
@@ -86,6 +100,9 @@ const loading = ref(true)
 const movesets = ref([])
 const editedMovesets = ref([])
 const userSeries = ref([])
+// Newest /logs/latest row per item id (for the pill tooltips), and the same reduced to its state id.
+const movesetLogs = ref({})
+const seriesLogs = ref({})
 const movesetStates = ref({})
 const seriesStates = ref({})
 
@@ -123,19 +140,21 @@ onMounted(async () => {
     editedMovesets.value = editedRes.data
 
     const rows = logsRes.data
-    for (const [id, stateId] of latestStatesByItem(rows, ItemType.Moveset)) {
-      movesetStates.value[id] = stateId
+    for (const [id, row] of latestRowsByItem(rows, ItemType.Moveset)) {
+      movesetLogs.value[id] = row
+      movesetStates.value[id] = row.acceptanceStateId
     }
 
-    const seriesStateMap = latestStatesByItem(rows, ItemType.Series)
-    const seriesIds = [...seriesStateMap.keys()]
+    const seriesLogMap = latestRowsByItem(rows, ItemType.Series)
+    const seriesIds = [...seriesLogMap.keys()]
     if (seriesIds.length > 0) {
       const results = await Promise.all(
         seriesIds.map((id) => api.get(`/series/${id}`).catch(() => null))
       )
       userSeries.value = results.filter((r) => r?.data).map((r) => r.data)
-      for (const [id, stateId] of seriesStateMap) {
-        seriesStates.value[id] = stateId
+      for (const [id, row] of seriesLogMap) {
+        seriesLogs.value[id] = row
+        seriesStates.value[id] = row.acceptanceStateId
       }
     }
   } catch (err) {

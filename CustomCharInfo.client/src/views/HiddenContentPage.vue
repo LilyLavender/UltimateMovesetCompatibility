@@ -21,9 +21,10 @@
           <div v-for="moveset in group.items" :key="moveset.movesetId" class="moveset-wrapper">
             <MovesetCard :moveset="moveset" />
             <div class="tag-overlay">
-              <StatusTag
+              <LogStatePill
                 v-if="statusPillFor(movesetStates[moveset.movesetId])"
                 :state="movesetStates[moveset.movesetId]"
+                :log="movesetLogs[moveset.movesetId]"
               />
               <StatusTag v-if="moveset.privateMoveset" variant="err">Private</StatusTag>
             </div>
@@ -44,7 +45,12 @@
         >
           <template #subtitle>
             <span class="series-tags">
-              <StatusTag v-for="stateId in seriesTagStates(s)" :key="stateId" :state="stateId" />
+              <LogStatePill
+                v-for="stateId in seriesTagStates(s)"
+                :key="stateId"
+                :state="stateId"
+                :log="seriesLogs[s.seriesId]"
+              />
             </span>
           </template>
         </SeriesCard>
@@ -61,7 +67,12 @@
           >
             {{ m.name }}
           </router-link>
-          <StatusTag v-for="stateId in modderTagStates(m)" :key="stateId" :state="stateId" />
+          <LogStatePill
+            v-for="stateId in modderTagStates(m)"
+            :key="stateId"
+            :state="stateId"
+            :log="modderLogs[m.modderId]"
+          />
         </li>
       </ul>
     </div>
@@ -82,9 +93,10 @@ import SectionHeading from '@/components/SectionHeading.vue'
 import SkeletonList from '@/components/SkeletonList.vue'
 import SkeletonPanel from '@/components/SkeletonPanel.vue'
 import StatusTag from '@/components/StatusTag.vue'
+import LogStatePill from '@/components/LogStatePill.vue'
 import MovesetCard from '@/components/MovesetCard.vue'
 import SeriesCard from '@/components/SeriesCard.vue'
-import { statusPillFor, latestStatesByItem } from '@/services/acceptanceStateDisplay'
+import { statusPillFor, latestRowsByItem } from '@/services/acceptanceStateDisplay'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
@@ -92,6 +104,10 @@ const loading = ref(true)
 const movesets = ref([])
 const series = ref([])
 const modders = ref([])
+// Newest /logs/latest row per item id, and the same reduced to its state id.
+const movesetLogs = ref({})
+const seriesLogs = ref({})
+const modderLogs = ref({})
 const movesetStates = ref({})
 const seriesStates = ref({})
 const modderStates = ref({})
@@ -157,10 +173,15 @@ onMounted(async () => {
     ])
 
     const rows = logsRes.data
-    const toStates = (map) => Object.fromEntries(map)
-    movesetStates.value = toStates(latestStatesByItem(rows, ItemType.Moveset))
-    seriesStates.value = toStates(latestStatesByItem(rows, ItemType.Series))
-    modderStates.value = toStates(latestStatesByItem(rows, ItemType.Modder))
+    const toLogs = (map) => Object.fromEntries(map)
+    const toStates = (logs) =>
+      Object.fromEntries(Object.entries(logs).map(([id, row]) => [id, row.acceptanceStateId]))
+    movesetLogs.value = toLogs(latestRowsByItem(rows, ItemType.Moveset))
+    seriesLogs.value = toLogs(latestRowsByItem(rows, ItemType.Series))
+    modderLogs.value = toLogs(latestRowsByItem(rows, ItemType.Modder))
+    movesetStates.value = toStates(movesetLogs.value)
+    seriesStates.value = toStates(seriesLogs.value)
+    modderStates.value = toStates(modderLogs.value)
 
     // Only movesets that are hidden for some reason belong here.
     movesets.value = movesetsRes.data.filter(

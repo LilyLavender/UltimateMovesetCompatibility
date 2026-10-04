@@ -3,7 +3,7 @@
     title="Admin picks"
     :back-to="{ name: 'AdminPortal' }"
     back-label="Admin portal"
-    lede="The movesets featured on the home page. Hover a card for its private admin note."
+    lede="The movesets featured on the home page. Hover a card for its private admin note, or a state pill for its newest log."
   >
     <div class="controls">
       <LabeledField label="Moveset" class="controls__pick">
@@ -50,9 +50,12 @@
       >
         <MovesetCard :moveset="m" />
         <div class="tag-overlay">
-          <StatusTag
+          <LogStatePill
             v-if="statusPillFor(movesetStates[m.movesetId])"
             :state="movesetStates[m.movesetId]"
+            :log="movesetLogs[m.movesetId]"
+            @mouseenter="hoveredId = null"
+            @mouseleave="hoveredId = m.movesetId"
           />
           <StatusTag v-if="m.privateMoveset" variant="err">Private</StatusTag>
         </div>
@@ -79,9 +82,12 @@
       >
         <MovesetCard :moveset="m" />
         <div class="tag-overlay">
-          <StatusTag
+          <LogStatePill
             v-if="statusPillFor(movesetStates[m.movesetId])"
             :state="movesetStates[m.movesetId]"
+            :log="movesetLogs[m.movesetId]"
+            @mouseenter="hoveredId = null"
+            @mouseleave="hoveredId = m.movesetId"
           />
           <StatusTag v-if="m.privateMoveset" variant="err">Private</StatusTag>
         </div>
@@ -107,11 +113,12 @@ import AppButton from '@/components/AppButton.vue'
 import SectionHeading from '@/components/SectionHeading.vue'
 import SkeletonList from '@/components/SkeletonList.vue'
 import StatusTag from '@/components/StatusTag.vue'
+import LogStatePill from '@/components/LogStatePill.vue'
 import MovesetCard from '@/components/MovesetCard.vue'
 import AdminNotePopover from '@/components/AdminNotePopover.vue'
 import { useNotify } from '@/composables/useNotify'
 import { ItemType, ALL_ACCEPTANCE_STATES } from '@/globals'
-import { statusPillFor, latestLogsByItem } from '@/services/acceptanceStateDisplay'
+import { statusPillFor, latestRowsByItem } from '@/services/acceptanceStateDisplay'
 
 const notify = useNotify()
 
@@ -119,6 +126,8 @@ const movesets = ref([])
 const selectedMovesetId = ref(null)
 const saving = ref(false)
 const loading = ref(true)
+// Newest /logs/latest row per moveset id (for the pill tooltips), and the same reduced to its state id.
+const movesetLogs = ref({})
 const movesetStates = ref({})
 
 // Set of moveset IDs currently marked as admin picks
@@ -139,7 +148,7 @@ onMounted(async () => {
       api.get('/movesets', { params: { pageSize: 1000, includeHidden: true } }),
       api.get('/movesets/admin-notes').catch(() => ({ data: [] })),
       api
-        .get('/logs', {
+        .get('/logs/latest', {
           params: {
             viewAll: true,
             acceptanceStates: ALL_ACCEPTANCE_STATES,
@@ -154,10 +163,9 @@ onMounted(async () => {
     )
     notes.value = Object.fromEntries(notesRes.data.map((n) => [n.movesetId, n]))
     drafts.value = Object.fromEntries(notesRes.data.map((n) => [n.movesetId, n.note]))
+    movesetLogs.value = Object.fromEntries(latestRowsByItem(logsRes.data, ItemType.Moveset))
     movesetStates.value = Object.fromEntries(
-      [...latestLogsByItem(logsRes.data, ItemType.Moveset, (i) => i?.movesetId)].map(
-        ([id, log]) => [id, log.acceptanceState?.acceptanceStateId]
-      )
+      Object.entries(movesetLogs.value).map(([id, row]) => [id, row.acceptanceStateId])
     )
   } catch (err) {
     console.error('Failed to fetch movesets:', err)

@@ -45,6 +45,16 @@ export function latestStatesByItem(rows, itemTypeId) {
   return states
 }
 
+// Map of item id to its whole /logs/latest row for one item type, for pages that also show the notes and author.
+export function latestRowsByItem(rows, itemTypeId) {
+  const latest = new Map()
+  for (const row of rows) {
+    if (row.itemTypeId !== itemTypeId) continue
+    latest.set(row.itemId, row)
+  }
+  return latest
+}
+
 // Newest log per item id for one item type, from a /logs response.
 export function latestLogsByItem(logs, itemTypeId, idOf) {
   const latest = new Map()

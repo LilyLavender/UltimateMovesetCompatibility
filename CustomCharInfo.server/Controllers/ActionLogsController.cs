@@ -409,7 +409,9 @@ namespace CustomCharInfo.server.Controllers
                     ItemTypeId = a.ItemTypeId,
                     ItemId = a.ItemId,
                     AcceptanceStateId = a.AcceptanceStateId,
-                    CreatedAt = a.CreatedAt
+                    CreatedAt = a.CreatedAt,
+                    Notes = a.Notes,
+                    UserName = a.User.UserName
                 })
                 .ToListAsync();
 

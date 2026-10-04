@@ -97,7 +97,7 @@ namespace CustomCharInfo.server.Tests.TestHelpers
             return modder;
         }
 
-        public static ActionLog AddActionLog(AppDbContext context, int itemId, int acceptanceStateId, DateTime createdAt, string userId, int itemTypeId = ItemTypes.Moveset)
+        public static ActionLog AddActionLog(AppDbContext context, int itemId, int acceptanceStateId, DateTime createdAt, string userId, int itemTypeId = ItemTypes.Moveset, string notes = "")
         {
             var log = new ActionLog
             {
@@ -105,7 +105,7 @@ namespace CustomCharInfo.server.Tests.TestHelpers
                 ItemId = itemId,
                 AcceptanceStateId = acceptanceStateId,
                 UserId = userId,
-                Notes = "",
+                Notes = notes,
                 CreatedAt = createdAt
             };
             context.ActionLogs.Add(log);

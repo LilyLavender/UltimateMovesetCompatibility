@@ -456,6 +456,22 @@ namespace CustomCharInfo.server.Tests.Controllers
             Assert.Equal(AcceptanceStates.PendingAdminHard, rows[1].AcceptanceStateId);
         }
 
+
+        [Fact]
+        public async Task GetLatestStates_RowsCarryNotesAndAuthor()
+        {
+            SeedData.AddUser(_db.Context, "admin-1", userTypeId: UserTypes.Admin);
+            var owner = SeedData.AddUser(_db.Context, "modder-user", userTypeId: UserTypes.Modder, modderId: 20);
+            var t0 = new DateTime(2026, 9, 1, 0, 0, 0, DateTimeKind.Utc);
+            SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: AcceptanceStates.PendingAdminHard, t0, userId: owner.Id, notes: "First try");
+            SeedData.AddActionLog(_db.Context, itemId: 1, acceptanceStateId: AcceptanceStates.Rejected, t0.AddDays(1), userId: "admin-1", notes: "Needs a hero image");
+
+            var result = await CreateController("admin-1").GetLatestStates(viewAll: true);
+
+            var row = Assert.Single((IEnumerable<LatestStateDto>)Assert.IsType<OkObjectResult>(result.Result).Value!);
+            Assert.Equal("Needs a hero image", row.Notes);
+            Assert.Equal("user-admin-1", row.UserName);
+        }
         [Fact]
         public async Task GetLatestStates_SameTimestamp_HigherIdWins()
         {
