@@ -48,10 +48,11 @@
   --font-condensed: 'Roboto Condensed', 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-  /* Page tiers */
+  /* Page tiers. --w-grid holds whole 340px moveset cards: three, then four and five on the widest viewports below. */
   --w-narrow: 720px;
   --w-standard: 1080px;
   --w-wide: 1360px;
+  --w-grid: 1080px;
   --gutter: 16px;
 
   /* Motion. --ease for color and fill changes; --ease-out for anything that moves into place. */
@@ -73,5 +74,27 @@
 @media (min-width: 960px) {
   :root {
     --gutter: 32px;
+  }
+}
+
+/*
+  Zoomed-out and very wide viewports. On a 1920px display 80% zoom is about 2400px and 70% about 2740px;
+  100% and 90% stay on the base widths. Each step grows every tier by the same ratio and adds one card column.
+*/
+@media (min-width: 2200px) {
+  :root {
+    --w-narrow: 900px;
+    --w-standard: 1350px;
+    --w-wide: 1700px;
+    --w-grid: 1360px;
+  }
+}
+
+@media (min-width: 2700px) {
+  :root {
+    --w-narrow: 1080px;
+    --w-standard: 1620px;
+    --w-wide: 2040px;
+    --w-grid: 1700px;
   }
 }

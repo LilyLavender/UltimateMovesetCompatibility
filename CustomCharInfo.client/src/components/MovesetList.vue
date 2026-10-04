@@ -169,7 +169,7 @@
     <!-- Moveset List -->
     <template v-for="section in sections" :key="section.title">
       <SectionHeading v-if="section.title" :title="section.title" />
-      <div class="moveset-grid">
+      <div class="moveset-grid" :class="{ 'moveset-grid--clipped': maxRows }" :style="gridStyle">
         <MovesetCard
           v-for="m in section.movesets"
           :key="m.movesetId"
@@ -207,7 +207,13 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  maxRows: {
+    type: Number,
+    default: null,
+  },
 })
+
+const gridStyle = computed(() => (props.maxRows ? { '--rows': props.maxRows } : null))
 
 const fetchedMovesets = ref([])
 const releaseStates = ref([])
@@ -455,6 +461,13 @@ onMounted(async () => {
   grid-template-columns: repeat(auto-fill, 340px);
   justify-content: center;
   gap: 0;
+}
+
+/* Explicit rows keep their height; every row past them collapses to zero and is hidden so the count follows the columns. */
+.moveset-grid--clipped {
+  grid-template-rows: repeat(var(--rows), auto);
+  grid-auto-rows: 0;
+  overflow: hidden;
 }
 
 .moveset-list-all {

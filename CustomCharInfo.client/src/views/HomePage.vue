@@ -18,14 +18,14 @@
   </div>
 
   <!-- Main site -->
-  <PageShell v-else title="Custom Movesets" size="lg" over-hero :head="false">
+  <PageShell v-else title="Custom Movesets" tier="grid" size="lg" over-hero :head="false">
     <SectionHeading title="Recent releases" :to="{ name: 'Movesets' }" link-label="All movesets" />
-    <SkeletonList v-if="loading" />
-    <MovesetList v-else class="reveal" :movesets="recentReleases" />
+    <SkeletonList v-if="loading" :count="RELEASE_LIMIT" :max-rows="RELEASE_ROWS" />
+    <MovesetList v-else class="reveal" :movesets="recentReleases" :max-rows="RELEASE_ROWS" />
 
     <SectionHeading title="Upcoming releases" />
-    <SkeletonList v-if="loading" />
-    <MovesetList v-else class="reveal" :movesets="upcomingReleases" />
+    <SkeletonList v-if="loading" :count="RELEASE_LIMIT" :max-rows="RELEASE_ROWS" />
+    <MovesetList v-else class="reveal" :movesets="upcomingReleases" :max-rows="RELEASE_ROWS" />
 
     <template v-if="latestBlogPost">
       <SectionHeading title="Latest from the blog" :to="{ name: 'Blog' }" link-label="View blog" />
@@ -79,6 +79,10 @@ useHead({
 
 // Every home section is drawn from the admin picks, so only those are requested.
 const adminPicks = ref([])
+
+// Recent and Upcoming show this many rows; the widest grid tier fits five cards per row, so ten is enough.
+const RELEASE_ROWS = 2
+const RELEASE_LIMIT = 10
 const latestBlogPost = ref(null)
 const siteDisabled = ref(false)
 const loading = ref(true)
@@ -89,7 +93,7 @@ const recentReleases = computed(() => {
   return adminPicks.value
     .filter((m) => m.releaseDate && compareDateOnlyStrings(m.releaseDate, todayStr) <= 0)
     .sort((a, b) => compareDateOnlyStrings(b.releaseDate, a.releaseDate))
-    .slice(0, 6)
+    .slice(0, RELEASE_LIMIT)
 })
 
 const upcomingReleases = computed(() => {
@@ -111,7 +115,7 @@ const upcomingReleases = computed(() => {
         (b.likeCount ?? 0) - (a.likeCount ?? 0) || a.moddedCharName.localeCompare(b.moddedCharName)
     )
 
-  return [...withDate, ...noDate].slice(0, 6)
+  return [...withDate, ...noDate].slice(0, RELEASE_LIMIT)
 })
 
 const betaMovesets = computed(() =>

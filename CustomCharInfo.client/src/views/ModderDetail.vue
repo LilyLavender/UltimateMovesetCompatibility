@@ -1,5 +1,5 @@
 <template>
-  <PageShell :title="modder?.name ?? 'Modder'" :head="false" keep-case>
+  <PageShell :title="modder?.name ?? 'Modder'" tier="grid" :head="false" keep-case>
     <div v-if="modder" class="modder">
       <div class="modder__side">
         <img v-if="modderPfpUrl" :src="modderPfpUrl" class="modder__pfp" alt="Profile picture" />

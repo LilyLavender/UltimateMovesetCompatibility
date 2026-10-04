@@ -19,6 +19,10 @@
   max-width: calc(var(--w-wide) + 2 * var(--gutter));
 }
 
+.tier-grid {
+  max-width: calc(var(--w-grid) + 2 * var(--gutter));
+}
+
 .panel {
   background: var(--panel);
   border: 1px solid var(--line);

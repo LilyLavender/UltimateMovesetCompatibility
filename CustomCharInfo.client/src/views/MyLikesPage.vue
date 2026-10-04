@@ -1,5 +1,5 @@
 <template>
-  <PageShell title="My likes">
+  <PageShell title="My likes" tier="grid">
     <template #subnav>
       <SubNav section="account" label="Account" />
     </template>

@@ -32,7 +32,7 @@ import { useHead } from '@unhead/vue'
 /*
   Every view renders inside one of these. It sets the width tier, draws the one DFHeiGB title
   per page with its striped tail, hosts the sub-nav, and registers the tab title.
-  Tiers: narrow (prose), standard (hubs, details, forms, account), wide (tables and tools).
+  Tiers: narrow (prose), standard (hubs, details, forms, account), wide (tables and tools), grid (moveset card lists).
   Mounting plays the page-enter reveal; the shell mounts once per route, so in-page state changes never replay it.
 */
 const props = defineProps({

@@ -1,5 +1,5 @@
 <template>
-  <PageShell title="All movesets">
+  <PageShell title="All movesets" tier="grid">
     <template #subnav>
       <SubNav section="movesets" label="Movesets" />
     </template>
