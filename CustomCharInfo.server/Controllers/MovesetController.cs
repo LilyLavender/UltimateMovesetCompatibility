@@ -5,6 +5,7 @@ using CustomCharInfo.server.Data;
 using CustomCharInfo.server.Models;
 using CustomCharInfo.server.Models.DTOs;
 using CustomCharInfo.server.Helpers;
+using System.Text.RegularExpressions;
 
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.RateLimiting;
@@ -48,6 +49,43 @@ namespace CustomCharInfo.server.Controllers
             [FromQuery] int? editorId = null
         )
         {
+            return Ok(await ListMovesetsAsync(
+                seriesId, releaseStateId, modderId, sort, privateOnly, adminPickOnly, upcomingOnly, recentOnly,
+                betaOnly, likedByUserId, page, pageSize, includeHidden, editorId, movesetIds: null));
+        }
+
+        // Movesets whose mod page is the given GameBanana mod.
+        [HttpGet("by-gamebanana/{modId:int}")]
+        [EnableCors("PublicApi")]
+        [EnableRateLimiting("public")]
+        [ApiExplorerSettings(GroupName = "public")]
+        [OutputCache(PolicyName = "Public")]
+        public async Task<ActionResult<IEnumerable<object>>> GetMovesetsByGamebanana(int modId)
+        {
+            var needle = "gamebanana.com/mods/" + modId;
+            var candidates = await _context.Movesets
+                .AsNoTracking()
+                .Where(m => m.ModPageUrl != null && m.ModPageUrl.ToLower().Contains(needle))
+                .Select(m => new { m.MovesetId, m.ModPageUrl })
+                .ToListAsync();
+
+            // Contains also accepts a longer id, so the exact id is confirmed here.
+            var exact = new Regex(@"gamebanana\.com/mods/" + modId + @"(?=[/?#]|$)", RegexOptions.IgnoreCase);
+            var movesetIds = candidates
+                .Where(c => exact.IsMatch(c.ModPageUrl!))
+                .Select(c => c.MovesetId)
+                .ToHashSet();
+
+            return Ok(await ListMovesetsAsync(
+                null, null, null, null, null, null, null, null, null, null, 1, int.MaxValue, false, null, movesetIds));
+        }
+
+        // The list query behind GetMovesets and GetMovesetsByGamebanana. movesetIds restricts the rows before the other filters.
+        private async Task<IEnumerable<object>> ListMovesetsAsync(
+            int? seriesId, int? releaseStateId, int? modderId, string? sort, bool? privateOnly, bool? adminPickOnly,
+            bool? upcomingOnly, bool? recentOnly, bool? betaOnly, string? likedByUserId, int page, int pageSize,
+            bool includeHidden, int? editorId, HashSet<int>? movesetIds)
+        {
             var user = await _userManager.GetRequesterSummaryAsync(_context, User);
 
             // Admins get the same view as a modder unless they ask for hidden content explicitly.
@@ -79,6 +117,9 @@ namespace CustomCharInfo.server.Controllers
                          || m.MovesetEditors.Any(me => me.ModderId == currentModderId))
                 })
                 .AsQueryable();
+
+            if (movesetIds != null)
+                query = query.Where(x => movesetIds.Contains(x.Moveset.MovesetId));
 
             // Filters
             if (seriesId.HasValue)
@@ -247,7 +288,7 @@ namespace CustomCharInfo.server.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(movesets);
+            return movesets;
         }
 
         private const int MaxSearchResults = 20;

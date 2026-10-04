@@ -39,7 +39,7 @@ namespace CustomCharInfo.server.Tests.Controllers
             return "slot" + suffix;
         }
 
-        private Moveset AddMoveset(int id, string name, int releaseStateId = 1, bool isPrivate = false, bool? adminPick = null, DateOnly? releaseDate = null)
+        private Moveset AddMoveset(int id, string name, int releaseStateId = 1, bool isPrivate = false, bool? adminPick = null, DateOnly? releaseDate = null, string? modPageUrl = null)
         {
             var moveset = new Moveset
             {
@@ -50,7 +50,8 @@ namespace CustomCharInfo.server.Tests.Controllers
                 ReleaseStateId = releaseStateId,
                 PrivateMoveset = isPrivate,
                 AdminPick = adminPick,
-                ReleaseDate = releaseDate
+                ReleaseDate = releaseDate,
+                ModPageUrl = modPageUrl
             };
             _db.Context.Movesets.Add(moveset);
             _db.Context.SaveChanges();
@@ -225,6 +226,62 @@ namespace CustomCharInfo.server.Tests.Controllers
             var movesets = Unwrap(result);
             Assert.Single(movesets);
             Assert.Equal("Public pick", Prop<string>(movesets[0], "ModdedCharName"));
+        }
+
+        [Fact]
+        public async Task GetMovesetsByGamebanana_MatchesExactModIdOnly()
+        {
+            AddMoveset(1, "Exact", modPageUrl: "https://gamebanana.com/mods/123");
+            AddMoveset(2, "Longer id", modPageUrl: "https://gamebanana.com/mods/1234");
+            AddMoveset(3, "No page");
+
+            var controller = CreateController();
+
+            var movesets = Unwrap(await controller.GetMovesetsByGamebanana(123));
+
+            Assert.Single(movesets);
+            Assert.Equal("Exact", Prop<string>(movesets[0], "ModdedCharName"));
+        }
+
+        [Fact]
+        public async Task GetMovesetsByGamebanana_ToleratesTrailingSlashQueryAndCase()
+        {
+            AddMoveset(1, "Slash", modPageUrl: "https://gamebanana.com/mods/123/");
+            AddMoveset(2, "Query", modPageUrl: "https://GameBanana.com/mods/123?tab=files");
+            AddMoveset(3, "Other", modPageUrl: "https://gamebanana.com/mods/999");
+
+            var controller = CreateController();
+
+            var movesets = Unwrap(await controller.GetMovesetsByGamebanana(123));
+
+            Assert.Equal(2, movesets.Count);
+            Assert.Contains(movesets, m => Prop<string>(m, "ModdedCharName") == "Slash");
+            Assert.Contains(movesets, m => Prop<string>(m, "ModdedCharName") == "Query");
+        }
+
+        [Fact]
+        public async Task GetMovesetsByGamebanana_AnonymousUser_HidesBlockedMoveset()
+        {
+            var blocked = AddMoveset(1, "Rejected", modPageUrl: "https://gamebanana.com/mods/123");
+            SeedData.AddActionLog(_db.Context, blocked.MovesetId, acceptanceStateId: AcceptanceStates.Rejected, DateTime.UtcNow, userId: "log-author");
+
+            var controller = CreateController();
+
+            var movesets = Unwrap(await controller.GetMovesetsByGamebanana(123));
+
+            Assert.Empty(movesets);
+        }
+
+        [Fact]
+        public async Task GetMovesetsByGamebanana_NoMatch_ReturnsEmptyList()
+        {
+            AddMoveset(1, "Other", modPageUrl: "https://gamebanana.com/mods/999");
+
+            var controller = CreateController();
+
+            var movesets = Unwrap(await controller.GetMovesetsByGamebanana(123));
+
+            Assert.Empty(movesets);
         }
 
         [Fact]
