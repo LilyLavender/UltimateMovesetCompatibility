@@ -213,6 +213,21 @@ namespace CustomCharInfo.server.Tests.Controllers
         }
 
         [Fact]
+        public async Task GetMovesets_AdminPickOnly_ExcludesPrivateMovesets()
+        {
+            AddMoveset(1, "Public pick", adminPick: true);
+            AddMoveset(2, "Private pick", isPrivate: true, adminPick: true);
+
+            var controller = CreateController();
+
+            var result = await controller.GetMovesets(null, null, null, null, null, adminPickOnly: true, null, null, null);
+
+            var movesets = Unwrap(result);
+            Assert.Single(movesets);
+            Assert.Equal("Public pick", Prop<string>(movesets[0], "ModdedCharName"));
+        }
+
+        [Fact]
         public async Task GetMovesets_BetaOnlyFilter_MatchesReleaseState4()
         {
             AddMoveset(1, "Released", releaseStateId: ReleaseStates.Released);

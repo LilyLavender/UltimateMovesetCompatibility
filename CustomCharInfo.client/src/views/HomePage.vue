@@ -105,7 +105,7 @@ const upcomingReleases = computed(() => {
     )
 
   const noDate = adminPicks.value
-    .filter((m) => !m.releaseDate && !m.privateMoveset)
+    .filter((m) => !m.releaseDate)
     .sort(
       (a, b) =>
         (b.likeCount ?? 0) - (a.likeCount ?? 0) || a.moddedCharName.localeCompare(b.moddedCharName)

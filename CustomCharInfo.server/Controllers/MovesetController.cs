@@ -106,7 +106,7 @@ namespace CustomCharInfo.server.Controllers
                 query = query.Where(x => x.Moveset.PrivateMoveset == privateOnly.Value);
 
             if (adminPickOnly == true)
-                query = query.Where(x => (bool)x.Moveset.AdminPick);
+                query = query.Where(x => x.Moveset.AdminPick == true && x.Moveset.PrivateMoveset != true);
 
             if (betaOnly == true)
                 query = query.Where(x => x.Moveset.ReleaseStateId == ReleaseStates.OpenBeta);
