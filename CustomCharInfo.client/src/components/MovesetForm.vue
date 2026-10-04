@@ -379,8 +379,11 @@ import movesetHeroUnknown from '@/assets/moveset_hero_unknown.png'
 import { IMAGE_UPLOAD_SPECS, CONTRIBUTION_ROLE_ORDER, CONTRIBUTION_ROLE_NAMES } from '@/globals'
 import { dateOnlyStringToLocalDate, localDateToDateOnlyString } from '@/services/dateOnly'
 import { useNotify } from '@/composables/useNotify'
+import { useAuthStore } from '@/stores/auth'
+import { isAdmin } from '@/navigation'
 
 const notify = useNotify()
+const authStore = useAuthStore()
 
 const props = defineProps({
   mode: { type: String, default: 'add' },
@@ -504,6 +507,14 @@ const modders = ref([])
 const editorFullAccess = ref({})
 const canManageMembers = ref(true)
 
+// Whether the signed-in modder was credited or an editor when the moveset loaded.
+// The self-removal confirm only asks someone who actually held access.
+const onMovesetAtLoad = ref(false)
+
+const isOnMoveset = (user) =>
+  user?.modderId != null &&
+  (form.value.modderIds.includes(user.modderId) || form.value.editorIds.includes(user.modderId))
+
 const editorCandidates = computed(() =>
   modders.value.filter((m) => !form.value.modderIds.includes(m.modderId))
 )
@@ -599,6 +610,7 @@ onMounted(async () => {
         (res.data.movesetEditors ?? []).map((e) => [e.modder.modderId, !!e.fullAccess])
       )
       canManageMembers.value = res.data.canManageMembers !== false
+      onMovesetAtLoad.value = isOnMoveset(await authStore.ensureLoaded())
       form.value.dependencyIds =
         res.data.movesetDependencies?.map((d) => d.dependency.dependencyId) || []
       form.value.articles =
@@ -665,20 +677,19 @@ const submit = async () => {
     return
   }
 
-  // Validate modderId
-  const user = await api.get('/auth/me')
-  const stillOnMoveset =
-    form.value.modderIds.includes(user.data.modderId) ||
-    form.value.editorIds.includes(user.data.modderId)
-  if (!stillOnMoveset) {
+  // Admins keep access to every moveset, so only a modder or editor can lock themselves out.
+  const me = await authStore.ensureLoaded()
+  if (!isAdmin(me) && !isOnMoveset(me)) {
     if (!isEditMode.value) {
       notify.warning('You cannot save a moveset you do not own.')
       return
     }
-    const confirmed = window.confirm(
-      'You are removing yourself from this moveset. You will lose access to edit it. Continue?'
-    )
-    if (!confirmed) return
+    if (onMovesetAtLoad.value) {
+      const confirmed = window.confirm(
+        'You are removing yourself from this moveset. You will lose access to edit it. Continue?'
+      )
+      if (!confirmed) return
+    }
   }
 
   // Validate other fields
