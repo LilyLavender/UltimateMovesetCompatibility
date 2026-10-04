@@ -108,7 +108,7 @@ const generate = async (user) => {
       name: 'ResetPasswordPage',
       query: { userId: res.data.userId, token: res.data.token },
     })
-    resetLink.value = `${window.location.origin}${href}`
+    resetLink.value = new URL(href, window.location.href).href
 
     dialog.value = true
   } catch {
