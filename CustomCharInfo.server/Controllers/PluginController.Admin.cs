@@ -237,5 +237,54 @@ namespace CustomCharInfo.server.Controllers
                 .FirstAsync(p => p.PluginId == plugin.PluginId);
             return CreatedAtAction(nameof(GetPlugin), new { id = plugin.PluginId }, await ToDtoAsync(result));
         }
+        // Folds a duplicate plugin into another of the same kind.
+        // Every version moves to the target, the source is deleted, and the target's current version is recomputed.
+        // Action logs are keyed by version id, so they follow their versions untouched.
+        // The target keeps its own name, description, and default link.
+        [HttpPost("{id}/merge-into/{targetId}")]
+        [Authorize]
+        public async Task<ActionResult<PluginDto>> MergePlugin(int id, int targetId)
+        {
+            var (_, isAdmin) = await GetRequesterAsync();
+            if (!isAdmin) return Forbid();
+
+            if (id == targetId) return BadRequest("A plugin cannot be merged into itself.");
+
+            var source = await _context.Plugins
+                .Include(p => p.PluginVersions)
+                .FirstOrDefaultAsync(p => p.PluginId == id);
+            if (source == null) return NotFound("Plugin not found.");
+            var target = await _context.Plugins
+                .Include(p => p.PluginVersions)
+                .FirstOrDefaultAsync(p => p.PluginId == targetId);
+            if (target == null) return NotFound("Target plugin not found.");
+
+            if (source.MovesetId != null || target.MovesetId != null)
+                return BadRequest("Moveset plugins can't be merged.");
+            if (source.DependencyId != target.DependencyId)
+                return BadRequest(source.DependencyId == null || target.DependencyId == null
+                    ? "A standalone plugin can only merge into another standalone plugin."
+                    : "Dependency plugins can only merge into a plugin on the same dependency.");
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            foreach (var version in source.PluginVersions.ToList())
+            {
+                source.PluginVersions.Remove(version);
+                version.PluginId = target.PluginId;
+                target.PluginVersions.Add(version);
+            }
+            _context.Plugins.Remove(source);
+            RecomputeIsCurrent(target);
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            var result = await _context.Plugins
+                .Include(p => p.PluginVersions)
+                .Include(p => p.Moveset)
+                .Include(p => p.Dependency)
+                .FirstAsync(p => p.PluginId == target.PluginId);
+            return Ok(await ToDtoAsync(result));
+        }
+
     }
 }

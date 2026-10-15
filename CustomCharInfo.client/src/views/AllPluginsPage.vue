@@ -60,6 +60,15 @@
               Edit
             </AppButton>
             <AppButton
+              v-if="canMerge(item)"
+              size="sm"
+              variant="ghost"
+              icon="mdi-call-merge"
+              @click="openMerge(item)"
+            >
+              Merge
+            </AppButton>
+            <AppButton
               v-if="item.movesetId == null"
               size="sm"
               variant="ghost"
@@ -95,6 +104,7 @@
     </TableScroll>
 
     <PluginVersionEditDialog v-model="editVersionOpen" :version="editTarget" @saved="load" />
+    <PluginMergeDialog v-model="mergeOpen" :source="editTarget" @merged="load" />
 
     <!-- Delete confirmation -->
     <v-dialog v-bind="dialogProps" v-model="deleteOpen" max-width="480px">
@@ -129,6 +139,7 @@ import StatusTag from '@/components/StatusTag.vue'
 import TableScroll from '@/components/TableScroll.vue'
 import SkeletonTable from '@/components/SkeletonTable.vue'
 import PluginVersionEditDialog from '@/components/PluginVersionEditDialog.vue'
+import PluginMergeDialog from '@/components/PluginMergeDialog.vue'
 
 const notify = useNotify()
 const dialogProps = useDialogProps()
@@ -140,6 +151,7 @@ const search = ref('')
 
 const editTarget = ref(null)
 const editVersionOpen = ref(false)
+const mergeOpen = ref(false)
 const deleteTarget = ref(null)
 const deleteOpen = ref(false)
 const deleting = ref(false)
@@ -183,6 +195,25 @@ const versionRows = computed(() =>
   )
 )
 
+// Standalone plugin names that appear more than once, the duplicates the merge action exists for.
+const duplicateStandaloneNames = computed(() => {
+  const counts = new Map()
+  for (const p of plugins.value) {
+    if (p.movesetId != null || p.dependencyId != null) continue
+    const name = p.name.trim().toLowerCase()
+    counts.set(name, (counts.get(name) ?? 0) + 1)
+  }
+  return new Set([...counts].filter(([, n]) => n > 1).map(([name]) => name))
+})
+
+function canMerge(row) {
+  return (
+    row.movesetId == null &&
+    row.dependencyId == null &&
+    duplicateStandaloneNames.value.has(row.pluginName.trim().toLowerCase())
+  )
+}
+
 const query = computed(() => (search.value ?? '').trim().toLowerCase())
 
 function matchesSearch(fields) {
@@ -213,6 +244,11 @@ async function load() {
   } finally {
     loading.value = false
   }
+}
+
+function openMerge(row) {
+  editTarget.value = row
+  mergeOpen.value = true
 }
 
 function openEditVersion(row) {

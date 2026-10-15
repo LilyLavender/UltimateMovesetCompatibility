@@ -422,5 +422,118 @@ namespace CustomCharInfo.server.Tests.Controllers
             var list = Assert.IsType<List<MatchHashResultDto>>(Assert.IsType<OkObjectResult>(match.Result).Value);
             Assert.Equal(MatchHashStatus.Registered, Assert.Single(list).Status);
         }
+        private Plugin AddPlugin(string name, string hash, string label, int? dependencyId = null, int? movesetId = null)
+        {
+            var plugin = new Plugin
+            {
+                Name = name,
+                DependencyId = dependencyId,
+                MovesetId = movesetId,
+                OwnerModderId = 2,
+                CreatedAt = DateTime.UtcNow,
+                PluginVersions = new List<PluginVersion>
+                {
+                    new PluginVersion { VersionLabel = label, Hash = hash, SubmittedByUserId = "modder-1", CreatedAt = DateTime.UtcNow, IsCurrent = true }
+                }
+            };
+            _db.Context.Plugins.Add(plugin);
+            _db.Context.SaveChanges();
+            SeedData.AddActionLog(_db.Context, plugin.PluginVersions.First().PluginVersionId, AcceptanceStates.AutoAccepted, DateTime.UtcNow, "modder-1", ItemTypes.Plugin);
+            return plugin;
+        }
+
+        [Fact]
+        public async Task Merge_NonAdmin_ReturnsForbid()
+        {
+            var source = AddPlugin("Dup", Hash1, "1.0");
+            var target = AddPlugin("Keep", Hash2, "2.0");
+            var controller = CreateController("modder-1");
+
+            var result = await controller.MergePlugin(source.PluginId, target.PluginId);
+
+            Assert.IsType<ForbidResult>(result.Result);
+            Assert.Equal(2, _db.Context.Plugins.Count());
+        }
+
+        [Fact]
+        public async Task Merge_MovesVersionsDeletesSourceAndRecomputesCurrent()
+        {
+            var source = AddPlugin("Dup", Hash1, "3.0");
+            var target = AddPlugin("Keep", Hash2, "2.0");
+            var sourceVersionId = source.PluginVersions.First().PluginVersionId;
+            var controller = CreateController("admin-1");
+
+            var result = await controller.MergePlugin(source.PluginId, target.PluginId);
+
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            var dto = Assert.IsType<PluginDto>(ok.Value);
+            Assert.Equal("Keep", dto.Name);
+            Assert.Equal(2, dto.Versions.Count);
+
+            Assert.Single(_db.Context.Plugins);
+            var versions = _db.Context.PluginVersions.Where(v => v.PluginId == target.PluginId).ToList();
+            Assert.Equal(2, versions.Count);
+            Assert.True(versions.Single(v => v.VersionLabel == "3.0").IsCurrent);
+            Assert.False(versions.Single(v => v.VersionLabel == "2.0").IsCurrent);
+            Assert.Equal(2, _db.Context.ActionLogs.Count(l => l.ItemTypeId == ItemTypes.Plugin));
+            Assert.Contains(_db.Context.ActionLogs, l => l.ItemId == sourceVersionId);
+        }
+
+        [Fact]
+        public async Task Merge_SameDependency_Allowed()
+        {
+            var source = AddPlugin("HDR dup", Hash1, "1.0", dependencyId: 1);
+            var target = AddPlugin("HDR", Hash2, "1.1", dependencyId: 1);
+            var controller = CreateController("admin-1");
+
+            var result = await controller.MergePlugin(source.PluginId, target.PluginId);
+
+            Assert.IsType<OkObjectResult>(result.Result);
+            Assert.Equal(2, _db.Context.PluginVersions.Count(v => v.PluginId == target.PluginId));
+        }
+
+        [Fact]
+        public async Task Merge_DifferentKinds_ReturnsBadRequestWithoutWriting()
+        {
+            _db.Context.Dependencies.Add(new Dependency { DependencyId = 2, Name = "Other dep", DownloadLink = "https://example.com/2" });
+            _db.Context.SaveChanges();
+            var standalone = AddPlugin("Standalone", Hash1, "1.0");
+            var onHdr = AddPlugin("HDR plugin", Hash2, "1.0", dependencyId: 1);
+            var onOther = AddPlugin("Other plugin", Hash3, "1.0", dependencyId: 2);
+            var controller = CreateController("admin-1");
+
+            Assert.IsType<BadRequestObjectResult>((await controller.MergePlugin(standalone.PluginId, onHdr.PluginId)).Result);
+            Assert.IsType<BadRequestObjectResult>((await controller.MergePlugin(onHdr.PluginId, standalone.PluginId)).Result);
+            Assert.IsType<BadRequestObjectResult>((await controller.MergePlugin(onHdr.PluginId, onOther.PluginId)).Result);
+            Assert.IsType<BadRequestObjectResult>((await controller.MergePlugin(standalone.PluginId, standalone.PluginId)).Result);
+
+            Assert.Equal(3, _db.Context.Plugins.Count());
+            Assert.Single(_db.Context.PluginVersions.Where(v => v.PluginId == onHdr.PluginId));
+        }
+
+        [Fact]
+        public async Task Merge_MovesetPlugin_ReturnsBadRequest()
+        {
+            _db.Context.Movesets.Add(new Moveset { MovesetId = 1, ModdedCharName = "Waluigi", VanillaCharInternalName = "mario", SlottedId = "slotwaluigi" });
+            _db.Context.SaveChanges();
+            var movesetPlugin = AddPlugin("Waluigi plugin", Hash1, "1.0", movesetId: 1);
+            var standalone = AddPlugin("Standalone", Hash2, "1.0");
+            var controller = CreateController("admin-1");
+
+            Assert.IsType<BadRequestObjectResult>((await controller.MergePlugin(movesetPlugin.PluginId, standalone.PluginId)).Result);
+            Assert.IsType<BadRequestObjectResult>((await controller.MergePlugin(standalone.PluginId, movesetPlugin.PluginId)).Result);
+            Assert.Equal(2, _db.Context.Plugins.Count());
+        }
+
+        [Fact]
+        public async Task Merge_MissingPlugin_ReturnsNotFound()
+        {
+            var target = AddPlugin("Keep", Hash1, "1.0");
+            var controller = CreateController("admin-1");
+
+            Assert.IsType<NotFoundObjectResult>((await controller.MergePlugin(999, target.PluginId)).Result);
+            Assert.IsType<NotFoundObjectResult>((await controller.MergePlugin(target.PluginId, 999)).Result);
+        }
+
     }
 }
