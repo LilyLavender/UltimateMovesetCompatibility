@@ -17,6 +17,7 @@ export const RowStatus = Object.freeze({
   NoDigest: 'no-digest',
   Archive: 'archive',
   NoAsset: 'no-asset',
+  Manual: 'manual',
 })
 
 export const STATUS_LABELS = Object.freeze({
@@ -26,7 +27,10 @@ export const STATUS_LABELS = Object.freeze({
   [RowStatus.NoDigest]: 'No digest',
   [RowStatus.Archive]: 'Archive, inner file not hashed',
   [RowStatus.NoAsset]: 'No assets',
+  [RowStatus.Manual]: 'No plugin.nro, add by hand',
 })
+
+const NRO_EXTENSION = '.nro'
 
 // Mirrors GitHubRepoRef.TryParse on the server. Accepts "owner/repo", "github.com/owner/repo/anything"
 // and full https URLs with or without ".git". Returns null when the input is not a repository.
@@ -179,6 +183,42 @@ export function flattenReleaseAssets(releases) {
   return rows
 }
 
+// Keeps the plugin rows and the no-asset placeholders, and stands in one row for each release
+// whose files are all something else, naming them so the release is still visible.
+// Those rows have no hash and can never be registered from here.
+export function nroRowsWithPlaceholders(rows) {
+  const byRelease = new Map()
+  for (const row of rows ?? []) {
+    if (!byRelease.has(row.releaseId)) byRelease.set(row.releaseId, [])
+    byRelease.get(row.releaseId).push(row)
+  }
+  const result = []
+  for (const releaseRows of byRelease.values()) {
+    const kept = releaseRows.filter(
+      (row) => row.asset == null || row.asset.toLowerCase().endsWith(NRO_EXTENSION)
+    )
+    if (kept.length > 0) {
+      result.push(...kept)
+      continue
+    }
+    const first = releaseRows[0]
+    result.push({
+      ...first,
+      key: `${first.releaseId}:manual`,
+      asset: null,
+      assetNames: releaseRows.map((row) => row.asset),
+      size: null,
+      downloads: null,
+      hash: null,
+      hashSource: null,
+      hashError: null,
+      downloadUrl: null,
+      isArchive: false,
+    })
+  }
+  return result
+}
+
 // Assets GitHub has no digest for, which the server can download and hash instead.
 // Archives are skipped since their hash would never match a plugin.nro anyway.
 export function rowsNeedingHash(rows) {
@@ -203,7 +243,7 @@ export function applyMatches(rows, matches) {
 }
 
 function statusFor(row, match) {
-  if (row.asset == null) return RowStatus.NoAsset
+  if (row.asset == null) return row.assetNames?.length ? RowStatus.Manual : RowStatus.NoAsset
   if (!row.hash) return RowStatus.NoDigest
   if (match?.status === 'registered') return RowStatus.Registered
   if (match?.status === 'unregistered') return RowStatus.Unregistered
@@ -225,6 +265,7 @@ export function summarizeStatuses(rows) {
     unseen: 0,
     noDigest: 0,
     archive: 0,
+    manual: 0,
   }
   for (const row of rows) {
     if (row.status === RowStatus.Registered) summary.registered++
@@ -232,6 +273,7 @@ export function summarizeStatuses(rows) {
     else if (row.status === RowStatus.Unseen) summary.unseen++
     else if (row.status === RowStatus.NoDigest) summary.noDigest++
     else if (row.status === RowStatus.Archive) summary.archive++
+    else if (row.status === RowStatus.Manual) summary.manual++
   }
   return summary
 }

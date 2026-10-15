@@ -5,6 +5,7 @@ import {
   fetchAllReleases,
   flattenReleaseAssets,
   newestRelease,
+  nroRowsWithPlaceholders,
   digestToHash,
   applyMatches,
   registrableRows,
@@ -276,6 +277,56 @@ describe('server-side hashing helpers', () => {
   })
 })
 
+describe('nroRowsWithPlaceholders', () => {
+  const rows = flattenReleaseAssets([
+    {
+      id: 1,
+      tag_name: 'mixed',
+      assets: [
+        { id: 1, name: 'plugin.nro', digest: `sha256:${hashA}` },
+        { id: 2, name: 'bundle.zip', digest: `sha256:${hashB}` },
+      ],
+    },
+    {
+      id: 2,
+      tag_name: 'zipped',
+      html_url: 'https://github.com/o/r/releases/tag/zipped',
+      assets: [
+        { id: 3, name: 'Release.ZIP', digest: null },
+        { id: 4, name: 'readme.txt', digest: null },
+      ],
+    },
+    { id: 3, tag_name: 'empty', assets: [] },
+  ])
+
+  it('keeps nro rows, stands in one row for a release with none, and keeps empty placeholders', () => {
+    const result = nroRowsWithPlaceholders(rows)
+
+    expect(result.map((r) => r.key)).toEqual(['1:1', '2:manual', '3:none'])
+    expect(result[1]).toMatchObject({
+      tag: 'zipped',
+      asset: null,
+      assetNames: ['Release.ZIP', 'readme.txt'],
+      hash: null,
+      downloadUrl: null,
+      releaseUrl: 'https://github.com/o/r/releases/tag/zipped',
+    })
+    expect(result[2].assetNames).toBeUndefined()
+  })
+
+  it('gives the stand-in row a manual status that is never registrable', () => {
+    const matched = applyMatches(nroRowsWithPlaceholders(rows), [])
+
+    expect(matched.map((r) => r.status)).toEqual([
+      RowStatus.Unseen,
+      RowStatus.Manual,
+      RowStatus.NoAsset,
+    ])
+    expect(registrableRows(matched).map((r) => r.key)).toEqual(['1:1'])
+    expect(summarizeStatuses(matched)).toMatchObject({ unseen: 1, manual: 1 })
+  })
+})
+
 describe('applyMatches and friends', () => {
   const rows = flattenReleaseAssets([
     {
@@ -332,6 +383,7 @@ describe('applyMatches and friends', () => {
       unseen: 1,
       noDigest: 1,
       archive: 1,
+      manual: 0,
     })
   })
 })

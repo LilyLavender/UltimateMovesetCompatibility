@@ -140,6 +140,9 @@
             <StatusTag v-if="panel.summary.noDigest" variant="outline">
               {{ panel.summary.noDigest }} unhashed
             </StatusTag>
+            <StatusTag v-if="panel.summary.manual" variant="outline">
+              {{ panel.summary.manual }} manual
+            </StatusTag>
             <AppButton
               size="sm"
               icon="mdi-plus"
@@ -161,7 +164,7 @@
         <AppLoading v-if="panel.loading" size="sm" :label="panel.progress" />
         <p v-else-if="panel.error" class="note note--err">{{ panel.error }}</p>
         <p v-else-if="visibleRows(panel).length === 0" class="faint">
-          No .nro assets in this repository's releases.
+          No releases in this repository.
         </p>
         <TableScroll v-else min-width="900px">
           <v-data-table
@@ -194,6 +197,9 @@
               >
                 {{ item.asset }}
               </a>
+              <span v-else-if="item.assetNames?.length" class="faint">
+                {{ item.assetNames.join(', ') }}
+              </span>
               <span v-else class="faint">none</span>
             </template>
             <template #item.downloads="{ item }">
@@ -247,6 +253,7 @@ import {
   rowsNeedingHash,
   withServerHash,
   withHashError,
+  nroRowsWithPlaceholders,
   applyMatches,
   registrableRows,
   summarizeStatuses,
@@ -254,7 +261,6 @@ import {
   RowStatus,
   STATUS_LABELS,
 } from '@/services/githubReleases'
-import { hasExtension } from '@/services/fileEntries'
 import { chunk } from '@/services/pluginBatch'
 import PageShell from '@/components/PageShell.vue'
 import SectionHeading from '@/components/SectionHeading.vue'
@@ -336,11 +342,6 @@ async function reportCheckResult(watched, releases) {
   } catch (err) {
     notify.error('Could not record the check result.', err)
   }
-}
-
-// Only plugin files matter here. Releases with no assets at all still get their placeholder row.
-function isNroRow(row) {
-  return row.asset == null || hasExtension(row.asset, '.nro')
 }
 
 function visibleRows(panel) {
@@ -474,7 +475,7 @@ async function checkRepo(target) {
   panel.error = null
   try {
     const releases = await fetchAllReleases(target.owner, target.repo)
-    let rows = flattenReleaseAssets(releases).filter(isNroRow)
+    let rows = nroRowsWithPlaceholders(flattenReleaseAssets(releases))
     rows = await fillMissingHashes(rows, panel)
     panel.progress = 'Matching against registered plugins'
     const matches = await matchHashes(rows)
