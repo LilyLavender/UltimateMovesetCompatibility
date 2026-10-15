@@ -4,6 +4,7 @@ import {
   parseLinkHeader,
   fetchAllReleases,
   flattenReleaseAssets,
+  newestRelease,
   digestToHash,
   applyMatches,
   registrableRows,
@@ -154,6 +155,41 @@ describe('isArchiveAsset', () => {
     expect(isArchiveAsset('Plugin.ZIP')).toBe(true)
     expect(isArchiveAsset('mod.tar.gz')).toBe(true)
     expect(isArchiveAsset('plugin.nro')).toBe(false)
+  })
+})
+
+describe('newestRelease', () => {
+  it('picks the latest published non-draft release, prereleases included', () => {
+    const releases = [
+      { id: 1, tag_name: 'v1.0', published_at: '2026-08-01T00:00:00Z', html_url: 'u1' },
+      {
+        id: 2,
+        tag_name: 'v2.0-rc',
+        prerelease: true,
+        published_at: '2026-09-01T00:00:00Z',
+        html_url: 'u2',
+      },
+      {
+        id: 3,
+        tag_name: 'v3.0',
+        draft: true,
+        published_at: '2026-10-01T00:00:00Z',
+        html_url: 'u3',
+      },
+      { id: 4, tag_name: 'v0.5', created_at: '2026-07-01T00:00:00Z' },
+    ]
+
+    expect(newestRelease(releases)).toEqual({
+      lastReleaseAt: '2026-09-01T00:00:00Z',
+      lastReleaseTag: 'v2.0-rc',
+      lastReleaseUrl: 'u2',
+    })
+  })
+
+  it('returns null for no releases or only drafts', () => {
+    expect(newestRelease([])).toBeNull()
+    expect(newestRelease(null)).toBeNull()
+    expect(newestRelease([{ id: 1, draft: true, published_at: '2026-10-01T00:00:00Z' }])).toBeNull()
   })
 })
 

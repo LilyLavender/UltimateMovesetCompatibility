@@ -153,3 +153,18 @@ export const CONTRIBUTION_ROLE_ORDER = Object.freeze([
 export const PROFILE_CONTRIBUTION_ROLES = Object.freeze(
   CONTRIBUTION_ROLE_ORDER.filter((id) => id !== ContributionRole.Other)
 )
+
+// Mirrors WatchedRepoStatus in WatchedRepoDtos.cs: what the last check of a watched repo found.
+export const WatchedRepoStatus = Object.freeze({
+  Unchecked: 'unchecked',
+  NoReleases: 'noReleases',
+  NeedsUpdate: 'needsUpdate',
+  UpToDate: 'upToDate',
+})
+
+export const WATCHED_REPO_STATUS_LABELS = Object.freeze({
+  [WatchedRepoStatus.Unchecked]: 'Unchecked',
+  [WatchedRepoStatus.NoReleases]: 'No releases',
+  [WatchedRepoStatus.NeedsUpdate]: 'Needs update',
+  [WatchedRepoStatus.UpToDate]: 'Up to date',
+})

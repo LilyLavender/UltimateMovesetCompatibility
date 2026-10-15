@@ -31,6 +31,9 @@
 
     <!-- Watched repos -->
     <SectionHeading title="Watched repositories" :count="watchedRepos.length">
+      <StatusTag v-if="needsUpdateCount > 0" variant="warn">
+        {{ needsUpdateCount }} need{{ needsUpdateCount === 1 ? 's' : '' }} update
+      </StatusTag>
       <AppButton
         v-if="watchedRepos.length"
         size="sm"
@@ -47,12 +50,14 @@
       message="No watched repositories yet."
       icon="mdi-github"
     />
-    <TableScroll v-else min-width="560px">
+    <TableScroll v-else min-width="820px">
       <v-table density="comfortable">
         <thead>
           <tr>
             <th>Repository</th>
-            <th>Added by</th>
+            <th>Last check</th>
+            <th>Last release</th>
+            <th>Status</th>
             <th class="text-right"></th>
           </tr>
         </thead>
@@ -63,7 +68,34 @@
                 {{ watched.owner }}/{{ watched.repo }}
               </a>
             </td>
-            <td class="muted">{{ watched.addedByUsername ?? 'unknown' }}</td>
+            <td class="muted">
+              {{
+                watched.lastCheckedAt ? new Date(watched.lastCheckedAt).toLocaleString() : 'never'
+              }}
+            </td>
+            <td>
+              <template v-if="watched.lastReleaseAt">
+                <a
+                  v-if="watched.lastReleaseUrl"
+                  :href="watched.lastReleaseUrl"
+                  target="_blank"
+                  rel="noopener"
+                  class="mono"
+                >
+                  {{ watched.lastReleaseTag }}
+                </a>
+                <span v-else class="mono">{{ watched.lastReleaseTag }}</span>
+                <span class="release-date">
+                  {{ new Date(watched.lastReleaseAt).toLocaleDateString() }}
+                </span>
+              </template>
+              <span v-else-if="watched.lastCheckedAt" class="faint">none</span>
+            </td>
+            <td>
+              <StatusTag :variant="WATCHED_STATUS_TONES[watched.status] ?? 'outline'">
+                {{ WATCHED_REPO_STATUS_LABELS[watched.status] ?? watched.status }}
+              </StatusTag>
+            </td>
             <td class="text-right">
               <span class="row-actions">
                 <AppButton
@@ -205,11 +237,12 @@
 import { ref, computed, reactive, onMounted } from 'vue'
 import api from '@/services/api'
 import { useNotify } from '@/composables/useNotify'
-import { PENDING_ADMIN_STATES } from '@/globals'
+import { PENDING_ADMIN_STATES, WatchedRepoStatus, WATCHED_REPO_STATUS_LABELS } from '@/globals'
 import {
   parseRepoInput,
   repoUrl,
   fetchAllReleases,
+  newestRelease,
   flattenReleaseAssets,
   rowsNeedingHash,
   withServerHash,
@@ -241,6 +274,13 @@ const STATUS_TONES = {
   [RowStatus.Unseen]: 'info',
 }
 
+const WATCHED_STATUS_TONES = {
+  [WatchedRepoStatus.NeedsUpdate]: 'warn',
+  [WatchedRepoStatus.UpToDate]: 'ok',
+  [WatchedRepoStatus.Unchecked]: 'outline',
+  [WatchedRepoStatus.NoReleases]: 'outline',
+}
+
 const notify = useNotify()
 
 const repoInput = ref('')
@@ -265,6 +305,9 @@ const headers = [
 ]
 
 const parsedInput = computed(() => parseRepoInput(repoInput.value))
+const needsUpdateCount = computed(
+  () => watchedRepos.value.filter((w) => w.status === WatchedRepoStatus.NeedsUpdate).length
+)
 
 function keyFor({ owner, repo }) {
   return `${owner}/${repo}`.toLowerCase()
@@ -272,6 +315,27 @@ function keyFor({ owner, repo }) {
 
 function panelFor(target) {
   return panels.value.find((p) => p.key === keyFor(target))
+}
+
+function watchedFor(target) {
+  return watchedRepos.value.find((w) => keyFor(w) === keyFor(target))
+}
+
+// Tells the server what a check found so the watched list can show last check, last release, and status.
+async function reportCheckResult(watched, releases) {
+  try {
+    const res = await api.post(`/watched-repos/${watched.watchedRepoId}/check-result`, {
+      ...(newestRelease(releases) ?? {
+        lastReleaseAt: null,
+        lastReleaseTag: null,
+        lastReleaseUrl: null,
+      }),
+    })
+    const index = watchedRepos.value.findIndex((w) => w.watchedRepoId === watched.watchedRepoId)
+    if (index !== -1) watchedRepos.value.splice(index, 1, res.data)
+  } catch (err) {
+    notify.error('Could not record the check result.', err)
+  }
 }
 
 // Only plugin files matter here. Releases with no assets at all still get their placeholder row.
@@ -332,10 +396,11 @@ async function addToList() {
   if (!parsedInput.value) return
   adding.value = true
   try {
-    await api.post('/watched-repos', { input: repoInput.value.trim() })
+    const res = await api.post('/watched-repos', { input: repoInput.value.trim() })
     notify.success('Added to the list.')
     repoInput.value = ''
     await loadWatched()
+    checkRepo(res.data)
   } catch (err) {
     notify.error('Could not add that repository.', err)
   } finally {
@@ -416,6 +481,8 @@ async function checkRepo(target) {
     panel.rows = applyMatches(rows, matches)
     panel.summary = summarizeStatuses(panel.rows)
     panel.checkedAt = new Date()
+    const watched = watchedFor(target)
+    if (watched) await reportCheckResult(watched, releases)
     return true
   } catch (err) {
     if (err instanceof GitHubApiError) {
@@ -502,6 +569,12 @@ onMounted(loadWatched)
 .row-actions {
   display: inline-flex;
   gap: 4px;
+}
+
+.release-date {
+  display: block;
+  font-size: 12px;
+  color: var(--tx-3);
 }
 
 .result {

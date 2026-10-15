@@ -1171,6 +1171,20 @@ namespace CustomCharInfo.server.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("LastCheckedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastReleaseAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastReleaseTag")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("LastReleaseUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<string>("Owner")
                         .IsRequired()
                         .HasMaxLength(100)

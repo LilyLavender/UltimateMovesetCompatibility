@@ -112,6 +112,25 @@ export function digestToHash(digest) {
   return match ? match[1].toLowerCase() : null
 }
 
+// The most recently published non-draft release, prereleases included, as the watched list reports it.
+// Null when the repository has no releases.
+export function newestRelease(releases) {
+  let newest = null
+  for (const release of releases ?? []) {
+    if (release.draft) continue
+    const at = release.published_at ?? release.created_at ?? null
+    if (!at) continue
+    if (!newest || new Date(at) > new Date(newest.lastReleaseAt)) {
+      newest = {
+        lastReleaseAt: at,
+        lastReleaseTag: release.tag_name ?? '',
+        lastReleaseUrl: release.html_url ?? null,
+      }
+    }
+  }
+  return newest
+}
+
 // One row per asset, with a placeholder row for a release that has no assets so it is not silently dropped.
 export function flattenReleaseAssets(releases) {
   const rows = []

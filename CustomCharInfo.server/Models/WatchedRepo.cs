@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace CustomCharInfo.server.Models
 {
     // A GitHub repository admins recheck for new plugin releases on the Repo Releases admin page.
-    // Just the reference; checks happen in the browser and nothing about their results is stored.
+    // Checks happen in the browser. The page reports back when it last checked and what the newest release was.
     public class WatchedRepo
     {
         [Key]
@@ -19,5 +19,16 @@ namespace CustomCharInfo.server.Models
         public ApplicationUser? AddedBy { get; set; }
 
         public DateTime CreatedAt { get; set; }
+
+        public DateTime? LastCheckedAt { get; set; }
+
+        // The newest release found by the last check, prereleases included. null when the repo had none.
+        public DateTime? LastReleaseAt { get; set; }
+
+        [MaxLength(100)]
+        public string? LastReleaseTag { get; set; }
+
+        [MaxLength(500)]
+        public string? LastReleaseUrl { get; set; }
     }
 }
