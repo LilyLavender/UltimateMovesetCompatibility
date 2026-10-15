@@ -790,24 +790,36 @@ namespace CustomCharInfo.server.Controllers
         // Lets the submission form offer "add a version to an existing plugin" instead of always
         // creating a new one - e.g. someone uploading v1.1 of an overhaul mod that's already
         // registered can attach it to that same plugin rather than creating a duplicate identity.
+        // repoUrl finds the non-moveset plugins whose mod links point at a GitHub repository,
+        // so the Repo Releases page can add to them instead of creating a duplicate.
         [HttpGet("search")]
         [Authorize]
-        public async Task<ActionResult<List<PluginSearchResultDto>>> SearchPlugins([FromQuery] int? dependencyId, [FromQuery] bool standalone = false)
+        public async Task<ActionResult<List<PluginSearchResultDto>>> SearchPlugins([FromQuery] int? dependencyId, [FromQuery] bool standalone = false, [FromQuery] string? repoUrl = null)
         {
-            if (dependencyId == null && !standalone)
-                return BadRequest("Specify dependencyId or standalone=true.");
-
-            var query = dependencyId != null
-                ? _context.Plugins.Where(p => p.DependencyId == dependencyId)
-                : _context.Plugins.Where(p => p.MovesetId == null && p.DependencyId == null);
+            IQueryable<Plugin> query;
+            if (repoUrl != null)
+            {
+                if (!GitHubRepoRef.TryParse(repoUrl, out var owner, out var repo))
+                    return BadRequest("repoUrl must be a GitHub repository as owner/repo or a github.com URL.");
+                query = _context.Plugins.Where(RepoAttribution.MatchesRepo(RepoAttribution.RepoUrl(owner, repo)));
+            }
+            else if (dependencyId != null)
+                query = _context.Plugins.Where(p => p.DependencyId == dependencyId);
+            else if (standalone)
+                query = _context.Plugins.Where(p => p.MovesetId == null && p.DependencyId == null);
+            else
+                return BadRequest("Specify dependencyId, standalone=true, or repoUrl.");
 
             var plugins = await query
+                .OrderBy(p => p.PluginId)
                 .Select(p => new PluginSearchResultDto
                 {
                     PluginId = p.PluginId,
                     Name = p.Name,
                     Description = p.Description,
-                    DefaultLearnMoreUrl = p.DefaultLearnMoreUrl
+                    DefaultLearnMoreUrl = p.DefaultLearnMoreUrl,
+                    DependencyId = p.DependencyId,
+                    VersionCount = p.PluginVersions.Count
                 })
                 .ToListAsync();
 

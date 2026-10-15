@@ -91,6 +91,8 @@ namespace CustomCharInfo.server.Models.DTOs
         public string Name { get; set; }
         public string? Description { get; set; }
         public string? DefaultLearnMoreUrl { get; set; }
+        public int? DependencyId { get; set; }
+        public int VersionCount { get; set; }
     }
 
     public class UnknownPluginHashDto

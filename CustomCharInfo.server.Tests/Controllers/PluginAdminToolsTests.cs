@@ -535,5 +535,123 @@ namespace CustomCharInfo.server.Tests.Controllers
             Assert.IsType<NotFoundObjectResult>((await controller.MergePlugin(target.PluginId, 999)).Result);
         }
 
+        private Plugin AddLinkedPlugin(string name, string hash, string? defaultLink, string? versionLink = null, int? dependencyId = null, int? movesetId = null)
+        {
+            var plugin = new Plugin
+            {
+                Name = name,
+                DefaultLearnMoreUrl = defaultLink,
+                DependencyId = dependencyId,
+                MovesetId = movesetId,
+                OwnerModderId = 2,
+                CreatedAt = DateTime.UtcNow,
+                PluginVersions = new List<PluginVersion>
+                {
+                    new PluginVersion { VersionLabel = "1.0", Hash = hash, LearnMoreUrl = versionLink, SubmittedByUserId = "modder-1", CreatedAt = DateTime.UtcNow, IsCurrent = true }
+                }
+            };
+            _db.Context.Plugins.Add(plugin);
+            _db.Context.SaveChanges();
+            return plugin;
+        }
+
+        private async Task<List<PluginSearchResultDto>> SearchRepoAsync(string repoUrl)
+        {
+            var controller = CreateController("admin-1");
+            var result = await controller.SearchPlugins(null, false, repoUrl);
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            return Assert.IsType<List<PluginSearchResultDto>>(ok.Value);
+        }
+
+        [Fact]
+        public async Task SearchByRepo_MatchesDefaultLinkAndVersionLinksIgnoringCase()
+        {
+            var byDefault = AddLinkedPlugin("By default link", Hash1, "https://github.com/Owner/Repo");
+            var byDeeperDefault = AddLinkedPlugin("By deeper default", Hash2, "https://github.com/owner/repo/releases/");
+            var byVersion = AddLinkedPlugin("By version link", Hash3, "https://gamebanana.com/mods/1", "https://github.com/owner/repo/releases/tag/v1", dependencyId: 1);
+            AddLinkedPlugin("Other repo", Hash4, "https://github.com/owner/repository");
+
+            var list = await SearchRepoAsync("owner/repo");
+
+            Assert.Equal(new[] { byDefault.PluginId, byDeeperDefault.PluginId, byVersion.PluginId }, list.Select(p => p.PluginId).ToArray());
+            Assert.Equal(1, list.Single(p => p.PluginId == byVersion.PluginId).DependencyId);
+            Assert.All(list, p => Assert.Equal(1, p.VersionCount));
+        }
+
+        [Fact]
+        public async Task SearchByRepo_AcceptsUrlFormsAndExcludesMovesetPlugins()
+        {
+            _db.Context.Movesets.Add(new Moveset { MovesetId = 1, ModdedCharName = "Waluigi", VanillaCharInternalName = "mario", SlottedId = "slotwaluigi" });
+            _db.Context.SaveChanges();
+            var standalone = AddLinkedPlugin("Standalone", Hash1, "https://github.com/owner/repo");
+            AddLinkedPlugin("Moveset plugin", Hash2, "https://github.com/owner/repo", movesetId: 1);
+
+            var list = await SearchRepoAsync("https://github.com/owner/repo.git");
+
+            Assert.Equal(standalone.PluginId, Assert.Single(list).PluginId);
+        }
+
+        [Fact]
+        public async Task SearchByRepo_BadInput_ReturnsBadRequest()
+        {
+            var controller = CreateController("admin-1");
+
+            var result = await controller.SearchPlugins(null, false, "not a repo");
+
+            Assert.IsType<BadRequestObjectResult>(result.Result);
+        }
+
+        [Fact]
+        public async Task Batch_NewPluginWithExistingName_ReturnsConflictNamingIt()
+        {
+            var existing = AddLinkedPlugin("Smash Plugin", Hash1, "https://example.com/a");
+            var controller = CreateController("admin-1");
+
+            var result = await controller.BatchRegister(new BatchRegisterPluginsDto
+            {
+                NewPlugin = new BatchRegisterNewPluginDto { Name = "  smash plugin ", DefaultLearnMoreUrl = "https://example.com/b" },
+                Versions = new List<BatchRegisterVersionDto> { Row(Hash2) }
+            });
+
+            var conflict = Assert.IsType<ConflictObjectResult>(result.Result);
+            Assert.Contains($"plugin {existing.PluginId}", conflict.Value!.ToString());
+            Assert.Single(_db.Context.Plugins);
+            Assert.Single(_db.Context.PluginVersions);
+        }
+
+        [Fact]
+        public async Task Batch_NewPluginWithExistingLink_ReturnsConflict()
+        {
+            AddLinkedPlugin("Original", Hash1, "https://github.com/owner/repo/");
+            var controller = CreateController("admin-1");
+
+            var result = await controller.BatchRegister(new BatchRegisterPluginsDto
+            {
+                NewPlugin = new BatchRegisterNewPluginDto { Name = "Different name", DefaultLearnMoreUrl = "https://GitHub.com/owner/repo" },
+                Versions = new List<BatchRegisterVersionDto> { Row(Hash2) }
+            });
+
+            Assert.IsType<ConflictObjectResult>(result.Result);
+            Assert.Single(_db.Context.Plugins);
+        }
+
+        [Fact]
+        public async Task Batch_NewPluginNameOnlyUsedByMovesetPlugin_IsAllowed()
+        {
+            _db.Context.Movesets.Add(new Moveset { MovesetId = 1, ModdedCharName = "Waluigi", VanillaCharInternalName = "mario", SlottedId = "slotwaluigi" });
+            _db.Context.SaveChanges();
+            AddLinkedPlugin("Shared name", Hash1, null, movesetId: 1);
+            var controller = CreateController("admin-1");
+
+            var result = await controller.BatchRegister(new BatchRegisterPluginsDto
+            {
+                NewPlugin = new BatchRegisterNewPluginDto { Name = "Shared name" },
+                Versions = new List<BatchRegisterVersionDto> { Row(Hash2) }
+            });
+
+            Assert.IsType<CreatedAtActionResult>(result.Result);
+            Assert.Equal(2, _db.Context.Plugins.Count());
+        }
+
     }
 }

@@ -55,6 +55,10 @@
             <span v-if="matchedPlugin.description" class="existing-desc">
               {{ matchedPlugin.description }}
             </span>
+            <span v-if="repoMatches.length > 1" class="existing-desc">
+              {{ repoMatches.length }} plugins already point at this repository. Consider merging
+              them on All Plugins.
+            </span>
           </div>
           <template v-else>
             <LabeledField label="Mod link" note="optional">
@@ -183,6 +187,8 @@ const otherPlugins = ref([])
 const pluginSelection = ref(null)
 const dependencyId = ref(null)
 const existingDependencyPlugin = ref(null)
+// Plugins whose mod links already point at this repo (oldest first)
+const repoMatches = ref([])
 const description = ref('')
 const defaultLearnMoreUrl = ref('')
 const notes = ref('')
@@ -258,10 +264,34 @@ async function loadLookups() {
   }
 }
 
-watch(open, (isOpen) => {
+// Picks the plugin this repo already registered into, so a second check adds to it instead of
+// creating a twin. A dependency match switches the dialog to dependency mode.
+async function preselectFromRepo() {
+  repoMatches.value = []
+  if (!props.repo) return
+  try {
+    const res = await api.get('/plugins/search', { params: { repoUrl: repoUrl(props.repo) } })
+    repoMatches.value = res.data
+  } catch (err) {
+    notify.error('Could not look up plugins for this repository.', err)
+    return
+  }
+  const match = repoMatches.value[0]
+  if (!match) return
+  if (match.dependencyId != null) {
+    attachment.value = 'dependency'
+    dependencyId.value = match.dependencyId
+  } else {
+    attachment.value = 'other'
+    pluginSelection.value = otherPlugins.value.find((p) => p.pluginId === match.pluginId) ?? match
+  }
+}
+
+watch(open, async (isOpen) => {
   if (!isOpen) return
   resetForm()
-  loadLookups()
+  await loadLookups()
+  await preselectFromRepo()
 })
 
 watch(attachment, () => {
@@ -276,7 +306,9 @@ watch(dependencyId, async (id) => {
   if (id == null) return
   try {
     const res = await api.get('/plugins/search', { params: { dependencyId: id } })
-    existingDependencyPlugin.value = res.data[0] ?? null
+    const preferred = repoMatches.value.find((m) => m.dependencyId === id)
+    existingDependencyPlugin.value =
+      res.data.find((p) => p.pluginId === preferred?.pluginId) ?? res.data[0] ?? null
   } catch {
     existingDependencyPlugin.value = null
   }

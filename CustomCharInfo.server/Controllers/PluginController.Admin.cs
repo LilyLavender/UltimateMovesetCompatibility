@@ -183,6 +183,20 @@ namespace CustomCharInfo.server.Controllers
                     if (dependency == null) return NotFound("Dependency not found.");
                 }
 
+                // A repo checked twice must add to the plugin it made the first time instead creating a duplicate
+                var nameLower = (newPlugin.Name ?? "").Trim().ToLower();
+                var linkLower = (newPlugin.DefaultLearnMoreUrl ?? "").Trim().TrimEnd('/').ToLower();
+                var twin = await _context.Plugins
+                    .Where(p => p.MovesetId == null && (
+                        p.Name.ToLower() == nameLower
+                        || (linkLower != "" && p.DefaultLearnMoreUrl != null
+                            && (p.DefaultLearnMoreUrl.ToLower() == linkLower || p.DefaultLearnMoreUrl.ToLower() == linkLower + "/"))))
+                    .OrderBy(p => p.PluginId)
+                    .Select(p => new { p.PluginId, p.Name })
+                    .FirstOrDefaultAsync();
+                if (twin != null)
+                    return Conflict($"\"{twin.Name}\" (plugin {twin.PluginId}) already has that name or mod link. Add these versions to it instead.");
+
                 var isOther = newPlugin.DependencyId == null;
                 plugin = new Plugin
                 {
